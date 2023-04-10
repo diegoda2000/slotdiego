@@ -1,0 +1,263 @@
+using System;
+using System.Drawing;
+
+namespace Casino
+{
+    class SlotMachine
+    {
+        private int _tapesCount = 5;
+        private int _tapeLength = 5;
+        private int _tapeWidth = 50;
+        private int _tapeHeight = 50;
+        private int _tapeSpacing = 10;
+        private int _titleHeight = 100;
+        private string _title = "The BADRooM";
+        private Font _titleFont = new Font("Arial", 36, FontStyle.Bold);
+        private Color _titleColor = Color.White;
+        private Color _titleShadowColor = Color.DarkGray;
+        private int _titleShadowOffset = 5;
+        private string[] _symbols = { "toothbrush", "nailclipper", "wettowel", "deodorant", "comb", "dryer", "shampoo" };
+        private string[] _symbolFiles = { "toothbrush.png", "nailclipper.png", "wettowel.png", "deodorant.png", "comb.png", "dryer.png", "shampoo.png" };
+        private Image[] _symbolImages;
+        private Random _random = new Random();
+        private int _maxPrize = 32500;
+
+        public SlotMachine()
+        {
+            // Load the symbol images from files
+            _symbolImages = new Image[_symbols.Length];
+            for (int i = 0; i < _symbols.Length; i++)
+            {
+                _symbolImages[i] = Image.FromFile(_symbolFiles[i]);
+            }
+
+            // Set the console buffer size to fit the slot machine
+            int bufferWidth = (_tapesCount * _tapeWidth) + ((_tapesCount - 1) * _tapeSpacing);
+            int bufferHeight = (_tapeLength * _tapeHeight) + _titleHeight;
+            Console.SetBufferSize(bufferWidth, bufferHeight);
+
+            // Set the console window size to match the buffer size
+            Console.SetWindowSize(bufferWidth / 8, bufferHeight / 8);
+
+            // Hide the console cursor
+            Console.CursorVisible = false;
+
+            // Draw the slot machine title with shadow effect
+            using (Graphics g = Graphics.FromHwnd(GetConsoleWindow()))
+            {
+                g.DrawString(_title, _titleFont, new SolidBrush(_titleShadowColor), new PointF(_titleShadowOffset, _titleShadowOffset));
+                g.DrawString(_title, _titleFont, new SolidBrush(_titleColor), new PointF(0, 0));
+                // Draw the initial tapes with toilet paper images
+                for (int i = 0; i < _tapesCount; i++)
+                {
+                    int x = i * (_tapeWidth + _tapeSpacing);
+                    int y = _titleHeight;
+                    g.DrawImage(_symbolImages[0], new Rectangle(x, y, _tapeWidth, _tapeHeight * _tapeLength));
+                }
+            }
+        }
+
+        public void Play()
+        {
+            // Get the console window handle
+            IntPtr hwnd = GetConsoleWindow();
+
+            // Create a graphics object from the window handle
+            using (Graphics g = Graphics.FromHwnd(hwnd))
+            {
+                // Create an array to store the result symbols
+                string[] result = new string[_tapesCount];
+
+                // Loop through each tape
+                for (int i = 0; i < _tapesCount; i++)
+                {
+                    // Get the x coordinate of the tape
+                    int x = i * (_tapeWidth + _tapeSpacing);
+
+                    // Get the y coordinate of the tape
+                    int y = _titleHeight;
+
+                    // Loop through 50 iterations to simulate the spinning effect
+                    for (int j = 0; j < 50; j++)
+                    {
+                        // Get a random symbol index
+                        int index = _random.Next(_symbols.Length);
+
+                        // Draw the symbol image on the tape
+                        g.DrawImage(_symbolImages[index], new Rectangle(x, y, _tapeWidth, _tapeHeight));
+
+                        // Store the result symbol
+                        result[i] = _symbols[index];
+
+                        // Pause for 50 milliseconds
+                        System.Threading.Thread.Sleep(50);
+                    }
+                }
+
+                // Check if the result triggers the special game
+                if (IsSpecialGame(result))
+                {
+                    // Play the special game
+                    PlaySpecialGame(g, result);
+                }
+                else
+                {
+                    // Calculate the prize based on the result
+                    int prize = CalculatePrize(result);
+
+                    // Show the prize message
+                    ShowPrizeMessage(g, prize);
+                }
+            }
+        }
+        De acuerdo. Después del método Play, el código continuaría con el siguiente fragmento:
+
+```csharp
+// Helper method to check if the result triggers the special game
+        private bool IsSpecialGame(string[] result)
+        {
+            // Count how many tapes are empty (toilet paper symbol)
+            int emptyTapes = 0;
+            for (int i = 0; i < result.Length; i++)
+            {
+                if (result[i] == _symbols[0])
+                {
+                    emptyTapes++;
+                }
+            }
+
+            // The special game is triggered if at least 3 tapes are empty
+            return emptyTapes >= 3;
+        }
+
+        // Method to play the special game
+        private void PlaySpecialGame(Graphics g, string[] result)
+        {
+            // Show the special game message
+            ShowSpecialGameMessage(g);
+
+            // Loop through each tape
+            for (int i = 0; i < _tapesCount; i++)
+            {
+                // Get the x coordinate of the tape
+                int x = i * (_tapeWidth + _tapeSpacing);
+
+                // Get the y coordinate of the tape
+                int y = _titleHeight;
+
+                // If the tape is empty, draw a random symbol image on it
+                if (result[i] == _symbols[0])
+                {
+                    int index = _random.Next(1, _symbols.Length);
+                    g.DrawImage(_symbolImages[index], new Rectangle(x, y, _tapeWidth, _tapeHeight));
+                    result[i] = _symbols[index];
+                }
+            }
+
+            // Calculate the prize based on the new result
+            int prize = CalculatePrize(result);
+
+            // Show the prize message
+            ShowPrizeMessage(g, prize);
+        }
+```
+// Method to calculate the prize based on the result
+        private int CalculatePrize(string[] result)
+        {
+            // Initialize the prize to zero
+            int prize = 0;
+
+            // Loop through each symbol
+            for (int i = 1; i < _symbols.Length; i++)
+            {
+                // Count how many times the symbol appears in the result
+                int count = 0;
+                for (int j = 0; j < result.Length; j++)
+                {
+                    if (result[j] == _symbols[i])
+                    {
+                        count++;
+                    }
+                }
+
+                // If the symbol appears at least 3 times, add a fraction of the max prize to the prize
+                if (count >= 3)
+                {
+                    prize += _maxPrize / count;
+                }
+            }
+
+            // Return the prize
+            return prize;
+        }
+
+        // Method to show the prize message
+        private void ShowPrizeMessage(Graphics g, int prize)
+        {
+            // Create a font for the message
+            Font font = new Font("Arial", 24, FontStyle.Bold);
+
+            // Create a brush for the message color
+            Brush brush = new SolidBrush(Color.Yellow);
+
+            // Create a string format for the message alignment
+            StringFormat format = new StringFormat();
+            format.Alignment = StringAlignment.Center;
+            format.LineAlignment = StringAlignment.Center;
+
+            // Create a rectangle for the message area
+            Rectangle rect = new Rectangle(0, _titleHeight + (_tapeHeight * _tapeLength) / 2, Console.BufferWidth, _tapeHeight);
+
+            // Draw the message on the graphics object
+            g.DrawString($"You won {prize} coins!", font, brush, rect, format);
+        }
+        // Method to show the special game message
+        private void ShowSpecialGameMessage(Graphics g)
+        {
+            // Create a font for the message
+            Font font = new Font("Arial", 36, FontStyle.Bold);
+
+            // Create a brush for the message color
+            Brush brush = new SolidBrush(Color.White);
+
+            // Create a string format for the message alignment
+            StringFormat format = new StringFormat();
+            format.Alignment = StringAlignment.Center;
+            format.LineAlignment = StringAlignment.Center;
+
+            // Create a rectangle for the message area
+            Rectangle rect = new Rectangle(0, _titleHeight + (_tapeHeight * _tapeLength) / 2, Console.BufferWidth, _tapeHeight);
+
+            // Draw the message on the graphics object
+            g.DrawString("SSHHHitBonus!", font, brush, rect, format);
+
+            // Pause for 2 seconds
+            System.Threading.Thread.Sleep(2000);
+        }
+
+        // Helper method to get the console window handle
+        private IntPtr GetConsoleWindow()
+        {
+            // Get the console window handle using a native method
+            IntPtr hwnd = NativeMethods.GetConsoleWindow();
+
+            // Check if the handle is valid
+            if (hwnd == IntPtr.Zero)
+            {
+                // Throw an exception if the handle is invalid
+                throw new InvalidOperationException("No console window");
+            }
+
+            // Return the handle
+            return hwnd;
+        }
+
+        // A static class to declare a native method
+        private static class NativeMethods
+        {
+            // Declare a native method to get the console window handle
+            [System.Runtime.InteropServices.DllImport("kernel32.dll")]
+            public static extern IntPtr GetConsoleWindow();
+        }
+    }
+}
