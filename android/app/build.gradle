@@ -1,0 +1,51 @@
+plugins {
+    id 'com.android.application'
+}
+
+// El juego vive en juego/juego.html, fuera de android/. Se copia a una carpeta
+// generada y esa carpeta se añade como origen de assets: así no hay copia duplicada
+// del HTML en el repositorio y el APK siempre lleva la versión actual.
+def assetsJuego = layout.buildDirectory.dir('juego-assets')
+
+def copiarJuego = tasks.register('copiarJuego', Copy) {
+    from(rootProject.file('../juego')) { include 'juego.html' }
+    into assetsJuego
+}
+
+android {
+    namespace 'com.jaulaabierta.juego'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId "com.jaulaabierta.juego"
+        minSdk 26
+        targetSdk 35
+        versionCode 1
+        versionName "0.1-prototipo"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    sourceSets {
+        main {
+            assets.srcDirs += assetsJuego
+        }
+    }
+}
+
+tasks.named('preBuild') { dependsOn copiarJuego }
+
+dependencies {
+    // WebViewAssetLoader: sirve el HTML desde un origen https real en vez de file://,
+    // que es lo que hace que localStorage funcione y la colección se guarde.
+    implementation 'androidx.webkit:webkit:1.12.1'
+}

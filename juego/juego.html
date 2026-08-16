@@ -1,0 +1,1442 @@
+<title>Jaula Abierta</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<style>
+/* ═══════════════════════════════════════════════════════════════
+   PROTOTIPO JUGABLE — juego de cartas de MMA
+   Cartas y peleadores 100% inventados.
+   ═══════════════════════════════════════════════════════════════ */
+:root{
+  --bg:#0d1014; --bg2:#141920; --bg3:#1c232c; --line:#2a323d;
+  --txt:#e8edf3; --dim:#8b97a6; --dim2:#5d6874;
+  --acc:#e0483a; --acc2:#ff6b5b; --ok:#3fb96b; --warn:#e8b13a;
+  --bronce:#9c6b45; --plata:#9aa8b5; --oro:#d9a441; --elite:#8b5cd6; --leyenda:#e0483a;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--txt);font:15px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif;
+  overscroll-behavior:none;padding-bottom:64px}
+#app{max-width:760px;margin:0 auto;padding:12px 12px 20px}
+h1,h2,h3{font-weight:700;letter-spacing:-.02em}
+h2{font-size:19px;margin-bottom:2px}
+h3{font-size:15px;margin-bottom:8px}
+.sub{color:var(--dim);font-size:13px}
+.tiny{font-size:12px;color:var(--dim2)}
+button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
+.btn{background:var(--acc);color:#fff;border-radius:9px;padding:11px 16px;font-weight:650;font-size:14px;
+  display:inline-flex;align-items:center;justify-content:center;gap:7px;transition:.12s;width:100%}
+.btn:active{transform:scale(.975)}
+.btn:disabled{opacity:.32;cursor:default;transform:none}
+.btn.sec{background:var(--bg3);border:1px solid var(--line)}
+.btn.gho{background:transparent;border:1px solid var(--line);color:var(--dim)}
+.btn.sm{padding:7px 12px;font-size:13px;width:auto}
+.row{display:flex;gap:8px}
+.row>*{flex:1}
+.card-panel{background:var(--bg2);border:1px solid var(--line);border-radius:13px;padding:14px;margin-bottom:11px}
+
+/* ── barra superior ── */
+#top{display:flex;align-items:center;gap:9px;padding:9px 12px;background:var(--bg2);
+  border-bottom:1px solid var(--line);position:sticky;top:0;z-index:50}
+#top .logo{font-weight:800;font-size:15px;letter-spacing:-.03em;margin-right:auto}
+#top .logo span{color:var(--acc)}
+.res{display:flex;align-items:center;gap:4px;font-size:13px;font-weight:650;
+  background:var(--bg3);padding:5px 9px;border-radius:7px;white-space:nowrap}
+
+/* ── navegación ── */
+#nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:var(--bg2);
+  border-top:1px solid var(--line);z-index:50;padding-bottom:env(safe-area-inset-bottom)}
+#nav button{flex:1;padding:9px 2px 10px;font-size:10.5px;color:var(--dim2);
+  display:flex;flex-direction:column;align-items:center;gap:3px;font-weight:600}
+#nav button .ic{font-size:19px;line-height:1}
+#nav button.on{color:var(--acc2)}
+#nav .badge{position:absolute;transform:translate(15px,-4px);background:var(--acc);color:#fff;
+  border-radius:9px;font-size:9px;padding:1px 5px;font-weight:700}
+
+/* ── CARTA ── */
+.carta{position:relative;background:linear-gradient(160deg,var(--c1),var(--c2));border-radius:11px;
+  padding:8px;color:#fff;overflow:hidden;border:1px solid rgba(255,255,255,.13);cursor:pointer;
+  display:flex;flex-direction:column;min-height:150px}
+.carta.bronce{--c1:#5b4130;--c2:#33261c}
+.carta.plata{--c1:#5c6773;--c2:#333b45}
+.carta.oro{--c1:#8a6520;--c2:#4a3712}
+.carta.elite{--c1:#553296;--c2:#2c1a52}
+.carta.leyenda{--c1:#98241c;--c2:#4d100c}
+.carta::after{content:"";position:absolute;inset:0;background:
+  radial-gradient(circle at 78% 8%,rgba(255,255,255,.16),transparent 46%);pointer-events:none}
+.carta .hd{display:flex;align-items:flex-start;gap:6px}
+.carta .med{font-size:25px;font-weight:800;line-height:.92;letter-spacing:-.04em}
+.carta .div{font-size:8.5px;text-transform:uppercase;letter-spacing:.07em;opacity:.82;font-weight:700}
+.carta .av{margin-left:auto;width:38px;height:38px;border-radius:50%;background:rgba(0,0,0,.28);
+  display:grid;place-items:center;font-size:19px;flex:none}
+.carta .nm{font-weight:750;font-size:12.5px;margin-top:6px;line-height:1.15;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.carta .ap{font-size:9.5px;opacity:.72;font-style:italic;margin-bottom:5px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-height:12px}
+.carta .st{display:grid;grid-template-columns:1fr 1fr 1fr;gap:2px 5px;margin-top:auto;font-size:9.5px}
+.carta .st b{font-weight:750;font-size:10.5px}
+.carta .st .hi b{color:#7dffa8}
+.carta .rg{display:flex;gap:3px;flex-wrap:wrap;margin-top:5px}
+.tag{font-size:8px;font-weight:750;text-transform:uppercase;letter-spacing:.05em;
+  background:rgba(0,0,0,.36);padding:2px 5px;border-radius:4px;white-space:nowrap}
+.tag.plus{background:#f0c33c;color:#2a1c00}
+.tag.nof{background:rgba(255,255,255,.14)}
+.carta.mini{min-height:0;padding:6px}
+.carta.mini .med{font-size:17px}
+.carta.mini .av{width:26px;height:26px;font-size:13px}
+.carta.mini .st,.carta.mini .rg,.carta.mini .ap{display:none}
+.carta.oculta{background:repeating-linear-gradient(45deg,#1d242e,#1d242e 8px,#222a35 8px,#222a35 16px);
+  align-items:center;justify-content:center;font-size:32px;color:var(--dim2)}
+.carta.sel{outline:2.5px solid var(--acc2);outline-offset:1px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(108px,1fr));gap:8px}
+.grid.g3{grid-template-columns:repeat(3,1fr)}
+
+/* ── varios ── */
+.chip{display:inline-block;background:var(--bg3);border:1px solid var(--line);border-radius:6px;
+  padding:3px 8px;font-size:11.5px;color:var(--dim);font-weight:600}
+.chip.on{background:var(--acc);border-color:var(--acc);color:#fff}
+.chip.dead{opacity:.28;text-decoration:line-through}
+.chip.next{border-color:var(--acc2);color:var(--acc2)}
+.chips{display:flex;flex-wrap:wrap;gap:5px}
+.bar{height:5px;background:var(--bg3);border-radius:3px;overflow:hidden;margin-top:5px}
+.bar>div{height:100%;background:var(--acc)}
+.divider{height:1px;background:var(--line);margin:12px 0}
+.center{text-align:center}
+.mb{margin-bottom:10px}
+.log{font-size:12.5px;color:var(--dim);border-left:2px solid var(--line);padding:4px 0 4px 9px;margin-bottom:5px}
+.log b{color:var(--txt)}
+.log.win{border-color:var(--ok)} .log.lose{border-color:var(--acc)}
+.mark{display:flex;gap:6px;align-items:center;justify-content:center;font-size:26px;font-weight:800;
+  letter-spacing:-.03em}
+.mark .vs{font-size:13px;color:var(--dim2);font-weight:600}
+.ov{position:fixed;inset:0;background:rgba(6,8,11,.9);z-index:100;display:flex;
+  align-items:center;justify-content:center;padding:16px;overflow-y:auto}
+.ov .box{background:var(--bg2);border:1px solid var(--line);border-radius:15px;padding:18px;
+  max-width:420px;width:100%;max-height:92vh;overflow-y:auto}
+.opt{background:var(--bg3);border:1px solid var(--line);border-radius:9px;padding:11px 13px;
+  margin-bottom:7px;cursor:pointer;transition:.12s}
+.opt:active{transform:scale(.985)}
+.opt.on{border-color:var(--acc);background:#2a1a19}
+.opt .t{font-weight:650;font-size:14px}
+.opt .d{font-size:12px;color:var(--dim);margin-top:2px}
+.flash{animation:fl .5s ease}
+@keyframes fl{from{opacity:0;transform:translateY(9px)}to{opacity:1;transform:none}}
+.pop{animation:pp .4s cubic-bezier(.2,1.4,.4,1)}
+@keyframes pp{from{opacity:0;transform:scale(.82)}to{opacity:1;transform:none}}
+table{width:100%;border-collapse:collapse;font-size:13px}
+td,th{padding:5px 6px;text-align:left;border-bottom:1px solid var(--line)}
+th{color:var(--dim2);font-size:11px;text-transform:uppercase;letter-spacing:.04em;font-weight:700}
+.pen{color:#ff8878;font-weight:700}
+</style>
+
+<div id="top">
+  <div class="logo">JAULA <span>ABIERTA</span></div>
+  <div class="res" id="r-div">🪙 <span>0</span></div>
+  <div class="res" id="r-fic">🎟️ <span>0</span></div>
+</div>
+<div id="app"></div>
+<div id="nav"></div>
+
+<script>
+"use strict";
+/* ══════════════════════════════════════════════════════════════════════════
+   1. DATOS BASE
+   ══════════════════════════════════════════════════════════════════════════ */
+
+const DIVISIONES = [
+  {id:'m0',n:'Mosca',      g:'M',o:0}, {id:'m1',n:'Gallo',      g:'M',o:1},
+  {id:'m2',n:'Pluma',      g:'M',o:2}, {id:'m3',n:'Ligero',     g:'M',o:3},
+  {id:'m4',n:'Wélter',     g:'M',o:4}, {id:'m5',n:'Medio',      g:'M',o:5},
+  {id:'m6',n:'Semipesado', g:'M',o:6}, {id:'m7',n:'Pesado',     g:'M',o:7},
+  {id:'f0',n:'Paja F',     g:'F',o:0}, {id:'f1',n:'Mosca F',    g:'F',o:1},
+  {id:'f2',n:'Gallo F',    g:'F',o:2},
+];
+const DIV = Object.fromEntries(DIVISIONES.map(d=>[d.id,d]));
+
+// Dos escaleras independientes: no hay puente entre géneros.
+function contiguas(a,b){ const x=DIV[a],y=DIV[b]; return x.g===y.g && Math.abs(x.o-y.o)===1; }
+function vecinas(id){ return DIVISIONES.filter(d=>contiguas(id,d.id)).map(d=>d.id); }
+
+const STATS = [
+  {id:'golpeo',n:'GOLPEO',c:'GLP'}, {id:'lucha',n:'LUCHA',c:'LCH'},
+  {id:'suelo', n:'SUELO', c:'SUE'}, {id:'cardio',n:'CARDIO',c:'CAR'},
+  {id:'dureza',n:'DUREZA',c:'DUR'}, {id:'iq',    n:'IQ',    c:'IQ'},
+];
+const SID = STATS.map(s=>s.id);
+
+// Sub-stats exactamente como el GDD §2.2. La stat visible es su media.
+const SUBSTATS = {
+  golpeo:['potencia','precisión','volumen','boxeo','patadas','golpeo en clinch'],
+  lucha :['derribos','defensa de derribo','clinch','control contra la jaula','levantarse','transiciones'],
+  suelo :['sumisiones','defensa de sumisión','control desde arriba','guardia','ground and pound','escapes'],
+  cardio:['resistencia','recuperación','ritmo sostenido','asaltos finales','eficiencia de movimiento','gestión del gas'],
+  dureza:['mentón','absorción de daño','resistencia a cortes','recuperación de aturdimiento','castigo corporal','voluntad'],
+  iq    :['lectura del rival','gestión de distancia','adaptación','control del octógono','defensa','gestión de asaltos'],
+};
+
+const RAREZAS = {
+  bronce  :{n:'Bronce',   min:55,max:68,fichas:1/20},
+  plata   :{n:'Plata',    min:65,max:78,fichas:1/5},
+  oro     :{n:'Oro',      min:75,max:88,fichas:1},
+  elite   :{n:'Élite',    min:85,max:95,fichas:3},
+  leyenda :{n:'Leyenda',  min:96,max:99,fichas:8},
+};
+const ORDEN_RAREZA = ['bronce','plata','oro','elite','leyenda'];
+
+// Arquetipos: sesgos por stat. Base de la autoría — el resto es ruido.
+const ARQUETIPOS = [
+  {n:'Striker de distancia', o:{golpeo:+9,lucha:-6,suelo:-7,cardio:+1,dureza:-1,iq:+4}},
+  {n:'Boxeador de presión',  o:{golpeo:+8,lucha:+1,suelo:-8,cardio:+3,dureza:+4,iq:-3}},
+  {n:'Luchador de control',  o:{golpeo:-6,lucha:+10,suelo:+6,cardio:+3,dureza:+2,iq:+1}},
+  {n:'Grappler agresivo',    o:{golpeo:-8,lucha:+7,suelo:+11,cardio:-1,dureza:-2,iq:+2}},
+  {n:'Sumisionista',         o:{golpeo:-9,lucha:+3,suelo:+12,cardio:-2,dureza:-1,iq:+4}},
+  {n:'Peleador completo',    o:{golpeo:+2,lucha:+2,suelo:+2,cardio:+2,dureza:+1,iq:+3}},
+  {n:'Guerrero de desgaste', o:{golpeo:0, lucha:+1,suelo:-2,cardio:+10,dureza:+9,iq:-4}},
+  {n:'Noqueador',            o:{golpeo:+12,lucha:-3,suelo:-9,cardio:-6,dureza:+3,iq:-3}},
+  {n:'Contragolpeador',      o:{golpeo:+5,lucha:-4,suelo:-4,cardio:+2,dureza:0, iq:+9}},
+  {n:'Wrestleboxer',         o:{golpeo:+5,lucha:+7,suelo:0, cardio:+1,dureza:+1,iq:+2}},
+];
+
+const RASGOS = {
+  camaleon   :{n:'Camaleón',   ic:'🦎', d:'Al declarar, manda esta carta a pelear a una división contigua sin penalización. Tu carta de esa división se descarta sin pelear y el Camaleón sigue disponible para su propio duelo.', dplus:'Igual, pero no consume tu jugada.'},
+  incomodo   :{n:'Incómodo',   ic:'🌀', d:'Ocultas la división. El rival ve dos cartas suyas (la real y una contigua) y elige a ciegas. Si falla, su carta come -6.', dplus:'La segunda carta es de cualquier división en juego y el fallo cuesta -12. Usable siempre.'},
+  especialista:{n:'Especialista',ic:'🎯',d:'Si gana su duelo en su stat, esa stat no se gasta del pool.', dplus:'La stat no se gasta aunque pierda.'},
+  veterano   :{n:'Veterano',   ic:'🧠', d:'Cuando el rival declara la stat, la cambias por una aleatoria de entre las vivas.', dplus:'La eliges tú.'},
+};
+
+const PROMOTORAS = [
+  {id:'liga', n:'Liga Mayor', alineable:true},
+  {id:'cw',   n:'Circuito Norte',  alineable:false},
+  {id:'ksw',  n:'Arena del Este',  alineable:false},
+  {id:'rzn',  n:'Torneo Oriental', alineable:false},
+  {id:'inv',  n:'Liga Invicta',    alineable:false},
+];
+
+const GIMNASIOS = ['Casa Negra','Hierro Viejo','Escuela Delta','Jaula 9','Templo Rojo','Nordeste MMA',
+  'Alto Valle','Puño de Piedra','Academia Marea','Cuartel Sur','Bunker 12','Halcón Blanco'];
+const PAISES = ['🇧🇷 Brasil','🇺🇸 EE.UU.','🇷🇺 Rusia','🇲🇽 México','🇮🇪 Irlanda','🇳🇬 Nigeria','🇯🇵 Japón',
+  '🇵🇱 Polonia','🇰🇷 Corea','🇦🇺 Australia','🇫🇷 Francia','🇬🇧 Reino Unido','🇦🇷 Argentina','🇨🇳 China'];
+
+const NOM_M = ['Dario','Kervin','Oleg','Tadeo','Mattis','Rulon','Ivo','Sabas','Nuno','Kaleb','Ronin','Elian',
+ 'Zoran','Bruno','Anselmo','Yuri','Iker','Marek','Teo','Casio','Adib','Renzo','Lubo','Ander','Tibor','Nael',
+ 'Osmar','Dimas','Vlado','Emeka','Hiro','Kwame','Silas','Roco','Jarek','Amiel','Nestor','Ciro','Baltasar','Vasco'];
+const NOM_F = ['Nira','Talia','Yuna','Reka','Ilse','Mara','Zoe','Ainhoa','Kaia','Ludmila','Iria','Sena',
+ 'Vania','Runa','Amaia','Petra','Noor','Kira','Elsa','Tania','Maren','Ísis','Nadia','Lía','Frida','Ondina'];
+const APE = ['Varga','Okonkwo','Mestre','Duarte','Kovac','Ferreiro','Nakamura','Bielski','Sandoval','Moreau',
+ 'Ibarra','Krylov','Tanaka','Oduya','Salgado','Vranic','Cabral','Nikolic','Estévez','Rahal','Bjorn','Cassano',
+ 'Petrov','Aguirre','Moss','Delacroix','Farkas','Quiroga','Nurgaliev','Owusu','Vidal','Strand','Barros','Melnyk',
+ 'Ozaki','Ferrán','Lombardi','Haddad','Rojas','Kirilenko','Bouchard','Nunes do Vale','Ashworth','Tovar'];
+const APODOS = ['el Cirujano','Mano de Hierro','el Silencioso','Tormenta','el Reloj','Diente de Sable',
+ 'el Contable','Media Noche','el Ancla','Rayo Seco','el Profesor','Bisturí','el Náufrago','Cabeza Fría',
+ 'el Martillo','Viento Negro','el Cuervo','Piedra','el Relámpago','Corazón Frío','la Guillotina','el Sismo',
+ 'Mandíbula','el Verdugo','Aguja','Hueso Duro','el Fantasma','Perro Viejo','la Marea','Dos Caras'];
+
+/* ══════════════════════════════════════════════════════════════════════════
+   2. AZAR CON SEMILLA
+   ══════════════════════════════════════════════════════════════════════════ */
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);
+  t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+let RNG = Math.random;
+const ri=(a,b)=>a+Math.floor(RNG()*(b-a+1));
+const pick=a=>a[Math.floor(RNG()*a.length)];
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(RNG()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+
+/* ══════════════════════════════════════════════════════════════════════════
+   3. GENERACIÓN DEL ROSTER  (semilla fija: el catálogo es siempre el mismo)
+   ══════════════════════════════════════════════════════════════════════════ */
+let ROSTER=[], PORID={};
+
+function generarCarta(id,divId,rareza,promo,opts={}){
+  const d=DIV[divId], fem=d.g==='F';
+  const arq=pick(ARQUETIPOS);
+  const R=RAREZAS[rareza];
+  const objetivo=ri(R.min,R.max);
+  const persona=opts.persona||{
+    nombre:(fem?pick(NOM_F):pick(NOM_M))+' '+pick(APE),
+    apodo: RNG()<.55?pick(APODOS):'',
+    pais:pick(PAISES), gimnasio:pick(GIMNASIOS),
+    veterano:RNG()<.28,
+  };
+  const stats={}, subs={};
+  for(const s of SID){
+    const t=clamp(objetivo+(arq.o[s]||0)+ri(-4,4),38,99);
+    if(promo.alineable){
+      // Las alineables llevan las 6 sub-stats; la grande es su media (GDD §2.2)
+      const v=SUBSTATS[s].map(()=>clamp(t+ri(-7,7),35,99));
+      subs[s]=v; stats[s]=Math.round(v.reduce((a,b)=>a+b,0)/v.length);
+    }else{
+      // Las de colección no son alineables: solo las 6 grandes (propuesta del plan)
+      stats[s]=t;
+    }
+  }
+  // El sesgo del arquetipo desplaza la media fuera de su banda de rareza. Se corrige
+  // desplazando todo el bloque hasta el objetivo: mantiene la forma del arquetipo y
+  // deja la media dentro del rango, que es lo que hace funcionar la tabla de márgenes.
+  let media=Math.round(SID.reduce((a,s)=>a+stats[s],0)/6);
+  const delta=objetivo-media;
+  if(delta){
+    for(const s of SID){
+      if(subs[s]){
+        subs[s]=subs[s].map(v=>clamp(v+delta,35,99));
+        stats[s]=Math.round(subs[s].reduce((a,b)=>a+b,0)/subs[s].length);
+      }else stats[s]=clamp(stats[s]+delta,35,99);
+    }
+    media=Math.round(SID.reduce((a,s)=>a+stats[s],0)/6);
+  }
+  return {id,persona:opts.personaId||id,nombre:persona.nombre,apodo:persona.apodo,
+    pais:persona.pais,gimnasio:persona.gimnasio,esVeterano:persona.veterano,
+    division:divId,rareza,media,stats,subs:promo.alineable?subs:null,
+    promotora:promo.id,alineable:promo.alineable,arquetipo:arq.n,
+    dobleDiv:!!opts.dobleDiv,rasgos:[],notraspasable:false};
+}
+
+function asignarRasgos(c){
+  const p={bronce:.02,plata:.08,oro:.26,elite:.62,leyenda:.9}[c.rareza];
+  if(RNG()>p) return;
+  const posibles=['incomodo','especialista'];
+  if(c.dobleDiv) posibles.push('camaleon');
+  if(c.esVeterano) posibles.push('veterano');
+  const n=(RNG()<.07 && posibles.length>1)?2:1;   // dos rasgos: rarísimo
+  const elegidos=shuffle(posibles).slice(0,n);    // siempre distintos entre sí
+  for(const t of elegidos){
+    const r={tipo:t,plus:RNG()<.2};
+    if(t==='especialista'){
+      // asociado a su mejor stat
+      r.stat=SID.slice().sort((a,b)=>c.stats[b]-c.stats[a])[0];
+    }
+    c.rasgos.push(r);
+  }
+}
+
+function generarRoster(){
+  RNG=mulberry32(20260816);
+  const out=[]; let n=0;
+  const liga=PROMOTORAS[0];
+  for(const d of DIVISIONES){
+    const reparto=[...Array(6).fill('bronce'),...Array(4).fill('plata'),...Array(3).fill('oro'),'elite'];
+    for(const rar of reparto) out.push(generarCarta('c'+(n++),d.id,rar,liga));
+  }
+  // 5 leyendas en todo el juego (GDD §2.4: "por encima de 95, 4-5 cartas")
+  for(const dId of shuffle(DIVISIONES.map(d=>d.id)).slice(0,5))
+    out.push(generarCarta('c'+(n++),dId,'leyenda',liga));
+
+  // Peleadores con historial en dos divisiones → candidatos a Camaleón.
+  // Comparten persona: no puedes alinear las dos versiones a la vez.
+  const gemelas=[];
+  for(const c of out){
+    if(c.rareza==='bronce'||RNG()>.14) continue;
+    const v=vecinas(c.division); if(!v.length) continue;
+    const g=generarCarta('c'+(n++),pick(v),c.rareza,liga,{
+      persona:{nombre:c.nombre,apodo:c.apodo,pais:c.pais,gimnasio:c.gimnasio,veterano:c.esVeterano},
+      personaId:c.persona,dobleDiv:true});
+    c.dobleDiv=true; gemelas.push(g);
+  }
+  out.push(...gemelas);
+
+  // Cartas de colección de otras promotoras: no alineables
+  for(const p of PROMOTORAS.slice(1)){
+    for(let i=0;i<11;i++){
+      const rar=['bronce','bronce','bronce','plata','plata','oro','oro','elite'][ri(0,7)];
+      out.push(generarCarta('c'+(n++),pick(DIVISIONES).id,rar,p));
+    }
+  }
+  for(const c of out) asignarRasgos(c);
+  ROSTER=out; PORID=Object.fromEntries(out.map(c=>[c.id,c]));
+  RNG=Math.random;
+}
+
+const alineables=()=>ROSTER.filter(c=>c.alineable);
+const rasgoTxt=r=>RASGOS[r.tipo].n+(r.plus?'+':'')+(r.stat?' · '+r.stat.toUpperCase():'');
+
+/* ══════════════════════════════════════════════════════════════════════════
+   4. ESTADO DEL JUGADOR
+   ══════════════════════════════════════════════════════════════════════════ */
+const KEY='jaula-abierta-v1';
+let S=null;
+
+function estadoNuevo(){
+  const s={divisa:250,fichas:0,coleccion:[],plantilla:{},sobres:[],
+    partidas:0,victorias:0,ultimoGratis:0,sets:[],retos:[],vistoIntro:false};
+  // Arranque garantizado: una carta por división (si no, es imposible alinear)
+  for(const d of DIVISIONES){
+    const cand=alineables().filter(c=>c.division===d.id&&c.rareza==='bronce');
+    s.coleccion.push({iid:'i'+Math.random().toString(36).slice(2,9),cid:pick(cand).id});
+  }
+  // Carta de rasgo inicial: fija, rasgo normal, no traspasable (propuesta del plan).
+  // Sin ella un novato juega sin la única herramienta de la partida.
+  const conRasgo=alineables().filter(c=>c.rasgos.length===1&&!c.rasgos[0].plus)
+    .sort((a,b)=>a.media-b.media);            // la más floja que cumpla: es una herramienta, no un regalo
+  if(conRasgo.length) s.coleccion.push({iid:'i-start',cid:conRasgo[0].id,notraspasable:true});
+  s.sobres=[{tipo:'basico'},{tipo:'basico'},{tipo:'oro'}];
+  autoPlantilla(s);
+  return s;
+}
+function autoPlantilla(s){
+  for(const d of DIVISIONES){
+    if(s.plantilla[d.id]) continue;
+    const cands=s.coleccion.filter(x=>{const c=PORID[x.cid];return c.alineable&&c.division===d.id});
+    if(!cands.length) continue;
+    cands.sort((a,b)=>PORID[b.cid].media-PORID[a.cid].media);
+    for(const cd of cands){ if(!personaRepetida(s,cd,d.id)){ s.plantilla[d.id]=cd.iid; break; } }
+  }
+}
+function personaRepetida(s,cardInst,divId){
+  const per=PORID[cardInst.cid].persona;
+  return Object.entries(s.plantilla).some(([dv,iid])=>{
+    if(dv===divId) return false;
+    const o=s.coleccion.find(x=>x.iid===iid);
+    return o && PORID[o.cid].persona===per;
+  });
+}
+// Si el navegador bloquea localStorage (origen opaco, modo privado), el juego sigue
+// funcionando en memoria durante la sesión en vez de reventar.
+let ALMACEN_OK=true;
+function guardar(){ try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){ALMACEN_OK=false} }
+function cargar(){
+  try{const r=localStorage.getItem(KEY); if(r){S=JSON.parse(r); return true}}
+  catch(e){ALMACEN_OK=false}
+  return false;
+}
+const plantillaCompleta=()=>DIVISIONES.every(d=>S.plantilla[d.id]);
+const inst=iid=>S.coleccion.find(x=>x.iid===iid);
+const cartaDe=iid=>{const i=inst(iid);return i?PORID[i.cid]:null};
+
+/* ══════════════════════════════════════════════════════════════════════════
+   5. ECONOMÍA — sobres, reciclaje, sets, retos, intercambio
+   ══════════════════════════════════════════════════════════════════════════ */
+const TIPOS_SOBRE={
+  basico:{n:'Sobre básico', coste:0,   cartas:4, alineables:3,
+    pesos:{bronce:66,plata:24,oro:8,elite:1.8,leyenda:.2}},
+  oro   :{n:'Sobre de oro',  coste:600, cartas:5, alineables:4,
+    pesos:{bronce:30,plata:38,oro:24,elite:7,leyenda:1}},
+  elite :{n:'Sobre de élite',coste:2200,cartas:5, alineables:4,
+    pesos:{bronce:0,plata:30,oro:46,elite:21,leyenda:3}},
+};
+function sorteaRareza(pesos){
+  const tot=Object.values(pesos).reduce((a,b)=>a+b,0); let r=Math.random()*tot;
+  for(const [k,v] of Object.entries(pesos)){ if((r-=v)<0) return k; }
+  return 'bronce';
+}
+// Un solo tipo de sobre con huecos alineables garantizados + huecos de colección
+// de regalo (propuesta del plan para "el sobre que decepciona").
+function abrirSobre(tipo){
+  const T=TIPOS_SOBRE[tipo], salida=[];
+  for(let i=0;i<T.cartas;i++){
+    const soloAlineables=i<T.alineables;
+    const rar=sorteaRareza(T.pesos);
+    let pool=ROSTER.filter(c=>c.rareza===rar&&c.alineable===soloAlineables);
+    if(!pool.length) pool=ROSTER.filter(c=>c.alineable===soloAlineables);
+    const c=pick(pool);
+    const it={iid:'i'+Math.random().toString(36).slice(2,9),cid:c.id};
+    S.coleccion.push(it); salida.push(it);
+  }
+  guardar(); return salida;
+}
+function reciclar(iids){
+  let fr=0;
+  for(const iid of iids){
+    const it=inst(iid); if(!it) continue;
+    if(Object.values(S.plantilla).includes(iid)) continue;
+    fr+=RAREZAS[PORID[it.cid].rareza].fichas;
+    S.coleccion=S.coleccion.filter(x=>x.iid!==iid);
+  }
+  const g=Math.floor(fr); S.fichas+=g; guardar(); return g;
+}
+function copias(cid){ return S.coleccion.filter(x=>x.cid===cid).length; }
+
+// Sets de colección: gimnasio, promotora y nacionalidad
+function construirSets(){
+  const out=[];
+  for(const g of GIMNASIOS.slice(0,6)){
+    const req=ROSTER.filter(c=>c.gimnasio===g).slice(0,4).map(c=>c.id);
+    if(req.length===4) out.push({id:'gim-'+g,n:'Gimnasio · '+g,req,premio:'elite'});
+  }
+  for(const p of PROMOTORAS.slice(1)){
+    const req=ROSTER.filter(c=>c.promotora===p.id).slice(0,5).map(c=>c.id);
+    out.push({id:'pro-'+p.id,n:'Promotora · '+p.n,req,premio:'oro'});
+  }
+  for(const pa of PAISES.slice(0,4)){
+    const req=ROSTER.filter(c=>c.pais===pa).slice(0,4).map(c=>c.id);
+    if(req.length===4) out.push({id:'pai-'+pa,n:'Nacionalidad · '+pa,req,premio:'oro'});
+  }
+  return out;
+}
+let SETS=[];
+const setListo=s=>s.req.every(cid=>copias(cid)>0);
+
+// Retos (SBC): entregas cartas, recibes recompensa
+const RETOS=[
+  {id:'r1',n:'Cantera',   d:'Entrega 3 cartas de bronce de divisiones distintas',
+   check:l=>l.length===3&&l.every(c=>c.rareza==='bronce')&&new Set(l.map(c=>c.division)).size===3,
+   premio:{sobre:'basico',divisa:120}},
+  {id:'r2',n:'Base sólida',d:'Entrega 3 platas de divisiones distintas',
+   check:l=>l.length===3&&l.every(c=>c.rareza==='plata')&&new Set(l.map(c=>c.division)).size===3,
+   premio:{sobre:'oro',divisa:0}},
+  {id:'r3',n:'Cruce de escuelas',d:'Entrega 2 oros de gimnasios distintos',
+   check:l=>l.length===2&&l.every(c=>c.rareza==='oro')&&new Set(l.map(c=>c.gimnasio)).size===2,
+   premio:{sobre:'oro',divisa:400}},
+  {id:'r4',n:'Mundial',d:'Entrega 4 cartas de 4 nacionalidades distintas (plata o mejor)',
+   check:l=>l.length===4&&new Set(l.map(c=>c.pais)).size===4&&l.every(c=>c.rareza!=='bronce'),
+   premio:{sobre:'elite',divisa:0}},
+];
+
+/* ══════════════════════════════════════════════════════════════════════════
+   6. MOTOR DE REGLAS  (puro: no toca el DOM — extraíble a packages/rules)
+   ══════════════════════════════════════════════════════════════════════════ */
+const MARGENES={finish:13,decision:7};
+
+function nuevaPartida(plantillaJ,plantillaR){
+  return {fase:'rol', rolJ:null, vetoPrimero:null, vetados:[], vetoAzar:null,
+    enJuego:[], jugadas:[], statsVivas:SID.slice(), duelo:0, turno:null,
+    marcador:{j:0,r:0}, jugada:{j:false,r:false},
+    cartas:{j:{...plantillaJ},r:{...plantillaR}}, // divId -> carta
+    ajustes:{j:{},r:{}},  // divId -> {stat:delta}
+    log:[], pendiente:null, fin:null};
+}
+
+function terminarVetos(P){
+  P.enJuego=DIVISIONES.map(d=>d.id).filter(id=>!P.vetados.includes(id));
+  // Veto aleatorio al final: su división será el desempate
+  P.vetoAzar=pick(P.enJuego);
+  P.enJuego=P.enJuego.filter(id=>id!==P.vetoAzar);
+  P.enJuego.sort((a,b)=>DIVISIONES.findIndex(d=>d.id===a)-DIVISIONES.findIndex(d=>d.id===b));
+  P.fase='duelos'; P.duelo=1;
+  P.turno=P.vetoPrimero==='j'?'r':'j';   // empieza declarando el que no empezó vetando
+  P.log.push({t:'sys',x:`Veto aleatorio: ${DIV[P.vetoAzar].n} — será el desempate.`});
+}
+
+const librePara=(P,l)=>P.enJuego.filter(id=>!P.jugadas.includes(id));
+function valorCarta(P,l,divId,stat){
+  const c=P.cartas[l][divId]; if(!c) return 0;
+  const a=(P.ajustes[l][divId]||{})[stat]||0;
+  return c.stats[stat]+a;
+}
+function aplicarPenalizacion(P,l,divId,tipo){
+  const a=P.ajustes[l][divId]||(P.ajustes[l][divId]={});
+  const lista=tipo==='subir'?['golpeo','lucha','dureza']:['cardio','dureza'];
+  for(const s of lista) a[s]=(a[s]||0)-6;
+}
+function penaliza(P,l,divId,stats,v){
+  const a=P.ajustes[l][divId]||(P.ajustes[l][divId]={});
+  for(const s of stats) a[s]=(a[s]||0)+v;
+}
+// Las dos cartas cambian de slot llevándose sus ajustes. Lo usa el Incómodo:
+// así el peleador enviado pelea en la división declarada y el otro cubre la que deja,
+// de modo que cada peleador sigue peleando una sola vez y el calendario cuadra.
+function intercambiarSlots(P,l,a,b){
+  const ca=P.cartas[l][a], cb=P.cartas[l][b];
+  P.cartas[l][a]=cb; P.cartas[l][b]=ca;
+  const aa=P.ajustes[l][a]||{}, ab=P.ajustes[l][b]||{};
+  P.ajustes[l][a]=ab; P.ajustes[l][b]=aa;
+}
+
+// Cambio de división: contiguas, ambas en juego, ninguna jugada, intercambio obligado
+function cambiosPosibles(P,l){
+  if(P.jugada[l]) return [];
+  const libres=librePara(P,l), out=[];
+  for(const a of libres) for(const b of libres)
+    if(a<b && contiguas(a,b)) out.push([a,b]);
+  return out;
+}
+function hacerCambio(P,l,a,b){
+  const A=DIV[a],B=DIV[b];
+  const [abajo,arriba]=A.o<B.o?[a,b]:[b,a];
+  const cAbajo=P.cartas[l][abajo], cArriba=P.cartas[l][arriba];
+  P.cartas[l][arriba]=cAbajo; P.cartas[l][abajo]=cArriba;
+  P.ajustes[l][arriba]={}; P.ajustes[l][abajo]={};
+  aplicarPenalizacion(P,l,arriba,'subir');   // la que sube
+  aplicarPenalizacion(P,l,abajo,'bajar');    // la que baja
+  P.jugada[l]=true;
+  P.log.push({t:'sys',x:`${l==='j'?'Tú':'El rival'}: cambio de división ${DIV[abajo].n} ⇄ ${DIV[arriba].n}.`});
+}
+
+function rasgoDe(c,tipo){ return c?c.rasgos.find(r=>r.tipo===tipo):null; }
+
+// Camaleón: manda la carta a una contigua sin penalización; la de allí se descarta.
+function camaleonesPosibles(P,l,divDeclarada){
+  const out=[];
+  for(const dId of librePara(P,l)){
+    if(dId===divDeclarada) continue;
+    const c=P.cartas[l][dId]; const r=rasgoDe(c,'camaleon');
+    if(r && contiguas(dId,divDeclarada) && (!P.jugada[l]||r.plus)) out.push({div:dId,carta:c,rasgo:r});
+  }
+  return out;
+}
+
+function resolverDuelo(P,divId,stat,opts={}){
+  const vj=valorCarta(P,'j',divId,stat), vr=valorCarta(P,'r',divId,stat);
+  const m=Math.abs(vj-vr);
+  let ganador, tipo;
+  if(m===0){ ganador=Math.random()<.5?'j':'r'; tipo='reñido'; }         // empate: moneda al aire
+  else{
+    const alto=vj>vr?'j':'r';
+    if(m>=MARGENES.finish){ ganador=alto; tipo='finish'; }
+    else if(m>=MARGENES.decision){ ganador=alto; tipo='decisión'; }
+    else { ganador=Math.random()<.65?alto:(alto==='j'?'r':'j'); tipo='reñido'; }
+  }
+  P.marcador[ganador]++;
+  const cj=P.cartas.j[divId], cr=P.cartas.r[divId];
+  P.log.push({t:'duelo',div:divId,stat,vj,vr,ganador,tipo,
+    nj:cj?cj.nombre:'—',nr:cr?cr.nombre:'—',
+    dobleJ:!!opts.dobleJ,dobleR:!!opts.dobleR});
+
+  // ESPECIALISTA: la stat puede no gastarse (revive para los dos)
+  let revive=false;
+  for(const l of ['j','r']){
+    const c=P.cartas[l][divId]; const r=rasgoDe(c,'especialista');
+    if(r && r.stat===stat && (r.plus || ganador===l)) revive=true;
+  }
+  if(!revive) P.statsVivas=P.statsVivas.filter(s=>s!==stat);
+  else P.log.push({t:'sys',x:`Especialista: ${stat.toUpperCase()} no se gasta y vuelve al pool.`});
+
+  P.jugadas.push(divId);
+  if(P.marcador.j>=4||P.marcador.r>=4){ P.fase='fin'; P.fin=P.marcador.j>=4?'j':'r'; return; }
+  if(P.jugadas.length>=P.enJuego.length){
+    if(P.marcador.j===P.marcador.r){ P.fase='desempate'; }
+    else { P.fase='fin'; P.fin=P.marcador.j>P.marcador.r?'j':'r'; }
+    return;
+  }
+  P.duelo++;
+  P.turno=P.turno==='j'?'r':'j';
+}
+
+function resolverDesempate(P){
+  const divId=P.vetoAzar, stat=pick(SID);   // azar solo donde ya no quedan decisiones
+  const vj=valorCarta(P,'j',divId,stat), vr=valorCarta(P,'r',divId,stat);
+  let ganador;
+  const m=Math.abs(vj-vr);
+  if(m===0) ganador=Math.random()<.5?'j':'r';
+  else{ const alto=vj>vr?'j':'r'; ganador=(m>=MARGENES.decision)?alto:(Math.random()<.65?alto:(alto==='j'?'r':'j')); }
+  P.marcador[ganador]++;
+  P.log.push({t:'duelo',div:divId,stat,vj,vr,ganador,tipo:'desempate',
+    nj:P.cartas.j[divId].nombre,nr:P.cartas.r[divId].nombre});
+  P.fase='fin'; P.fin=ganador;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   7. IA
+   ══════════════════════════════════════════════════════════════════════════ */
+function plantillaIA(mediaObjetivo){
+  const out={}, personas=new Set();
+  for(const d of DIVISIONES){
+    const pool=alineables().filter(c=>c.division===d.id&&!personas.has(c.persona));
+    pool.sort((a,b)=>Math.abs(a.media-mediaObjetivo)-Math.abs(b.media-mediaObjetivo));
+    const c=pool[ri(0,Math.min(4,pool.length-1))];
+    out[d.id]=c; personas.add(c.persona);   // un peleador, un slot
+  }
+  return out;
+}
+function iaVeta(P){
+  const libres=DIVISIONES.map(d=>d.id).filter(id=>!P.vetados.includes(id));
+  // veta donde su carta es peor
+  libres.sort((a,b)=>P.cartas.r[a].media-P.cartas.r[b].media);
+  return libres[0];
+}
+function iaDeclara(P){
+  const libres=librePara(P,'r');
+  let mejor=null;
+  for(const d of libres) for(const s of P.statsVivas){
+    // sin conocer las cartas del rival, valora su propia fuerza en esa casilla
+    const v=valorCarta(P,'r',d,s);
+    const bonus=(P.cartas.r[d].stats[s]>=85?6:0);
+    const sc=v+bonus+Math.random()*4;
+    if(!mejor||sc>mejor.sc) mejor={div:d,stat:s,sc};
+  }
+  return mejor;
+}
+function iaJugada(P){
+  // usa el cambio de división si le mejora claramente la casilla más floja
+  if(P.jugada.r||Math.random()<.45) return null;
+  const ops=cambiosPosibles(P,'r');
+  if(!ops.length) return null;
+  return Math.random()<.5?pick(ops):null;
+}
+function iaEligeIncomodo(P,opciones){ return pick(opciones); }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   8. INTERFAZ
+   ══════════════════════════════════════════════════════════════════════════ */
+let vista='inicio', P=null, tmp={};
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+function cartaHTML(c,o={}){
+  if(!c) return `<div class="carta oculta">?</div>`;
+  if(o.oculta) return `<div class="carta oculta">🥊</div>`;
+  const cls=c.rareza==='elite'?'elite':c.rareza==='leyenda'?'leyenda':c.rareza;
+  const aj=o.ajuste||{};
+  const st=STATS.map(s=>{
+    const base=c.stats[s.id], d=aj[s.id]||0, v=base+d;
+    const hi=v>=85?' hi':'';
+    return `<div class="${hi.trim()}">${s.c} <b class="${d<0?'pen':''}">${v}</b></div>`;
+  }).join('');
+  const rg=c.rasgos.map(r=>`<span class="tag ${r.plus?'plus':''}">${RASGOS[r.tipo].ic} ${RASGOS[r.tipo].n}${r.plus?'+':''}</span>`).join('')
+    +(c.alineable?'':`<span class="tag nof">colección</span>`);
+  const nCop=o.copias&&o.copias>1?`<span class="tag" style="position:absolute;top:6px;right:6px">×${o.copias}</span>`:'';
+  return `<div class="carta ${cls} ${o.sel?'sel':''}" ${o.attr||''}>
+    ${nCop}<div class="hd"><div><div class="med">${c.media}</div>
+    <div class="div">${DIV[c.division].n}</div></div>
+    <div class="av">${c.alineable?'🥊':'📘'}</div></div>
+    <div class="nm">${esc(c.nombre)}</div><div class="ap">${c.apodo?'"'+esc(c.apodo)+'"':''}</div>
+    <div class="st">${st}</div><div class="rg">${rg}</div></div>`;
+}
+
+function navHTML(){
+  const items=[['inicio','🏠','Inicio'],['sobres','🎁','Sobres'],['coleccion','🗂️','Colección'],
+    ['plantilla','📋','Plantilla'],['mas','⋯','Más']];
+  return items.map(([v,i,t])=>{
+    const b=v==='sobres'&&S.sobres.length?`<span class="badge">${S.sobres.length}</span>`:'';
+    return `<button data-nav="${v}" class="${vista===v?'on':''}"><span class="ic">${i}</span>${t}${b}</button>`;
+  }).join('');
+}
+
+function render(){
+  $('#r-div').innerHTML='🪙 <span>'+S.divisa+'</span>';
+  $('#r-fic').innerHTML='🎟️ <span>'+S.fichas+'</span>';
+  $('#nav').innerHTML = (vista==='partida')?'':navHTML();
+  $('#nav').style.display = vista==='partida'?'none':'flex';
+  document.body.style.paddingBottom = vista==='partida'?'12px':'64px';
+  const f={inicio:vInicio,sobres:vSobres,coleccion:vColeccion,plantilla:vPlantilla,
+    mas:vMas,reciclaje:vReciclaje,sets:vSets,retos:vRetos,intercambio:vIntercambio,
+    partida:vPartida,notas:vNotas}[vista]||vInicio;
+  $('#app').innerHTML=f();
+  $('#app').classList.remove('flash'); void $('#app').offsetWidth; $('#app').classList.add('flash');
+}
+function ir(v){ vista=v; tmp={}; window.scrollTo(0,0); render(); }
+
+/* ── INICIO ── */
+function vInicio(){
+  const ok=plantillaCompleta();
+  const media=ok?Math.round(DIVISIONES.reduce((a,d)=>a+cartaDe(S.plantilla[d.id]).media,0)/11):0;
+  const gratisEn=Math.max(0,180000-(Date.now()-S.ultimoGratis));
+  return `<div class="card-panel center" style="padding:20px 14px">
+      <div class="tiny">MEDIA DE TU PLANTILLA</div>
+      <div style="font-size:46px;font-weight:800;letter-spacing:-.04em;line-height:1">${ok?media:'—'}</div>
+      <div class="sub">${S.victorias} victorias de ${S.partidas} partidas</div>
+    </div>
+    ${ok?'':`<div class="card-panel" style="border-color:var(--warn)">
+      <b>Te faltan divisiones por cubrir.</b><div class="sub">Necesitas una carta alineable en las 11 divisiones para poder jugar. Abre sobres o revisa la plantilla.</div></div>`}
+    <button class="btn" data-a="jugar" ${ok?'':'disabled'} style="padding:15px;font-size:16px">🥊 Jugar partida</button>
+    <div class="divider"></div>
+    <div class="row mb">
+      <button class="btn sec" data-a="gratis" ${gratisEn>0?'disabled':''}>
+        ${gratisEn>0?'Sobre gratis en '+Math.ceil(gratisEn/60000)+' min':'🎁 Sobre gratis'}</button>
+      <button class="btn sec" data-nav="sobres">Tienda de sobres</button>
+    </div>
+    <div class="card-panel">
+      <h3>Cómo se gana</h3>
+      <div class="sub">Se juegan 6 duelos. En cada uno se declara <b>división + stat</b>, y la stat
+      se gasta para los dos. Gana el primero que llegue a 4. Si acaba 3-3, desempate en la división
+      del veto aleatorio con stat al azar.</div>
+      <div class="divider"></div>
+      <table><tr><th>Margen</th><th>Resultado</th></tr>
+      <tr><td>13 o más</td><td>Finish</td></tr>
+      <tr><td>7 a 12</td><td>Decisión</td></tr>
+      <tr><td>1 a 6</td><td>Reñido — 65/35</td></tr></table>
+    </div>`;
+}
+
+/* ── SOBRES ── */
+function vSobres(){
+  const pend=S.sobres.reduce((a,s)=>{a[s.tipo]=(a[s.tipo]||0)+1;return a},{});
+  return `<h2>Sobres</h2><div class="sub mb">No caducan. Puedes guardarlos y abrirlos de golpe.</div>
+    <div class="card-panel"><h3>Pendientes de abrir</h3>
+    ${S.sobres.length?Object.entries(pend).map(([t,n])=>`
+      <div class="row" style="align-items:center;margin-bottom:7px">
+        <div style="flex:2"><b>${TIPOS_SOBRE[t].n}</b> <span class="chip">×${n}</span></div>
+        <button class="btn sm" data-a="abrir" data-t="${t}">Abrir 1</button>
+        ${n>1?`<button class="btn sm sec" data-a="abrirtodo" data-t="${t}">Abrir ${n}</button>`:''}
+      </div>`).join(''):'<div class="sub">No tienes sobres guardados.</div>'}
+    </div>
+    <h3>Comprar</h3>
+    ${Object.entries(TIPOS_SOBRE).filter(([k,t])=>t.coste>0).map(([k,t])=>`
+      <div class="card-panel"><div class="row" style="align-items:center">
+        <div style="flex:2"><b>${t.n}</b><div class="tiny">${t.cartas} cartas · ${t.alineables} alineables garantizadas</div>
+        <div class="tiny">${Object.entries(t.pesos).filter(([,v])=>v>0).map(([r,v])=>RAREZAS[r].n+' '+(v/Object.values(t.pesos).reduce((a,b)=>a+b,0)*100).toFixed(0)+'%').join(' · ')}</div></div>
+        <button class="btn sm" data-a="comprar" data-t="${k}" ${S.divisa<t.coste?'disabled':''}>🪙 ${t.coste}</button>
+      </div></div>`).join('')}`;
+}
+
+function animarApertura(items){
+  let i=0;
+  const paso=()=>{
+    if(i>=items.length){ ir('coleccion'); return; }
+    const c=PORID[items[i].cid];
+    const nuevas=S.coleccion.filter(x=>x.cid===c.id).length===1;
+    $('#app').innerHTML=`<div class="center" style="padding-top:20px">
+      <div class="tiny">CARTA ${i+1} DE ${items.length}</div>
+      <div class="pop" style="max-width:230px;margin:14px auto">${cartaHTML(c)}</div>
+      <div class="mb">${nuevas?'<span class="chip on">NUEVA</span>':'<span class="chip">repetida</span>'}
+        ${c.alineable?'':'<span class="chip">no alineable</span>'}</div>
+      <div class="sub mb">${esc(c.arquetipo)} · ${esc(c.gimnasio)} · ${esc(c.pais)}</div>
+      <button class="btn" data-a="siguientecarta">${i+1<items.length?'Siguiente':'Terminar'}</button>
+    </div>`;
+    i++;
+  };
+  tmp.siguiente=paso; paso();
+}
+
+/* ── COLECCIÓN ── */
+function vColeccion(){
+  const f=tmp.filtro||{};
+  let l=S.coleccion.map(x=>({x,c:PORID[x.cid]}));
+  if(f.div) l=l.filter(o=>o.c.division===f.div);
+  if(f.rar) l=l.filter(o=>o.c.rareza===f.rar);
+  if(f.al==='si') l=l.filter(o=>o.c.alineable);
+  if(f.al==='no') l=l.filter(o=>!o.c.alineable);
+  l.sort((a,b)=>b.c.media-a.c.media);
+  const total=ROSTER.length, distintas=new Set(S.coleccion.map(x=>x.cid)).size;
+  return `<h2>Colección</h2>
+    <div class="sub mb">${distintas} de ${total} cartas distintas · ${S.coleccion.length} en total</div>
+    <div class="bar mb"><div style="width:${distintas/total*100}%"></div></div>
+    <div class="chips mb">
+      <span class="chip ${!f.rar?'on':''}" data-f="rar" data-v="">Todas</span>
+      ${ORDEN_RAREZA.map(r=>`<span class="chip ${f.rar===r?'on':''}" data-f="rar" data-v="${r}">${RAREZAS[r].n}</span>`).join('')}
+    </div>
+    <div class="chips mb">
+      <span class="chip ${!f.al?'on':''}" data-f="al" data-v="">Todo</span>
+      <span class="chip ${f.al==='si'?'on':''}" data-f="al" data-v="si">Alineables</span>
+      <span class="chip ${f.al==='no'?'on':''}" data-f="al" data-v="no">Colección</span>
+    </div>
+    <div class="chips mb">
+      <span class="chip ${!f.div?'on':''}" data-f="div" data-v="">Todas</span>
+      ${DIVISIONES.map(d=>`<span class="chip ${f.div===d.id?'on':''}" data-f="div" data-v="${d.id}">${d.n}</span>`).join('')}
+    </div>
+    ${l.length?`<div class="grid">${l.map(o=>cartaHTML(o.c,{attr:`data-carta="${o.x.iid}"`})).join('')}</div>`
+      :'<div class="card-panel sub">Nada con esos filtros.</div>'}`;
+}
+
+function detalleCarta(iid){
+  const it=inst(iid); if(!it) return; const c=PORID[it.cid];
+  const enPlantilla=Object.values(S.plantilla).includes(iid);
+  const subs=c.subs?STATS.map(s=>`<div style="margin-bottom:7px">
+      <div style="display:flex;justify-content:space-between"><b>${s.n}</b><b>${c.stats[s.id]}</b></div>
+      ${SUBSTATS[s.id].map((n,i)=>`<div style="display:flex;justify-content:space-between;font-size:11.5px;color:var(--dim)">
+        <span>${n}</span><span>${c.subs[s.id][i]}</span></div>`).join('')}</div>`).join('')
+    :'<div class="sub">Carta de colección: solo lleva las 6 stats grandes, sin sub-stats.</div>';
+  ov(`<div style="max-width:200px;margin:0 auto 12px">${cartaHTML(c)}</div>
+    <div class="center mb"><b>${esc(c.nombre)}</b><div class="sub">${esc(c.arquetipo)}</div>
+    <div class="tiny">${esc(c.gimnasio)} · ${esc(c.pais)} · ${PROMOTORAS.find(p=>p.id===c.promotora).n}</div>
+    <div class="tiny">Tienes ${copias(c.id)} copia(s)${it.notraspasable?' · no traspasable':''}</div></div>
+    ${c.rasgos.length?`<div class="card-panel">${c.rasgos.map(r=>`<div style="margin-bottom:8px">
+      <b>${RASGOS[r.tipo].ic} ${RASGOS[r.tipo].n}${r.plus?'+':''}${r.stat?' · '+r.stat.toUpperCase():''}</b>
+      <div class="sub">${r.plus?RASGOS[r.tipo].dplus:RASGOS[r.tipo].d}</div></div>`).join('')}</div>`:''}
+    <div class="card-panel">${subs}</div>
+    ${enPlantilla?'<div class="sub center mb">Está en tu plantilla.</div>':''}
+    <button class="btn sec" data-a="cerrarov">Cerrar</button>`);
+}
+
+/* ── PLANTILLA ── */
+function vPlantilla(){
+  return `<h2>Plantilla</h2><div class="sub mb">Una carta por división. Solo cartas alineables,
+    y no puedes repetir peleador.</div>
+    <div class="grid g3">${DIVISIONES.map(d=>{
+      const iid=S.plantilla[d.id], c=iid?cartaDe(iid):null;
+      return `<div data-slot="${d.id}">${c?cartaHTML(c,{attr:`data-slot="${d.id}"`})
+        :`<div class="carta oculta" data-slot="${d.id}" style="min-height:150px">
+          <div style="font-size:11px;text-align:center">${d.n}<br><span style="font-size:22px">＋</span></div></div>`}
+        <div class="tiny center" style="margin-top:3px">${d.n}</div></div>`;
+    }).join('')}</div>
+    <div class="divider"></div>
+    <button class="btn sec" data-a="autoplantilla">Rellenar con lo mejor</button>`;
+}
+function elegirParaSlot(divId){
+  const cands=S.coleccion.map(x=>({x,c:PORID[x.cid]}))
+    .filter(o=>o.c.alineable&&o.c.division===divId).sort((a,b)=>b.c.media-a.c.media);
+  ov(`<h3>${DIV[divId].n}</h3><div class="sub mb">Elige quién ocupa el slot.</div>
+    ${cands.length?`<div class="grid">${cands.map(o=>{
+      const rep=personaRepetida(S,o.x,divId);
+      return `<div ${rep?'style="opacity:.35"':''}>${cartaHTML(o.c,{attr:rep?'':`data-poner="${o.x.iid}" data-div="${divId}"`,
+        sel:S.plantilla[divId]===o.x.iid})}${rep?'<div class="tiny center">ya alineado</div>':''}</div>`;
+    }).join('')}</div>`:'<div class="sub">No tienes ninguna carta alineable de esta división.</div>'}
+    <div class="divider"></div><button class="btn sec" data-a="cerrarov">Cerrar</button>`);
+}
+
+/* ── MÁS ── */
+function vMas(){
+  return `<h2>Más</h2>
+    ${[['reciclaje','♻️','Reciclaje','Convierte repetidas en fichas'],
+       ['sets','🧩','Sets de colección','Completa y desbloquea cartas'],
+       ['retos','📜','Retos','Entrega cartas, gana recompensas'],
+       ['intercambio','🤝','Sala de intercambio','Trueque puro, cuesta 1 ficha'],
+       ['notas','📝','Notas del prototipo','Qué está hecho y qué no']]
+      .map(([v,i,t,d])=>`<div class="card-panel" data-nav="${v}" style="cursor:pointer">
+        <div class="row" style="align-items:center"><div style="flex:none;font-size:22px">${i}</div>
+        <div style="flex:2"><b>${t}</b><div class="sub">${d}</div></div><div style="flex:none;color:var(--dim2)">›</div>
+        </div></div>`).join('')}
+    <div class="divider"></div>
+    <button class="btn gho" data-a="reiniciar">Borrar partida y empezar de cero</button>`;
+}
+
+/* ── RECICLAJE ── */
+function vReciclaje(){
+  const sel=tmp.sel||[];
+  const enPlantilla=new Set(Object.values(S.plantilla));
+  const grupos={};
+  for(const x of S.coleccion){
+    if(enPlantilla.has(x.iid)) continue;
+    (grupos[x.cid]=grupos[x.cid]||[]).push(x);
+  }
+  // solo ofrece repetidas y sobrantes
+  const lista=[];
+  for(const [cid,arr] of Object.entries(grupos)) for(const x of arr) lista.push({x,c:PORID[cid]});
+  lista.sort((a,b)=>ORDEN_RAREZA.indexOf(b.c.rareza)-ORDEN_RAREZA.indexOf(a.c.rareza));
+  const fr=sel.reduce((a,iid)=>a+RAREZAS[PORID[inst(iid).cid].rareza].fichas,0);
+  return `<h2>Reciclaje</h2>
+    <div class="sub mb">1 oro = 1 ficha · 5 platas = 1 ficha · 20 bronces = 1 ficha.
+    La escala está separada a propósito.</div>
+    <div class="card-panel"><div class="row" style="align-items:center">
+      <div style="flex:2"><b>${sel.length} seleccionadas</b><div class="sub">≈ ${fr.toFixed(2)} fichas → <b>${Math.floor(fr)}</b> enteras</div></div>
+      <button class="btn sm" data-a="reciclar" ${Math.floor(fr)<1?'disabled':''}>Reciclar</button>
+    </div></div>
+    ${lista.length?`<div class="grid">${lista.map(o=>cartaHTML(o.c,{
+      attr:`data-rec="${o.x.iid}"`,sel:sel.includes(o.x.iid)})).join('')}</div>`
+      :'<div class="card-panel sub">Nada que reciclar fuera de tu plantilla.</div>'}`;
+}
+
+/* ── SETS ── */
+function vSets(){
+  return `<h2>Sets de colección</h2>
+    <div class="sub mb">Es lo que da valor a las cartas flojas: un 62 que te completa un set tiene
+    sentido aunque no juegue nunca.</div>
+    ${SETS.map(s=>{
+      const hecho=S.sets.includes(s.id), listo=setListo(s);
+      const n=s.req.filter(cid=>copias(cid)>0).length;
+      return `<div class="card-panel"><div class="row" style="align-items:center;margin-bottom:7px">
+        <div style="flex:2"><b>${esc(s.n)}</b><div class="sub">${n} de ${s.req.length} · premio: carta ${RAREZAS[s.premio].n}</div></div>
+        ${hecho?'<span class="chip on" style="flex:none">✔ hecho</span>'
+          :`<button class="btn sm" data-a="canjearset" data-id="${s.id}" ${listo?'':'disabled'} style="flex:none">Canjear</button>`}
+      </div>
+      <div class="bar"><div style="width:${n/s.req.length*100}%"></div></div>
+      <div class="chips" style="margin-top:8px">${s.req.map(cid=>
+        `<span class="chip ${copias(cid)?'on':''}">${esc(PORID[cid].nombre)}</span>`).join('')}</div>
+      </div>`;
+    }).join('')}`;
+}
+
+/* ── RETOS ── */
+function vRetos(){
+  const sel=tmp.sel||[];
+  const r=RETOS.find(x=>x.id===tmp.reto);
+  if(!r) return `<h2>Retos</h2><div class="sub mb">Entregas cartas y las pierdes. A cambio, recompensa.</div>
+    ${RETOS.map(x=>`<div class="card-panel"><div class="row" style="align-items:center">
+      <div style="flex:2"><b>${x.n}</b><div class="sub">${x.d}</div>
+      <div class="tiny">Premio: ${TIPOS_SOBRE[x.premio.sobre].n}${x.premio.divisa?' + 🪙'+x.premio.divisa:''}</div></div>
+      ${S.retos.includes(x.id)?'<span class="chip on" style="flex:none">✔</span>'
+        :`<button class="btn sm" data-a="reto" data-id="${x.id}" style="flex:none">Entrar</button>`}
+    </div></div>`).join('')}`;
+  const cartas=sel.map(iid=>PORID[inst(iid).cid]);
+  const ok=r.check(cartas);
+  const enPlantilla=new Set(Object.values(S.plantilla));
+  const disp=S.coleccion.filter(x=>!enPlantilla.has(x.iid));
+  return `<h2>${r.n}</h2><div class="sub mb">${r.d}</div>
+    <div class="card-panel"><div class="row" style="align-items:center">
+      <div style="flex:2"><b>${sel.length} entregadas</b><div class="sub">${ok?'Requisitos cumplidos':'Aún no cumple'}</div></div>
+      <button class="btn sm" data-a="entregarreto" ${ok?'':'disabled'}>Entregar</button></div></div>
+    <div class="grid">${disp.map(x=>cartaHTML(PORID[x.cid],{attr:`data-rec="${x.iid}"`,sel:sel.includes(x.iid)})).join('')}</div>
+    <div class="divider"></div><button class="btn sec" data-nav="retos" data-a="salirreto">Volver</button>`;
+}
+
+/* ── INTERCAMBIO ── */
+function vIntercambio(){
+  if(!tmp.sala) return `<h2>Sala de intercambio</h2>
+    <div class="sub mb">Entrar cuesta <b>1 ficha</b>. Emparejamiento a ciegas. Solo cartas por cartas:
+    ni divisa ni fichas para compensar. Hasta 3 por lado.</div>
+    <div class="card-panel"><div class="sub mb">Límite: no se pueden mezclar rarezas separadas por más de
+    una banda dentro del mismo trueque. Es lo que impide vaciar una cuenta secundaria de bronces
+    a cambio de oros.</div>
+    <button class="btn" data-a="entrarsala" ${S.fichas<1?'disabled':''}>
+      ${S.fichas<1?'Necesitas 1 ficha':'Entrar (1 🎟️)'}</button></div>
+    <button class="btn sec" data-nav="mas">Volver</button>`;
+  const s=tmp.sala, mias=tmp.ofrezco||[], suyas=tmp.pido||[];
+  const val=l=>l.reduce((a,c)=>a+({bronce:1,plata:4,oro:14,elite:45,leyenda:150})[c.rareza],0);
+  const bandas=l=>l.map(c=>ORDEN_RAREZA.indexOf(c.rareza));
+  const todas=[...mias.map(i=>PORID[inst(i).cid]),...suyas.map(c=>c)];
+  const spread=todas.length?Math.max(...bandas(todas))-Math.min(...bandas(todas)):0;
+  const legal=spread<=1;
+  const acepta=val(suyas)<=val(mias.map(i=>PORID[inst(i).cid]))*1.15;
+  const enPlantilla=new Set(Object.values(S.plantilla));
+  const disp=S.coleccion.filter(x=>!enPlantilla.has(x.iid)&&!x.notraspasable);
+  return `<h2>Emparejado</h2><div class="sub mb">El otro jugador busca: ${s.deseos.map(d=>`<span class="chip">${esc(d)}</span>`).join(' ')}</div>
+    <div class="card-panel"><h3>Lo que ofrece (elige hasta 3)</h3>
+      <div class="grid">${s.oferta.map((c,i)=>cartaHTML(c,{attr:`data-pido="${i}"`,sel:suyas.includes(c)})).join('')}</div></div>
+    <div class="card-panel"><h3>Lo que das (hasta 3)</h3>
+      <div class="grid">${disp.slice(0,18).map(x=>cartaHTML(PORID[x.cid],{attr:`data-ofrezco="${x.iid}"`,sel:mias.includes(x.iid)})).join('')}</div></div>
+    ${!legal?'<div class="card-panel" style="border-color:var(--warn)"><b>Trueque no permitido.</b><div class="sub">Hay más de una banda de rareza de diferencia entre las cartas del intercambio.</div></div>':''}
+    <button class="btn" data-a="proponer" ${(legal&&mias.length&&suyas.length)?'':'disabled'}>Proponer trueque</button>
+    <div class="tiny center" style="margin-top:6px">${legal&&mias.length&&suyas.length?(acepta?'Parece que le puede interesar.':'Probablemente lo rechace.'):''}</div>
+    <div class="divider"></div><button class="btn gho" data-a="salirsala">Salir de la sala (pierdes la ficha)</button>`;
+}
+
+/* ── NOTAS ── */
+function vNotas(){
+  return `<h2>Notas del prototipo</h2>
+  <div class="card-panel"><h3>Qué está implementado</h3><div class="sub">
+    Elección de rol con dado, vetos alternos visibles, veto aleatorio final, 6 divisiones en juego,
+    declaraciones 3 y 3 con pool de stats compartido, tabla de márgenes con el 65/35, victoria a 4,
+    desempate en la división del veto aleatorio con stat al azar, cambios de división con penalización
+    selectiva, los cuatro rasgos con sus versiones plus, una sola jugada por partida, sobres que no
+    caducan, reciclaje con las tres ratios, sets, retos y sala de intercambio.
+  </div></div>
+  <div class="card-panel"><h3>Decisiones que el GDD no cerraba</h3><div class="sub">
+    <b>Empate a 0 de margen:</b> moneda al aire. El GDD no lo contempla.<br><br>
+    <b>Contigüidad:</b> dos escaleras independientes, sin puente entre géneros.<br><br>
+    <b>Incómodo:</b> la carta que envías pelea en la división declarada; si fallas, come la penalización
+    y las dos cartas intercambian slot, así cada peleador sigue peleando una sola vez.<br><br>
+    <b>Veterano:</b> se bloquea cuando quedan menos de 2 stats vivas, no "en el duelo 6" —
+    con un Especialista en juego puede haber dos stats vivas en el sexto.<br><br>
+    <b>Camaleón:</b> pelea dos veces. Es la excepción explícita a "cada peleador pelea una sola vez".<br><br>
+    <b>Cartas no alineables:</b> llevan las 6 stats grandes pero no sub-stats.
+  </div></div>
+  <div class="card-panel"><h3>Qué NO está</h3><div class="sub">
+    PvP online real (el rival es una IA sencilla), competitivas y ligas, telemetría, arte, sonido,
+    y monetización. El intercambio empareja con un jugador simulado, no con gente de verdad.
+  </div></div>
+  <button class="btn sec" data-nav="mas">Volver</button>`;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   9. PANTALLA DE PARTIDA
+   ══════════════════════════════════════════════════════════════════════════ */
+function empezarPartida(){
+  const pj={},media=Math.round(DIVISIONES.reduce((a,d)=>a+cartaDe(S.plantilla[d.id]).media,0)/11);
+  for(const d of DIVISIONES) pj[d.id]=cartaDe(S.plantilla[d.id]);
+  P=nuevaPartida(pj,plantillaIA(media+ri(-2,2)));
+  ir('partida');
+}
+
+function marcadorHTML(){
+  const vivas=STATS.map(s=>`<span class="chip ${P.statsVivas.includes(s.id)?'':'dead'}">${s.c}</span>`).join('');
+  const divs=P.enJuego.map(id=>`<span class="chip ${P.jugadas.includes(id)?'dead':''}">${DIV[id].n}</span>`).join('');
+  return `<div class="card-panel">
+    <div class="mark"><span style="color:var(--ok)">${P.marcador.j}</span>
+      <span class="vs">DUELO ${Math.min(P.duelo,6)}/6</span>
+      <span style="color:var(--acc)">${P.marcador.r}</span></div>
+    <div class="divider" style="margin:9px 0"></div>
+    <div class="tiny mb">STATS VIVAS</div><div class="chips mb">${vivas}</div>
+    <div class="tiny mb">DIVISIONES EN JUEGO</div><div class="chips">${divs}</div>
+    <div class="tiny" style="margin-top:7px">Desempate: <b>${DIV[P.vetoAzar].n}</b></div>
+  </div>`;
+}
+function logHTML(){
+  return P.log.slice(-14).reverse().map(l=>{
+    if(l.t==='sys') return `<div class="log">${esc(l.x)}</div>`;
+    const gan=l.ganador==='j';
+    return `<div class="log ${gan?'win':'lose'}">
+      <b>${DIV[l.div].n} · ${l.stat.toUpperCase()}</b> — ${esc(l.nj)} <b>${l.vj}</b> vs <b>${l.vr}</b> ${esc(l.nr)}<br>
+      ${gan?'Ganas':'Pierdes'} por <b>${l.tipo}</b>${l.tipo==='reñido'?' (65/35)':''}</div>`;
+  }).join('');
+}
+
+function vPartida(){
+  if(P.fase==='rol') return pRol();
+  if(P.fase==='vetos') return pVetos();
+  if(P.fase==='duelos') return pDuelos();
+  if(P.fase==='incomodo') return pIncomodo();
+  if(P.fase==='desempate') return pDesempate();
+  if(P.fase==='fin') return pFin();
+  return '';
+}
+
+function pRol(){
+  return `<h2>Elección de rol</h2>
+    <div class="sub mb">Los dos elegís a la vez. Si coincidís, dado: el más alto se queda lo que pidió.</div>
+    <div class="opt" data-rol="vetar"><div class="t">Empezar vetando</div>
+      <div class="d">Quitas la primera división. Luego declaras en los duelos 2, 4 y 6.</div></div>
+    <div class="opt" data-rol="declarar"><div class="t">Empezar declarando</div>
+      <div class="d">Vetas el segundo. Declaras en los duelos 1, 3 y 5 — y el 6 no lo declara nadie de verdad, porque solo queda una división y una stat.</div></div>
+    <div class="divider"></div><button class="btn gho" data-a="abandonar">Abandonar</button>`;
+}
+
+function pVetos(){
+  const turnoJ=(P.vetados.length%2===0)===(P.vetoPrimero==='j');
+  const libres=DIVISIONES.filter(d=>!P.vetados.includes(d.id));
+  return `<h2>Vetos</h2>
+    <div class="sub mb">2 cada uno, alternos y visibles. Después cae un veto aleatorio que marca
+    la división de desempate.</div>
+    <div class="card-panel"><div class="tiny mb">VETADAS</div>
+      <div class="chips">${P.vetados.length?P.vetados.map(id=>`<span class="chip dead">${DIV[id].n}</span>`).join(''):'<span class="sub">ninguna todavía</span>'}</div></div>
+    <div class="sub mb"><b>${turnoJ?'Te toca vetar.':'Veta el rival…'}</b> Van ${P.vetados.length} de 4.</div>
+    <div class="grid g3">${libres.map(d=>{
+      const c=P.cartas.j[d.id];
+      return `<div ${turnoJ?`data-veto="${d.id}"`:''} style="${turnoJ?'':'opacity:.5'}">
+        ${cartaHTML(c,{attr:turnoJ?`data-veto="${d.id}"`:''})}
+        <div class="tiny center" style="margin-top:3px">${d.n}</div></div>`;
+    }).join('')}</div>`;
+}
+
+function pDuelos(){
+  const miTurno=P.turno==='j';
+  const libres=librePara(P,'j');
+  const d=tmp.divSel, st=tmp.statSel;
+  const cambios=cambiosPosibles(P,'j');
+  const cams=d?camaleonesPosibles(P,'j',d):[];
+  const inc=d?rasgoDe(P.cartas.j[d],'incomodo'):null;
+  const puedeInc=!!inc && !P.jugada.j && !!segundaCartaIncomodo(P,'r',d,inc);
+
+  if(!miTurno){
+    return marcadorHTML()+`<div class="card-panel center"><h3>Declara el rival…</h3>
+      <button class="btn" data-a="iaturno">Continuar</button></div>`+logHTML();
+  }
+  return marcadorHTML()+
+    `<div class="card-panel"><h3>Tu declaración</h3>
+      <div class="tiny mb">DIVISIÓN</div>
+      <div class="chips mb">${libres.map(id=>`<span class="chip ${d===id?'on':''}" data-dsel="${id}">${DIV[id].n}</span>`).join('')}</div>
+      <div class="tiny mb">STAT</div>
+      <div class="chips mb">${STATS.filter(s=>P.statsVivas.includes(s.id)).map(s=>
+        `<span class="chip ${st===s.id?'on':''}" data-ssel="${s.id}">${s.n}</span>`).join('')}</div>
+      ${d?`<div style="max-width:170px;margin:10px auto 0">${cartaHTML(P.cartas.j[d],{ajuste:P.ajustes.j[d]})}</div>`:''}
+      ${d&&st?`<div class="center" style="margin-top:8px">Llevas <b style="font-size:20px">${valorCarta(P,'j',d,st)}</b> en ${st.toUpperCase()}</div>`:''}
+    </div>
+    ${(!P.jugada.j&&(cambios.length||cams.length||puedeInc))?`<div class="card-panel">
+      <h3>Tu jugada <span class="tiny">(una por partida)</span></h3>
+      ${cambios.length?`<div class="sub mb">Cambio de división — intercambio obligado, con penalización:</div>
+        <div class="chips mb">${cambios.map(([a,b],i)=>
+          `<span class="chip" data-cambio="${i}">${DIV[a].n} ⇄ ${DIV[b].n}</span>`).join('')}</div>`:''}
+      ${cams.length?`<div class="sub mb">Camaleón — manda la carta a la división declarada sin penalización:</div>
+        <div class="chips mb">${cams.map((c,i)=>
+          `<span class="chip" data-camaleon="${i}">${esc(c.carta.nombre)} (${DIV[c.div].n})${c.rasgo.plus?' +':''}</span>`).join('')}</div>`:''}
+      ${puedeInc?`<div class="sub mb">Incómodo — ocultas la división y el rival elige a ciegas:</div>
+        <span class="chip" data-incomodo="1">Activar Incómodo${inc.plus?'+':''}</span>`:''}
+    </div>`:''}
+    <button class="btn" data-a="declarar" ${(d&&st)?'':'disabled'}>Declarar y resolver</button>
+    <div class="divider"></div>${logHTML()}
+    <button class="btn gho" data-a="abandonar" style="margin-top:8px">Abandonar (cuenta como derrota)</button>`;
+}
+
+function pIncomodo(){
+  const q=P.pendiente;
+  return marcadorHTML()+`<div class="card-panel center">
+    <h3>🌀 El rival ha usado Incómodo${q.plus?'+':''}</h3>
+    <div class="sub mb">No ves en qué división se pelea. Elige a ciegas qué carta mandas.
+    Si fallas, come <b>${q.plus?-12:-6}</b>.</div>
+    <div class="row" style="gap:10px">${q.opciones.map((divId,i)=>
+      `<div data-eleccion="${i}">${cartaHTML(P.cartas.j[divId],{attr:`data-eleccion="${i}"`,ajuste:P.ajustes.j[divId]})}
+       <div class="tiny center" style="margin-top:3px">${DIV[divId].n}</div></div>`).join('')}</div>
+  </div>`;
+}
+
+function pDesempate(){
+  return marcadorHTML()+`<div class="card-panel center">
+    <h3>3-3 · Desempate</h3>
+    <div class="sub mb">En <b>${DIV[P.vetoAzar].n}</b>, la división que ninguno de los dos quitó.
+    Stat al azar entre las 6 y cartas frescas.</div>
+    <button class="btn" data-a="desempate">Resolver</button></div>`+logHTML();
+}
+
+function pFin(){
+  const gane=P.fin==='j';
+  const prem=gane?ri(180,320):ri(60,120);
+  if(!tmp.cobrado){
+    tmp.cobrado=true; S.partidas++; if(gane)S.victorias++;
+    S.divisa+=prem;
+    if(gane&&Math.random()<.5) S.sobres.push({tipo:'basico'});
+    guardar();
+  }
+  return `<div class="card-panel center" style="padding:24px 14px">
+    <div style="font-size:44px">${gane?'🏆':'💀'}</div>
+    <h2>${gane?'Victoria':'Derrota'}</h2>
+    <div class="mark" style="margin:10px 0"><span style="color:var(--ok)">${P.marcador.j}</span>
+      <span class="vs">—</span><span style="color:var(--acc)">${P.marcador.r}</span></div>
+    <div class="sub">Ganas 🪙 ${prem}</div></div>
+    ${logHTML()}
+    <button class="btn" data-a="jugar" style="margin-top:10px">Otra partida</button>
+    <button class="btn sec" data-nav="inicio" style="margin-top:8px">Volver al inicio</button>`;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   10. FLUJO DE LA PARTIDA
+   ══════════════════════════════════════════════════════════════════════════ */
+function elegirRol(r){
+  const iaQuiere=Math.random()<.5?'vetar':'declarar';
+  let msg='';
+  if(r!==iaQuiere){ P.rolJ=r; msg=`El rival eligió ${iaQuiere}. Cada uno a lo suyo.`; }
+  else{
+    const dj=ri(1,6),dr=ri(1,6);
+    if(dj>=dr){ P.rolJ=r; msg=`Los dos queríais ${r}. Dado ${dj} a ${dr}: te lo quedas.`; }
+    else{ P.rolJ=r==='vetar'?'declarar':'vetar'; msg=`Los dos queríais ${r}. Dado ${dj} a ${dr}: se lo queda el rival.`; }
+  }
+  P.vetoPrimero=P.rolJ==='vetar'?'j':'r';
+  P.log.push({t:'sys',x:msg});
+  P.fase='vetos';
+  render();
+  if(P.vetoPrimero==='r') setTimeout(turnoIAVeto,550);
+}
+function vetar(divId){
+  P.vetados.push(divId);
+  P.log.push({t:'sys',x:`Vetas ${DIV[divId].n}.`});
+  if(P.vetados.length>=4){ terminarVetos(P); render(); return; }
+  render(); setTimeout(turnoIAVeto,500);
+}
+function turnoIAVeto(){
+  if(P.vetados.length>=4) return;
+  const turnoJ=(P.vetados.length%2===0)===(P.vetoPrimero==='j');
+  if(turnoJ) return;
+  const v=iaVeta(P); P.vetados.push(v);
+  P.log.push({t:'sys',x:`El rival veta ${DIV[v].n}.`});
+  if(P.vetados.length>=4){ terminarVetos(P); render(); return; }
+  render();
+  const sigueJ=(P.vetados.length%2===0)===(P.vetoPrimero==='j');
+  if(!sigueJ) setTimeout(turnoIAVeto,500);
+}
+
+// El VETERANO del defensor puede cambiar la stat declarada
+function aplicarVeterano(P,defensor,divId,stat){
+  const c=P.cartas[defensor][divId]; const r=rasgoDe(c,'veterano');
+  if(!r || P.jugada[defensor]) return stat;
+  const otras=P.statsVivas.filter(s=>s!==stat);
+  if(otras.length<1) return stat;                    // condición real: ≥2 stats vivas
+  if(defensor==='r'){
+    if(Math.random()<.55) return stat;
+    const nueva=r.plus?otras.sort((a,b)=>valorCarta(P,'r',divId,b)-valorCarta(P,'r',divId,a))[0]:pick(otras);
+    P.jugada.r=true;
+    P.log.push({t:'sys',x:`🧠 Veterano del rival: la stat pasa de ${stat.toUpperCase()} a ${nueva.toUpperCase()}.`});
+    return nueva;
+  }
+  return stat;
+}
+
+function declarar(divId,stat,extra={}){
+  let opts={};
+  // Camaleón del jugador
+  if(extra.camaleon){
+    const cam=extra.camaleon;
+    P.cartas.j[divId]=cam.carta;               // pelea aquí, sin penalización
+    P.ajustes.j[divId]={};
+    if(!cam.rasgo.plus) P.jugada.j=true;
+    P.log.push({t:'sys',x:`🦎 Camaleón: ${cam.carta.nombre} sube desde ${DIV[cam.div].n}. Tu carta de ${DIV[divId].n} se descarta sin pelear.`});
+    opts.dobleJ=true;
+  }
+  // Veterano del rival puede cambiar la stat
+  stat=aplicarVeterano(P,'r',divId,stat);
+  resolverDuelo(P,divId,stat,opts);
+  tmp.divSel=null; tmp.statSel=null; tmp.camaleon=null;
+  render();
+}
+
+function turnoIA(){
+  if(P.fase!=='duelos'||P.turno!=='r') return;
+  // jugada del rival: cambio de división
+  const camb=iaJugada(P);
+  if(camb) hacerCambio(P,'r',camb[0],camb[1]);
+  const dec=iaDeclara(P);
+  let divId=dec.div, stat=dec.stat;
+  // ¿usa Incómodo?
+  const rIn=rasgoDe(P.cartas.r[divId],'incomodo');
+  const otra=segundaCartaIncomodo(P,'j',divId,rIn);
+  if(rIn && !P.jugada.r && otra && Math.random()<.6){
+    P.jugada.r=true;
+    P.pendiente={divId,stat,plus:rIn.plus,opciones:shuffle([divId,otra])};
+    P.fase='incomodo';
+    P.log.push({t:'sys',x:`🌀 El rival activa Incómodo${rIn.plus?'+':''}.`});
+    render(); return;
+  }
+  // Veterano del jugador (reacción automática si le conviene)
+  stat=aplicarVeteranoJugador(divId,stat);
+  P.log.push({t:'sys',x:`El rival declara ${DIV[divId].n} · ${stat.toUpperCase()}.`});
+  resolverDuelo(P,divId,stat,{});
+  render();
+}
+
+// Segunda carta que se le enseña al defensor. El normal exige división contigua;
+// el plus vale cualquiera en juego. Devuelve null si no hay ninguna → rasgo no usable.
+function segundaCartaIncomodo(P,defensor,divId,rasgo){
+  if(!rasgo) return null;
+  const libres=librePara(P,defensor).filter(v=>v!==divId);
+  const cand=rasgo.plus?libres:libres.filter(v=>contiguas(v,divId));
+  return cand.length?pick(cand):null;
+}
+
+function aplicarVeteranoJugador(divId,stat){
+  const c=P.cartas.j[divId]; const r=rasgoDe(c,'veterano');
+  if(!r||P.jugada.j) return stat;
+  const otras=P.statsVivas.filter(s=>s!==stat);
+  if(!otras.length) return stat;
+  const actual=valorCarta(P,'j',divId,stat);
+  const mejor=otras.slice().sort((a,b)=>valorCarta(P,'j',divId,b)-valorCarta(P,'j',divId,a))[0];
+  if(valorCarta(P,'j',divId,mejor)<=actual+6) return stat;   // no merece la pena
+  P.jugada.j=true;
+  const nueva=r.plus?mejor:pick(otras);
+  P.log.push({t:'sys',x:`🧠 Tu Veterano cambia la stat de ${stat.toUpperCase()} a ${nueva.toUpperCase()}.`});
+  return nueva;
+}
+
+// Resolución del Incómodo: la carta elegida pelea en la división declarada.
+// Si fallas, come la penalización y las dos cartas intercambian slot —
+// así cada peleador sigue peleando una sola vez y el calendario cuadra.
+function resolverIncomodo(idx){
+  const q=P.pendiente, elegida=q.opciones[idx];
+  if(elegida===q.divId){
+    P.log.push({t:'sys',x:`Aciertas la división: duelo limpio en ${DIV[q.divId].n}.`});
+  }else{
+    const enviada=P.cartas.j[elegida];
+    intercambiarSlots(P,'j',elegida,q.divId);
+    penaliza(P,'j',q.divId,SID,q.plus?-12:-6);
+    P.log.push({t:'sys',x:`Fallas: ${enviada.nombre} pelea en ${DIV[q.divId].n} con ${q.plus?-12:-6}. Tu otra carta cubre ${DIV[elegida].n}.`});
+  }
+  P.pendiente=null; P.fase='duelos';
+  P.log.push({t:'sys',x:`El rival declara ${DIV[q.divId].n} · ${q.stat.toUpperCase()}.`});
+  resolverDuelo(P,q.divId,q.stat,{});
+  render();
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   11. EVENTOS
+   ══════════════════════════════════════════════════════════════════════════ */
+function ov(html){
+  const d=document.createElement('div'); d.className='ov'; d.id='ov';
+  d.innerHTML=`<div class="box">${html}</div>`;
+  document.body.appendChild(d);
+}
+function cerrarOv(){ const o=$('#ov'); if(o) o.remove(); }
+
+document.addEventListener('click',e=>{
+  const t=e.target.closest('[data-nav],[data-a],[data-f],[data-carta],[data-slot],[data-poner],[data-rec],[data-rol],[data-veto],[data-dsel],[data-ssel],[data-cambio],[data-camaleon],[data-incomodo],[data-eleccion],[data-pido],[data-ofrezco]');
+  if(!t) return;
+  const d=t.dataset;
+
+  if(d.nav){ cerrarOv(); ir(d.nav); return; }
+  if(d.f!==undefined){ tmp.filtro={...(tmp.filtro||{})}; tmp.filtro[d.f]=d.v||null; render(); return; }
+  if(d.carta){ detalleCarta(d.carta); return; }
+  if(d.slot&&vista==='plantilla'){ elegirParaSlot(d.slot); return; }
+  if(d.poner){ S.plantilla[d.div]=d.poner; guardar(); cerrarOv(); render(); return; }
+  if(d.rec){
+    tmp.sel=tmp.sel||[];
+    tmp.sel=tmp.sel.includes(d.rec)?tmp.sel.filter(x=>x!==d.rec):[...tmp.sel,d.rec];
+    render(); return;
+  }
+  if(d.rol){ elegirRol(d.rol); return; }
+  if(d.veto){ vetar(d.veto); return; }
+  if(d.dsel){ if(tmp.divSel!==d.dsel) tmp.camaleon=null; tmp.divSel=d.dsel; render(); return; }
+  if(d.ssel){ tmp.statSel=d.ssel; render(); return; }
+  if(d.cambio!==undefined&&d.cambio!==''){
+    const c=cambiosPosibles(P,'j')[+d.cambio]; hacerCambio(P,'j',c[0],c[1]); render(); return;
+  }
+  if(d.camaleon!==undefined&&d.camaleon!==''){
+    tmp.camaleon=camaleonesPosibles(P,'j',tmp.divSel)[+d.camaleon];
+    P.log.push({t:'sys',x:'Camaleón preparado — se aplica al declarar.'}); render(); return;
+  }
+  if(d.incomodo){ tmp.incomodo=true; P.jugada.j=true;
+    P.log.push({t:'sys',x:'🌀 Activas Incómodo. El rival elegirá a ciegas.'}); render(); return; }
+  if(d.eleccion!==undefined&&d.eleccion!==''){ resolverIncomodo(+d.eleccion); return; }
+  if(d.pido!==undefined&&d.pido!==''){
+    const c=tmp.sala.oferta[+d.pido]; tmp.pido=tmp.pido||[];
+    tmp.pido=tmp.pido.includes(c)?tmp.pido.filter(x=>x!==c):(tmp.pido.length<3?[...tmp.pido,c]:tmp.pido);
+    render(); return;
+  }
+  if(d.ofrezco){
+    tmp.ofrezco=tmp.ofrezco||[];
+    tmp.ofrezco=tmp.ofrezco.includes(d.ofrezco)?tmp.ofrezco.filter(x=>x!==d.ofrezco)
+      :(tmp.ofrezco.length<3?[...tmp.ofrezco,d.ofrezco]:tmp.ofrezco);
+    render(); return;
+  }
+
+  switch(d.a){
+    case 'jugar': empezarPartida(); break;
+    case 'gratis':
+      S.sobres.push({tipo:'basico'}); S.ultimoGratis=Date.now(); guardar(); ir('sobres'); break;
+    case 'comprar':{
+      const T=TIPOS_SOBRE[d.t]; if(S.divisa<T.coste) break;
+      S.divisa-=T.coste; S.sobres.push({tipo:d.t}); guardar(); render(); break; }
+    case 'abrir':{
+      const i=S.sobres.findIndex(s=>s.tipo===d.t); if(i<0) break;
+      S.sobres.splice(i,1); animarApertura(abrirSobre(d.t)); break; }
+    case 'abrirtodo':{
+      const items=[];
+      for(let i=S.sobres.length-1;i>=0;i--) if(S.sobres[i].tipo===d.t){ S.sobres.splice(i,1); items.push(...abrirSobre(d.t)); }
+      animarApertura(items); break; }
+    case 'siguientecarta': tmp.siguiente(); break;
+    case 'autoplantilla': autoPlantilla(S); guardar(); render(); break;
+    case 'reciclar':{
+      const g=reciclar(tmp.sel||[]); tmp.sel=[];
+      ov(`<div class="center"><div style="font-size:38px">🎟️</div><h3>+${g} ficha(s)</h3>
+        <button class="btn" data-a="cerrarov">Vale</button></div>`); render(); break; }
+    case 'canjearset':{
+      const s=SETS.find(x=>x.id===d.id); if(!s||!setListo(s)) break;
+      for(const cid of s.req){ const it=S.coleccion.find(x=>x.cid===cid&&!Object.values(S.plantilla).includes(x.iid));
+        if(it) S.coleccion=S.coleccion.filter(x=>x.iid!==it.iid); }
+      const pool=alineables().filter(c=>c.rareza===s.premio);
+      const c=pick(pool);
+      S.coleccion.push({iid:'i'+Math.random().toString(36).slice(2,9),cid:c.id,notraspasable:true});
+      S.sets.push(s.id); guardar();
+      ov(`<div class="center"><h3>Set completado</h3><div style="max-width:190px;margin:12px auto">${cartaHTML(c)}</div>
+        <div class="sub mb">Carta de set: no traspasable, pero sí reciclable.</div>
+        <button class="btn" data-a="cerrarov">Vale</button></div>`); render(); break; }
+    case 'reto': tmp.reto=d.id; tmp.sel=[]; render(); break;
+    case 'salirreto': tmp.reto=null; tmp.sel=[]; break;
+    case 'entregarreto':{
+      const r=RETOS.find(x=>x.id===tmp.reto);
+      const cartas=(tmp.sel||[]).map(iid=>PORID[inst(iid).cid]);
+      if(!r||!r.check(cartas)) break;
+      for(const iid of tmp.sel) S.coleccion=S.coleccion.filter(x=>x.iid!==iid);
+      S.sobres.push({tipo:r.premio.sobre}); S.divisa+=r.premio.divisa; S.retos.push(r.id);
+      tmp.reto=null; tmp.sel=[]; guardar();
+      ov(`<div class="center"><h3>Reto superado</h3><div class="sub mb">Has ganado ${TIPOS_SOBRE[r.premio.sobre].n}${r.premio.divisa?' y 🪙 '+r.premio.divisa:''}.</div>
+        <button class="btn" data-a="cerrarov">Vale</button></div>`); render(); break; }
+    case 'entrarsala':{
+      if(S.fichas<1) break;
+      S.fichas--; guardar();
+      const pool=shuffle(ROSTER).slice(0,6);
+      tmp.sala={oferta:pool,deseos:shuffle(ROSTER.filter(c=>c.rareza==='oro'||c.rareza==='elite')).slice(0,3).map(c=>c.nombre)};
+      tmp.ofrezco=[]; tmp.pido=[]; render(); break; }
+    case 'proponer':{
+      const val=l=>l.reduce((a,c)=>a+({bronce:1,plata:4,oro:14,elite:45,leyenda:150})[c.rareza],0);
+      const mias=(tmp.ofrezco||[]).map(i=>PORID[inst(i).cid]);
+      const suyas=tmp.pido||[];
+      if(val(suyas)<=val(mias)*1.15){
+        for(const iid of tmp.ofrezco) S.coleccion=S.coleccion.filter(x=>x.iid!==iid);
+        for(const c of suyas) S.coleccion.push({iid:'i'+Math.random().toString(36).slice(2,9),cid:c.id});
+        guardar(); tmp.sala=null; tmp.ofrezco=[]; tmp.pido=[];
+        ov(`<div class="center"><div style="font-size:38px">🤝</div><h3>Trato cerrado</h3>
+          <button class="btn" data-a="cerrarov">Vale</button></div>`);
+      }else{
+        ov(`<div class="center"><h3>Rechazado</h3><div class="sub mb">No le compensa. Prueba a ofrecer más
+          o a pedir menos — el valor lo fijáis vosotros, el sistema no pone precios.</div>
+          <button class="btn" data-a="cerrarov">Vale</button></div>`);
+      }
+      render(); break; }
+    case 'salirsala': tmp.sala=null; tmp.ofrezco=[]; tmp.pido=[]; render(); break;
+    case 'iaturno': turnoIA(); break;
+    case 'declarar':{
+      if(!tmp.divSel||!tmp.statSel) break;
+      const extra={};
+      if(tmp.camaleon) extra.camaleon=tmp.camaleon;
+      if(tmp.incomodo){
+        // El rival elige a ciegas: si falla, su carta come la penalización
+        const inc=rasgoDe(P.cartas.j[tmp.divSel],'incomodo');
+        const otra=segundaCartaIncomodo(P,'r',tmp.divSel,inc);
+        if(otra){
+          const elegida=iaEligeIncomodo(P,shuffle([tmp.divSel,otra]));
+          if(elegida!==tmp.divSel){
+            intercambiarSlots(P,'r',elegida,tmp.divSel);
+            penaliza(P,'r',tmp.divSel,SID,inc.plus?-12:-6);
+            P.log.push({t:'sys',x:`El rival falla la elección y come ${inc.plus?-12:-6}.`});
+          }else P.log.push({t:'sys',x:'El rival acierta la división: duelo limpio.'});
+        }
+        tmp.incomodo=false;
+      }
+      const dv=tmp.divSel, st=tmp.statSel;
+      tmp.camaleon=null;
+      P.log.push({t:'sys',x:`Declaras ${DIV[dv].n} · ${st.toUpperCase()}.`});
+      declarar(dv,st,extra); break; }
+    case 'desempate': resolverDesempate(P); render(); break;
+    case 'abandonar':
+      if(P&&P.fase!=='fin'){ P.fase='fin'; P.fin='r'; P.log.push({t:'sys',x:'Abandonas: cuenta como derrota.'}); }
+      render(); break;
+    case 'reiniciar':
+      ov(`<div class="center"><h3>¿Borrar todo?</h3><div class="sub mb">Se pierde la colección entera.</div>
+        <button class="btn" data-a="reiniciar2">Sí, borrar</button>
+        <button class="btn sec" data-a="cerrarov" style="margin-top:7px">No</button></div>`); break;
+    case 'reiniciar2': localStorage.removeItem(KEY); location.reload(); break;
+    case 'cerrarov': cerrarOv(); break;
+  }
+});
+
+/* ══════════════════════════════════════════════════════════════════════════
+   12. ARRANQUE
+   ══════════════════════════════════════════════════════════════════════════ */
+generarRoster();
+SETS=construirSets();
+if(!cargar()) S=estadoNuevo();
+if(!S.sets) S.sets=[]; if(!S.retos) S.retos=[];
+guardar();
+render();
+</script>

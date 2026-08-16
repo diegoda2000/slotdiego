@@ -1,0 +1,67 @@
+name: APK
+
+# Construye el APK de Android y lo deja descargable.
+# Se hace aquí y no en local porque el SDK de Android y el plugin de Gradle se
+# descargan de dl.google.com, que el entorno de desarrollo tiene bloqueado.
+# Los runners de GitHub ya traen el SDK instalado.
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - 'claude/**'
+    paths:
+      - 'juego/**'
+      - 'android/**'
+      - '.github/workflows/apk.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  construir:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Preparar Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Preparar Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.14.3'
+
+      - name: Construir el APK
+        working-directory: android
+        run: gradle assembleDebug --no-daemon --stacktrace
+
+      - name: Renombrar
+        run: |
+          mkdir -p salida
+          cp android/app/build/outputs/apk/debug/app-debug.apk salida/jaula-abierta.apk
+          ls -lh salida/
+
+      - name: Guardar como artefacto de la ejecución
+        uses: actions/upload-artifact@v4
+        with:
+          name: jaula-abierta-apk
+          path: salida/jaula-abierta.apk
+          if-no-files-found: error
+
+      # Una publicación fija para poder descargar el APK desde el móvil con un
+      # enlace estable, sin tener que entrar en la pestaña Actions.
+      - name: Publicar descarga directa
+        if: github.ref_name == 'main' || startsWith(github.ref_name, 'claude/')
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release delete apk-latest --yes --cleanup-tag || true
+          gh release create apk-latest salida/jaula-abierta.apk \
+            --title "Jaula Abierta — APK de prueba" \
+            --notes "Prototipo jugable. Descarga el .apk en el móvil e instálalo permitiendo orígenes desconocidos. Construido desde ${{ github.sha }}." \
+            --prerelease

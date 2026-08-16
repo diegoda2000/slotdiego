@@ -1,0 +1,10 @@
+# Salidas de compilación de Android
+android/build/
+android/app/build/
+android/.gradle/
+android/local.properties
+*.apk
+
+# Node (solo se usa para la prueba de humo)
+node_modules/
+package-lock.json
