@@ -8,7 +8,7 @@ plugins {
 def assetsJuego = layout.buildDirectory.dir('juego-assets')
 
 def copiarJuego = tasks.register('copiarJuego', Copy) {
-    from(rootProject.file('../juego')) { include 'juego.html' }
+    from(rootProject.file('../juego')) { include 'juego.html'; include 'motor.js' }
     into assetsJuego
 }
 

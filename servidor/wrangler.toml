@@ -1,0 +1,14 @@
+name = "jaula-abierta"
+main = "src/index.js"
+compatibility_date = "2025-04-01"
+
+# Un Durable Object por sala: es lo que permite que exista un árbitro con las dos
+# plantillas que no se las enseña a nadie. Sin eso, las cartas ocultas son un pacto
+# de caballeros entre clientes.
+[[durable_objects.bindings]]
+name = "SALAS"
+class_name = "Sala"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Sala"]

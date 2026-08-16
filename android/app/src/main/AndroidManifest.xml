@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Sin permiso de INTERNET a propósito: el juego es completamente local. -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Único permiso, y solo para las partidas en vivo por sala. Todo lo demás
+         —sobres, colección, plantilla, partidas contra la IA y amigos por código—
+         funciona sin conexión y sin salir del dispositivo. -->
+    <uses-permission android:name="android.permission.INTERNET" />
 
     <application
         android:allowBackup="true"

@@ -16,10 +16,10 @@ diseño entero sin tocar el problema de licencias.
 publicación `apk-latest`. Hay que permitir "instalar de orígenes desconocidos" porque no
 viene de la tienda.
 
-**En el ordenador:** abre `juego.html` con el navegador. Nada que instalar, no necesita
-conexión y no hay servidor.
+**En el ordenador:** abre `juego.html` con el navegador. Nada que instalar ni que compilar.
 
-La partida se guarda sola en el propio dispositivo.
+La partida se guarda sola en el propio dispositivo. Todo funciona **sin conexión** salvo las
+partidas en vivo por sala, que necesitan el servidor de `../servidor/`.
 
 ---
 
@@ -41,14 +41,23 @@ márgenes con el 65/35 en los reñidos, victoria a 4 y desempate con stat al aza
 penalizaciones selectivas al subir y al bajar— y los cuatro rasgos con sus versiones plus.
 
 **Los sobres.** Tres sobres gratis **permanentes**, al estilo Pacybits/MadFUT. El **básico es
-ilimitado**, sin reloj, y por eso su drop es malísimo —2% de carta buena— : es la red de
-seguridad para que nadie se quede sin poder alinear, no una vía de progreso. Los otros dos van
-por reloj: plata cada 20 min, oro cada 2 h. Reclamarlos **no los abre**: se guardan, porque
-acumular veinte y reventarlos de golpe es justamente el momento que engancha.
+ilimitado**, sin reloj: da sobre todo **platas y oros bajos**, con algún bronce de vez en
+cuando, y **oro alto o mejor solo el 0,8%**. Es el suelo del que nadie baja, no una vía para
+llegar arriba. Los otros dos van por reloj: plata cada 20 min, oro cada 2 h.
 
-> Consecuencia a vigilar: con el básico ilimitado, la chatarra para reciclar es infinita, y las
-> fichas salen de reciclar. Eso devalúa la entrada a la sala de intercambio. Si la sala llega a
-> importar, la contención sería que las cartas de sobre básico no den fichas.
+El sorteo no va por rareza sino por **bandas de calidad**, que parten el oro por su media
+(bajo 75-80, medio 81-84, alto 85-88). Sin eso no se puede dar oros a menudo sin dar oros
+buenos, que es justo lo que distingue un sobre gratis de uno de pago. Cada sobre enseña en la
+tienda su porcentaje de "oro alto o mejor", que es el dato que de verdad importa.
+
+Reclamarlos **no los abre**: se guardan, porque acumular veinte y reventarlos de golpe es
+justamente el momento que engancha.
+
+> Dos consecuencias a vigilar. La primera: con el básico ilimitado la chatarra para reciclar es
+> infinita, y las fichas salen de reciclar, así que la entrada a la sala de intercambio se
+> devalúa; la contención sería que las cartas de sobre básico no den fichas. La segunda: el
+> suelo de plantilla sube a ~78 para todo el mundo, y eso hay que medirlo con la métrica
+> "85 contra 78" del plan — si una plantilla de 85 gana más del 85%, la colección aplasta.
 
 La apertura es una pantalla propia con **botón de atrás y de saltar**, revelado carta a carta
 tocando en cualquier sitio, aviso destacado cuando sale una élite o una leyenda, y un resumen
@@ -68,16 +77,29 @@ Los códigos llevan suma de verificación, y una plantilla que llegue de fuera s
 —11 divisiones, todas alineables, sin peleador repetido— antes de aceptarse. Un pegado a
 medias se rechaza explicando qué pasa, en vez de reventar a mitad de partida.
 
+**Partidas en vivo por sala.** Uno crea sala, sale un código de 6 letras, el otro lo mete y
+juegan **a la vez**, con un servidor de árbitro. Está en `../servidor/` y se despliega gratis en
+Cloudflare; la dirección se pega en el juego, así que **el mismo APK sirve para cualquier
+servidor** sin recompilar nada.
+
+Que exista un servidor no es capricho: las cartas están ocultas hasta que se resuelve el duelo,
+así que la plantilla del rival no puede vivir en tu móvil. El servidor manda a cada cliente
+**solo las cartas ya reveladas**, valida todas las jugadas y voltea los lados para que cada uno
+se vea como el jugador local. Está comprobado con dos navegadores jugando de verdad: ni una
+carta del rival sin resolver llega al otro lado.
+
+El motor de reglas es el mismo archivo (`motor.js`) en el juego y en el servidor, para que no
+puedan divergir.
+
 ## Qué no está
 
-**PvP en vivo.** Es la ausencia importante y conviene ser claro sobre por qué: las cartas están
-ocultas hasta que se resuelve el duelo, así que la plantilla del rival no puede vivir en tu
-móvil. Hacen falta un servidor autoritativo y cuentas, y eso es la Fase 5 del plan —el 22% del
-proyecto—. Lo de los amigos por código da partidas contra plantillas reales hoy, pero las
-decisiones del rival las toma la IA y el marcador va por confianza.
+**Cuentas y clasificación.** La identidad es un identificador del dispositivo: vale para jugar
+con amigos, no para una liga competitiva. Tampoco hay cola de emparejamiento aleatorio —solo
+salas por código—, ni ligas, telemetría, arte, sonido o monetización. La sala de intercambio
+empareja con un jugador simulado.
 
-Tampoco hay ligas ni competitivas, telemetría, arte, sonido ni monetización. La sala de
-intercambio empareja con un jugador simulado.
+En online, el **Veterano salta solo** en vez de preguntar, para no meter otra ida y vuelta en
+cada duelo. Mismo criterio para los dos lados.
 
 ---
 
@@ -103,8 +125,11 @@ obliga a elegir. Estas son las elecciones, y están recogidas también en
 
 ```
 npm i playwright
-node test-humo.mjs 25
+node test-humo.mjs 25          # modo local: roster, sobres, amigos y partidas
+node test-online.mjs           # en vivo: dos navegadores contra el servidor
 ```
+
+La segunda necesita el servidor levantado (`cd servidor && npx wrangler dev --port 8787 --local`).
 
 Abre el juego en Chromium, comprueba las invariantes del roster —que cada stat sea la media
 de sus sub-stats, que las medias caigan en su banda de rareza, que ninguna carta lleve dos

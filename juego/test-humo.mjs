@@ -126,14 +126,41 @@ const ilim = await page.evaluate(() => {
     if (!listoGratis(g)) return { fallo: 'dejó de estar disponible en la vuelta ' + i };
     S.gratis[g.id] = Date.now(); S.sobres.push({ tipo: g.tipo });
   }
-  const T = TIPOS_SOBRE.basico, tot = Object.values(T.pesos).reduce((a, b) => a + b, 0);
-  return { fallo: null, guardados: S.sobres.length, buenas: (T.pesos.oro + T.pesos.elite + T.pesos.leyenda) / tot };
+  return { fallo: null, guardados: S.sobres.length };
 });
 comprobar(!ilim.fallo, 'el básico sigue disponible por muchas veces que se reclame');
 comprobar(ilim.guardados === 5, 'cada reclamo acumula un sobre');
-comprobar(ilim.buenas < 0.03, `el básico casi nunca da cartas buenas (${(ilim.buenas * 100).toFixed(1)}%)`);
 comprobar(await page.evaluate(() => nGratisListos() <= 2),
   'el ilimitado no infla el aviso del menú');
+
+// La distribución se mide sobre la salida real, no sobre los pesos escritos:
+// un fallo en el reparto de bandas no se ve leyendo la tabla.
+console.log('\n2c-bis. Distribución real de 2.000 sobres básicos');
+const dist = await page.evaluate(() => {
+  const cuenta = {}; let n = 0;
+  const guardada = S.coleccion.slice();
+  for (let i = 0; i < 2000; i++) {
+    for (const it of abrirSobre('basico')) {
+      cuenta[bandaDe(PORID[it.cid])] = (cuenta[bandaDe(PORID[it.cid])] || 0) + 1; n++;
+    }
+    S.coleccion = guardada.slice();   // sin acumular 6.000 cartas de prueba
+  }
+  const p = k => (cuenta[k] || 0) / n;
+  return { n, cuenta, top: p('oroAlto') + p('elite') + p('leyenda'),
+           medio: p('plata') + p('oroBajo'), bronce: p('bronce') };
+});
+for (const b of ['bronce', 'plata', 'oroBajo', 'oroMedio', 'oroAlto', 'elite', 'leyenda'])
+  console.log(`     ${b.padEnd(9)} ${((dist.cuenta[b] || 0) / dist.n * 100).toFixed(2)}%`);
+comprobar(dist.top <= 0.01, `oro alto o mejor por debajo del 1% (${(dist.top * 100).toFixed(2)}%)`);
+comprobar(dist.medio > 0.8, `platas y oros bajos son la norma (${(dist.medio * 100).toFixed(1)}%)`);
+comprobar(dist.bronce > 0.05 && dist.bronce < 0.25,
+  `el bronce sale de vez en cuando (${(dist.bronce * 100).toFixed(1)}%)`);
+
+// La escalera tiene que subir: cada sobre mejor que el anterior en la mitad alta
+const escalera = await page.evaluate(() => ['basico', 'plata', 'oro', 'elite']
+  .map(k => +pctTop(TIPOS_SOBRE[k])));
+comprobar(escalera.every((v, i) => i === 0 || v > escalera[i - 1]),
+  `la escalera de sobres sube: ${escalera.join('% < ')}%`);
 
 /* ── 2d. Amigos por código ────────────────────────────────────────────── */
 console.log('\n2d. Amigos por código');

@@ -134,218 +134,9 @@ th{color:var(--dim2);font-size:11px;text-transform:uppercase;letter-spacing:.04e
 <div id="app"></div>
 <div id="nav"></div>
 
+<script src="motor.js"></script>
 <script>
 "use strict";
-/* ══════════════════════════════════════════════════════════════════════════
-   1. DATOS BASE
-   ══════════════════════════════════════════════════════════════════════════ */
-
-const DIVISIONES = [
-  {id:'m0',n:'Mosca',      g:'M',o:0}, {id:'m1',n:'Gallo',      g:'M',o:1},
-  {id:'m2',n:'Pluma',      g:'M',o:2}, {id:'m3',n:'Ligero',     g:'M',o:3},
-  {id:'m4',n:'Wélter',     g:'M',o:4}, {id:'m5',n:'Medio',      g:'M',o:5},
-  {id:'m6',n:'Semipesado', g:'M',o:6}, {id:'m7',n:'Pesado',     g:'M',o:7},
-  {id:'f0',n:'Paja F',     g:'F',o:0}, {id:'f1',n:'Mosca F',    g:'F',o:1},
-  {id:'f2',n:'Gallo F',    g:'F',o:2},
-];
-const DIV = Object.fromEntries(DIVISIONES.map(d=>[d.id,d]));
-
-// Dos escaleras independientes: no hay puente entre géneros.
-function contiguas(a,b){ const x=DIV[a],y=DIV[b]; return x.g===y.g && Math.abs(x.o-y.o)===1; }
-function vecinas(id){ return DIVISIONES.filter(d=>contiguas(id,d.id)).map(d=>d.id); }
-
-const STATS = [
-  {id:'golpeo',n:'GOLPEO',c:'GLP'}, {id:'lucha',n:'LUCHA',c:'LCH'},
-  {id:'suelo', n:'SUELO', c:'SUE'}, {id:'cardio',n:'CARDIO',c:'CAR'},
-  {id:'dureza',n:'DUREZA',c:'DUR'}, {id:'iq',    n:'IQ',    c:'IQ'},
-];
-const SID = STATS.map(s=>s.id);
-
-// Sub-stats exactamente como el GDD §2.2. La stat visible es su media.
-const SUBSTATS = {
-  golpeo:['potencia','precisión','volumen','boxeo','patadas','golpeo en clinch'],
-  lucha :['derribos','defensa de derribo','clinch','control contra la jaula','levantarse','transiciones'],
-  suelo :['sumisiones','defensa de sumisión','control desde arriba','guardia','ground and pound','escapes'],
-  cardio:['resistencia','recuperación','ritmo sostenido','asaltos finales','eficiencia de movimiento','gestión del gas'],
-  dureza:['mentón','absorción de daño','resistencia a cortes','recuperación de aturdimiento','castigo corporal','voluntad'],
-  iq    :['lectura del rival','gestión de distancia','adaptación','control del octógono','defensa','gestión de asaltos'],
-};
-
-const RAREZAS = {
-  bronce  :{n:'Bronce',   min:55,max:68,fichas:1/20},
-  plata   :{n:'Plata',    min:65,max:78,fichas:1/5},
-  oro     :{n:'Oro',      min:75,max:88,fichas:1},
-  elite   :{n:'Élite',    min:85,max:95,fichas:3},
-  leyenda :{n:'Leyenda',  min:96,max:99,fichas:8},
-};
-const ORDEN_RAREZA = ['bronce','plata','oro','elite','leyenda'];
-
-// Arquetipos: sesgos por stat. Base de la autoría — el resto es ruido.
-const ARQUETIPOS = [
-  {n:'Striker de distancia', o:{golpeo:+9,lucha:-6,suelo:-7,cardio:+1,dureza:-1,iq:+4}},
-  {n:'Boxeador de presión',  o:{golpeo:+8,lucha:+1,suelo:-8,cardio:+3,dureza:+4,iq:-3}},
-  {n:'Luchador de control',  o:{golpeo:-6,lucha:+10,suelo:+6,cardio:+3,dureza:+2,iq:+1}},
-  {n:'Grappler agresivo',    o:{golpeo:-8,lucha:+7,suelo:+11,cardio:-1,dureza:-2,iq:+2}},
-  {n:'Sumisionista',         o:{golpeo:-9,lucha:+3,suelo:+12,cardio:-2,dureza:-1,iq:+4}},
-  {n:'Peleador completo',    o:{golpeo:+2,lucha:+2,suelo:+2,cardio:+2,dureza:+1,iq:+3}},
-  {n:'Guerrero de desgaste', o:{golpeo:0, lucha:+1,suelo:-2,cardio:+10,dureza:+9,iq:-4}},
-  {n:'Noqueador',            o:{golpeo:+12,lucha:-3,suelo:-9,cardio:-6,dureza:+3,iq:-3}},
-  {n:'Contragolpeador',      o:{golpeo:+5,lucha:-4,suelo:-4,cardio:+2,dureza:0, iq:+9}},
-  {n:'Wrestleboxer',         o:{golpeo:+5,lucha:+7,suelo:0, cardio:+1,dureza:+1,iq:+2}},
-];
-
-const RASGOS = {
-  camaleon   :{n:'Camaleón',   ic:'🦎', d:'Al declarar, manda esta carta a pelear a una división contigua sin penalización. Tu carta de esa división se descarta sin pelear y el Camaleón sigue disponible para su propio duelo.', dplus:'Igual, pero no consume tu jugada.'},
-  incomodo   :{n:'Incómodo',   ic:'🌀', d:'Ocultas la división. El rival ve dos cartas suyas (la real y una contigua) y elige a ciegas. Si falla, su carta come -6.', dplus:'La segunda carta es de cualquier división en juego y el fallo cuesta -12. Usable siempre.'},
-  especialista:{n:'Especialista',ic:'🎯',d:'Si gana su duelo en su stat, esa stat no se gasta del pool.', dplus:'La stat no se gasta aunque pierda.'},
-  veterano   :{n:'Veterano',   ic:'🧠', d:'Cuando el rival declara la stat, la cambias por una aleatoria de entre las vivas.', dplus:'La eliges tú.'},
-};
-
-const PROMOTORAS = [
-  {id:'liga', n:'Liga Mayor', alineable:true},
-  {id:'cw',   n:'Circuito Norte',  alineable:false},
-  {id:'ksw',  n:'Arena del Este',  alineable:false},
-  {id:'rzn',  n:'Torneo Oriental', alineable:false},
-  {id:'inv',  n:'Liga Invicta',    alineable:false},
-];
-
-const GIMNASIOS = ['Casa Negra','Hierro Viejo','Escuela Delta','Jaula 9','Templo Rojo','Nordeste MMA',
-  'Alto Valle','Puño de Piedra','Academia Marea','Cuartel Sur','Bunker 12','Halcón Blanco'];
-const PAISES = ['🇧🇷 Brasil','🇺🇸 EE.UU.','🇷🇺 Rusia','🇲🇽 México','🇮🇪 Irlanda','🇳🇬 Nigeria','🇯🇵 Japón',
-  '🇵🇱 Polonia','🇰🇷 Corea','🇦🇺 Australia','🇫🇷 Francia','🇬🇧 Reino Unido','🇦🇷 Argentina','🇨🇳 China'];
-
-const NOM_M = ['Dario','Kervin','Oleg','Tadeo','Mattis','Rulon','Ivo','Sabas','Nuno','Kaleb','Ronin','Elian',
- 'Zoran','Bruno','Anselmo','Yuri','Iker','Marek','Teo','Casio','Adib','Renzo','Lubo','Ander','Tibor','Nael',
- 'Osmar','Dimas','Vlado','Emeka','Hiro','Kwame','Silas','Roco','Jarek','Amiel','Nestor','Ciro','Baltasar','Vasco'];
-const NOM_F = ['Nira','Talia','Yuna','Reka','Ilse','Mara','Zoe','Ainhoa','Kaia','Ludmila','Iria','Sena',
- 'Vania','Runa','Amaia','Petra','Noor','Kira','Elsa','Tania','Maren','Ísis','Nadia','Lía','Frida','Ondina'];
-const APE = ['Varga','Okonkwo','Mestre','Duarte','Kovac','Ferreiro','Nakamura','Bielski','Sandoval','Moreau',
- 'Ibarra','Krylov','Tanaka','Oduya','Salgado','Vranic','Cabral','Nikolic','Estévez','Rahal','Bjorn','Cassano',
- 'Petrov','Aguirre','Moss','Delacroix','Farkas','Quiroga','Nurgaliev','Owusu','Vidal','Strand','Barros','Melnyk',
- 'Ozaki','Ferrán','Lombardi','Haddad','Rojas','Kirilenko','Bouchard','Nunes do Vale','Ashworth','Tovar'];
-const APODOS = ['el Cirujano','Mano de Hierro','el Silencioso','Tormenta','el Reloj','Diente de Sable',
- 'el Contable','Media Noche','el Ancla','Rayo Seco','el Profesor','Bisturí','el Náufrago','Cabeza Fría',
- 'el Martillo','Viento Negro','el Cuervo','Piedra','el Relámpago','Corazón Frío','la Guillotina','el Sismo',
- 'Mandíbula','el Verdugo','Aguja','Hueso Duro','el Fantasma','Perro Viejo','la Marea','Dos Caras'];
-
-/* ══════════════════════════════════════════════════════════════════════════
-   2. AZAR CON SEMILLA
-   ══════════════════════════════════════════════════════════════════════════ */
-function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);
-  t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
-let RNG = Math.random;
-const ri=(a,b)=>a+Math.floor(RNG()*(b-a+1));
-const pick=a=>a[Math.floor(RNG()*a.length)];
-const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(RNG()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
-const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
-
-/* ══════════════════════════════════════════════════════════════════════════
-   3. GENERACIÓN DEL ROSTER  (semilla fija: el catálogo es siempre el mismo)
-   ══════════════════════════════════════════════════════════════════════════ */
-let ROSTER=[], PORID={};
-
-function generarCarta(id,divId,rareza,promo,opts={}){
-  const d=DIV[divId], fem=d.g==='F';
-  const arq=pick(ARQUETIPOS);
-  const R=RAREZAS[rareza];
-  const objetivo=ri(R.min,R.max);
-  const persona=opts.persona||{
-    nombre:(fem?pick(NOM_F):pick(NOM_M))+' '+pick(APE),
-    apodo: RNG()<.55?pick(APODOS):'',
-    pais:pick(PAISES), gimnasio:pick(GIMNASIOS),
-    veterano:RNG()<.28,
-  };
-  const stats={}, subs={};
-  for(const s of SID){
-    const t=clamp(objetivo+(arq.o[s]||0)+ri(-4,4),38,99);
-    if(promo.alineable){
-      // Las alineables llevan las 6 sub-stats; la grande es su media (GDD §2.2)
-      const v=SUBSTATS[s].map(()=>clamp(t+ri(-7,7),35,99));
-      subs[s]=v; stats[s]=Math.round(v.reduce((a,b)=>a+b,0)/v.length);
-    }else{
-      // Las de colección no son alineables: solo las 6 grandes (propuesta del plan)
-      stats[s]=t;
-    }
-  }
-  // El sesgo del arquetipo desplaza la media fuera de su banda de rareza. Se corrige
-  // desplazando todo el bloque hasta el objetivo: mantiene la forma del arquetipo y
-  // deja la media dentro del rango, que es lo que hace funcionar la tabla de márgenes.
-  let media=Math.round(SID.reduce((a,s)=>a+stats[s],0)/6);
-  const delta=objetivo-media;
-  if(delta){
-    for(const s of SID){
-      if(subs[s]){
-        subs[s]=subs[s].map(v=>clamp(v+delta,35,99));
-        stats[s]=Math.round(subs[s].reduce((a,b)=>a+b,0)/subs[s].length);
-      }else stats[s]=clamp(stats[s]+delta,35,99);
-    }
-    media=Math.round(SID.reduce((a,s)=>a+stats[s],0)/6);
-  }
-  return {id,persona:opts.personaId||id,nombre:persona.nombre,apodo:persona.apodo,
-    pais:persona.pais,gimnasio:persona.gimnasio,esVeterano:persona.veterano,
-    division:divId,rareza,media,stats,subs:promo.alineable?subs:null,
-    promotora:promo.id,alineable:promo.alineable,arquetipo:arq.n,
-    dobleDiv:!!opts.dobleDiv,rasgos:[],notraspasable:false};
-}
-
-function asignarRasgos(c){
-  const p={bronce:.02,plata:.08,oro:.26,elite:.62,leyenda:.9}[c.rareza];
-  if(RNG()>p) return;
-  const posibles=['incomodo','especialista'];
-  if(c.dobleDiv) posibles.push('camaleon');
-  if(c.esVeterano) posibles.push('veterano');
-  const n=(RNG()<.07 && posibles.length>1)?2:1;   // dos rasgos: rarísimo
-  const elegidos=shuffle(posibles).slice(0,n);    // siempre distintos entre sí
-  for(const t of elegidos){
-    const r={tipo:t,plus:RNG()<.2};
-    if(t==='especialista'){
-      // asociado a su mejor stat
-      r.stat=SID.slice().sort((a,b)=>c.stats[b]-c.stats[a])[0];
-    }
-    c.rasgos.push(r);
-  }
-}
-
-function generarRoster(){
-  RNG=mulberry32(20260816);
-  const out=[]; let n=0;
-  const liga=PROMOTORAS[0];
-  for(const d of DIVISIONES){
-    const reparto=[...Array(6).fill('bronce'),...Array(4).fill('plata'),...Array(3).fill('oro'),'elite'];
-    for(const rar of reparto) out.push(generarCarta('c'+(n++),d.id,rar,liga));
-  }
-  // 5 leyendas en todo el juego (GDD §2.4: "por encima de 95, 4-5 cartas")
-  for(const dId of shuffle(DIVISIONES.map(d=>d.id)).slice(0,5))
-    out.push(generarCarta('c'+(n++),dId,'leyenda',liga));
-
-  // Peleadores con historial en dos divisiones → candidatos a Camaleón.
-  // Comparten persona: no puedes alinear las dos versiones a la vez.
-  const gemelas=[];
-  for(const c of out){
-    if(c.rareza==='bronce'||RNG()>.14) continue;
-    const v=vecinas(c.division); if(!v.length) continue;
-    const g=generarCarta('c'+(n++),pick(v),c.rareza,liga,{
-      persona:{nombre:c.nombre,apodo:c.apodo,pais:c.pais,gimnasio:c.gimnasio,veterano:c.esVeterano},
-      personaId:c.persona,dobleDiv:true});
-    c.dobleDiv=true; gemelas.push(g);
-  }
-  out.push(...gemelas);
-
-  // Cartas de colección de otras promotoras: no alineables
-  for(const p of PROMOTORAS.slice(1)){
-    for(let i=0;i<11;i++){
-      const rar=['bronce','bronce','bronce','plata','plata','oro','oro','elite'][ri(0,7)];
-      out.push(generarCarta('c'+(n++),pick(DIVISIONES).id,rar,p));
-    }
-  }
-  for(const c of out) asignarRasgos(c);
-  ROSTER=out; PORID=Object.fromEntries(out.map(c=>[c.id,c]));
-  RNG=Math.random;
-}
-
-const alineables=()=>ROSTER.filter(c=>c.alineable);
-const rasgoTxt=r=>RASGOS[r.tipo].n+(r.plus?'+':'')+(r.stat?' · '+r.stat.toUpperCase():'');
-
 /* ══════════════════════════════════════════════════════════════════════════
    4. ESTADO DEL JUGADOR
    ══════════════════════════════════════════════════════════════════════════ */
@@ -395,24 +186,47 @@ function cargar(){
   catch(e){ALMACEN_OK=false}
   return false;
 }
-const plantillaCompleta=()=>DIVISIONES.every(d=>S.plantilla[d.id]);
+// No basta con que el hueco tenga algo escrito: la carta tiene que existir todavía en
+// la colección. Si no, un guardado desincronizado revienta la partida a mitad.
+const plantillaCompleta=()=>DIVISIONES.every(d=>{
+  const iid=S.plantilla[d.id];
+  return iid && S.coleccion.some(x=>x.iid===iid);
+});
 const inst=iid=>S.coleccion.find(x=>x.iid===iid);
 const cartaDe=iid=>{const i=inst(iid);return i?PORID[i.cid]:null};
 
 /* ══════════════════════════════════════════════════════════════════════════
    5. ECONOMÍA — sobres, reciclaje, sets, retos, intercambio
    ══════════════════════════════════════════════════════════════════════════ */
+/* Bandas de calidad. Sortear por rareza a secas no distingue un oro de 76 de uno de 87,
+   y esa diferencia es justo la que decide si un sobre gratis te regala una plantilla.
+   Partir el oro por su media es lo que permite que el básico dé oros a menudo sin que
+   dé nunca oros buenos. */
+const BANDAS=[
+  {id:'bronce',  n:'Bronce',    cumple:c=>c.rareza==='bronce'},
+  {id:'plata',   n:'Plata',     cumple:c=>c.rareza==='plata'},
+  {id:'oroBajo', n:'Oro bajo',  cumple:c=>c.rareza==='oro'&&c.media<=80},
+  {id:'oroMedio',n:'Oro medio', cumple:c=>c.rareza==='oro'&&c.media>80&&c.media<=84},
+  {id:'oroAlto', n:'Oro alto',  cumple:c=>c.rareza==='oro'&&c.media>84},
+  {id:'elite',   n:'Élite',     cumple:c=>c.rareza==='elite'},
+  {id:'leyenda', n:'Leyenda',   cumple:c=>c.rareza==='leyenda'},
+];
+const BANDA_IDS=BANDAS.map(b=>b.id);
+// De aquí para arriba es lo que la gente persigue: la cifra que se enseña en la tienda.
+const BANDAS_TOP=['oroAlto','elite','leyenda'];
+const bandaDe=c=>(BANDAS.find(b=>b.cumple(c))||BANDAS[0]).id;
+
 const TIPOS_SOBRE={
-  // El básico es ilimitado, así que su drop tiene que ser malo de verdad: es la red
-  // de seguridad para que nadie se quede sin poder alinear, no una vía de progreso.
+  // Ilimitado: da platas y oros bajos a menudo —es el suelo del que nadie baja— pero
+  // oro alto o mejor suma 0,8%, así que no es una vía para llegar arriba.
   basico:{n:'Sobre básico', ic:'📦', coste:0,   cartas:3, alineables:2,
-    pesos:{bronce:88,plata:10,oro:1.9,elite:0.1,leyenda:.01}},
+    pesos:{bronce:13, plata:45, oroBajo:40, oroMedio:1.2, oroAlto:0.6, elite:0.18, leyenda:0.02}},
   plata :{n:'Sobre de plata',ic:'🎁', coste:250, cartas:4, alineables:3,
-    pesos:{bronce:46,plata:36,oro:15,elite:2.7,leyenda:.3}},
+    pesos:{bronce:2,  plata:30, oroBajo:40, oroMedio:20,  oroAlto:6,   elite:1.8,  leyenda:0.2}},
   oro   :{n:'Sobre de oro',  ic:'🥇', coste:600, cartas:5, alineables:4,
-    pesos:{bronce:30,plata:38,oro:24,elite:7,leyenda:1}},
+    pesos:{bronce:0,  plata:12, oroBajo:30, oroMedio:30,  oroAlto:20,  elite:7,    leyenda:1}},
   elite :{n:'Sobre de élite',ic:'💎', coste:2200,cartas:5, alineables:4,
-    pesos:{bronce:0,plata:30,oro:46,elite:21,leyenda:3}},
+    pesos:{bronce:0,  plata:0,  oroBajo:12, oroMedio:25,  oroAlto:38,  elite:22,   leyenda:3}},
 };
 
 // Sobres gratis permanentes, estilo Pacybits/MadFUT: siempre están en la tienda,
@@ -434,21 +248,32 @@ function reloj(ms){
   return h?`${h}:${String(m).padStart(2,'0')}:${String(r).padStart(2,'0')}`
           :`${m}:${String(r).padStart(2,'0')}`;
 }
-function sorteaRareza(pesos){
-  const tot=Object.values(pesos).reduce((a,b)=>a+b,0); let r=Math.random()*tot;
-  for(const [k,v] of Object.entries(pesos)){ if((r-=v)<0) return k; }
-  return 'bronce';
+function sorteaBanda(pesos){
+  const tot=BANDA_IDS.reduce((a,b)=>a+(pesos[b]||0),0);
+  let r=Math.random()*tot;
+  for(const b of BANDA_IDS){ if((r-=(pesos[b]||0))<0) return b; }
+  return 'plata';
+}
+// Si una banda se queda sin cartas —pasa en el pool corto de colección— se cae a la
+// contigua, no a una carta cualquiera: saltar de "oro alto" a "bronce" de golpe sería
+// justo el tipo de sorpresa que hace pensar que el juego está roto.
+function cartaDeBanda(bandaId,alineable){
+  const i=BANDA_IDS.indexOf(bandaId);
+  for(let d=0;d<BANDA_IDS.length;d++){
+    for(const j of (d===0?[i]:[i-d,i+d])){
+      if(j<0||j>=BANDAS.length) continue;
+      const pool=ROSTER.filter(c=>c.alineable===alineable&&BANDAS[j].cumple(c));
+      if(pool.length) return pick(pool);
+    }
+  }
+  return pick(ROSTER.filter(c=>c.alineable===alineable));
 }
 // Un solo tipo de sobre con huecos alineables garantizados + huecos de colección
 // de regalo (propuesta del plan para "el sobre que decepciona").
 function abrirSobre(tipo){
   const T=TIPOS_SOBRE[tipo], salida=[];
   for(let i=0;i<T.cartas;i++){
-    const soloAlineables=i<T.alineables;
-    const rar=sorteaRareza(T.pesos);
-    let pool=ROSTER.filter(c=>c.rareza===rar&&c.alineable===soloAlineables);
-    if(!pool.length) pool=ROSTER.filter(c=>c.alineable===soloAlineables);
-    const c=pick(pool);
+    const c=cartaDeBanda(sorteaBanda(T.pesos), i<T.alineables);
     const it={iid:'i'+Math.random().toString(36).slice(2,9),cid:c.id};
     S.coleccion.push(it); salida.push(it);
   }
@@ -576,136 +401,68 @@ function registrarResultado(txt){
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
-   6. MOTOR DE REGLAS  (puro: no toca el DOM — extraíble a packages/rules)
+   6b. RED — partidas en vivo por sala
+   ─────────────────────────────────────────────────────────────────────────
+   En online el cliente no calcula nada: manda lo que quiere hacer y pinta lo que
+   el servidor le devuelve. El estado llega ya recortado (sin las cartas del rival
+   sin resolver) y con los lados volteados, de modo que cada jugador se ve siempre
+   como 'j' y todas las pantallas de partida sirven sin tocarlas.
    ══════════════════════════════════════════════════════════════════════════ */
-const MARGENES={finish:13,decision:7};
-
-function nuevaPartida(plantillaJ,plantillaR){
-  return {fase:'rol', rolJ:null, vetoPrimero:null, vetados:[], vetoAzar:null,
-    enJuego:[], jugadas:[], statsVivas:SID.slice(), duelo:0, turno:null,
-    marcador:{j:0,r:0}, jugada:{j:false,r:false},
-    cartas:{j:{...plantillaJ},r:{...plantillaR}}, // divId -> carta
-    ajustes:{j:{},r:{}},  // divId -> {stat:delta}
-    log:[], pendiente:null, fin:null};
+let MODO='local', RED=null, SALA=null;
+const online=()=>MODO==='online';
+const servidorURL=()=>String(S.servidor||'').trim().replace(/\/+$/,'');
+function miId(){
+  if(!S.jugadorId){ S.jugadorId='j'+Math.random().toString(36).slice(2,12); guardar(); }
+  return S.jugadorId;
 }
+function enviarRed(o){ if(RED&&RED.readyState===1) RED.send(JSON.stringify(o)); }
 
-function terminarVetos(P){
-  P.enJuego=DIVISIONES.map(d=>d.id).filter(id=>!P.vetados.includes(id));
-  // Veto aleatorio al final: su división será el desempate
-  P.vetoAzar=pick(P.enJuego);
-  P.enJuego=P.enJuego.filter(id=>id!==P.vetoAzar);
-  P.enJuego.sort((a,b)=>DIVISIONES.findIndex(d=>d.id===a)-DIVISIONES.findIndex(d=>d.id===b));
-  P.fase='duelos'; P.duelo=1;
-  P.turno=P.vetoPrimero==='j'?'r':'j';   // empieza declarando el que no empezó vetando
-  P.log.push({t:'sys',x:`Veto aleatorio: ${DIV[P.vetoAzar].n} — será el desempate.`});
-}
+function conectar(codigo){
+  const base=servidorURL();
+  if(!base) return avisoCodigo('Falta la dirección del servidor. Ponla en Amigos → Servidor.');
+  if(!plantillaCompleta()) return avisoCodigo('Completa las 11 divisiones antes de jugar online.');
+  try{ if(RED) RED.close(); }catch(e){}
+  MODO='online'; P=null;
+  SALA={codigo,estado:'conectando',jugadores:[]};
+  vista='online'; tmp={}; render();
 
-const librePara=(P,l)=>P.enJuego.filter(id=>!P.jugadas.includes(id));
-function valorCarta(P,l,divId,stat){
-  const c=P.cartas[l][divId]; if(!c) return 0;
-  const a=(P.ajustes[l][divId]||{})[stat]||0;
-  return c.stats[stat]+a;
-}
-function aplicarPenalizacion(P,l,divId,tipo){
-  const a=P.ajustes[l][divId]||(P.ajustes[l][divId]={});
-  const lista=tipo==='subir'?['golpeo','lucha','dureza']:['cardio','dureza'];
-  for(const s of lista) a[s]=(a[s]||0)-6;
-}
-function penaliza(P,l,divId,stats,v){
-  const a=P.ajustes[l][divId]||(P.ajustes[l][divId]={});
-  for(const s of stats) a[s]=(a[s]||0)+v;
-}
-// Las dos cartas cambian de slot llevándose sus ajustes. Lo usa el Incómodo:
-// así el peleador enviado pelea en la división declarada y el otro cubre la que deja,
-// de modo que cada peleador sigue peleando una sola vez y el calendario cuadra.
-function intercambiarSlots(P,l,a,b){
-  const ca=P.cartas[l][a], cb=P.cartas[l][b];
-  P.cartas[l][a]=cb; P.cartas[l][b]=ca;
-  const aa=P.ajustes[l][a]||{}, ab=P.ajustes[l][b]||{};
-  P.ajustes[l][a]=ab; P.ajustes[l][b]=aa;
-}
+  const url=base.replace(/^http/,'ws')+'/sala/'+encodeURIComponent(codigo)
+    +'?jugador='+encodeURIComponent(miId());
+  let ws;
+  try{ ws=new WebSocket(url); }catch(e){ SALA.estado='error'; SALA.motivo=String(e); return render(); }
+  RED=ws;
 
-// Cambio de división: contiguas, ambas en juego, ninguna jugada, intercambio obligado
-function cambiosPosibles(P,l){
-  if(P.jugada[l]) return [];
-  const libres=librePara(P,l), out=[];
-  for(const a of libres) for(const b of libres)
-    if(a<b && contiguas(a,b)) out.push([a,b]);
-  return out;
+  ws.onopen=()=>{
+    SALA.estado='en sala';
+    enviarRed({t:'unirse',nombre:S.nombre||'Jugador',
+      cartas:DIVISIONES.map(d=>inst(S.plantilla[d.id]).cid)});
+    render();
+  };
+  ws.onmessage=e=>{
+    let m; try{ m=JSON.parse(e.data); }catch(err){ return; }
+    if(m.t==='sala'){ SALA.jugadores=m.jugadores||[]; SALA.tuLado=m.tuLado;
+      if(vista!=='partida') render(); return; }
+    if(m.t==='estado'){
+      P=m.P;
+      if(vista!=='partida'){ vista='partida'; tmp={}; }
+      else { tmp.divSel=null; tmp.statSel=null; tmp.jugada=null; }
+      render(); return;
+    }
+    if(m.t==='error'){
+      tmp.jugada=null;
+      ov(`<div class="center"><div style="font-size:34px">⚠️</div><h3>El servidor lo rechaza</h3>
+        <div class="sub mb">${esc(m.motivo||'')}</div>
+        <button class="btn" data-a="cerrarov">Vale</button></div>`);
+      return;
+    }
+  };
+  ws.onclose=()=>{ if(SALA&&SALA.estado!=='cerrada'){ SALA.estado='desconectado'; render(); } };
+  ws.onerror=()=>{ if(SALA){ SALA.estado='error'; render(); } };
 }
-function hacerCambio(P,l,a,b){
-  const A=DIV[a],B=DIV[b];
-  const [abajo,arriba]=A.o<B.o?[a,b]:[b,a];
-  const cAbajo=P.cartas[l][abajo], cArriba=P.cartas[l][arriba];
-  P.cartas[l][arriba]=cAbajo; P.cartas[l][abajo]=cArriba;
-  P.ajustes[l][arriba]={}; P.ajustes[l][abajo]={};
-  aplicarPenalizacion(P,l,arriba,'subir');   // la que sube
-  aplicarPenalizacion(P,l,abajo,'bajar');    // la que baja
-  P.jugada[l]=true;
-  P.log.push({t:'sys',x:`${l==='j'?'Tú':'El rival'}: cambio de división ${DIV[abajo].n} ⇄ ${DIV[arriba].n}.`});
-}
-
-function rasgoDe(c,tipo){ return c?c.rasgos.find(r=>r.tipo===tipo):null; }
-
-// Camaleón: manda la carta a una contigua sin penalización; la de allí se descarta.
-function camaleonesPosibles(P,l,divDeclarada){
-  const out=[];
-  for(const dId of librePara(P,l)){
-    if(dId===divDeclarada) continue;
-    const c=P.cartas[l][dId]; const r=rasgoDe(c,'camaleon');
-    if(r && contiguas(dId,divDeclarada) && (!P.jugada[l]||r.plus)) out.push({div:dId,carta:c,rasgo:r});
-  }
-  return out;
-}
-
-function resolverDuelo(P,divId,stat,opts={}){
-  const vj=valorCarta(P,'j',divId,stat), vr=valorCarta(P,'r',divId,stat);
-  const m=Math.abs(vj-vr);
-  let ganador, tipo;
-  if(m===0){ ganador=Math.random()<.5?'j':'r'; tipo='reñido'; }         // empate: moneda al aire
-  else{
-    const alto=vj>vr?'j':'r';
-    if(m>=MARGENES.finish){ ganador=alto; tipo='finish'; }
-    else if(m>=MARGENES.decision){ ganador=alto; tipo='decisión'; }
-    else { ganador=Math.random()<.65?alto:(alto==='j'?'r':'j'); tipo='reñido'; }
-  }
-  P.marcador[ganador]++;
-  const cj=P.cartas.j[divId], cr=P.cartas.r[divId];
-  P.log.push({t:'duelo',div:divId,stat,vj,vr,ganador,tipo,
-    nj:cj?cj.nombre:'—',nr:cr?cr.nombre:'—',
-    dobleJ:!!opts.dobleJ,dobleR:!!opts.dobleR});
-
-  // ESPECIALISTA: la stat puede no gastarse (revive para los dos)
-  let revive=false;
-  for(const l of ['j','r']){
-    const c=P.cartas[l][divId]; const r=rasgoDe(c,'especialista');
-    if(r && r.stat===stat && (r.plus || ganador===l)) revive=true;
-  }
-  if(!revive) P.statsVivas=P.statsVivas.filter(s=>s!==stat);
-  else P.log.push({t:'sys',x:`Especialista: ${stat.toUpperCase()} no se gasta y vuelve al pool.`});
-
-  P.jugadas.push(divId);
-  if(P.marcador.j>=4||P.marcador.r>=4){ P.fase='fin'; P.fin=P.marcador.j>=4?'j':'r'; return; }
-  if(P.jugadas.length>=P.enJuego.length){
-    if(P.marcador.j===P.marcador.r){ P.fase='desempate'; }
-    else { P.fase='fin'; P.fin=P.marcador.j>P.marcador.r?'j':'r'; }
-    return;
-  }
-  P.duelo++;
-  P.turno=P.turno==='j'?'r':'j';
-}
-
-function resolverDesempate(P){
-  const divId=P.vetoAzar, stat=pick(SID);   // azar solo donde ya no quedan decisiones
-  const vj=valorCarta(P,'j',divId,stat), vr=valorCarta(P,'r',divId,stat);
-  let ganador;
-  const m=Math.abs(vj-vr);
-  if(m===0) ganador=Math.random()<.5?'j':'r';
-  else{ const alto=vj>vr?'j':'r'; ganador=(m>=MARGENES.decision)?alto:(Math.random()<.65?alto:(alto==='j'?'r':'j')); }
-  P.marcador[ganador]++;
-  P.log.push({t:'duelo',div:divId,stat,vj,vr,ganador,tipo:'desempate',
-    nj:P.cartas.j[divId].nombre,nr:P.cartas.r[divId].nombre});
-  P.fase='fin'; P.fin=ganador;
+function salirDeSala(){
+  if(SALA) SALA.estado='cerrada';
+  try{ if(RED) RED.close(); }catch(e){}
+  RED=null; SALA=null; MODO='local'; P=null;
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -790,12 +547,13 @@ function navHTML(){
 function render(){
   $('#r-div').innerHTML='🪙 <span>'+S.divisa+'</span>';
   $('#r-fic').innerHTML='🎟️ <span>'+S.fichas+'</span>';
-  $('#nav').innerHTML = (vista==='partida')?'':navHTML();
-  $('#nav').style.display = vista==='partida'?'none':'flex';
-  document.body.style.paddingBottom = vista==='partida'?'12px':'64px';
+  const sinNav = vista==='partida'||vista==='online';
+  $('#nav').innerHTML = sinNav?'':navHTML();
+  $('#nav').style.display = sinNav?'none':'flex';
+  document.body.style.paddingBottom = sinNav?'12px':'64px';
   const f={inicio:vInicio,sobres:vSobres,coleccion:vColeccion,plantilla:vPlantilla,
     mas:vMas,reciclaje:vReciclaje,sets:vSets,retos:vRetos,intercambio:vIntercambio,
-    partida:vPartida,notas:vNotas,apertura:vApertura,amigos:vAmigos}[vista]||vInicio;
+    partida:vPartida,notas:vNotas,apertura:vApertura,amigos:vAmigos,online:vOnline}[vista]||vInicio;
   $('#app').innerHTML=f();
   $('#app').classList.remove('flash'); void $('#app').offsetWidth; $('#app').classList.add('flash');
 }
@@ -833,10 +591,18 @@ function vInicio(){
 }
 
 /* ── SOBRES ── */
+// La cifra que de verdad quiere saber quien abre un sobre es la de arriba, así que
+// va aparte y destacada en vez de perdida en la lista.
+const pctTop=t=>{
+  const tot=BANDA_IDS.reduce((a,b)=>a+(t.pesos[b]||0),0);
+  const top=BANDAS_TOP.reduce((a,b)=>a+(t.pesos[b]||0),0);
+  const p=top/tot*100;
+  return p>=10?p.toFixed(0):p.toFixed(p<1?1:1);
+};
 const probs=t=>{
-  const tot=Object.values(t.pesos).reduce((a,b)=>a+b,0);
-  return Object.entries(t.pesos).filter(([,v])=>v>0)
-    .map(([r,v])=>RAREZAS[r].n+' '+(v/tot*100).toFixed(0)+'%').join(' · ');
+  const tot=BANDA_IDS.reduce((a,b)=>a+(t.pesos[b]||0),0);
+  return BANDAS.filter(b=>(t.pesos[b.id]||0)/tot>=0.02)
+    .map(b=>b.n+' '+((t.pesos[b.id]||0)/tot*100).toFixed(0)+'%').join(' · ');
 };
 function vSobres(){
   const pend=S.sobres.reduce((a,s)=>{a[s.tipo]=(a[s.tipo]||0)+1;return a},{});
@@ -854,7 +620,8 @@ function vSobres(){
           <div style="flex:2"><b>${T.n}</b>
             ${ilim?'<span class="chip on" style="margin-left:5px">ILIMITADO</span>':''}
             <div class="tiny">${T.cartas} cartas · ${T.alineables} alineables garantizadas</div>
-            <div class="tiny">${probs(T)}</div></div>
+            <div class="tiny">${probs(T)}</div>
+            <div class="tiny" style="color:var(--warn)">Oro alto o mejor: ${pctTop(T)}%</div></div>
           <button class="btn sm" data-a="gratis" data-g="${g.id}"
             data-reloj="${g.id}" ${ok?'':'disabled'} style="flex:none;min-width:92px">
             ${ok?'Reclamar':reloj(restaGratis(g))}</button>
@@ -883,7 +650,8 @@ function vSobres(){
         <div style="flex:none;font-size:26px">${t.ic}</div>
         <div style="flex:2"><b>${t.n}</b>
           <div class="tiny">${t.cartas} cartas · ${t.alineables} alineables garantizadas</div>
-          <div class="tiny">${probs(t)}</div></div>
+          <div class="tiny">${probs(t)}</div>
+          <div class="tiny" style="color:var(--warn)">Oro alto o mejor: ${pctTop(t)}%</div></div>
         <button class="btn sm" data-a="comprar" data-t="${k}" ${S.divisa<t.coste?'disabled':''}
           style="flex:none;min-width:80px">🪙 ${t.coste}</button>
       </div></div>`;
@@ -1157,6 +925,39 @@ function vIntercambio(){
     <div class="divider"></div><button class="btn gho" data-a="salirsala">Salir de la sala (pierdes la ficha)</button>`;
 }
 
+/* ── ONLINE: sala y espera ── */
+function vOnline(){
+  if(!SALA) return vAmigos();
+  const otros=(SALA.jugadores||[]).filter(j=>j.lado!==SALA.tuLado);
+  const estados={conectando:'Conectando…','en sala':'En la sala',desconectado:'Conexión perdida',
+    error:'No se ha podido conectar',cerrada:'Cerrada'};
+  const mal=SALA.estado==='desconectado'||SALA.estado==='error';
+  return `<h2>Sala ${esc(SALA.codigo)}</h2>
+    <div class="sub mb">${estados[SALA.estado]||SALA.estado}</div>
+    <div class="card-panel center" style="padding:20px 14px">
+      <div class="tiny">CÓDIGO DE SALA</div>
+      <div id="micodigo" style="font-size:38px;font-weight:800;letter-spacing:.12em;
+        font-family:ui-monospace,monospace;margin:6px 0">${esc(SALA.codigo)}</div>
+      <button class="btn sec sm" data-a="copiarcodigo" style="width:100%">📋 Copiar código</button>
+    </div>
+    ${mal?`<div class="card-panel" style="border-color:var(--warn)">
+      <b>${estados[SALA.estado]}</b>
+      <div class="sub mb">Comprueba la dirección del servidor y que tengas conexión.</div>
+      <button class="btn sm" data-a="reconectar">Reintentar</button></div>`
+    :`<div class="card-panel center">
+      ${otros.length?`<div style="font-size:32px">🥊</div><b>${esc(otros[0].nombre)} está dentro</b>
+        <div class="sub">Empezando…</div>`
+      :`<div style="font-size:32px">⏳</div><b>Esperando al rival</b>
+        <div class="sub">Pásale el código. Cuando entre, la partida arranca sola.</div>`}
+    </div>`}
+    <button class="btn gho" data-a="salirsala2">Salir de la sala</button>`;
+}
+function pEsperando(){
+  return marcadorHTML()+`<div class="card-panel center" style="padding:26px 14px">
+    <div style="font-size:34px">⏳</div><h3>Le toca a ${esc(P.rival||'tu rival')}</h3>
+    <div class="sub">La pantalla se actualiza sola.</div></div>`+logHTML();
+}
+
 /* ── AMIGOS ── */
 function vAmigos(){
   const cod=miCodigo();
@@ -1170,6 +971,21 @@ function vAmigos(){
         maxlength="20" style="width:100%;padding:10px;border-radius:8px;background:var(--bg3);
         border:1px solid var(--line);color:var(--txt);font:inherit;margin-bottom:8px">
       <button class="btn sec sm" data-a="guardarnombre" style="width:100%">Guardar nombre</button>
+    </div>
+
+    <div class="card-panel" style="border-color:var(--acc)">
+      <h3>🟢 Partida en vivo</h3>
+      <div class="tiny mb">Los dos a la vez, con un servidor de árbitro para que las cartas
+      del rival estén ocultas de verdad.</div>
+      ${servidorURL()?`<div class="row mb">
+          <button class="btn sm" data-a="crearsala" ${plantillaCompleta()?'':'disabled'}>Crear sala</button>
+          <button class="btn sm sec" data-a="pedircodigo" ${plantillaCompleta()?'':'disabled'}>Entrar con código</button>
+        </div>`
+      :`<div class="sub mb">Configura abajo la dirección del servidor para activarlo.</div>`}
+      <input id="servidor" value="${esc(S.servidor||'')}" placeholder="https://…workers.dev"
+        style="width:100%;padding:10px;border-radius:8px;background:var(--bg3);
+        border:1px solid var(--line);color:var(--txt);font:inherit;margin-bottom:8px">
+      <button class="btn gho sm" data-a="guardarservidor" style="width:100%">Guardar servidor</button>
     </div>
 
     <div class="card-panel">
@@ -1297,6 +1113,7 @@ function logHTML(){
 }
 
 function vPartida(){
+  if(P.fase==='esperando') return pEsperando();
   if(P.fase==='rol') return pRol();
   if(P.fase==='vetos') return pVetos();
   if(P.fase==='duelos') return pDuelos();
@@ -1343,6 +1160,7 @@ function pDuelos(){
   const puedeInc=!!inc && !P.jugada.j && !!segundaCartaIncomodo(P,'r',d,inc);
 
   if(!miTurno){
+    if(online()) return pEsperando();
     return marcadorHTML()+`<div class="card-panel center"><h3>Declara el rival…</h3>
       <button class="btn" data-a="iaturno">Continuar</button></div>`+logHTML();
   }
@@ -1356,7 +1174,13 @@ function pDuelos(){
       ${d?`<div style="max-width:170px;margin:10px auto 0">${cartaHTML(P.cartas.j[d],{ajuste:P.ajustes.j[d]})}</div>`:''}
       ${d&&st?`<div class="center" style="margin-top:8px">Llevas <b style="font-size:20px">${valorCarta(P,'j',d,st)}</b> en ${st.toUpperCase()}</div>`:''}
     </div>
-    ${(!P.jugada.j&&(cambios.length||cams.length||puedeInc))?`<div class="card-panel">
+    ${(online()&&tmp.jugada)?`<div class="card-panel" style="border-color:var(--acc)">
+      <h3>Jugada preparada</h3><div class="sub">${
+        tmp.jugada.tipo==='cambio'?`Cambio ${DIV[tmp.jugada.a].n} ⇄ ${DIV[tmp.jugada.b].n}`
+        :tmp.jugada.tipo==='camaleon'?`Camaleón desde ${DIV[tmp.jugada.div].n}`:'Incómodo'
+      } — se aplica al declarar.</div>
+      <button class="btn gho sm" data-a="quitarjugada" style="margin-top:7px">Quitar</button></div>`:''}
+    ${(!P.jugada.j&&!(online()&&tmp.jugada)&&(cambios.length||cams.length||puedeInc))?`<div class="card-panel">
       <h3>Tu jugada <span class="tiny">(una por partida)</span></h3>
       ${cambios.length?`<div class="sub mb">Cambio de división — intercambio obligado, con penalización:</div>
         <div class="chips mb">${cambios.map(([a,b],i)=>
@@ -1395,7 +1219,7 @@ function pDesempate(){
 function pFin(){
   const gane=P.fin==='j';
   const prem=gane?ri(180,320):ri(60,120);
-  const amigo=P.amigoId?S.amigos.find(a=>a.id===P.amigoId):null;
+  const amigo=(!online()&&P.amigoId)?S.amigos.find(a=>a.id===P.amigoId):null;
   if(!tmp.cobrado){
     tmp.cobrado=true; S.partidas++; if(gane)S.victorias++;
     S.divisa+=prem;
@@ -1419,9 +1243,10 @@ function pFin(){
       <button class="btn sm sec" data-a="copiarcodigo" style="width:100%">📋 Copiar resultado</button>
     </div>`:''}
     ${logHTML()}
-    <button class="btn" data-a="${amigo?'retar':'jugar'}" ${amigo?`data-id="${amigo.id}"`:''} style="margin-top:10px">
+    ${online()?`<button class="btn" data-a="salirsala2" style="margin-top:10px">Salir de la sala</button>`
+    :`<button class="btn" data-a="${amigo?'retar':'jugar'}" ${amigo?`data-id="${amigo.id}"`:''} style="margin-top:10px">
       ${amigo?'Otra contra '+esc(amigo.nombre):'Otra partida'}</button>
-    <button class="btn sec" data-nav="inicio" style="margin-top:8px">Volver al inicio</button>`;
+    <button class="btn sec" data-nav="inicio" style="margin-top:8px">Volver al inicio</button>`}`;
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -1605,20 +1430,29 @@ document.addEventListener('click',e=>{
     tmp.sel=tmp.sel.includes(d.rec)?tmp.sel.filter(x=>x!==d.rec):[...tmp.sel,d.rec];
     render(); return;
   }
-  if(d.rol){ elegirRol(d.rol); return; }
-  if(d.veto){ vetar(d.veto); return; }
+  if(d.rol){ online()?enviarRed({t:'rol',v:d.rol}):elegirRol(d.rol); return; }
+  if(d.veto){ online()?enviarRed({t:'veto',division:d.veto}):vetar(d.veto); return; }
   if(d.dsel){ if(tmp.divSel!==d.dsel) tmp.camaleon=null; tmp.divSel=d.dsel; render(); return; }
   if(d.ssel){ tmp.statSel=d.ssel; render(); return; }
   if(d.cambio!==undefined&&d.cambio!==''){
-    const c=cambiosPosibles(P,'j')[+d.cambio]; hacerCambio(P,'j',c[0],c[1]); render(); return;
+    const c=cambiosPosibles(P,'j')[+d.cambio];
+    if(online()) tmp.jugada={tipo:'cambio',a:c[0],b:c[1]};
+    else hacerCambio(P,'j',c[0],c[1]);
+    render(); return;
   }
   if(d.camaleon!==undefined&&d.camaleon!==''){
-    tmp.camaleon=camaleonesPosibles(P,'j',tmp.divSel)[+d.camaleon];
-    P.log.push({t:'sys',x:'Camaleón preparado — se aplica al declarar.'}); render(); return;
+    const cam=camaleonesPosibles(P,'j',tmp.divSel)[+d.camaleon];
+    if(online()) tmp.jugada={tipo:'camaleon',div:cam.div};
+    else { tmp.camaleon=cam; P.log.push({t:'sys',x:'Camaleón preparado — se aplica al declarar.'}); }
+    render(); return;
   }
-  if(d.incomodo){ tmp.incomodo=true; P.jugada.j=true;
-    P.log.push({t:'sys',x:'🌀 Activas Incómodo. El rival elegirá a ciegas.'}); render(); return; }
-  if(d.eleccion!==undefined&&d.eleccion!==''){ resolverIncomodo(+d.eleccion); return; }
+  if(d.incomodo){
+    if(online()) tmp.jugada={tipo:'incomodo'};
+    else { tmp.incomodo=true; P.jugada.j=true;
+      P.log.push({t:'sys',x:'🌀 Activas Incómodo. El rival elegirá a ciegas.'}); }
+    render(); return; }
+  if(d.eleccion!==undefined&&d.eleccion!==''){
+    online()?enviarRed({t:'incomodo',idx:+d.eleccion}):resolverIncomodo(+d.eleccion); return; }
   if(d.pido!==undefined&&d.pido!==''){
     const c=tmp.sala.oferta[+d.pido]; tmp.pido=tmp.pido||[];
     tmp.pido=tmp.pido.includes(c)?tmp.pido.filter(x=>x!==c):(tmp.pido.length<3?[...tmp.pido,c]:tmp.pido);
@@ -1661,6 +1495,39 @@ document.addEventListener('click',e=>{
       avisoCodigo(r); break; }
     case 'borraramigo':
       S.amigos=S.amigos.filter(a=>a.id!==d.id); guardar(); render(); break;
+    case 'guardarservidor':{
+      const v=(($('#servidor')||{}).value||'').trim();
+      if(v&&!/^https?:\/\//i.test(v))
+        return avisoCodigo('La dirección tiene que empezar por https:// (o http:// si es local).');
+      S.servidor=v.replace(/\/+$/,''); guardar(); render();
+      ov(`<div class="center"><h3>Servidor guardado</h3>
+        <div class="sub mb">${S.servidor?esc(S.servidor):'Sin servidor: el online queda desactivado.'}</div>
+        <button class="btn" data-a="cerrarov">Vale</button></div>`); break; }
+    case 'crearsala':{
+      const base=servidorURL();
+      if(!base) return avisoCodigo('Falta la dirección del servidor.');
+      fetch(base+'/sala',{method:'POST'})
+        .then(r=>r.json())
+        .then(r=>{ if(r&&r.codigo) conectar(r.codigo); else avisoCodigo('El servidor no ha dado código.'); })
+        .catch(e=>avisoCodigo('No se ha podido hablar con el servidor. Comprueba la dirección y tu conexión.'));
+      break; }
+    case 'pedircodigo':
+      ov(`<div class="center"><h3>Entrar con código</h3>
+        <div class="sub mb">Pídele a tu amigo el código de 6 letras de su sala.</div>
+        <input id="codsala" placeholder="ABC123" maxlength="8" autocapitalize="characters"
+          style="width:100%;padding:12px;border-radius:8px;background:var(--bg3);
+          border:1px solid var(--line);color:var(--txt);font:inherit;text-align:center;
+          font-size:22px;letter-spacing:.12em;text-transform:uppercase;margin-bottom:10px">
+        <button class="btn" data-a="unirsala">Entrar</button>
+        <button class="btn sec" data-a="cerrarov" style="margin-top:7px">Cancelar</button></div>`);
+      break;
+    case 'unirsala':{
+      const c=((($('#codsala')||{}).value)||'').trim().toUpperCase();
+      if(!/^[A-Z0-9]{4,8}$/.test(c)) return avisoCodigo('El código son de 4 a 8 letras y números.');
+      cerrarOv(); conectar(c); break; }
+    case 'reconectar': if(SALA) conectar(SALA.codigo); break;
+    case 'salirsala2': salirDeSala(); ir('amigos'); break;
+    case 'quitarjugada': tmp.jugada=null; render(); break;
     case 'gratis':{
       const g=GRATIS.find(x=>x.id===d.g); if(!g||!listoGratis(g)) break;
       if(g.espera>0) S.gratis[g.id]=Date.now();
@@ -1738,6 +1605,10 @@ document.addEventListener('click',e=>{
     case 'iaturno': turnoIA(); break;
     case 'declarar':{
       if(!tmp.divSel||!tmp.statSel) break;
+      if(online()){
+        enviarRed({t:'declarar',division:tmp.divSel,stat:tmp.statSel,jugada:tmp.jugada||null});
+        break;
+      }
       const extra={};
       if(tmp.camaleon) extra.camaleon=tmp.camaleon;
       if(tmp.incomodo){
@@ -1758,8 +1629,11 @@ document.addEventListener('click',e=>{
       tmp.camaleon=null;
       P.log.push({t:'sys',x:`Declaras ${DIV[dv].n} · ${st.toUpperCase()}.`});
       declarar(dv,st,extra); break; }
-    case 'desempate': resolverDesempate(P); render(); break;
+    case 'desempate':
+      if(online()){ enviarRed({t:'desempate'}); break; }
+      resolverDesempate(P); render(); break;
     case 'abandonar':
+      if(online()){ enviarRed({t:'abandonar'}); break; }
       if(P&&P.fase!=='fin'){ P.fase='fin'; P.fin='r'; P.log.push({t:'sys',x:'Abandonas: cuenta como derrota.'}); }
       render(); break;
     case 'reiniciar':
@@ -1782,6 +1656,7 @@ if(!S.retos) S.retos=[];
 if(!S.gratis) S.gratis={};        // partidas guardadas antes de los sobres gratis por niveles
 if(!S.amigos) S.amigos=[];        // ni antes de los amigos
 if(S.nombre===undefined) S.nombre='';
+if(S.servidor===undefined) S.servidor='';
 guardar();
 render();
 
