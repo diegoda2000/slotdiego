@@ -92,6 +92,13 @@ jobs:
           echo "url=$URL" >> "$GITHUB_OUTPUT"
           rm -f despliegue.txt
 
+      # Que el despliegue termine en verde solo dice que el archivo se subió. Esto abre
+      # dos clientes contra la dirección publicada y juega una partida entera. Si falla,
+      # el APK no se publica: más vale no publicar que publicar algo roto.
+      - name: Probar el servidor recién desplegado
+        if: steps.comp.outputs.listo == 'si'
+        run: node servidor/prueba-en-vivo.mjs "${{ steps.deploy.outputs.url }}"
+
       # Aquí está la gracia: la dirección se mete en el juego, así que el APK que se
       # construya después ya la lleva dentro y nadie tiene que pegarla a mano.
       - name: Meter la dirección en el juego
@@ -155,6 +162,8 @@ jobs:
             echo "# Listo"
             echo ""
             echo "Servidor publicado en \`${{ steps.deploy.outputs.url }}\`"
+            echo ""
+            echo "Comprobado con dos clientes jugando una partida completa contra él."
             echo ""
             echo "El APK ya lleva esa dirección dentro. **Nadie tiene que configurar nada:**"
             echo "se instala, se monta la plantilla y se crea una sala."
