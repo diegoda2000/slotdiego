@@ -21,7 +21,8 @@ npm install
 npx wrangler dev --port 8787 --local
 ```
 
-Luego, en el juego: **Más → Amigos → Servidor**, y pones `http://127.0.0.1:8787`.
+Luego, en el juego: **Más → Partida en directo**, y pones `http://127.0.0.1:8787` en la
+dirección del servidor.
 
 Para la prueba automática, con el servidor levantado en otra terminal:
 
@@ -44,7 +45,10 @@ npx wrangler deploy
 ```
 
 Te devuelve una dirección tipo `https://jaula-abierta.TU-CUENTA.workers.dev`. Esa es la que
-pegas en **Amigos → Servidor** dentro del juego, en los dos móviles.
+pegas en **Partida en directo** dentro del juego, en los dos móviles.
+
+**Sin terminal:** si no tienes ordenador, se puede desplegar entero desde el navegador del
+móvil con GitHub Actions. Los pasos están en [`COMO-ACTIVARLO.md`](COMO-ACTIVARLO.md).
 
 **No hace falta recompilar el APK para cambiar de servidor**: la dirección es un ajuste
 guardado en el dispositivo, no algo incrustado en la aplicación.
@@ -68,6 +72,11 @@ equivocarse.
 stat siga viva, que no hayas gastado ya tu jugada, y que la plantilla que mandas sea legal —
 11 divisiones, todas alineables, sin peleador repetido.
 
+**Ninguna decisión la toma la máquina.** El Veterano es reactivo, así que cuando salta se le
+pregunta al defensor y se espera su respuesta, en vez de dispararse solo. Cuesta una ida y
+vuelta más por duelo, pero que el servidor gaste por ti tu única jugada de la partida no es
+aceptable en una partida entre dos personas.
+
 **La redacción del estado** es la pieza clave: a cada jugador solo le viajan las cartas del
 rival de divisiones **ya resueltas**. Al acabar la partida se destapa todo, que es cuando ya
 no hay nada que proteger. Además el servidor voltea los lados, de modo que cada cliente se ve
@@ -83,9 +92,6 @@ identificadores de carta de cada plantilla.
 - **El estado vive en memoria.** Si el Durable Object se recicla —cosa que no pasa mientras
   haya alguien conectado— la partida se pierde. Reconectar funciona en el caso real, que es
   cerrar la aplicación y volver a abrirla.
-- **El Veterano salta solo.** Es un rasgo reactivo, y darle un turno de decisión al defensor
-  añadiría otra ida y vuelta a cada duelo. Salta con el mismo criterio para los dos lados:
-  solo si le mejora la stat en más de 6. Es una simplificación consciente del modo online.
 - **No hay cuentas.** La identidad es un identificador del dispositivo. Vale para jugar con
   amigos; no vale para una clasificación competitiva.
 - **No hay cola de emparejamiento aleatorio.** Solo salas por código.

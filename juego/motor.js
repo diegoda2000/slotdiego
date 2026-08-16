@@ -166,6 +166,9 @@ function generarCarta(id,divId,rareza,promo,opts={}){
 }
 
 function asignarRasgos(c){
+  // Las cartas de colección no se alinean nunca, así que un rasgo en ellas sería una
+  // promesa que no se puede cumplir. Además descuadraba la cuenta del equilibrado.
+  if(!c.alineable) return;
   const p={bronce:.02,plata:.08,oro:.26,elite:.62,leyenda:.9}[c.rareza];
   if(RNG()>p) return;
   const posibles=['incomodo','especialista'];
@@ -180,6 +183,35 @@ function asignarRasgos(c){
       r.stat=SID.slice().sort((a,b)=>c.stats[b]-c.stats[a])[0];
     }
     c.rasgos.push(r);
+  }
+}
+
+/* Los rasgos se sortean por rareza, y con esa lotería es fácil que una clase entera se
+   quede fuera: la primera versión de este roster no tenía NI UN Veterano en las 215 cartas,
+   así que uno de los cuatro rasgos del diseño no existía en el juego. Esta pasada garantiza
+   un mínimo de cada uno, respetando quién puede llevarlos. */
+const MIN_POR_RASGO=8;
+function equilibrarRasgos(cartas){
+  const elegible=(c,t)=>{
+    if(!c.alineable) return false;              // los rasgos solo cuentan si se pueden alinear
+    if(c.rasgos.length>=2) return false;         // el máximo son dos por carta
+    if(c.rasgos.some(r=>r.tipo===t)) return false;  // y tienen que ser distintos entre sí
+    if(t==='camaleon') return c.dobleDiv;        // solo peleadores de dos divisiones
+    if(t==='veterano') return c.esVeterano;      // solo carreras largas
+    return true;
+  };
+  for(const t of Object.keys(RASGOS)){
+    let n=cartas.filter(c=>c.rasgos.some(r=>r.tipo===t)).length;
+    if(n>=MIN_POR_RASGO) continue;
+    // de mejor a peor: el GDD dice que los rasgos van en versiones especiales,
+    // no repartidos entre los bronces
+    const cand=shuffle(cartas.filter(c=>elegible(c,t))).sort((a,b)=>b.media-a.media);
+    for(const c of cand){
+      if(n>=MIN_POR_RASGO) break;
+      const r={tipo:t,plus:RNG()<.2};
+      if(t==='especialista') r.stat=SID.slice().sort((x,y)=>c.stats[y]-c.stats[x])[0];
+      c.rasgos.push(r); n++;
+    }
   }
 }
 
@@ -216,6 +248,7 @@ function generarRoster(){
     }
   }
   for(const c of out) asignarRasgos(c);
+  equilibrarRasgos(out);
   ROSTER=out; PORID=Object.fromEntries(out.map(c=>[c.id,c]));
   raiz.ROSTER=ROSTER; raiz.PORID=PORID; MOTOR.ROSTER=ROSTER; MOTOR.PORID=PORID;
   RNG=Math.random;

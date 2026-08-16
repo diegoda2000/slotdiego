@@ -1,0 +1,98 @@
+name: Servidor
+
+# Publica el servidor de partidas en vivo en Cloudflare, sin necesidad de terminal.
+# Todo lo que hay que hacer se hace desde el navegador del móvil; los pasos están
+# en servidor/COMO-ACTIVARLO.md
+#
+# Necesita dos secretos del repositorio:
+#   CLOUDFLARE_API_TOKEN   (plantilla "Edit Cloudflare Workers")
+#   CLOUDFLARE_ACCOUNT_ID
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - 'claude/**'
+    paths:
+      - 'servidor/**'
+      - 'juego/motor.js'
+      - '.github/workflows/servidor.yml'
+
+jobs:
+  desplegar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Sin los secretos no se puede desplegar, pero tampoco tiene sentido dejar el
+      # flujo en rojo cada vez que se toque un archivo: se explica qué falta y se sale bien.
+      - name: Comprobar que están los secretos
+        id: comp
+        env:
+          TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CUENTA: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [ -n "$TOKEN" ] && [ -n "$CUENTA" ]; then
+            echo "listo=si" >> "$GITHUB_OUTPUT"
+          else
+            echo "listo=no" >> "$GITHUB_OUTPUT"
+            {
+              echo "## El servidor todavía no está activado"
+              echo ""
+              echo "Faltan los datos de Cloudflare. No es un error: es que aún no se ha hecho la configuración inicial."
+              echo ""
+              [ -z "$TOKEN" ]  && echo "- Falta el secreto \`CLOUDFLARE_API_TOKEN\`"
+              [ -z "$CUENTA" ] && echo "- Falta el secreto \`CLOUDFLARE_ACCOUNT_ID\`"
+              echo ""
+              echo "Los pasos, escritos para hacerse desde el móvil, están en **servidor/COMO-ACTIVARLO.md**."
+              echo ""
+              echo "Se añaden en: **Settings → Secrets and variables → Actions → New repository secret**."
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Preparar Node
+        if: steps.comp.outputs.listo == 'si'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Instalar dependencias
+        if: steps.comp.outputs.listo == 'si'
+        working-directory: servidor
+        run: npm install --no-audit --no-fund
+
+      # Se despliega desde servidor/ pero con el repositorio entero clonado: el worker
+      # importa ../../juego/motor.js a propósito, para que servidor y juego compartan
+      # exactamente el mismo reglamento y no puedan divergir.
+      - name: Publicar en Cloudflare
+        if: steps.comp.outputs.listo == 'si'
+        id: deploy
+        working-directory: servidor
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -o pipefail
+          npx wrangler deploy 2>&1 | tee despliegue.txt
+          URL=$(grep -Eoi 'https://[a-z0-9.-]+\.workers\.dev' despliegue.txt | head -1)
+          echo "url=$URL" >> "$GITHUB_OUTPUT"
+
+      # La dirección es lo único que el usuario necesita llevarse, así que va al resumen
+      # de la ejecución en grande, y no perdida entre los registros.
+      - name: Enseñar la dirección
+        if: steps.comp.outputs.listo == 'si'
+        run: |
+          {
+            echo "# Servidor publicado"
+            echo ""
+            if [ -n "${{ steps.deploy.outputs.url }}" ]; then
+              echo "## \`${{ steps.deploy.outputs.url }}\`"
+              echo ""
+              echo "Copia esa dirección y pégala en el juego, en **Amigos → Servidor**."
+              echo "Hay que ponerla en los dos móviles."
+            else
+              echo "El despliegue ha terminado, pero no se ha podido leer la dirección de la salida."
+              echo "Búscala en el panel de Cloudflare, en **Workers & Pages → jaula-abierta**."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"

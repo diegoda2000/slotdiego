@@ -29,7 +29,7 @@ const exe = process.env.CHROMIUM_PATH || '/opt/pw-browsers/chromium-1194/chrome-
 const navegador = await chromium.launch(fs.existsSync(exe) ? { executablePath: exe } : {});
 
 const errores = [];
-async function abrirJugador(nombre) {
+async function abrirJugador(nombre, rasgoPreferido) {
   const ctx = await navegador.newContext();
   const pg = await ctx.newPage();
   pg.on('pageerror', e => errores.push(`${nombre}: ${e}`));
@@ -37,20 +37,25 @@ async function abrirJugador(nombre) {
   await pg.goto(URL_JUEGO);
   await pg.waitForFunction(() => typeof S !== 'undefined' && S.coleccion);
   // plantilla completa y variada, y el servidor apuntado
-  await pg.evaluate(([n, srv]) => {
+  await pg.evaluate(([n, srv, rasgo]) => {
     S.nombre = n; S.servidor = srv;
     S.coleccion = []; S.plantilla = {};
     const usados = new Set();
     for (const d of DIVISIONES) {
-      const pool = ROSTER.filter(c => c.alineable && c.division === d.id && !usados.has(c.persona));
+      let pool = ROSTER.filter(c => c.alineable && c.division === d.id && !usados.has(c.persona));
+      // para forzar casos concretos: si se pide un rasgo, se prefieren cartas que lo lleven
+      if (rasgo) {
+        const conRasgo = pool.filter(c => c.rasgos.some(r => r.tipo === rasgo));
+        if (conRasgo.length) pool = conRasgo;
+      }
       const c = pool[Math.floor(Math.random() * pool.length)];
       usados.add(c.persona);
       const iid = 'i' + Math.random().toString(36).slice(2, 9);
       S.coleccion.push({ iid, cid: c.id });
       S.plantilla[d.id] = iid;
     }
-    guardar(); ir('amigos');
-  }, [nombre, SERVIDOR]);
+    guardar(); ir('directo');   // el directo ya no vive en la pantalla de Amigos
+  }, [nombre, SERVIDOR, rasgoPreferido]);
   return pg;
 }
 
@@ -103,7 +108,7 @@ comprobar(await esperar(async () => (await A.evaluate(() => P.fase)) === 'vetos'
   'la elección de rol se resuelve en el servidor');
 
 const jugadores = [A, B];
-let indebidasTotales = 0, vueltas = 0;
+let indebidasTotales = 0, vueltas = 0, vetPreguntados = 0;
 
 while (vueltas++ < 160) {
   const fases = await Promise.all(jugadores.map(p => p.evaluate(() => P ? P.fase : null)));
@@ -116,10 +121,15 @@ while (vueltas++ < 160) {
       libres: P.fase === 'vetos'
         ? DIVISIONES.map(d => d.id).filter(x => !P.vetados.includes(x))
         : librePara(P, 'j'),
-      stats: P.statsVivas, pend: !!P.pendiente,
+      stats: P.statsVivas, pend: !!P.pendiente, vet: !!P.pendienteVet,
     }));
     if (est.fase === 'vetos' && est.vetoMio)
       await pg.evaluate(d => enviarRed({ t: 'veto', division: d }), est.libres[0]);
+    else if (est.fase === 'veterano' && est.vet) {
+      vetPreguntados++;
+      await pg.evaluate(() => enviarRed({ t: 'veterano', usar: Math.random() < 0.5,
+        stat: P.pendienteVet.opciones[0] }));
+    }
     else if (est.fase === 'incomodo' && est.pend)
       await pg.evaluate(() => enviarRed({ t: 'incomodo', idx: Math.floor(Math.random() * 2) }));
     else if (est.fase === 'duelos' && est.turno === 'j')
@@ -144,6 +154,10 @@ comprobar(finA.fin !== finB.fin, 'uno gana y el otro pierde, no los dos lo mismo
 comprobar(indebidasTotales === 0,
   `en toda la partida, cero cartas del rival filtradas antes de resolverse (${indebidasTotales})`);
 comprobar(finA.duelos >= 4, `se han resuelto duelos de verdad (${finA.duelos})`);
+const vetAuto = await A.evaluate(() =>
+  P.log.some(l => l.t === 'sys' && /Veterano/.test(l.x || '')));
+comprobar(!vetAuto || vetPreguntados > 0,
+  `el Veterano solo actúa si el jugador lo decide (preguntado ${vetPreguntados} veces)`);
 // y al terminar sí se destapa todo, que es lo que hace legible el resultado
 const alFinal = await A.evaluate(() => Object.values(P.cartas.r).filter(Boolean).length);
 comprobar(alFinal >= 6, `al acabar se revela la plantilla del rival (${alFinal} cartas)`);
@@ -216,6 +230,57 @@ await new Promise(r => setTimeout(r, 2500));
 const estadoE = await E.evaluate(() => ({ tieneP: !!P, sala: SALA ? SALA.estado : null }));
 comprobar(!estadoE.tieneP, 'el tercero no recibe estado de partida');
 comprobar(await D.evaluate(() => !!P), 'y los dos de dentro siguen con su partida');
+
+/* ── 7. El Veterano lo decide el jugador, no la máquina ───────────────── */
+console.log('\n7. El Veterano pregunta, no salta solo');
+const F = await abrirJugador('Fran', 'veterano');
+const G = await abrirJugador('Gala', 'veterano');
+await F.locator('[data-a="crearsala"]').click();
+await esperar(async () => !!(await F.evaluate(() => SALA && SALA.codigo)));
+await G.evaluate(c => conectar(c), await F.evaluate(() => SALA.codigo));
+await esperar(async () => (await G.evaluate(() => P && P.fase)) === 'rol');
+await F.evaluate(() => enviarRed({ t: 'rol', v: 'vetar' }));
+await G.evaluate(() => enviarRed({ t: 'rol', v: 'declarar' }));
+await esperar(async () => (await F.evaluate(() => P.fase)) === 'vetos');
+
+let vetVistos = 0, vetUsados = 0, v2 = 0;
+while (v2++ < 160) {
+  if ((await F.evaluate(() => P.fase)) === 'fin') break;
+  for (const pg of [F, G]) {
+    const e = await pg.evaluate(() => ({
+      fase: P.fase, turno: P.turno,
+      vetoMio: P.fase === 'vetos' && ((P.vetados.length % 2 === 0) === (P.vetoPrimero === 'j')),
+      libres: P.fase === 'vetos'
+        ? DIVISIONES.map(x => x.id).filter(x => !P.vetados.includes(x)) : librePara(P, 'j'),
+      stats: P.statsVivas, vet: P.pendienteVet || null, pend: !!P.pendiente,
+    }));
+    if (e.fase === 'vetos' && e.vetoMio)
+      await pg.evaluate(d => enviarRed({ t: 'veto', division: d }), e.libres[0]);
+    else if (e.fase === 'veterano' && e.vet) {
+      vetVistos++;
+      // se comprueba que la pantalla ofrece de verdad la decisión, no un aviso
+      const botones = await pg.evaluate(() =>
+        document.querySelectorAll('[data-a="vetusar"]').length > 0 &&
+        document.querySelectorAll('[data-a="vetpasar"]').length > 0);
+      if (!botones) { console.log('  ✗ la pantalla del Veterano no ofrece elegir'); fallos++; }
+      const usar = vetVistos === 1;   // la primera vez sí, para ver el efecto
+      if (usar) vetUsados++;
+      await pg.evaluate(u => enviarRed({ t: 'veterano', usar: u, stat: P.pendienteVet.opciones[0] }), usar);
+    }
+    else if (e.fase === 'incomodo' && e.pend)
+      await pg.evaluate(() => enviarRed({ t: 'incomodo', idx: 0 }));
+    else if (e.fase === 'duelos' && e.turno === 'j')
+      await pg.evaluate(([d, st]) => enviarRed({ t: 'declarar', division: d, stat: st }),
+        [e.libres[0], e.stats[0]]);
+    else if (e.fase === 'desempate') await pg.evaluate(() => enviarRed({ t: 'desempate' }));
+  }
+  await new Promise(r => setTimeout(r, 50));
+}
+comprobar(vetVistos > 0, `con plantillas llenas de Veteranos, el rasgo pregunta (${vetVistos} veces)`);
+const registro = await F.evaluate(() => P.log.filter(l => l.t === 'sys' && /Veterano/.test(l.x || '')).length);
+comprobar(registro === vetUsados,
+  `solo queda registrado el Veterano que se usó a propósito (${registro} de ${vetVistos} preguntas)`);
+comprobar(await F.evaluate(() => P.fase) === 'fin', 'la partida con Veteranos también termina');
 
 /* ── resultado ────────────────────────────────────────────────────────── */
 comprobar(errores.length === 0, 'ningún error de JavaScript en ninguno de los clientes');

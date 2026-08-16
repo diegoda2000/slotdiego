@@ -77,8 +77,11 @@ Los códigos llevan suma de verificación, y una plantilla que llegue de fuera s
 —11 divisiones, todas alineables, sin peleador repetido— antes de aceptarse. Un pegado a
 medias se rechaza explicando qué pasa, en vez de reventar a mitad de partida.
 
-**Partidas en vivo por sala.** Uno crea sala, sale un código de 6 letras, el otro lo mete y
-juegan **a la vez**, con un servidor de árbitro. Está en `../servidor/` y se despliega gratis en
+**Partidas en directo.** Uno crea sala, sale un código de 6 letras, el otro lo mete y juegan
+**a la vez**: cada uno elige sus vetos, sus declaraciones y su jugada, en su propio móvil y en
+ese mismo momento. **La IA no participa en nada** — ni siquiera el Veterano, que es reactivo y
+se le pregunta al defensor en vez de saltar solo. Es un modo aparte de "retar plantillas", que
+es lo asíncrono. Está en `../servidor/` y se despliega gratis en
 Cloudflare; la dirección se pega en el juego, así que **el mismo APK sirve para cualquier
 servidor** sin recompilar nada.
 
@@ -98,8 +101,8 @@ con amigos, no para una liga competitiva. Tampoco hay cola de emparejamiento ale
 salas por código—, ni ligas, telemetría, arte, sonido o monetización. La sala de intercambio
 empareja con un jugador simulado.
 
-En online, el **Veterano salta solo** en vez de preguntar, para no meter otra ida y vuelta en
-cada duelo. Mismo criterio para los dos lados.
+Y hace falta un servidor para el directo: se despliega gratis y **desde el móvil**, siguiendo
+[`../servidor/COMO-ACTIVARLO.md`](../servidor/COMO-ACTIVARLO.md).
 
 ---
 
@@ -118,6 +121,7 @@ obliga a elegir. Estas son las elecciones, y están recogidas también en
 | El Camaleón pelea dos veces | Excepción explícita a "cada peleador pelea una sola vez" |
 | Cartas no alineables | Llevan las 6 stats grandes, sin sub-stats |
 | Carta de rasgo inicial | Fija, la más floja con rasgo normal, y no traspasable |
+| Reparto de rasgos | Se garantiza un mínimo de cada uno: con la lotería por rareza a secas, el roster se quedó sin ni un Veterano en 215 cartas |
 
 ---
 

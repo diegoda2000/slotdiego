@@ -151,6 +151,7 @@ export class Sala {
       fin: P.fin ? (P.fin === mio ? 'j' : 'r') : null,
       rival: this.nombreDeLado(otro),
       pendiente: null,
+      pendienteVet: null,
       online: true,
     };
 
@@ -164,6 +165,12 @@ export class Sala {
     // buena ni la stat. Al atacante no le llega nada: solo espera.
     if (P.fase === 'incomodo') {
       if (P.pendiente.defensor === mio) V.pendiente = { plus: P.pendiente.plus, opciones: P.pendiente.opciones };
+      else V.fase = 'esperando';
+    }
+    // La decisión del Veterano es del defensor; el atacante solo espera.
+    if (P.fase === 'veterano') {
+      const q = P.pendienteVet;
+      if (q.defensor === mio) V.pendienteVet = { divId: q.divId, stat: q.stat, plus: q.plus, opciones: q.opciones };
       else V.fase = 'esperando';
     }
     return V;
@@ -182,6 +189,7 @@ export class Sala {
     if (msg.t === 'veto') return this.veto(lado, msg.division);
     if (msg.t === 'declarar') return this.declarar(lado, msg);
     if (msg.t === 'incomodo') return this.eleccionIncomodo(lado, msg.idx);
+    if (msg.t === 'veterano') return this.decidirVeterano(lado, msg);
     if (msg.t === 'desempate') return this.desempate(lado);
     throw new Error('mensaje desconocido');
   }
@@ -310,28 +318,45 @@ export class Sala {
     this.resolver(division, stat, opts);
   }
 
-  /* El Veterano es reactivo y en online los dos lados son personas. Prometer un
-     turno extra de decisión aquí alargaría cada duelo con otra ida y vuelta, así
-     que salta solo, con el mismo criterio para los dos: únicamente si le mejora
-     la stat en más de 6. Es una simplificación consciente del modo online. */
-  aplicarVeteranoAuto(divId, stat) {
+  /* El Veterano es reactivo, y en online los dos lados son personas: la decisión es
+     del defensor y se le pregunta. Cuesta una ida y vuelta más por duelo, pero que la
+     máquina gaste por ti tu única jugada de la partida no es aceptable. */
+  pedirVeterano(divId, stat, opts) {
     const P = this.P, def = this.otroLado(P.turno);
     const r = rasgoDe(P.cartas[def][divId], 'veterano');
-    if (!r || P.jugada[def]) return stat;
+    if (!r || P.jugada[def]) return false;
     const otras = P.statsVivas.filter(s => s !== stat);
-    if (!otras.length) return stat;
-    const mejor = otras.slice().sort((a, b) => valorCarta(P, def, divId, b) - valorCarta(P, def, divId, a))[0];
-    if (valorCarta(P, def, divId, mejor) <= valorCarta(P, def, divId, stat) + 6) return stat;
-    P.jugada[def] = true;
-    const nueva = r.plus ? mejor : otras[Math.floor(Math.random() * otras.length)];
-    P.log.push({ t: 'sys', x: `🧠 Veterano de ${this.nombreDeLado(def)}: la stat pasa a ${nueva.toUpperCase()}.` });
-    return nueva;
+    if (!otras.length) return false;          // sin stats a las que cambiar no hay decisión
+    P.pendienteVet = { divId, stat, defensor: def, plus: r.plus, opciones: otras, opts: opts || {} };
+    P.fase = 'veterano';
+    return true;
+  }
+
+  decidirVeterano(lado, msg) {
+    const P = this.P;
+    if (P.fase !== 'veterano') throw new Error('no hay ninguna decisión de Veterano pendiente');
+    const q = P.pendienteVet;
+    if (q.defensor !== lado) throw new Error('esa decisión no es tuya');
+
+    let stat = q.stat;
+    if (msg.usar) {
+      if (P.jugada[lado]) throw new Error('ya has gastado tu jugada');
+      P.jugada[lado] = true;
+      // el normal cambia a una al azar; el plus la elige quien lo usa
+      stat = q.plus
+        ? (q.opciones.includes(msg.stat) ? msg.stat : q.opciones[0])
+        : q.opciones[Math.floor(Math.random() * q.opciones.length)];
+      P.log.push({ t: 'sys', x: `🧠 Veterano de ${this.nombreDeLado(lado)}: la stat pasa de ${q.stat.toUpperCase()} a ${stat.toUpperCase()}.` });
+    }
+    const opts = q.opts;
+    P.pendienteVet = null; P.fase = 'duelos';
+    resolverDuelo(P, q.divId, stat, opts);
+    this.mandarEstado();
   }
 
   resolver(division, stat, opts) {
-    const P = this.P;
-    stat = this.aplicarVeteranoAuto(division, stat);
-    resolverDuelo(P, division, stat, opts);
+    if (this.pedirVeterano(division, stat, opts)) { this.mandarEstado(); return; }
+    resolverDuelo(this.P, division, stat, opts);
     this.mandarEstado();
   }
 

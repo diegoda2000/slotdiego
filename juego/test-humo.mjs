@@ -57,6 +57,23 @@ comprobar(info.generalOk, 'la media general es media simple de las 6');
 comprobar(info.rangosOk, 'las medias respetan el rango de su rareza');
 comprobar(info.rasgosDistintos, 'ninguna carta lleva dos rasgos del mismo tipo');
 comprobar(info.camaleonesValidos, 'el Camaleón solo va en peleadores de dos divisiones');
+// Sin esto no se detecta el peor fallo posible en los rasgos: que una clase entera
+// no exista. La primera versión del roster no tenía ni un Veterano en 215 cartas.
+const rasgos = await page.evaluate(() => {
+  const c = {}; for (const t of Object.keys(RASGOS)) c[t] = 0;
+  for (const x of ROSTER.filter(y => y.alineable)) for (const r of x.rasgos) c[r.tipo]++;
+  return { c, enColeccion: ROSTER.filter(y => !y.alineable && y.rasgos.length).length,
+    veteranosValidos: ROSTER.every(y => !y.rasgos.some(r => r.tipo === 'veterano') || y.esVeterano),
+    especialistasConStat: ROSTER.every(y => y.rasgos.every(r => r.tipo !== 'especialista' || !!r.stat)),
+    conPlus: ROSTER.flatMap(y => y.rasgos).filter(r => r.plus).length };
+});
+console.log('  rasgos: ' + Object.entries(rasgos.c).map(([t, n]) => `${t} ${n}`).join(' · '));
+comprobar(Object.values(rasgos.c).every(n => n >= 5),
+  'los cuatro rasgos existen en el roster, ninguno se queda a cero');
+comprobar(rasgos.veteranosValidos, 'el Veterano solo va en peleadores de carrera larga');
+comprobar(rasgos.especialistasConStat, 'todo Especialista lleva su stat asociada');
+comprobar(rasgos.conPlus > 0, 'existen versiones plus');
+comprobar(rasgos.enColeccion === 0, 'las cartas de colección no llevan rasgos que no podrían usar');
 comprobar(info.sinSubs > 0, 'las cartas de colección no llevan sub-stats');
 comprobar(info.plantillaLlena, 'el arranque cubre las 11 divisiones');
 
@@ -220,6 +237,62 @@ comprobar(!!resu.rAna.aviso, 'el resultado que te manda un amigo se acepta');
 comprobar(resu.subio && !resu.tocado, 'la victoria del amigo suma en su columna, no en la tuya');
 
 await page.evaluate(() => { vista = 'inicio'; render(); });
+
+/* ── 2e. En directo: que se explique y que la dirección se entienda ───── */
+console.log('\n2e. Pantalla de partida en directo');
+await page.evaluate(() => { S.servidor = ''; ir('directo'); });
+const sinServidor = await page.evaluate(() => ({
+  explica: !!document.querySelector('[data-a="ayudaservidor"]'),
+  sinCrear: !document.querySelector('[data-a="crearsala"]'),
+  texto: document.querySelector('#app').textContent,
+}));
+comprobar(sinServidor.explica, 'sin servidor, la pantalla ofrece explicar cómo conseguir uno');
+comprobar(sinServidor.sinCrear, 'sin servidor, no se ofrece crear sala');
+comprobar(/gratis/i.test(sinServidor.texto) && /ocultas/i.test(sinServidor.texto),
+  'y explica por qué hace falta y que es gratis');
+
+// la dirección se acepta como venga de un copiar y pegar torpe
+const normal = await page.evaluate(() => ({
+  simple: normalizarServidor('jaula.workers.dev'),
+  barra: normalizarServidor('https://jaula.workers.dev/'),
+  espacios: normalizarServidor('  https://jaula.workers.dev  '),
+  ruta: normalizarServidor('https://jaula.workers.dev/sala/ABC'),
+  vacio: normalizarServidor(''),
+  malo: normalizarServidor('esto no es una url ::'),
+}));
+comprobar(normal.simple === 'https://jaula.workers.dev', 'sin https:// se completa sola');
+comprobar(normal.barra === 'https://jaula.workers.dev', 'la barra final se quita');
+comprobar(normal.espacios === 'https://jaula.workers.dev', 'los espacios se quitan');
+comprobar(normal.ruta === 'https://jaula.workers.dev', 'una ruta pegada de más se recorta');
+comprobar(normal.vacio === '', 'vacío es vacío, no un error');
+comprobar(normal.malo === null, 'una dirección imposible sí se rechaza');
+
+// los tres veredictos de la prueba de conexión
+const veredictos = await page.evaluate(async () => {
+  const real = window.fetch;
+  const con = async r => { window.fetch = async () => r; const x = await probarServidor('https://x'); window.fetch = real; return x; };
+  const bueno = await con({ ok: true, json: async () => ({ ok: true, servicio: 'jaula-abierta' }) });
+  const otro = await con({ ok: true, json: async () => ({ hola: 1 }) });
+  const error = await con({ ok: false, status: 500, json: async () => ({}) });
+  window.fetch = async () => { throw new Error('sin red'); };
+  const muerto = await probarServidor('https://x');
+  window.fetch = real;
+  return { bueno, otro, error, muerto };
+});
+comprobar(veredictos.bueno.ok, 'el servidor del juego se reconoce');
+comprobar(!veredictos.otro.ok && /no es el servidor del juego/i.test(veredictos.otro.txt),
+  'una web cualquiera se distingue del servidor del juego');
+comprobar(!veredictos.error.ok && /500/.test(veredictos.error.txt), 'un error del servidor se dice tal cual');
+comprobar(!veredictos.muerto.ok && /No contesta/i.test(veredictos.muerto.txt),
+  'una dirección muerta se explica con qué comprobar');
+
+// los dos modos están separados y no se confunden
+const menu = await page.evaluate(() => { ir('mas'); return document.querySelector('#app').textContent; });
+comprobar(/Partida en directo/.test(menu) && /Retar plantillas/.test(menu),
+  'el menú separa jugar en directo de retar plantillas');
+const avisoAmigos = await page.evaluate(() => { ir('amigos'); return document.querySelector('#app').textContent; });
+comprobar(/no es jugar a la vez/i.test(avisoAmigos),
+  'la pantalla de retar plantillas avisa de que no es en directo');
 
 /* ── 3. Partidas completas ────────────────────────────────────────────── */
 console.log(`\n3. ${N_PARTIDAS} partidas completas`);

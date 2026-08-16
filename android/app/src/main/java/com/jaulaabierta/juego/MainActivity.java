@@ -2,8 +2,10 @@ package com.jaulaabierta.juego;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.ViewGroup;
+import android.webkit.JavascriptInterface;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
@@ -41,6 +43,19 @@ public class MainActivity extends Activity {
         ajustes.setJavaScriptEnabled(true);
         ajustes.setDomStorageEnabled(true);   // sin esto no se guarda la colección
         ajustes.setDatabaseEnabled(true);
+
+        // Puente para el menú de compartir del sistema. navigator.share no existe en un
+        // WebView normal, y pasar el código de sala al amigo es el paso del que depende
+        // que la partida en directo llegue a empezar.
+        web.addJavascriptInterface(new Object() {
+            @JavascriptInterface
+            public void compartir(String texto) {
+                Intent envio = new Intent(Intent.ACTION_SEND);
+                envio.setType("text/plain");
+                envio.putExtra(Intent.EXTRA_TEXT, texto);
+                startActivity(Intent.createChooser(envio, "Enviar el código"));
+            }
+        }, "Android");
 
         web.setWebViewClient(new WebViewClient() {
             @Override
