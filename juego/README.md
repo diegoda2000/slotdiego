@@ -40,9 +40,19 @@ márgenes con el 65/35 en los reñidos, victoria a 4 y desempate con stat al aza
 **Los recursos.** Una jugada por partida, compartida entre el cambio de división —con sus
 penalizaciones selectivas al subir y al bajar— y los cuatro rasgos con sus versiones plus.
 
-**La economía.** Sobres que no caducan, divisa, reciclaje con las tres ratios, fichas, sets
-de colección por gimnasio, promotora y nacionalidad, retos que consumen cartas, y sala de
-intercambio de trueque puro.
+**Los sobres.** Tres sobres gratis **permanentes**, al estilo Pacybits/MadFUT: siempre están
+en la tienda, cada uno con su propio reloj —básico cada 3 min, plata cada 20, oro cada 2 h— y
+el de espera más corta es el de peor drop, como pide el GDD. Reclamarlos **no los abre**: se
+guardan, porque acumular veinte y reventarlos de golpe es justamente el momento que engancha.
+
+La apertura es una pantalla propia con **botón de atrás y de saltar**, revelado carta a carta
+tocando en cualquier sitio, aviso destacado cuando sale una élite o una leyenda, y un resumen
+final con todo lo que ha tocado y cuántas eran nuevas. Se puede salir a media apertura sin
+perder nada: las cartas entran en la colección antes de revelarse.
+
+**El resto de la economía.** Divisa, sobres de pago, reciclaje con las tres ratios, fichas,
+sets de colección por gimnasio, promotora y nacionalidad, retos que consumen cartas, y sala
+de intercambio de trueque puro.
 
 ## Qué no está
 

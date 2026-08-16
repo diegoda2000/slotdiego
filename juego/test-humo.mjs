@@ -71,6 +71,50 @@ const sobres = await page.evaluate(() => {
 comprobar(sobres.despues === sobres.antes + sobres.sacadas, 'las cartas del sobre entran en la colección');
 comprobar(sobres.alineables >= 4, 'el sobre respeta los huecos alineables garantizados');
 
+// Los gratis: siempre presentes, se reclaman y se acumulan sin abrirse
+await page.evaluate(() => { S.gratis = {}; S.sobres = []; ir('sobres'); });
+const gratisVisibles = await page.locator('[data-a="gratis"]').count();
+comprobar(gratisVisibles === 3, 'los 3 sobres gratis están siempre en la tienda');
+const activos = await page.locator('[data-a="gratis"]:not([disabled])').count();
+comprobar(activos === 3, 'arrancan los 3 reclamables');
+
+await page.locator('[data-a="gratis"]').first().click();
+const trasReclamar = await page.evaluate(() => ({
+  guardados: S.sobres.length, vista,
+  reclamadoSigueAhi: !!document.querySelector('[data-a="gratis"]'),
+  ahoraEnEspera: document.querySelectorAll('[data-a="gratis"][disabled]').length,
+}));
+comprobar(trasReclamar.guardados === 1, 'reclamar guarda el sobre en vez de abrirlo');
+comprobar(trasReclamar.vista === 'sobres', 'reclamar no te saca de la tienda');
+comprobar(trasReclamar.reclamadoSigueAhi, 'el sobre gratis sigue en pantalla tras reclamarlo');
+comprobar(trasReclamar.ahoraEnEspera === 1, 'el reclamado pasa a cuenta atrás');
+
+/* ── 2b. Apertura: atrás, saltar y resumen ────────────────────────────── */
+console.log('\n2b. Pantalla de apertura');
+await page.evaluate(() => { S.sobres = [{ tipo: 'oro' }, { tipo: 'oro' }]; render(); });
+await page.locator('[data-a="abrir"]').first().click();
+comprobar(await page.evaluate(() => vista === 'apertura'), 'abrir lleva a la pantalla de apertura');
+comprobar(await page.locator('[data-a="salirapertura"]').count() === 1, 'hay botón de atrás');
+comprobar(await page.locator('[data-a="saltar"]').count() === 1, 'hay botón de saltar');
+
+const guardadasAlEntrar = await page.evaluate(() => S.coleccion.length);
+await page.locator('[data-a="revelar"]').last().click();          // revela una
+await page.locator('[data-a="salirapertura"]').click();           // y se sale a medias
+const trasSalir = await page.evaluate(() => ({ vista, cartas: S.coleccion.length }));
+comprobar(trasSalir.vista === 'sobres', 'el atrás sale de la apertura');
+comprobar(trasSalir.cartas === guardadasAlEntrar, 'salir a medias no pierde ninguna carta');
+
+await page.locator('[data-a="abrir"]').first().click();
+await page.locator('[data-a="saltar"]').click();
+const resumen = await page.evaluate(() => ({
+  enResumen: tmp.ap && tmp.ap.resumen,
+  mostradas: document.querySelectorAll('[data-carta]').length,
+  total: tmp.ap ? tmp.ap.items.length : 0,
+}));
+comprobar(resumen.enResumen, 'saltar lleva al resumen');
+comprobar(resumen.mostradas === resumen.total && resumen.total > 0,
+  'el resumen enseña todas las cartas del sobre');
+
 /* ── 3. Partidas completas ────────────────────────────────────────────── */
 console.log(`\n3. ${N_PARTIDAS} partidas completas`);
 const stats = { partidas: 0, victorias: 0, empates33: 0, duelos: 0,
