@@ -1,143 +1,111 @@
-# Cómo activar las partidas en vivo
+# Activar las partidas en directo
 
-Para jugar **a la vez** contra un amigo hace falta un servidor. Esta guía lo pone en marcha
-**sin instalar nada y sin escribir ni un comando**: todo se hace desde el navegador del móvil.
+> **Esto es solo para quien aloja el juego.** Si vas a jugar, no tienes que leer esto ni hacer
+> nada: instalas el APK y juegas. No hay cuentas, ni registros, ni direcciones que pegar.
 
-Se hace **una sola vez**. A partir de ahí funciona siempre, y cada mejora del juego se publica
-sola.
+Hay **un único servidor** para todo el mundo, y su dirección va metida dentro del APK. Se pone
+en marcha **una sola vez** y ya no se vuelve a tocar: cada vez que cambie el juego, el APK se
+reconstruye solo con la dirección dentro.
+
+Todo se hace desde el navegador, también desde el móvil. Son tres pasos.
 
 ---
 
 ## Por qué hace falta un servidor
 
-En este juego las cartas están ocultas hasta que se resuelve el duelo. Si la plantilla de tu
-rival estuviera guardada en tu teléfono, cualquiera podría leerla y saber de antemano lo que
-te va a poner. Hace falta alguien en medio que conozca las dos plantillas y no se las enseñe a
-nadie hasta que toca.
+En este juego las cartas están ocultas hasta que se resuelve el duelo. Si la plantilla del
+rival estuviera guardada en el móvil del otro, cualquiera podría leerla. Hace falta alguien en
+medio que conozca las dos y no las enseñe hasta que toca: eso es el servidor.
 
-Eso es el servidor: un árbitro. No guarda tu colección ni tus datos — solo arbitra la partida
-mientras dura.
+No guarda colecciones ni datos de nadie. Solo arbitra la partida mientras dura.
 
 ---
 
-## Antes de empezar
+## Paso 1 · Crear el token
 
-Es **gratis**, y en ningún momento debería pedirte una tarjeta. Si algún paso te la pide,
-para y dímelo: significa que te has metido por otro sitio.
-
-Ten a mano el móvil y unos diez minutos.
-
----
-
-## Paso 1 · Crear la cuenta de Cloudflare
-
-Entra en **dash.cloudflare.com/sign-up** y regístrate con tu correo. Confirma el correo que
-te mandan.
-
-Cuando entres te ofrecerá añadir un dominio o una web: **sáltalo**. No hace falta nada de eso.
-
----
-
-## Paso 2 · Crear el token
-
-Es una contraseña larga que le da permiso a GitHub para publicar el servidor en tu cuenta.
+Es una contraseña larga que le da permiso a GitHub para publicar el servidor en tu cuenta de
+Cloudflare.
 
 1. En el panel de Cloudflare, arriba a la derecha, toca tu perfil → **My Profile**.
 2. **API Tokens** → **Create Token**.
 3. Busca la plantilla **"Edit Cloudflare Workers"** y dale a **Use template**.
-4. Baja hasta el final y confirma: **Continue to summary** → **Create Token**.
-5. Te enseña el token **una sola vez**. Cópialo ahora y pégalo en las notas del móvil, que
-   lo necesitas en el paso 4.
+4. Baja al final: **Continue to summary** → **Create Token**.
+5. El token se enseña **una sola vez**. Cópialo ahora.
 
----
+## Paso 2 · Copiar el Account ID
 
-## Paso 3 · Copiar el Account ID
+1. En el menú lateral, entra en **Workers & Pages**.
+2. En la columna de la derecha está el **Account ID**, una fila de letras y números.
+3. Cópialo.
 
-1. Vuelve al panel y entra en **Workers & Pages** (en el menú lateral).
-2. En la columna de la derecha verás **Account ID**, una fila de letras y números.
-3. Cópialo también.
+## Paso 3 · Pegarlos en GitHub
 
----
+Se guardan como **secretos**: quedan cifrados y no se ven en el código.
 
-## Paso 4 · Dárselos a GitHub
-
-Estos dos datos se guardan en tu repositorio como **secretos**: quedan cifrados y no se ven
-en el código.
-
-1. Abre **github.com/diegoda2000/slotdiego** en el móvil.
-2. **Settings** (arriba, puede estar en el menú "···").
-3. Menú lateral: **Secrets and variables** → **Actions**.
-4. Botón **New repository secret**. Añade el primero:
+1. Abre **github.com/diegoda2000/slotdiego** → **Settings**.
+2. Menú lateral: **Secrets and variables** → **Actions**.
+3. **New repository secret**, y añade el primero:
    - *Name*: `CLOUDFLARE_API_TOKEN`
-   - *Secret*: el token del paso 2
-   - **Add secret**
-5. **New repository secret** otra vez, para el segundo:
+   - *Secret*: el token del paso 1
+4. **New repository secret** otra vez, para el segundo:
    - *Name*: `CLOUDFLARE_ACCOUNT_ID`
-   - *Secret*: el Account ID del paso 3
-   - **Add secret**
+   - *Secret*: el Account ID del paso 2
 
 Los nombres tienen que ir **exactamente así**, en mayúsculas y con guiones bajos.
 
 ---
 
-## Paso 5 · Publicar el servidor
+## Y ya está
 
-1. En el repositorio, pestaña **Actions**.
-2. En la lista de la izquierda, **Servidor**.
-3. **Run workflow** → elige la rama → **Run workflow**.
-4. Espera un minuto y entra en la ejecución.
+Ve a la pestaña **Actions** → flujo **Servidor** → **Run workflow**. En un par de minutos, y
+sin que hagas nada más, el flujo:
 
-Al terminar, arriba del todo verás un recuadro con la dirección, algo así:
+1. publica el servidor,
+2. mete su dirección dentro del juego,
+3. construye el APK con esa dirección,
+4. y lo deja en la descarga **apk-latest**.
 
-```
-https://jaula-abierta.tu-cuenta.workers.dev
-```
-
-**Cópiala.**
+A partir de ahí, cualquiera que instale ese APK **juega en directo sin configurar nada**. Y
+cada cambio futuro del servidor repite la cadena solo.
 
 ---
 
-## Paso 6 · Ponerla en el juego
+## Cosas que conviene saber
 
-En el juego: **Más → Amigos**, pega la dirección en el campo del servidor y dale a
-**Guardar servidor**. Después toca **Probar conexión**: tiene que decirte que funciona.
+**El servidor es tuyo.** Una sola cuenta gratuita da servicio a todo el que instale el APK.
+Para unos cuantos amigos no se nota, pero si esto creciera, el consumo es de tu cuenta.
 
-Hazlo **en los dos móviles**, con la misma dirección.
+**No debería pedirte una tarjeta** en ningún momento. Si algún paso la pide, para: significa
+que te has metido por otro sitio.
 
----
-
-## Ya está: cómo se juega
-
-1. Uno de los dos toca **Crear sala**. Sale un código de 6 letras.
-2. Se lo pasa al otro con el botón de **compartir**.
-3. El otro toca **Entrar con código** y lo escribe.
-4. La partida arranca sola en cuanto entra.
-
-A partir de ahí jugáis los dos a la vez: elegís rol, vetáis por turnos y declaráis, viendo
-cada uno lo suyo. Las cartas del rival no aparecen hasta que se resuelve cada duelo.
+**Los planes gratuitos cambian.** Los límites vigentes conviene mirarlos el día que despliegues
+en vez de fiarse de lo que ponga aquí.
 
 ---
 
 ## Si algo no sale
 
-**"Probar conexión" dice que no responde.** Comprueba que la dirección está copiada entera y
-que empieza por `https://`. Y que el flujo *Servidor* terminó en verde.
+**El flujo termina en gris diciendo que faltan secretos.** Los nombres no coinciden. Repasa el
+paso 3 letra por letra.
 
-**El flujo sale en gris diciendo que faltan secretos.** Los nombres no coinciden. Vuelve al
-paso 4 y compruébalos letra por letra.
+**El flujo falla al publicar.** Casi siempre es el token: bórralo en Cloudflare y créalo otra
+vez con la plantilla **"Edit Cloudflare Workers"**, sin cambiarle nada.
 
-**El flujo falla al publicar.** Lo más habitual es que el token no tenga los permisos: bórralo
-en Cloudflare y créalo otra vez usando la plantilla **"Edit Cloudflare Workers"**, sin
-cambiarle nada.
-
-**Tu amigo no puede entrar en la sala.** Los dos tenéis que tener la **misma dirección de
-servidor** guardada, y la misma versión del juego instalada.
+**En el juego dice que el directo no está activo.** El APK instalado es anterior al despliegue.
+Descarga otra vez el de **apk-latest** e instálalo encima.
 
 ---
 
-## Lo que esto no es
+## Para desarrollar
 
-No hay cuentas ni contraseñas: la identidad es un identificador del propio teléfono. Vale de
-sobra para jugar con amigos, pero no serviría para una clasificación competitiva de verdad.
+Si quieres levantar el servidor en tu propio ordenador y probar contra él:
 
-Tampoco hay emparejamiento con desconocidos: solo salas por código.
+```bash
+cd servidor
+npm install
+npx wrangler dev --port 8787 --local
+```
+
+Y en el juego, dentro de **Partida en directo → Ajustes avanzados**, pon
+`http://127.0.0.1:8787`. Esa dirección manual tiene prioridad sobre la de fábrica; para volver
+a la normal, se deja el campo vacío.

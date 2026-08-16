@@ -276,18 +276,50 @@ comprobar(resu.subio && !resu.tocado, 'la victoria del amigo suma en su columna,
 
 await page.evaluate(() => { vista = 'inicio'; render(); });
 
-/* ── 2e. En directo: que se explique y que la dirección se entienda ───── */
+/* ── 2e. En directo: viene configurado de fábrica ─────────────────────── */
 console.log('\n2e. Pantalla de partida en directo');
-await page.evaluate(() => { S.servidor = ''; ir('directo'); });
-const sinServidor = await page.evaluate(() => ({
-  explica: !!document.querySelector('[data-a="ayudaservidor"]'),
-  sinCrear: !document.querySelector('[data-a="crearsala"]'),
-  texto: document.querySelector('#app').textContent,
+
+// Con servidor de fábrica —que es como sale el APK— no hay nada que configurar
+await page.evaluate(() => {
+  window.SERVIDOR_POR_DEFECTO = 'https://jaula-abierta.ejemplo.workers.dev';
+  S.servidor = ''; tmp = {}; ir('directo');
+});
+const fabrica = await page.evaluate(() => ({
+  url: servidorURL(), manual: servidorEsManual(),
+  crear: !!document.querySelector('[data-a="crearsala"]'),
+  entrar: !!document.querySelector('[data-a="pedircodigo"]'),
+  campoALaVista: !!document.querySelector('#servidor'),
 }));
-comprobar(sinServidor.explica, 'sin servidor, la pantalla ofrece explicar cómo conseguir uno');
-comprobar(sinServidor.sinCrear, 'sin servidor, no se ofrece crear sala');
-comprobar(/gratis/i.test(sinServidor.texto) && /ocultas/i.test(sinServidor.texto),
-  'y explica por qué hace falta y que es gratis');
+comprobar(fabrica.url === 'https://jaula-abierta.ejemplo.workers.dev',
+  'la dirección de fábrica se usa sin que el jugador guarde nada');
+comprobar(!fabrica.manual, 'y no cuenta como dirección manual');
+comprobar(fabrica.crear && fabrica.entrar, 'salen los dos botones: crear sala y entrar con código');
+comprobar(!fabrica.campoALaVista,
+  'la casilla de la dirección NO está a la vista: no hay nada que configurar');
+
+// pero sigue estando, plegada, para quien la necesite
+await page.locator('[data-a="avanzado"]').click();
+comprobar(await page.locator('#servidor').count() === 1,
+  'en ajustes avanzados sí aparece, para apuntar a un servidor propio');
+
+// y lo manual gana sobre lo de fábrica, que es como se prueba en local
+const manda = await page.evaluate(() => {
+  S.servidor = 'http://127.0.0.1:8787';
+  return { url: servidorURL(), manual: servidorEsManual() };
+});
+comprobar(manda.url === 'http://127.0.0.1:8787' && manda.manual,
+  'la dirección manual tiene prioridad sobre la de fábrica');
+
+// sin ninguna de las dos, el juego no se rompe y no le encarga tareas al jugador
+const sinServidor = await page.evaluate(() => {
+  window.SERVIDOR_POR_DEFECTO = ''; S.servidor = ''; tmp = {}; ir('directo');
+  return { sinCrear: !document.querySelector('[data-a="crearsala"]'),
+           texto: document.querySelector('#app').textContent };
+});
+comprobar(sinServidor.sinCrear, 'sin ningún servidor, no se ofrece crear sala');
+comprobar(/no tendrás que configurar nada|no es cosa tuya|no tuya/i.test(sinServidor.texto),
+  'y se le dice al jugador que no es cosa suya, en vez de encargarle un despliegue');
+await page.evaluate(() => { window.SERVIDOR_POR_DEFECTO = ''; S.servidor = ''; });
 
 // la dirección se acepta como venga de un copiar y pegar torpe
 const normal = await page.evaluate(() => ({
@@ -331,6 +363,38 @@ comprobar(/Partida en directo/.test(menu) && /Retar plantillas/.test(menu),
 const avisoAmigos = await page.evaluate(() => { ir('amigos'); return document.querySelector('#app').textContent; });
 comprobar(/no es jugar a la vez/i.test(avisoAmigos),
   'la pantalla de retar plantillas avisa de que no es en directo');
+
+/* ── 2f. Incómodo: la regla corregida ─────────────────────────────────── */
+console.log('\n2f. Incómodo al fallar la elección');
+const inc = await page.evaluate(() => {
+  const pj = {}, pr = {};
+  const usados = new Set();
+  for (const d of DIVISIONES) {
+    const pool = ROSTER.filter(c => c.alineable && c.division === d.id && !usados.has(c.persona));
+    pj[d.id] = pool[0]; pr[d.id] = pool[1] || pool[0]; usados.add(pool[0].persona);
+  }
+  const P2 = nuevaPartida(pj, pr);
+  P2.enJuego = DIVISIONES.slice(0, 6).map(d => d.id);
+  P2.fase = 'duelos';
+  const declarada = P2.enJuego[2], enviada = P2.enJuego[4];
+  const antesEnviada = P2.cartas.j[enviada];
+  const antesReal = P2.cartas.j[declarada];
+  enviarAlDuelo(P2, 'j', enviada, declarada, -12);
+  return {
+    peleaLaEnviada: P2.cartas.j[declarada].id === antesEnviada.id,
+    realDescartada: P2.cartas.j[declarada].id !== antesReal.id,
+    sigueEnSuHueco: P2.cartas.j[enviada].id === antesEnviada.id,
+    penalizada: valorCarta(P2, 'j', declarada, 'golpeo') === antesEnviada.stats.golpeo - 12,
+    suHuecoLimpio: valorCarta(P2, 'j', enviada, 'golpeo') === antesEnviada.stats.golpeo,
+    sinIntercambio: typeof window.intercambiarSlots === 'undefined',
+  };
+});
+comprobar(inc.peleaLaEnviada, 'la carta enviada es la que pelea el duelo declarado');
+comprobar(inc.realDescartada, 'la carta de la división real se descarta');
+comprobar(inc.sigueEnSuHueco, 'la enviada sigue en su propia división y peleará también allí');
+comprobar(inc.penalizada, 'come la penalización en el duelo declarado');
+comprobar(inc.suHuecoLimpio, 'pero su propio duelo lo pelea sin penalización: un fallo, un castigo');
+comprobar(inc.sinIntercambio, 'ya no hay intercambio de huecos, que con el plus creaba duelos imposibles');
 
 /* ── 3. Partidas completas ────────────────────────────────────────────── */
 console.log(`\n3. ${N_PARTIDAS} partidas completas`);

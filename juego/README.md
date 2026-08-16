@@ -87,7 +87,9 @@ Los códigos llevan suma de verificación, y una plantilla que llegue de fuera s
 —11 divisiones, todas alineables, sin peleador repetido— antes de aceptarse. Un pegado a
 medias se rechaza explicando qué pasa, en vez de reventar a mitad de partida.
 
-**Partidas en directo.** Uno crea sala, sale un código de 6 letras, el otro lo mete y juegan
+**Partidas en directo, sin configurar nada.** El APK trae la dirección del servidor dentro, así
+que quien lo instala abre y juega: ni cuentas, ni registros, ni ajustes. La dirección la escribe
+sola la publicación del servidor. Uno crea sala, sale un código de 6 letras, el otro lo mete y juegan
 **a la vez**: cada uno elige sus vetos, sus declaraciones y su jugada, en su propio móvil y en
 ese mismo momento. **La IA no participa en nada** — ni siquiera el Veterano, que es reactivo y
 se le pregunta al defensor en vez de saltar solo. Es un modo aparte de "retar plantillas", que
@@ -111,8 +113,9 @@ con amigos, no para una liga competitiva. Tampoco hay cola de emparejamiento ale
 salas por código—, ni ligas, telemetría, arte, sonido o monetización. La sala de intercambio
 empareja con un jugador simulado.
 
-Y hace falta un servidor para el directo: se despliega gratis y **desde el móvil**, siguiendo
-[`../servidor/COMO-ACTIVARLO.md`](../servidor/COMO-ACTIVARLO.md).
+Publicar el servidor es cosa de quien aloja el juego, una sola vez:
+[`../servidor/COMO-ACTIVARLO.md`](../servidor/COMO-ACTIVARLO.md). Quien juega no tiene que
+leerlo ni saber que existe.
 
 ---
 
@@ -126,7 +129,7 @@ obliga a elegir. Estas son las elecciones, y están recogidas también en
 |---|---|
 | Empate a 0 de margen | Moneda al aire. El GDD no lo contempla |
 | Contigüidad entre divisiones | Dos escaleras independientes, sin puente entre géneros |
-| Resolución del Incómodo | La carta enviada pelea en la división declarada; si fallas come la penalización y las dos cartas intercambian slot, así cada peleador pelea una sola vez |
+| Resolución del Incómodo | La carta enviada pelea en la división declarada; si fallas come la penalización y la carta de la división real se descarta sin pelear. La enviada sigue en su hueco y pelea también el suyo — misma excepción que el Camaleón. Sin intercambio de huecos: con el plus podía mandar un mosca a pelear en pesado, y castigaba dos veces el mismo fallo |
 | Bloqueo del Veterano | Se apaga cuando quedan menos de 2 stats vivas, no "en el duelo 6": con un Especialista puede haber dos stats vivas en el sexto |
 | El Camaleón pelea dos veces | Excepción explícita a "cada peleador pelea una sola vez" |
 | Cartas no alineables | Llevan las 6 stats grandes, sin sub-stats |

@@ -370,9 +370,11 @@ export class Sala {
     if (elegida === q.divId) {
       P.log.push({ t: 'sys', x: `${this.nombreDeLado(lado)} acierta la división: duelo limpio.` });
     } else {
-      intercambiarSlots(P, lado, elegida, q.divId);
-      penaliza(P, lado, q.divId, SID, q.plus ? -12 : -6);
-      P.log.push({ t: 'sys', x: `${this.nombreDeLado(lado)} falla y come ${q.plus ? -12 : -6}.` });
+      // La enviada pelea aquí con la penalización y sigue disponible para su propio duelo;
+      // la carta de la división declarada se descarta.
+      const descartada = P.cartas[lado][q.divId];
+      enviarAlDuelo(P, lado, elegida, q.divId, q.plus ? -12 : -6);
+      P.log.push({ t: 'sys', x: `${this.nombreDeLado(lado)} falla: come ${q.plus ? -12 : -6} y ${descartada.nombre} se descarta sin pelear.` });
     }
     P.pendiente = null; P.fase = 'duelos';
     P.log.push({ t: 'sys', x: `Duelo en ${DIV[q.divId].n} · ${q.stat.toUpperCase()}.` });

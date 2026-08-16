@@ -297,14 +297,20 @@ function penaliza(P,l,divId,stats,v){
   const a=P.ajustes[l][divId]||(P.ajustes[l][divId]={});
   for(const s of stats) a[s]=(a[s]||0)+v;
 }
-// Las dos cartas cambian de slot llevándose sus ajustes. Lo usa el Incómodo:
-// así el peleador enviado pelea en la división declarada y el otro cubre la que deja,
-// de modo que cada peleador sigue peleando una sola vez y el calendario cuadra.
-function intercambiarSlots(P,l,a,b){
-  const ca=P.cartas[l][a], cb=P.cartas[l][b];
-  P.cartas[l][a]=cb; P.cartas[l][b]=ca;
-  const aa=P.ajustes[l][a]||{}, ab=P.ajustes[l][b]||{};
-  P.ajustes[l][a]=ab; P.ajustes[l][b]=aa;
+/* Resolución del INCÓMODO cuando el defensor falla la elección.
+
+   La carta que ha enviado pelea el duelo en la división declarada, con la penalización,
+   y la carta que había en esa división se descarta: solo iba a pelear ahí, y ese duelo
+   acaba de jugarse con otra. La enviada NO se mueve de su hueco, así que después pelea
+   también el suyo — es la misma excepción que ya hace el Camaleón.
+
+   Antes las dos cartas intercambiaban hueco, y eso estaba mal por dos motivos: con el plus,
+   que admite cualquier división, podía acabar mandando a un mosca a pelear en pesado más
+   tarde; y castigaba dos veces el mismo fallo, en este duelo y en el siguiente. */
+function enviarAlDuelo(P,l,desde,divDeclarada,penalizacion){
+  P.cartas[l][divDeclarada]=P.cartas[l][desde];
+  P.ajustes[l][divDeclarada]={...(P.ajustes[l][desde]||{})};
+  penaliza(P,l,divDeclarada,SID,penalizacion);
 }
 
 // Cambio de división: contiguas, ambas en juego, ninguna jugada, intercambio obligado
@@ -390,7 +396,7 @@ function resolverDesempate(P){
   P.fase='fin'; P.fin=ganador;
 }
 
-const MOTOR={DIVISIONES, DIV, contiguas, vecinas, STATS, SID, SUBSTATS, RAREZAS, ORDEN_RAREZA, ARQUETIPOS, RASGOS, PROMOTORAS, GIMNASIOS, PAISES, NOM_M, NOM_F, APE, APODOS, mulberry32, RNG, ri, pick, shuffle, clamp, ROSTER, generarCarta, asignarRasgos, generarRoster, alineables, rasgoTxt, MARGENES, nuevaPartida, terminarVetos, librePara, valorCarta, aplicarPenalizacion, penaliza, intercambiarSlots, cambiosPosibles, hacerCambio, rasgoDe, camaleonesPosibles, resolverDuelo, resolverDesempate};
+const MOTOR={DIVISIONES, DIV, contiguas, vecinas, STATS, SID, SUBSTATS, RAREZAS, ORDEN_RAREZA, ARQUETIPOS, RASGOS, PROMOTORAS, GIMNASIOS, PAISES, NOM_M, NOM_F, APE, APODOS, mulberry32, RNG, ri, pick, shuffle, clamp, ROSTER, generarCarta, asignarRasgos, generarRoster, alineables, rasgoTxt, MARGENES, nuevaPartida, terminarVetos, librePara, valorCarta, aplicarPenalizacion, penaliza, enviarAlDuelo, cambiosPosibles, hacerCambio, rasgoDe, camaleonesPosibles, resolverDuelo, resolverDesempate};
 raiz.MOTOR=MOTOR;
 // También sueltas en el global: el juego las usa por su nombre, sin prefijo.
 for(const k of Object.keys(MOTOR)) if(!(k in raiz)) raiz[k]=MOTOR[k];

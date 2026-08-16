@@ -8,7 +8,11 @@ plugins {
 def assetsJuego = layout.buildDirectory.dir('juego-assets')
 
 def copiarJuego = tasks.register('copiarJuego', Copy) {
-    from(rootProject.file('../juego')) { include 'juego.html'; include 'motor.js' }
+    from(rootProject.file('../juego')) {
+        include 'juego.html'
+        include 'motor.js'
+        include 'servidor.js'   // lleva dentro la dirección del servidor de directo
+    }
     into assetsJuego
 }
 

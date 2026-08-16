@@ -135,6 +135,7 @@ th{color:var(--dim2);font-size:11px;text-transform:uppercase;letter-spacing:.04e
 <div id="nav"></div>
 
 <script src="motor.js"></script>
+<script src="servidor.js"></script>
 <script>
 "use strict";
 /* ══════════════════════════════════════════════════════════════════════════
@@ -416,7 +417,11 @@ function registrarResultado(txt){
    ══════════════════════════════════════════════════════════════════════════ */
 let MODO='local', RED=null, SALA=null;
 const online=()=>MODO==='online';
-const servidorURL=()=>String(S.servidor||'').trim().replace(/\/+$/,'');
+// La dirección viene puesta de fábrica en el APK. Lo que el jugador guarde a mano
+// tiene prioridad, que es lo que permite apuntar a un servidor local al desarrollar.
+const servidorDeFabrica=()=>String(window.SERVIDOR_POR_DEFECTO||'').trim().replace(/\/+$/,'');
+const servidorURL=()=>String(S.servidor||'').trim().replace(/\/+$/,'')||servidorDeFabrica();
+const servidorEsManual=()=>!!String(S.servidor||'').trim();
 // Se acepta como la peguen: con espacios, sin https://, con barra final o con
 // una ruta pegada de más. Rechazar por una barra sería absurdo.
 function normalizarServidor(txt){
@@ -434,7 +439,7 @@ async function probarServidor(url){
     if(j&&j.servicio==='jaula-abierta') return {ok:true,txt:'Funciona. Ya podéis crear una sala.'};
     return {ok:false,txt:'Esa dirección responde, pero no es el servidor del juego. Revisa que sea la que salió al desplegarlo.'};
   }catch(e){
-    return {ok:false,txt:'No contesta. Comprueba la dirección, que tengas conexión, y que el flujo Servidor terminara en verde.'};
+    return {ok:false,txt:'No contesta. Comprueba que tienes conexión y vuelve a probar en un rato.'};
   }
 }
 function miId(){
@@ -957,9 +962,8 @@ function vIntercambio(){
 
 /* ── EN DIRECTO: configuración del servidor y entrada a la sala ── */
 function vDirecto(){
-  const url=servidorURL();
-  const prueba=tmp.prueba;   // {ok, txt} del botón de probar conexión
-  const listo=plantillaCompleta();
+  const url=servidorURL(), prueba=tmp.prueba, listo=plantillaCompleta();
+  const avanzado=!!tmp.avanzado||servidorEsManual();
   return `<h2>Partida en directo</h2>
     <div class="sub mb">Los dos jugando <b>a la vez</b>: cada uno elige sus vetos, sus
     declaraciones y su jugada. Aquí no hay IA — el rival es tu amigo, en su móvil, en ese
@@ -970,40 +974,44 @@ function vDirecto(){
       <div class="sub">Necesitas una carta en las 11 divisiones.</div></div>`:''}
 
     ${url?`
-      <div class="card-panel" style="border-color:${prueba?(prueba.ok?'var(--ok)':'var(--warn)'):'var(--acc)'}">
-        <div class="tiny mb">SERVIDOR</div>
-        <div style="font-family:ui-monospace,monospace;font-size:12px;word-break:break-all">${esc(url)}</div>
-        ${prueba?`<div class="sub" style="margin-top:7px;color:${prueba.ok?'var(--ok)':'var(--warn)'}">${esc(prueba.txt)}</div>`:''}
-        <button class="btn gho sm" data-a="probarservidor" style="width:100%;margin-top:9px">Probar conexión</button>
-      </div>
-      <button class="btn mb" data-a="crearsala" ${listo?'':'disabled'} style="padding:15px;font-size:16px">
+      <button class="btn mb" data-a="crearsala" ${listo?'':'disabled'} style="padding:17px;font-size:17px">
         Crear sala</button>
-      <button class="btn sec mb" data-a="pedircodigo" ${listo?'':'disabled'} style="padding:15px;font-size:16px">
+      <button class="btn sec mb" data-a="pedircodigo" ${listo?'':'disabled'} style="padding:17px;font-size:17px">
         Entrar con un código</button>
-      <div class="tiny center mb">Uno crea la sala y le pasa el código al otro.</div>
+      <div class="tiny center mb">Uno crea la sala y le pasa el código de 6 letras al otro.
+        La partida empieza sola.</div>
     `:`
       <div class="card-panel" style="border-color:var(--warn)">
-        <h3>Falta el servidor</h3>
-        <div class="sub">En este juego las cartas están ocultas hasta que se resuelve el duelo.
-        Si la plantilla de tu rival estuviera guardada en tu móvil, cualquiera podría leerla.
-        Por eso hace falta alguien en medio que conozca las dos y no las enseñe: un servidor.
-        <br><br>Es <b>gratis</b> y se pone en marcha una sola vez, desde el navegador del móvil.
-        No hace falta instalar nada.</div>
-        <button class="btn sm" data-a="ayudaservidor" style="width:100%;margin-top:10px">Cómo consigo uno</button>
+        <h3>El directo aún no está activo</h3>
+        <div class="sub">Falta publicar el servidor que hace de árbitro. Es cosa de quien
+        mantiene el juego, no tuya — cuando esté, te llegará en una actualización y no
+        tendrás que configurar nada.</div>
+        <div class="sub" style="margin-top:9px">Mientras tanto puedes jugar contra la IA y
+        retar plantillas de amigos, que funcionan sin conexión.</div>
       </div>
     `}
 
     <div class="card-panel">
-      <div class="tiny mb">DIRECCIÓN DEL SERVIDOR</div>
-      <input id="servidor" value="${esc(S.servidor||'')}" placeholder="https://…workers.dev"
-        autocapitalize="off" autocorrect="off" spellcheck="false"
-        style="width:100%;padding:10px;border-radius:8px;background:var(--bg3);
-        border:1px solid var(--line);color:var(--txt);font:inherit;margin-bottom:8px">
-      <div class="row">
-        <button class="btn sec sm" data-a="guardarservidor">Guardar</button>
-        <button class="btn gho sm" data-a="ayudaservidor">Ayuda</button>
-      </div>
-      <div class="tiny" style="margin-top:8px">Los dos móviles tienen que tener la misma.</div>
+      <button class="btn gho sm" data-a="avanzado" style="width:100%">
+        ${avanzado?'▾':'▸'} Ajustes avanzados</button>
+      ${avanzado?`
+        <div class="tiny" style="margin:12px 0 6px">No hace falta tocar nada de esto. Solo sirve
+        para apuntar a otro servidor, por ejemplo uno propio de pruebas.</div>
+        ${url?`<div class="tiny" style="margin-bottom:6px">Usando ${servidorEsManual()?'servidor manual':'el servidor de fábrica'}:</div>
+        <div style="font-family:ui-monospace,monospace;font-size:11.5px;word-break:break-all;
+          color:var(--dim);margin-bottom:10px">${esc(url)}</div>`:''}
+        <input id="servidor" value="${esc(S.servidor||'')}" placeholder="dejar vacío = el de fábrica"
+          autocapitalize="off" autocorrect="off" spellcheck="false"
+          style="width:100%;padding:10px;border-radius:8px;background:var(--bg3);
+          border:1px solid var(--line);color:var(--txt);font:inherit;margin-bottom:8px">
+        <div class="row mb">
+          <button class="btn sec sm" data-a="guardarservidor">Guardar</button>
+          <button class="btn gho sm" data-a="probarservidor" ${url?'':'disabled'}>Probar</button>
+        </div>
+        ${prueba?`<div class="tiny" style="color:${prueba.ok?'var(--ok)':'var(--warn)'}">${esc(prueba.txt)}</div>`:''}
+        <button class="btn gho sm" data-a="ayudaservidor" style="width:100%;margin-top:8px">
+          Cómo se publica el servidor</button>
+      `:''}
     </div>
     <button class="btn gho" data-nav="mas">Volver</button>`;
 }
@@ -1494,10 +1502,9 @@ function resolverIncomodo(idx){
   if(elegida===q.divId){
     P.log.push({t:'sys',x:`Aciertas la división: duelo limpio en ${DIV[q.divId].n}.`});
   }else{
-    const enviada=P.cartas.j[elegida];
-    intercambiarSlots(P,'j',elegida,q.divId);
-    penaliza(P,'j',q.divId,SID,q.plus?-12:-6);
-    P.log.push({t:'sys',x:`Fallas: ${enviada.nombre} pelea en ${DIV[q.divId].n} con ${q.plus?-12:-6}. Tu otra carta cubre ${DIV[elegida].n}.`});
+    const enviada=P.cartas.j[elegida], descartada=P.cartas.j[q.divId];
+    enviarAlDuelo(P,'j',elegida,q.divId,q.plus?-12:-6);
+    P.log.push({t:'sys',x:`Fallas: ${enviada.nombre} pelea en ${DIV[q.divId].n} con ${q.plus?-12:-6}. ${descartada.nombre} se descarta sin pelear.`});
   }
   P.pendiente=null; P.fase='duelos';
   P.log.push({t:'sys',x:`El rival declara ${DIV[q.divId].n} · ${q.stat.toUpperCase()}.`});
@@ -1647,13 +1654,14 @@ document.addEventListener('click',e=>{
       probarServidor(u).then(r=>{ tmp.prueba=r; render(); });
       break; }
     case 'ayudaservidor': ayudaServidor(); break;
+    case 'avanzado': tmp.avanzado=!tmp.avanzado; render(); break;
     case 'crearsala':{
       const base=servidorURL();
       if(!base) return avisoCodigo('Falta la dirección del servidor.');
       fetch(base+'/sala',{method:'POST'})
         .then(r=>r.json())
         .then(r=>{ if(r&&r.codigo) conectar(r.codigo); else avisoCodigo('El servidor no ha dado código.'); })
-        .catch(e=>avisoCodigo('No se ha podido hablar con el servidor. Comprueba la dirección y tu conexión.'));
+        .catch(e=>avisoCodigo('El servidor no responde. Comprueba que tienes conexión y prueba otra vez en un rato — no es nada que tengas que arreglar tú.'));
       break; }
     case 'pedircodigo':
       ov(`<div class="center"><h3>Entrar con código</h3>
@@ -1768,9 +1776,8 @@ document.addEventListener('click',e=>{
         if(otra){
           const elegida=iaEligeIncomodo(P,shuffle([tmp.divSel,otra]));
           if(elegida!==tmp.divSel){
-            intercambiarSlots(P,'r',elegida,tmp.divSel);
-            penaliza(P,'r',tmp.divSel,SID,inc.plus?-12:-6);
-            P.log.push({t:'sys',x:`El rival falla la elección y come ${inc.plus?-12:-6}.`});
+            enviarAlDuelo(P,'r',elegida,tmp.divSel,inc.plus?-12:-6);
+            P.log.push({t:'sys',x:`El rival falla la elección: come ${inc.plus?-12:-6} y descarta su carta de ${DIV[tmp.divSel].n}.`});
           }else P.log.push({t:'sys',x:'El rival acierta la división: duelo limpio.'});
         }
         tmp.incomodo=false;

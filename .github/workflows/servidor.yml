@@ -1,12 +1,19 @@
 name: Servidor
 
-# Publica el servidor de partidas en vivo en Cloudflare, sin necesidad de terminal.
-# Todo lo que hay que hacer se hace desde el navegador del móvil; los pasos están
-# en servidor/COMO-ACTIVARLO.md
+# Publica el servidor de partidas en directo y deja su dirección METIDA DENTRO del APK,
+# para que quien lo instale pueda jugar sin configurar absolutamente nada.
 #
-# Necesita dos secretos del repositorio:
-#   CLOUDFLARE_API_TOKEN   (plantilla "Edit Cloudflare Workers")
+# Cadena completa, en una sola ejecución:
+#   desplegar worker → escribir juego/servidor.js → construir APK → publicar descarga
+#
+# Los cuatro pasos van juntos a propósito: un commit hecho con GITHUB_TOKEN no dispara
+# otros flujos (GitHub lo impide para evitar bucles), así que separar el despliegue de
+# la construcción del APK rompería la cadena justo en medio.
+#
+# Necesita dos secretos del repositorio, que se ponen UNA vez:
+#   CLOUDFLARE_API_TOKEN    (plantilla "Edit Cloudflare Workers")
 #   CLOUDFLARE_ACCOUNT_ID
+# Los pasos están en servidor/COMO-ACTIVARLO.md
 
 on:
   workflow_dispatch:
@@ -19,14 +26,17 @@ on:
       - 'juego/motor.js'
       - '.github/workflows/servidor.yml'
 
+permissions:
+  contents: write
+
 jobs:
   desplegar:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      # Sin los secretos no se puede desplegar, pero tampoco tiene sentido dejar el
-      # flujo en rojo cada vez que se toque un archivo: se explica qué falta y se sale bien.
+      # Sin los secretos no se puede desplegar, pero tampoco tiene sentido dejar el flujo
+      # en rojo cada vez que se toque un archivo: se explica qué falta y se sale bien.
       - name: Comprobar que están los secretos
         id: comp
         env:
@@ -40,14 +50,13 @@ jobs:
             {
               echo "## El servidor todavía no está activado"
               echo ""
-              echo "Faltan los datos de Cloudflare. No es un error: es que aún no se ha hecho la configuración inicial."
+              echo "No es un error: es que aún no se ha hecho la configuración inicial, que se hace una sola vez."
               echo ""
               [ -z "$TOKEN" ]  && echo "- Falta el secreto \`CLOUDFLARE_API_TOKEN\`"
               [ -z "$CUENTA" ] && echo "- Falta el secreto \`CLOUDFLARE_ACCOUNT_ID\`"
               echo ""
-              echo "Los pasos, escritos para hacerse desde el móvil, están en **servidor/COMO-ACTIVARLO.md**."
-              echo ""
-              echo "Se añaden en: **Settings → Secrets and variables → Actions → New repository secret**."
+              echo "Los tres pasos están en **servidor/COMO-ACTIVARLO.md**."
+              echo "Se añaden en **Settings → Secrets and variables → Actions → New repository secret**."
             } >> "$GITHUB_STEP_SUMMARY"
           fi
 
@@ -57,15 +66,15 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Instalar dependencias
+      - name: Instalar dependencias del servidor
         if: steps.comp.outputs.listo == 'si'
         working-directory: servidor
         run: npm install --no-audit --no-fund
 
-      # Se despliega desde servidor/ pero con el repositorio entero clonado: el worker
-      # importa ../../juego/motor.js a propósito, para que servidor y juego compartan
-      # exactamente el mismo reglamento y no puedan divergir.
-      - name: Publicar en Cloudflare
+      # Se despliega desde servidor/ con el repositorio entero clonado: el worker importa
+      # ../../juego/motor.js a propósito, para que servidor y juego compartan exactamente
+      # el mismo reglamento y no puedan divergir.
+      - name: Publicar el servidor
         if: steps.comp.outputs.listo == 'si'
         id: deploy
         working-directory: servidor
@@ -76,23 +85,79 @@ jobs:
           set -o pipefail
           npx wrangler deploy 2>&1 | tee despliegue.txt
           URL=$(grep -Eoi 'https://[a-z0-9.-]+\.workers\.dev' despliegue.txt | head -1)
+          if [ -z "$URL" ]; then
+            echo "No se ha podido leer la dirección de la salida de wrangler." >&2
+            exit 1
+          fi
           echo "url=$URL" >> "$GITHUB_OUTPUT"
+          rm -f despliegue.txt
 
-      # La dirección es lo único que el usuario necesita llevarse, así que va al resumen
-      # de la ejecución en grande, y no perdida entre los registros.
-      - name: Enseñar la dirección
+      # Aquí está la gracia: la dirección se mete en el juego, así que el APK que se
+      # construya después ya la lleva dentro y nadie tiene que pegarla a mano.
+      - name: Meter la dirección en el juego
+        if: steps.comp.outputs.listo == 'si'
+        id: fijar
+        run: |
+          cat > juego/servidor.js <<ARCHIVO
+          /* Dirección del servidor de partidas en directo.
+
+             ESTE ARCHIVO LO ESCRIBE SOLO EL FLUJO "Servidor" DE GITHUB ACTIONS al desplegar.
+             No hace falta tocarlo a mano. */
+
+          window.SERVIDOR_POR_DEFECTO = "${{ steps.deploy.outputs.url }}";
+          ARCHIVO
+          if git diff --quiet -- juego/servidor.js; then
+            echo "cambio=no" >> "$GITHUB_OUTPUT"
+          else
+            echo "cambio=si" >> "$GITHUB_OUTPUT"
+            git config user.name  "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add juego/servidor.js
+            git commit -m "Point the game at the deployed live-match server"
+            git push origin HEAD:${{ github.ref_name }}
+          fi
+
+      - name: Preparar Java
+        if: steps.comp.outputs.listo == 'si'
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Preparar Gradle
+        if: steps.comp.outputs.listo == 'si'
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.14.3'
+
+      - name: Construir el APK con la dirección dentro
+        if: steps.comp.outputs.listo == 'si'
+        working-directory: android
+        run: gradle assembleDebug --no-daemon --stacktrace
+
+      - name: Publicar la descarga
+        if: steps.comp.outputs.listo == 'si'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p salida
+          cp android/app/build/outputs/apk/debug/app-debug.apk salida/jaula-abierta.apk
+          gh release delete apk-latest --yes --cleanup-tag || true
+          gh release create apk-latest salida/jaula-abierta.apk \
+            --title "Jaula Abierta — APK de prueba" \
+            --notes "Prototipo jugable. Las partidas en directo vienen ya configuradas: se instala y se juega, sin ajustes. Servidor: ${{ steps.deploy.outputs.url }}" \
+            --prerelease
+
+      - name: Resumen
         if: steps.comp.outputs.listo == 'si'
         run: |
           {
-            echo "# Servidor publicado"
+            echo "# Listo"
             echo ""
-            if [ -n "${{ steps.deploy.outputs.url }}" ]; then
-              echo "## \`${{ steps.deploy.outputs.url }}\`"
-              echo ""
-              echo "Copia esa dirección y pégala en el juego, en **Amigos → Servidor**."
-              echo "Hay que ponerla en los dos móviles."
-            else
-              echo "El despliegue ha terminado, pero no se ha podido leer la dirección de la salida."
-              echo "Búscala en el panel de Cloudflare, en **Workers & Pages → jaula-abierta**."
-            fi
+            echo "Servidor publicado en \`${{ steps.deploy.outputs.url }}\`"
+            echo ""
+            echo "El APK ya lleva esa dirección dentro. **Nadie tiene que configurar nada:**"
+            echo "se instala, se monta la plantilla y se crea una sala."
+            echo ""
+            echo "Descarga: la publicación **apk-latest** del repositorio."
           } >> "$GITHUB_STEP_SUMMARY"

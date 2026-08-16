@@ -21,8 +21,8 @@ npm install
 npx wrangler dev --port 8787 --local
 ```
 
-Luego, en el juego: **Más → Partida en directo**, y pones `http://127.0.0.1:8787` en la
-dirección del servidor.
+Luego, en el juego: **Más → Partida en directo → Ajustes avanzados**, y pones
+`http://127.0.0.1:8787`. Esa dirección manual tiene prioridad sobre la de fábrica.
 
 Para la prueba automática, con el servidor levantado en otra terminal:
 
@@ -47,11 +47,13 @@ npx wrangler deploy
 Te devuelve una dirección tipo `https://jaula-abierta.TU-CUENTA.workers.dev`. Esa es la que
 pegas en **Partida en directo** dentro del juego, en los dos móviles.
 
-**Sin terminal:** si no tienes ordenador, se puede desplegar entero desde el navegador del
-móvil con GitHub Actions. Los pasos están en [`COMO-ACTIVARLO.md`](COMO-ACTIVARLO.md).
+**Lo normal es no usar la terminal.** El flujo *Servidor* de GitHub Actions despliega, **mete
+la dirección dentro del juego**, construye el APK con ella y publica la descarga, todo en una
+ejecución. Los pasos, tres y una sola vez, están en [`COMO-ACTIVARLO.md`](COMO-ACTIVARLO.md).
 
-**No hace falta recompilar el APK para cambiar de servidor**: la dirección es un ajuste
-guardado en el dispositivo, no algo incrustado en la aplicación.
+Así **quien instala el APK no configura nada**: la dirección viene puesta de fábrica en
+`juego/servidor.js`, que escribe el propio flujo. El ajuste manual del juego sigue existiendo,
+pero solo para apuntar a un servidor de pruebas.
 
 > Las condiciones de los planes gratuitos cambian con el tiempo. Conviene mirar los límites
 > vigentes el día que despliegues en vez de fiarse de lo que ponga aquí.
@@ -71,6 +73,11 @@ equivocarse.
 **El servidor no se fía de nada.** Valida que sea tu turno, que la división siga libre, que la
 stat siga viva, que no hayas gastado ya tu jugada, y que la plantilla que mandas sea legal —
 11 divisiones, todas alineables, sin peleador repetido.
+
+**El Incómodo, al fallar la elección:** la carta enviada pelea el duelo declarado con la
+penalización y **sigue disponible para su propio duelo**; la carta de la división declarada se
+descarta. No hay intercambio de huecos — con el plus, que admite cualquier división, podía
+acabar mandando un mosca a pelear a pesado, y castigaba dos veces el mismo fallo.
 
 **Ninguna decisión la toma la máquina.** El Veterano es reactivo, así que cuando salta se le
 pregunta al defensor y se espera su respuesta, en vez de dispararse solo. Cuesta una ida y
