@@ -124,6 +124,25 @@ table{width:100%;border-collapse:collapse;font-size:13px}
 td,th{padding:5px 6px;text-align:left;border-bottom:1px solid var(--line)}
 th{color:var(--dim2);font-size:11px;text-transform:uppercase;letter-spacing:.04em;font-weight:700}
 .pen{color:#ff8878;font-weight:700}
+/* Las stats se tocan una a una sobre la carta, no se eligen en una lista de filtros */
+.lista-stats{display:flex;flex-direction:column;gap:5px}
+.fila-stat{display:flex;align-items:center;justify-content:space-between;
+  padding:11px 14px;border:1px solid var(--line);border-radius:9px;background:var(--bg3);
+  font-weight:650;font-size:14px;cursor:pointer;transition:.12s}
+.fila-stat b{font-size:19px;font-variant-numeric:tabular-nums}
+.fila-stat:active{transform:scale(.985)}
+.fila-stat.on{border-color:var(--acc);background:#2a1a19;color:#fff}
+.fila-stat.on b{color:var(--acc2)}
+/* El entrenador del tutorial: pegado arriba, para que no haya que buscarlo, y con el
+   mismo peso visual que un panel — no es un aviso de error ni un anuncio. */
+.coach{position:sticky;top:0;z-index:40;background:linear-gradient(180deg,#17251f,#131a17);
+  border:1px solid #2f6b4d;border-radius:12px;padding:12px 13px;margin-bottom:10px;
+  box-shadow:0 6px 18px rgba(0,0,0,.45)}
+.coach .qn{font-size:11px;letter-spacing:.09em;color:#6fce9d;margin-bottom:4px}
+.coach h3{margin:0 0 5px;font-size:16px}
+.coach .tx{font-size:13.5px;line-height:1.5;color:var(--dim)}
+.coach .tx b{color:var(--txt)}
+.coach .bs{display:flex;gap:8px;margin-top:10px}
 </style>
 
 <div id="top">
@@ -146,7 +165,8 @@ let S=null;
 
 function estadoNuevo(){
   const s={divisa:250,fichas:0,coleccion:[],plantilla:{},sobres:[],
-    partidas:0,victorias:0,gratis:{},sets:[],retos:[],nombre:'',amigos:[]};
+    partidas:0,victorias:0,gratis:{},sets:[],retos:[],nombre:'',amigos:[],
+    tutorialHecho:false,tutorCortado:false};
   // Arranque garantizado: una carta por división (si no, es imposible alinear)
   for(const d of DIVISIONES){
     const cand=alineables().filter(c=>c.division===d.id&&c.rareza==='bronce');
@@ -584,7 +604,8 @@ function render(){
   document.body.style.paddingBottom = sinNav?'12px':'64px';
   const f={inicio:vInicio,sobres:vSobres,coleccion:vColeccion,plantilla:vPlantilla,
     mas:vMas,reciclaje:vReciclaje,sets:vSets,retos:vRetos,intercambio:vIntercambio,
-    partida:vPartida,notas:vNotas,apertura:vApertura,amigos:vAmigos,online:vOnline,directo:vDirecto}[vista]||vInicio;
+    partida:vPartida,notas:vNotas,reglas:vReglas,apertura:vApertura,amigos:vAmigos,
+    online:vOnline,directo:vDirecto}[vista]||vInicio;
   $('#app').innerHTML=f();
   $('#app').classList.remove('flash'); void $('#app').offsetWidth; $('#app').classList.add('flash');
 }
@@ -595,7 +616,16 @@ function vInicio(){
   const ok=plantillaCompleta();
   const media=ok?Math.round(DIVISIONES.reduce((a,d)=>a+cartaDe(S.plantilla[d.id]).media,0)/11):0;
   const listos=nGratisListos();
-  return `<div class="card-panel center" style="padding:20px 14px">
+  // El tutorial va lo primero mientras no se haya hecho: es la puerta de entrada, y no
+  // exige plantilla completa porque juega con uno prestada — se puede hacer al instalar.
+  const tuto=S.tutorialHecho?'':`<div class="card-panel" style="border-color:#2f6b4d;background:#16211c">
+      <div class="row" style="align-items:center"><div style="flex:none;font-size:26px">🎓</div>
+      <div style="flex:2"><b>Aprende a jugar</b>
+        <div class="sub">Una partida guiada, con plantilla prestada. Te explica las reglas mientras
+        juegas y al terminar te llevas 🪙 250 y un sobre de oro.</div></div></div>
+      <button class="btn sm" data-a="tutorial" style="width:100%;margin-top:9px">Empezar el tutorial</button>
+    </div>`;
+  return tuto+`<div class="card-panel center" style="padding:20px 14px">
       <div class="tiny">MEDIA DE TU PLANTILLA</div>
       <div style="font-size:46px;font-weight:800;letter-spacing:-.04em;line-height:1">${ok?media:'—'}</div>
       <div class="sub">${S.victorias} victorias de ${S.partidas} partidas</div>
@@ -619,7 +649,9 @@ function vInicio(){
       <table><tr><th>Margen</th><th>Resultado</th></tr>
       <tr><td>13 o más</td><td>Finish</td></tr>
       <tr><td>7 a 12</td><td>Decisión</td></tr>
-      <tr><td>1 a 6</td><td>Reñido — 65/35</td></tr></table>
+      <tr><td>1 a 6</td><td>Reñido — 65/35</td></tr>
+      <tr><td>0</td><td>Empate — moneda al aire 50/50</td></tr></table>
+      <button class="btn gho sm" data-nav="reglas" style="width:100%;margin-top:9px">📖 Reglas completas</button>
     </div>`;
 }
 
@@ -851,6 +883,7 @@ function vMas(){
        ['sets','🧩','Sets de colección','Completa y desbloquea cartas'],
        ['retos','📜','Retos','Entrega cartas, gana recompensas'],
        ['intercambio','🤝','Sala de intercambio','Trueque puro, cuesta 1 ficha'],
+       ['reglas','📖','Reglas del juego','Todo, con los números exactos'],
        ['notas','📝','Notas del prototipo','Qué está hecho y qué no']]
       .map(([v,i,t,d])=>`<div class="card-panel" data-nav="${v}" style="cursor:pointer">
         <div class="row" style="align-items:center"><div style="flex:none;font-size:22px">${i}</div>
@@ -1144,10 +1177,103 @@ function vAmigos(){
     <button class="btn sec" data-nav="mas">Volver</button>`;
 }
 
+/* ── REGLAS ──
+   El tutorial enseña jugando; esto es el papel al que se vuelve. Aquí no se resume:
+   está todo, incluidos los números exactos, porque la duda que trae a alguien a esta
+   pantalla suele ser justo la del número. */
+function vReglas(){
+  return `<h2>Reglas del juego</h2>
+  <div class="sub mb">Todo lo que hace falta saber, con los números exactos.</div>
+  <button class="btn sec mb" data-a="tutorial" style="width:100%">🎓 Aprenderlo jugando: partida tutorial</button>
+  ${S.tutorCortado?`<button class="btn gho sm mb" data-a="reactivartutor" style="width:100%">
+    Volver a activar las explicaciones del entrenador</button>`:''}
+
+  <div class="card-panel"><h3>La partida</h3><div class="sub">
+    Cada uno alinea <b>11 peleadores</b>, uno por división de peso (8 masculinas y 3 femeninas).
+    No pelean todos: se juegan <b>6 duelos</b> y gana <b>el primero que llegue a 4</b>.<br><br>
+    <b>No ves la plantilla del rival</b> hasta que cada carta pelea. En las partidas en directo
+    esto lo garantiza el servidor: sus cartas sin resolver ni siquiera llegan a tu móvil.
+  </div></div>
+
+  <div class="card-panel"><h3>1 · Elección de rol</h3><div class="sub">
+    Cada uno pide <b>empezar vetando</b> o <b>empezar declarando</b>. <b>El que empieza una no
+    empieza la otra.</b><br><br>
+    Contra la máquina eliges tú y ella se queda lo otro. En directo, si los dos pedís lo mismo,
+    lo resuelve un <b>dado</b> y el más alto se queda lo que pidió.
+  </div></div>
+
+  <div class="card-panel"><h3>2 · Vetos</h3><div class="sub">
+    <b>2 vetos cada uno</b>, alternos y a la vista: 4 divisiones fuera.<br><br>
+    Después cae un <b>veto aleatorio</b>: esa división no se pelea, pero si la partida acaba
+    3-3 es la del <b>desempate</b>. Quedan <b>6 divisiones para 6 duelos</b>.
+  </div></div>
+
+  <div class="card-panel"><h3>3 · Los duelos</h3><div class="sub">
+    Se declara por turnos: <b>división + stat</b>. La división y la stat <b>se gastan para los dos</b>,
+    así que nadie repite ni peleador ni stat.<br><br>
+    El que no declara <b>tiene que mandar su carta a mano</b>. Nada se resuelve solo.<br><br>
+    Las stats son <b>GOLPEO</b> (de pie), <b>LUCHA</b> (derribos y clinch), <b>SUELO</b> (sumisiones
+    y control), <b>CARDIO</b>, <b>DUREZA</b> e <b>IQ</b>. Cada una es la media de 6 sub-stats.
+  </div></div>
+
+  <div class="card-panel"><h3>4 · Quién gana el duelo</h3><div class="sub">
+    Se restan los dos números y manda el margen:
+    <table style="margin-top:7px"><tr><th>Margen</th><th>Resultado</th></tr>
+    <tr><td>13 o más</td><td>Finish — gana el alto</td></tr>
+    <tr><td>7 a 12</td><td>Decisión — gana el alto</td></tr>
+    <tr><td>1 a 6</td><td>Reñido — el alto gana 65 de cada 100</td></tr>
+    <tr><td>0</td><td>Empate exacto — moneda al aire, 50/50</td></tr></table>
+  </div></div>
+
+  <div class="card-panel"><h3>5 · Tu jugada: una por partida</h3><div class="sub">
+    <b>Una sola en toda la partida.</b> O es un cambio de división o es un rasgo — nunca las dos,
+    y nunca dos veces.<br><br>
+    <b>Cambio de división:</b> intercambio obligado entre dos divisiones contiguas que sigan en
+    juego. El que <b>sube</b> come <b>-6</b> en golpeo, lucha y dureza; el que <b>baja</b>, <b>-6</b>
+    en cardio y dureza.
+  </div></div>
+
+  <div class="card-panel"><h3>6 · Los rasgos</h3><div class="sub">
+    Van en algunas cartas y <b>los activas tú</b>: ninguno salta solo. Los <b>+</b> son la versión
+    fuerte.<br><br>
+    🦎 <b>Camaleón</b> — manda esa carta a pelear a una división contigua sin penalización; tu carta
+    de allí se descarta y el Camaleón sigue disponible para su propio duelo.
+    <b>+</b>: además no gasta tu jugada.<br><br>
+    🌀 <b>Incómodo</b> — ocultas la división. El rival ve dos cartas suyas y elige a ciegas cuál manda.
+    Si falla, esa carta pelea con <b>-6</b>… y <b>la carta de la división real se descarta sin pelear</b>,
+    acierte o falle. <b>+</b>: la segunda carta puede ser de cualquier división en juego y el fallo
+    cuesta <b>-12</b>.<br><br>
+    🎯 <b>Especialista</b> — si gana su duelo en su stat, <b>esa stat no se gasta</b> y vuelve al pool
+    para los dos. <b>+</b>: no se gasta aunque pierda.<br><br>
+    🧠 <b>Veterano</b> — cuando te declaran, cambias la stat del duelo por otra de las vivas, al azar.
+    <b>+</b>: la eliges tú. Se decide en la pantalla en la que mandas tu carta.
+  </div></div>
+
+  <div class="card-panel"><h3>7 · Desempate</h3><div class="sub">
+    Si acaba <b>3-3</b>, un duelo más en la división del <b>veto aleatorio</b>, con <b>stat al azar</b>
+    y las dos cartas frescas. Mismo baremo de márgenes.
+  </div></div>
+
+  <div class="card-panel"><h3>8 · Modos</h3><div class="sub">
+    <b>Contra la IA</b> — sin conexión, para practicar.<br><br>
+    <b>Partida en directo</b> — dos personas a la vez, cada una en su móvil, por código de sala de
+    6 letras. No hay cuentas ni registro: se crea sala, se dicta el código y se juega.<br><br>
+    <b>Retar plantillas</b> — asíncrono: peleas contra la plantilla real de un amigo, pero sus
+    decisiones las toma la IA porque él no está delante.
+  </div></div>
+  <button class="btn sec" data-nav="mas">Volver</button>`;
+}
+
 /* ── NOTAS ── */
 function vNotas(){
   const srv=servidorURL();
   return `<h2>Notas del prototipo</h2>
+
+  <div class="card-panel"><h3>🎓 Si es tu primera partida</h3><div class="sub">
+    Hay una <b>partida tutorial</b> en el inicio: se juega de verdad, con una plantilla prestada,
+    y un entrenador te va explicando cada concepto justo cuando aparece. Las reglas escritas,
+    con los números exactos, están en <b>Más → Reglas del juego</b>.
+  </div></div>
 
   <div class="card-panel" style="border-color:var(--ok)"><h3>🟢 Partidas en directo</h3><div class="sub">
     <b>Funcionan.</b> Los dos jugáis a la vez, cada uno en su móvil, decidiendo lo vuestro:
@@ -1215,6 +1341,148 @@ function empezarPartida(amigo){
   ir('partida');
 }
 
+/* ══════════════════════════════════════════════════════════════════════════
+   9-bis. PARTIDA TUTORIAL
+
+   Una partida DE VERDAD, con el mismo motor y las mismas reglas: no hay guion ni
+   nada simulado, así que todo lo que enseña es cierto y se aprende jugando.
+
+   Lo único preparado son las dos plantillas, elegidas del catálogo para que los
+   rasgos salgan seguro — si no, un novato podría terminar el tutorial sin haber
+   visto ni un Incómodo. Como no salen de la colección, se puede jugar nada más
+   instalar, antes de abrir el primer sobre.
+
+   El entrenador habla cuando toca y no antes: cada aviso está atado al momento en
+   que ese concepto aparece en pantalla, y se puede cortar de un botón.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+// Plantilla legal (11 divisiones, sin repetir peleador) que además lleva sí o sí
+// los rasgos pedidos. Determinista: el catálogo es siempre el mismo.
+function plantillaGuiada(rasgosPedidos){
+  const pool=alineables(), usados=new Set(), out={};
+  for(const t of rasgosPedidos){
+    const c=pool.find(x=>!out[x.division]&&!usados.has(x.persona)
+      && x.rasgos.some(r=>r.tipo===t&&!r.plus));
+    if(c){ out[c.division]=c; usados.add(c.persona); }
+  }
+  for(const d of DIVISIONES){
+    if(out[d.id]) continue;
+    const cand=pool.filter(c=>c.division===d.id&&!usados.has(c.persona))
+      .sort((a,b)=>Math.abs(a.media-78)-Math.abs(b.media-78));  // parejas: que el margen se vea variado
+    out[d.id]=cand[0]; usados.add(cand[0].persona);
+  }
+  return out;
+}
+
+function empezarTutorial(){
+  P=nuevaPartida(plantillaGuiada(['veterano','especialista','camaleon']),
+                 plantillaGuiada(['incomodo','veterano']));
+  P.rival='Sparring'; P.amigoId=null;
+  P.tutorial=true; P.tutorVistos=[]; P.tutorPaso=null;
+  ir('partida');
+}
+
+/* Cada paso se enseña UNA vez, en el momento en que su concepto aparece. El orden
+   de la lista es el orden en que se aprenden. */
+const TUTOR=[
+{id:'bienvenida', cuando:P=>P.fase==='rol', t:'Bienvenido a la jaula',
+ x:`Esto es un <b>combate por equipos</b>. Tú tienes 11 peleadores, uno por división de peso,
+ y el rival otros 11. No pelean todos: se juegan <b>6 duelos</b> y gana <b>el primero que llegue a 4</b>.
+ <br><br>Vas a jugar una partida real con una plantilla prestada. Yo te voy explicando.`},
+
+{id:'rol', cuando:P=>P.fase==='rol'&&P.tutorVistos.includes('bienvenida'), t:'Vetar o declarar',
+ x:`Antes de nada se reparten los dos papeles del principio. <b>El que empieza vetando no empieza
+ declarando</b>, y al revés: es el equilibrio de toda la partida.<br><br>
+ Vetar primero te deja elegir qué división desaparece antes que nadie. Declarar primero te deja
+ marcar el primer duelo. <b>Elige uno</b> — en directo, si los dos pedís lo mismo, lo decide un dado.`},
+
+{id:'vetos', cuando:P=>P.fase==='vetos', t:'Vetos: quitar del mapa',
+ x:`<b>2 vetos cada uno</b>, alternos y a la vista. Vetas la división en la que tú estés flojo,
+ o aquella en la que sospeches que él es fuerte.<br><br>
+ Cuando caigan los 4, el juego quita <b>una más al azar</b>: esa no se pelea… salvo que la partida
+ acabe 3-3, y entonces es la del <b>desempate</b>. Quedan 6 divisiones para 6 duelos.`},
+
+{id:'tablero', cuando:P=>P.fase==='duelos'&&P.duelo===1, t:'Lee el tablero',
+ x:`Arriba tienes lo que importa: <b>stats vivas</b> y <b>divisiones en juego</b>.<br><br>
+ Cada duelo se pelea con una división y una stat, y las dos <b>se gastan para los dos jugadores</b>.
+ Por eso el juego no va de tener la mejor carta: va de en qué orden quemas lo que tienes.`},
+
+{id:'carta', cuando:P=>P.fase==='duelos'&&P.turno==='j'&&!tmp.divSel, t:'Te toca declarar',
+ x:`Declarar es decir <b>quién pelea y con qué</b>. Primero el peleador: <b>toca su carta</b>.<br><br>
+ El número grande de la esquina es su <b>media</b>, y el color es su rareza: bronce, plata, oro,
+ élite y leyenda. La media no pelea; peleará solo la stat que elijas.`},
+
+{id:'stat', cuando:P=>P.fase==='duelos'&&P.turno==='j'&&!!tmp.divSel&&!tmp.statSel, t:'Las seis stats',
+ x:`<b>GOLPEO</b> de pie, <b>LUCHA</b> derribos y clinch, <b>SUELO</b> sumisiones y control,
+ <b>CARDIO</b> aguante, <b>DUREZA</b> mentón y <b>IQ</b> lectura del combate.<br><br>
+ Cada una es la media de 6 sub-stats de la carta. <b>Toca la stat</b> con la que quieres que pelee:
+ mira dónde eres tú fuerte, pero recuerda que esa stat desaparece del pool para los dos.`},
+
+{id:'jugada', cuando:P=>P.fase==='duelos'&&P.turno==='j'&&!!tmp.divSel&&!!tmp.statSel, t:'Tu jugada: una sola',
+ x:`En toda la partida tienes <b>UNA jugada</b>. O la gastas o la pierdes, y no hay segunda.<br><br>
+ Puede ser un <b>cambio de división</b> — subes un peleador y bajas otro, intercambio obligado entre
+ divisiones contiguas, y los dos comen penalización — o <b>activar un rasgo</b> de una carta.
+ Nada se activa solo: si no lo tocas tú, no pasa.`},
+
+{id:'rasgos', cuando:P=>P.fase!=='rol'&&P.log.filter(l=>l.t==='duelo').length>=1, t:'Los cuatro rasgos',
+ x:`🦎 <b>Camaleón</b>: manda esa carta a pelear a una división de al lado sin penalización.<br>
+ 🌀 <b>Incómodo</b>: ocultas la división; el rival ve dos cartas suyas y elige a ciegas.<br>
+ 🎯 <b>Especialista</b>: si gana en su stat, esa stat <b>no se gasta</b> y vuelve al pool.<br>
+ 🧠 <b>Veterano</b>: cuando te declaran, <b>cambias la stat</b> del duelo.<br><br>
+ Los que llevan <b>+</b> son la versión fuerte. Todos gastan la misma única jugada.`},
+
+{id:'confirmar', cuando:P=>P.fase==='confirmar'&&P.pendienteConf&&P.pendienteConf.defensor==='j',
+ t:'Te han declarado',
+ x:`Ahora defiendes tú, y <b>el duelo no se resuelve hasta que mandes tu carta</b>: nadie aprieta
+ el botón por ti.<br><br>
+ Antes de enviarla, esta es tu ventana para reaccionar. Si esa carta lleva <b>Veterano</b>
+ puedes cambiar la stat, y si lleva <b>Especialista</b> en la stat declarada puedes activarlo.
+ Si no quieres nada, envía y ya.`},
+
+{id:'margen', cuando:P=>P.log.filter(l=>l.t==='duelo').length>=1&&P.tutorVistos.includes('confirmar'),
+ t:'Cómo se gana un duelo',
+ x:`Se restan los dos números y manda <b>el margen</b>:<br>
+ <b>13 o más</b> → finish, gana el alto seguro.<br>
+ <b>7 a 12</b> → decisión, gana el alto seguro.<br>
+ <b>1 a 6</b> → reñido: el alto gana <b>65 de cada 100</b>, no siempre.<br>
+ <b>0</b> → empate exacto: <b>moneda al aire, 50/50</b>.<br><br>
+ Por eso ganar por poco no es ganar: si quieres seguridad, busca +13.`},
+
+{id:'incomodo', cuando:P=>P.fase==='incomodo', t:'Te han hecho el Incómodo',
+ x:`No sabes en qué división se pelea. Te enseña <b>dos cartas tuyas</b> y eliges a ciegas cuál mandas.<br><br>
+ Si aciertas, duelo limpio. Si fallas, la que mandaste pelea igual pero con penalización, y
+ <b>la carta de la división real se descarta</b> sin pelear — pase lo que pase, ese peleador ya no
+ vuelve. Un fallo, un castigo: no se cobra dos veces.`},
+
+{id:'desempate', cuando:P=>P.fase==='desempate', t:'3-3: desempate',
+ x:`Se han jugado los 6 duelos y estáis empatados. Se resuelve en <b>la división del veto aleatorio</b>,
+ la que ninguno de los dos quitó, con una <b>stat al azar</b> y las dos cartas frescas.<br><br>
+ Aquí ya no se decide nada: por eso conviene no llegar.`},
+
+{id:'fin', cuando:P=>P.fase==='fin', t:'Ya sabes jugar',
+ x:`Eso es todo: vetos, 6 duelos, división y stat que se gastan para los dos, una jugada y los rasgos.<br><br>
+ Ahora te toca con tu propia plantilla — y cuando quieras, contra una persona de verdad en
+ <b>Partida en directo</b>. Las reglas completas están siempre en <b>Más → Reglas del juego</b>.`},
+];
+
+function pasoTutor(){
+  if(!P||!P.tutorial||S.tutorCortado) return null;
+  return TUTOR.find(p=>!P.tutorVistos.includes(p.id)&&p.cuando(P))||null;
+}
+function coachHTML(){
+  const p=pasoTutor(); if(!p) return '';
+  // Se numera por el paso, no por los vistos: un aviso que no llegó a salir no puede
+  // hacer que el contador mienta sobre cuánto queda.
+  return `<div class="coach">
+    <div class="qn">ENTRENADOR · ${TUTOR.indexOf(p)+1} de ${TUTOR.length}</div>
+    <h3>${p.t}</h3>
+    <div class="tx">${p.x}</div>
+    <div class="bs">
+      <button class="btn sm" data-a="tutorok" style="flex:2">Entendido</button>
+      <button class="btn gho sm" data-a="tutorsaltar" style="flex:none">Saltar</button>
+    </div></div>`;
+}
+
 function marcadorHTML(){
   const vivas=STATS.map(s=>`<span class="chip ${P.statsVivas.includes(s.id)?'':'dead'}">${s.c}</span>`).join('');
   const divs=P.enJuego.map(id=>`<span class="chip ${P.jugadas.includes(id)?'dead':''}">${DIV[id].n}</span>`).join('');
@@ -1233,15 +1501,21 @@ function logHTML(){
   return P.log.slice(-14).reverse().map(l=>{
     if(l.t==='sys') return `<div class="log">${esc(l.x)}</div>`;
     const gan=l.ganador==='j';
+    const m=(l.margen!==undefined)?l.margen:Math.abs(l.vj-l.vr);
+    const detalle = l.tipo==='empate' ? ' — mismos números, moneda al aire 50/50'
+      : l.tipo==='reñido' ? ` — margen ${m}, azar 65/35`
+      : ` — margen ${m}`;
     return `<div class="log ${gan?'win':'lose'}">
       <b>${DIV[l.div].n} · ${l.stat.toUpperCase()}</b> — ${esc(l.nj)} <b>${l.vj}</b> vs <b>${l.vr}</b> ${esc(l.nr)}<br>
-      ${gan?'Ganas':'Pierdes'} por <b>${l.tipo}</b>${l.tipo==='reñido'?' (65/35)':''}</div>`;
+      ${gan?'Ganas':'Pierdes'} por <b>${l.tipo}</b>${detalle}</div>`;
   }).join('');
 }
 
-function vPartida(){
+function vPartida(){ return coachHTML()+pantallaPartida(); }
+function pantallaPartida(){
   if(P.fase==='esperando') return pEsperando();
-  if(P.fase==='veterano') return pVeterano();
+  if(P.fase==='confirmar')
+    return (P.pendienteConf&&P.pendienteConf.defensor==='j') ? pConfirmar() : pEsperaRival();
   if(P.fase==='rol') return pRol();
   if(P.fase==='vetos') return pVetos();
   if(P.fase==='duelos') return pDuelos();
@@ -1253,11 +1527,14 @@ function vPartida(){
 
 function pRol(){
   return `<h2>Elección de rol</h2>
-    <div class="sub mb">Los dos elegís a la vez. Si coincidís, dado: el más alto se queda lo que pidió.</div>
+    <div class="sub mb">${online()
+      ? 'Los dos elegís a la vez. Si coincidís, dado: el más alto se queda lo que pidió.'
+      : 'Eliges tú y el rival se queda lo otro. Aquí no hay dado: el dado es solo para dos personas que piden lo mismo.'}
+      El que empieza una cosa no empieza la otra.</div>
     <div class="opt" data-rol="vetar"><div class="t">Empezar vetando</div>
-      <div class="d">Quitas la primera división. Luego declaras en los duelos 2, 4 y 6.</div></div>
+      <div class="d">Quitas la primera división. A cambio, <b>el primer duelo lo declara el rival</b>; tú declaras el 2, el 4 y el 6.</div></div>
     <div class="opt" data-rol="declarar"><div class="t">Empezar declarando</div>
-      <div class="d">Vetas el segundo. Declaras en los duelos 1, 3 y 5 — y el 6 no lo declara nadie de verdad, porque solo queda una división y una stat.</div></div>
+      <div class="d">El primer veto lo tira el rival. Declaras los duelos 1, 3 y 5 — y el 6 no lo declara nadie de verdad, porque solo queda una división y una stat.</div></div>
     <div class="divider"></div><button class="btn gho" data-a="abandonar">Abandonar</button>`;
 }
 
@@ -1278,50 +1555,135 @@ function pVetos(){
     }).join('')}</div>`;
 }
 
+/* ── DECLARAR: se elige tocando la carta, y luego la stat sobre la propia carta ──
+   Nada de etiquetas de filtro: primero eliges peleador, después con qué pelea. */
+function cartaElegible(divId,sel){
+  const c=P.cartas.j[divId], aj=P.ajustes.j[divId]||{};
+  return `<div data-dsel="${divId}">
+    ${cartaHTML(c,{attr:`data-dsel="${divId}"`,ajuste:aj,sel})}
+    <div class="tiny center" style="margin-top:3px">${DIV[divId].n}</div></div>`;
+}
+
+function statsDeLaCarta(divId,st){
+  return STATS.filter(s=>P.statsVivas.includes(s.id)).map(s=>{
+    const v=valorCarta(P,'j',divId,s.id);
+    const base=P.cartas.j[divId].stats[s.id], pen=v<base;
+    return `<div class="fila-stat ${st===s.id?'on':''}" data-ssel="${s.id}">
+      <span>${s.n}</span>
+      <b class="${pen?'pen':''}">${v}</b></div>`;
+  }).join('');
+}
+
 function pDuelos(){
   const miTurno=P.turno==='j';
   const libres=librePara(P,'j');
   const d=tmp.divSel, st=tmp.statSel;
-  const cambios=cambiosPosibles(P,'j');
-  const cams=d?camaleonesPosibles(P,'j',d):[];
-  const inc=d?rasgoDe(P.cartas.j[d],'incomodo'):null;
-  const puedeInc=!!inc && !P.jugada.j && !!segundaCartaIncomodo(P,'r',d,inc);
 
   if(!miTurno){
     if(online()) return pEsperando();
     return marcadorHTML()+`<div class="card-panel center"><h3>Declara el rival…</h3>
       <button class="btn" data-a="iaturno">Continuar</button></div>`+logHTML();
   }
+
+  // Paso 1: elegir peleador tocando su carta
+  if(!d) return marcadorHTML()+
+    `<div class="card-panel"><h3>¿Quién pelea?</h3>
+      <div class="sub mb">Toca al peleador que quieras mandar a este duelo.</div>
+      <div class="grid g3">${libres.map(id=>cartaElegible(id,false)).join('')}</div>
+    </div>${logHTML()}
+    <button class="btn gho" data-a="abandonar" style="margin-top:8px">Abandonar</button>`;
+
+  // Paso 2: elegir con qué pelea, sobre su propia carta
+  const cambios=cambiosPosibles(P,'j');
+  const cams=camaleonesPosibles(P,'j',d);
+  const inc=rasgoDe(P.cartas.j[d],'incomodo');
+  const puedeInc=!!inc && !P.jugada.j && !!segundaCartaIncomodo(P,'r',d,inc);
+  const esp=st?especialistaDisponible(P,'j',d,st):null;
+  const jug=tmp.jugada;
+
   return marcadorHTML()+
-    `<div class="card-panel"><h3>Tu declaración</h3>
-      <div class="tiny mb">DIVISIÓN</div>
-      <div class="chips mb">${libres.map(id=>`<span class="chip ${d===id?'on':''}" data-dsel="${id}">${DIV[id].n}</span>`).join('')}</div>
-      <div class="tiny mb">STAT</div>
-      <div class="chips mb">${STATS.filter(s=>P.statsVivas.includes(s.id)).map(s=>
-        `<span class="chip ${st===s.id?'on':''}" data-ssel="${s.id}">${s.n}</span>`).join('')}</div>
-      ${d?`<div style="max-width:170px;margin:10px auto 0">${cartaHTML(P.cartas.j[d],{ajuste:P.ajustes.j[d]})}</div>`:''}
-      ${d&&st?`<div class="center" style="margin-top:8px">Llevas <b style="font-size:20px">${valorCarta(P,'j',d,st)}</b> en ${st.toUpperCase()}</div>`:''}
+    `<div class="card-panel">
+      <div class="row mb" style="align-items:center">
+        <button class="btn gho sm" data-a="otracarta" style="flex:none">← Otro</button>
+        <div class="tiny center" style="flex:2">${DIV[d].n.toUpperCase()}</div>
+        <div style="flex:none;width:64px"></div>
+      </div>
+      <div style="max-width:190px;margin:0 auto 12px">${cartaHTML(P.cartas.j[d],{ajuste:P.ajustes.j[d]})}</div>
+      <div class="tiny mb">TOCA LA STAT CON LA QUE PELEA</div>
+      <div class="lista-stats">${statsDeLaCarta(d,st)}</div>
     </div>
-    ${(online()&&tmp.jugada)?`<div class="card-panel" style="border-color:var(--acc)">
+
+    ${jug?`<div class="card-panel" style="border-color:var(--acc)">
       <h3>Jugada preparada</h3><div class="sub">${
-        tmp.jugada.tipo==='cambio'?`Cambio ${DIV[tmp.jugada.a].n} ⇄ ${DIV[tmp.jugada.b].n}`
-        :tmp.jugada.tipo==='camaleon'?`Camaleón desde ${DIV[tmp.jugada.div].n}`:'Incómodo'
-      } — se aplica al declarar.</div>
+        jug.tipo==='cambio'?`Cambio ${DIV[jug.a].n} ⇄ ${DIV[jug.b].n}`
+        :jug.tipo==='camaleon'?`Camaleón desde ${DIV[jug.div].n}`
+        :jug.tipo==='especialista'?`Especialista · ${(jug.stat||'').toUpperCase()}`:'Incómodo'
+      }</div>
       <button class="btn gho sm" data-a="quitarjugada" style="margin-top:7px">Quitar</button></div>`:''}
-    ${(!P.jugada.j&&!(online()&&tmp.jugada)&&(cambios.length||cams.length||puedeInc))?`<div class="card-panel">
-      <h3>Tu jugada <span class="tiny">(una por partida)</span></h3>
+
+    ${(!P.jugada.j&&!jug&&(cambios.length||cams.length||puedeInc||esp))?`<div class="card-panel">
+      <h3>Tu jugada <span class="tiny">(una por partida, tú decides)</span></h3>
+      ${esp?`<div class="sub mb">Especialista en ${st.toUpperCase()}${esp.plus?'+':''} — si gana${esp.plus?' o pierde':''},
+        esa stat no se gasta y vuelve al pool para los dos:</div>
+        <span class="chip" data-especialista="1">🎯 Activar Especialista</span><div class="mb"></div>`:''}
       ${cambios.length?`<div class="sub mb">Cambio de división — intercambio obligado, con penalización:</div>
         <div class="chips mb">${cambios.map(([a,b],i)=>
           `<span class="chip" data-cambio="${i}">${DIV[a].n} ⇄ ${DIV[b].n}</span>`).join('')}</div>`:''}
-      ${cams.length?`<div class="sub mb">Camaleón — manda la carta a la división declarada sin penalización:</div>
+      ${cams.length?`<div class="sub mb">Camaleón — manda esa carta aquí sin penalización:</div>
         <div class="chips mb">${cams.map((c,i)=>
-          `<span class="chip" data-camaleon="${i}">${esc(c.carta.nombre)} (${DIV[c.div].n})${c.rasgo.plus?' +':''}</span>`).join('')}</div>`:''}
+          `<span class="chip" data-camaleon="${i}">🦎 ${esc(c.carta.nombre)} (${DIV[c.div].n})${c.rasgo.plus?' +':''}</span>`).join('')}</div>`:''}
       ${puedeInc?`<div class="sub mb">Incómodo — ocultas la división y el rival elige a ciegas:</div>
-        <span class="chip" data-incomodo="1">Activar Incómodo${inc.plus?'+':''}</span>`:''}
+        <span class="chip" data-incomodo="1">🌀 Activar Incómodo${inc.plus?'+':''}</span>`:''}
     </div>`:''}
-    <button class="btn" data-a="declarar" ${(d&&st)?'':'disabled'}>Declarar y resolver</button>
+
+    <button class="btn" data-a="declarar" ${st?'':'disabled'} style="padding:15px;font-size:16px">
+      ${st?`Declarar ${DIV[d].n} · ${st.toUpperCase()}`:'Elige una stat'}</button>
     <div class="divider"></div>${logHTML()}
-    <button class="btn gho" data-a="abandonar" style="margin-top:8px">Abandonar (cuenta como derrota)</button>`;
+    <button class="btn gho" data-a="abandonar" style="margin-top:8px">Abandonar</button>`;
+}
+
+/* Cuando el que declara eres tú, la pelota está en el otro lado: no hay nada que tocar. */
+function pEsperaRival(){
+  const q=P.pendienteConf;
+  return marcadorHTML()+`<div class="card-panel center" style="padding:26px 14px">
+    <div style="font-size:34px">🥊</div>
+    <h3>Has declarado ${DIV[q.divId].n} · ${q.stat.toUpperCase()}</h3>
+    <div class="sub">${esc(P.rival||'El rival')} tiene que mandar a su peleador.</div>
+  </div>`+logHTML();
+}
+
+/* ── CONFIRMAR: el defensor manda su carta a mano. Nada se resuelve solo. ──
+   Esta pantalla es también donde el defensor reacciona con Veterano o Especialista. */
+function pConfirmar(){
+  const q=P.pendienteConf;
+  const c=P.cartas.j[q.divId];
+  const vet=(!P.jugada.j)?rasgoDe(c,'veterano'):null;
+  const otras=P.statsVivas.filter(x=>x!==q.stat);
+  const puedeVet=!!vet && otras.length>0;
+  const esp=especialistaDisponible(P,'j',q.divId,q.stat);
+  return marcadorHTML()+
+    `<div class="card-panel">
+      <div class="tiny center mb">${esc(P.rival||'El rival')} DECLARA</div>
+      <h3 class="center" style="font-size:20px">${DIV[q.divId].n} · ${q.stat.toUpperCase()}</h3>
+      <div class="sub center mb">Manda a tu peleador al duelo.</div>
+      <div style="max-width:190px;margin:0 auto 10px">${cartaHTML(c,{ajuste:P.ajustes.j[q.divId]})}</div>
+      <div class="center mb">Llevas <b style="font-size:22px">${valorCarta(P,'j',q.divId,q.stat)}</b>
+        en ${q.stat.toUpperCase()}</div>
+      <button class="btn" data-a="enviarcarta" style="padding:15px;font-size:16px">Enviar al duelo</button>
+    </div>
+
+    ${(puedeVet||esp)?`<div class="card-panel">
+      <h3>Puedes responder <span class="tiny">(gasta tu jugada)</span></h3>
+      ${puedeVet?`<div class="sub mb">🧠 Veterano — cambia la stat del duelo${vet.plus?', y la eliges tú':' por una al azar de las vivas'}:</div>
+        ${vet.plus?`<div class="chips mb">${otras.map(sid=>{
+            const stt=STATS.find(x=>x.id===sid);
+            return `<span class="chip" data-vetstat="${sid}">${stt.n} · ${valorCarta(P,'j',q.divId,sid)}</span>`;
+          }).join('')}</div>`
+        :`<button class="btn sec sm mb" data-a="vetazar" style="width:100%">Cambiar la stat (sale una al azar)</button>`}`:''}
+      ${esp?`<div class="sub mb">🎯 Especialista en ${q.stat.toUpperCase()}${esp.plus?'+':''} — si gana${esp.plus?' o pierde':''}, esa stat vuelve al pool:</div>
+        <button class="btn sec sm" data-a="espdefensor" style="width:100%">Activar Especialista</button>`:''}
+    </div>`:''}
+    ${logHTML()}`;
 }
 
 function pIncomodo(){
@@ -1336,26 +1698,6 @@ function pIncomodo(){
   </div>`;
 }
 
-function pVeterano(){
-  const q=P.pendienteVet;
-  return marcadorHTML()+`<div class="card-panel center">
-    <h3>🧠 Tu Veterano puede intervenir</h3>
-    <div class="sub mb">${esc(P.rival||'El rival')} ha declarado
-      <b>${DIV[q.divId].n} · ${q.stat.toUpperCase()}</b>.
-      Puedes cambiar la stat del duelo${q.plus?', y con el plus la eliges tú'
-        :', pero el normal la cambia por una al azar de entre las vivas'}.
-      Gasta tu jugada de la partida.</div>
-    <div style="max-width:170px;margin:0 auto 12px">${cartaHTML(P.cartas.j[q.divId],{ajuste:P.ajustes.j[q.divId]})}</div>
-    ${q.plus?`<div class="tiny mb">ELIGE LA STAT</div>
-      <div class="chips mb" style="justify-content:center">${q.opciones.map(sid=>{
-        const st=STATS.find(x=>x.id===sid);
-        return `<span class="chip" data-a="vetusar" data-s="${sid}">${st.n} · ${valorCarta(P,'j',q.divId,sid)}</span>`;
-      }).join('')}</div>`
-    :`<button class="btn mb" data-a="vetusar">Cambiarla (sale una al azar)</button>`}
-    <button class="btn sec" data-a="vetpasar">No usarlo</button>
-  </div>`+logHTML();
-}
-
 function pDesempate(){
   return marcadorHTML()+`<div class="card-panel center">
     <h3>3-3 · Desempate</h3>
@@ -1368,6 +1710,25 @@ function pFin(){
   const gane=P.fin==='j';
   const prem=gane?ri(180,320):ri(60,120);
   const amigo=(!online()&&P.amigoId)?S.amigos.find(a=>a.id===P.amigoId):null;
+  // El tutorial no cuenta en el registro: se juega con plantillas prestadas y contra un
+  // sparring, así que sumarlo a tus victorias sería mentir en tu propia ficha. Pero
+  // terminarlo sí deja algo con lo que empezar.
+  if(P.tutorial){
+    if(!tmp.cobrado){
+      tmp.cobrado=true;
+      if(!S.tutorialHecho){ S.tutorialHecho=true; S.divisa+=250; S.sobres.push({tipo:'oro'}); }
+      guardar();
+    }
+    return `<div class="card-panel center" style="padding:24px 14px">
+      <div style="font-size:44px">🎓</div><h2>Tutorial terminado</h2>
+      <div class="mark" style="margin:10px 0"><span style="color:var(--ok)">${P.marcador.j}</span>
+        <span class="vs">—</span><span style="color:var(--acc)">${P.marcador.r}</span></div>
+      <div class="sub">Ganes o pierdas, ya sabes jugar. Te llevas 🪙 250 y un sobre de oro.</div></div>
+      ${logHTML()}
+      <button class="btn" data-nav="reglas" style="margin-top:10px">📖 Ver las reglas completas</button>
+      <button class="btn sec" data-a="tutorial" style="margin-top:8px">Repetir el tutorial</button>
+      <button class="btn sec" data-nav="inicio" style="margin-top:8px">Ir a mi plantilla</button>`;
+  }
   if(!tmp.cobrado){
     tmp.cobrado=true; S.partidas++; if(gane)S.victorias++;
     S.divisa+=prem;
@@ -1400,17 +1761,21 @@ function pFin(){
 /* ══════════════════════════════════════════════════════════════════════════
    10. FLUJO DE LA PARTIDA
    ══════════════════════════════════════════════════════════════════════════ */
+/* Contra la máquina NO hay dado: eliges tú y ella se queda lo otro.
+
+   El dado del GDD §4.1 existe para dos personas que piden lo mismo, y ahí sigue —
+   en las partidas en directo. Pero contra la IA no hay nada que repartir: dejar que
+   un dado le diera a la máquina la primera declaración era quitarte tu elección con
+   una tirada, y eso no puede pasar.
+
+   Si aun así el rival declara el primer duelo, es porque pediste empezar vetando: son
+   la misma cosa dicha de dos maneras. El que empieza una no empieza la otra. */
 function elegirRol(r){
-  const iaQuiere=Math.random()<.5?'vetar':'declarar';
-  let msg='';
-  if(r!==iaQuiere){ P.rolJ=r; msg=`El rival eligió ${iaQuiere}. Cada uno a lo suyo.`; }
-  else{
-    const dj=ri(1,6),dr=ri(1,6);
-    if(dj>=dr){ P.rolJ=r; msg=`Los dos queríais ${r}. Dado ${dj} a ${dr}: te lo quedas.`; }
-    else{ P.rolJ=r==='vetar'?'declarar':'vetar'; msg=`Los dos queríais ${r}. Dado ${dj} a ${dr}: se lo queda el rival.`; }
-  }
-  P.vetoPrimero=P.rolJ==='vetar'?'j':'r';
-  P.log.push({t:'sys',x:msg});
+  P.rolJ=r;
+  P.vetoPrimero=r==='vetar'?'j':'r';
+  P.log.push({t:'sys',x:r==='vetar'
+    ? 'Empiezas vetando, así que el primer duelo lo declara el rival.'
+    : 'Empiezas declarando, así que el primer veto lo tira el rival.'});
   P.fase='vetos';
   render();
   if(P.vetoPrimero==='r') setTimeout(turnoIAVeto,550);
@@ -1460,11 +1825,37 @@ function declarar(divId,stat,extra={}){
     P.log.push({t:'sys',x:`🦎 Camaleón: ${cam.carta.nombre} sube desde ${DIV[cam.div].n}. Tu carta de ${DIV[divId].n} se descarta sin pelear.`});
     opts.dobleJ=true;
   }
-  // Veterano del rival puede cambiar la stat
-  stat=aplicarVeterano(P,'r',divId,stat);
-  resolverDuelo(P,divId,stat,opts);
-  tmp.divSel=null; tmp.statSel=null; tmp.camaleon=null;
+  // Ya no se resuelve aquí: el defensor tiene que mandar su carta a mano.
+  P.pendienteConf={divId,stat,defensor:'r',opts,especialista:extra.especialista||null};
+  P.fase='confirmar';
+  tmp.divSel=null; tmp.statSel=null; tmp.camaleon=null; tmp.jugada=null;
   render();
+  setTimeout(confirmaIA,650);   // el rival de la IA manda la suya
+}
+
+/* Resuelve el duelo pendiente. Solo se llama cuando el defensor ha enviado su carta. */
+function resolverPendiente(){
+  const q=P.pendienteConf; if(!q) return;
+  const opts={...(q.opts||{})};
+  if(q.especialista) opts.especialista=q.especialista;
+  P.pendienteConf=null; P.fase='duelos';
+  P.log.push({t:'sys',x:`${q.defensor==='j'?'Mandas':'El rival manda'} a ${
+    P.cartas[q.defensor][q.divId].nombre} al duelo.`});
+  resolverDuelo(P,q.divId,q.stat,opts);
+  render();
+}
+
+/* El defensor de la IA decide: usa Veterano si le mejora mucho, Especialista si su
+   carta lo lleva en esa stat, y manda su peleador. */
+function confirmaIA(){
+  const q=P.pendienteConf;
+  if(!q||q.defensor!=='r'||P.fase!=='confirmar') return;
+  const nueva=aplicarVeterano(P,'r',q.divId,q.stat);
+  if(nueva!==q.stat) q.stat=nueva;
+  const esp=especialistaDisponible(P,'r',q.divId,q.stat);
+  if(esp&&Math.random()<.7){ P.jugada.r=true; q.especialista='r';
+    P.log.push({t:'sys',x:`🎯 El rival activa Especialista en ${q.stat.toUpperCase()}.`}); }
+  resolverPendiente();
 }
 
 function turnoIA(){
@@ -1484,10 +1875,14 @@ function turnoIA(){
     P.log.push({t:'sys',x:`🌀 El rival activa Incómodo${rIn.plus?'+':''}.`});
     render(); return;
   }
-  // Veterano del jugador (reacción automática si le conviene)
-  stat=aplicarVeteranoJugador(divId,stat);
+  // Nada automático: se te pide que mandes tu carta, y ahí decides tus rasgos.
+  const espR=especialistaDisponible(P,'r',divId,stat);
+  let espLado=null;
+  if(espR&&Math.random()<.7){ P.jugada.r=true; espLado='r';
+    P.log.push({t:'sys',x:`🎯 El rival activa Especialista en ${stat.toUpperCase()}.`}); }
   P.log.push({t:'sys',x:`El rival declara ${DIV[divId].n} · ${stat.toUpperCase()}.`});
-  resolverDuelo(P,divId,stat,{});
+  P.pendienteConf={divId,stat,defensor:'j',opts:{},especialista:espLado};
+  P.fase='confirmar';
   render();
 }
 
@@ -1498,20 +1893,6 @@ function segundaCartaIncomodo(P,defensor,divId,rasgo){
   const libres=librePara(P,defensor).filter(v=>v!==divId);
   const cand=rasgo.plus?libres:libres.filter(v=>contiguas(v,divId));
   return cand.length?pick(cand):null;
-}
-
-function aplicarVeteranoJugador(divId,stat){
-  const c=P.cartas.j[divId]; const r=rasgoDe(c,'veterano');
-  if(!r||P.jugada.j) return stat;
-  const otras=P.statsVivas.filter(s=>s!==stat);
-  if(!otras.length) return stat;
-  const actual=valorCarta(P,'j',divId,stat);
-  const mejor=otras.slice().sort((a,b)=>valorCarta(P,'j',divId,b)-valorCarta(P,'j',divId,a))[0];
-  if(valorCarta(P,'j',divId,mejor)<=actual+6) return stat;   // no merece la pena
-  P.jugada.j=true;
-  const nueva=r.plus?mejor:pick(otras);
-  P.log.push({t:'sys',x:`🧠 Tu Veterano cambia la stat de ${stat.toUpperCase()} a ${nueva.toUpperCase()}.`});
-  return nueva;
 }
 
 // Resolución del Incómodo: la carta elegida pelea en la división declarada.
@@ -1526,8 +1907,10 @@ function resolverIncomodo(idx){
     enviarAlDuelo(P,'j',elegida,q.divId,q.plus?-12:-6);
     P.log.push({t:'sys',x:`Fallas: ${enviada.nombre} pelea en ${DIV[q.divId].n} con ${q.plus?-12:-6}. ${descartada.nombre} se descarta sin pelear.`});
   }
-  P.pendiente=null; P.fase='duelos';
-  P.log.push({t:'sys',x:`El rival declara ${DIV[q.divId].n} · ${q.stat.toUpperCase()}.`});
+  P.pendiente=null;
+  // Elegir a ciegas YA es mandar tu carta, así que aquí no hace falta confirmar otra vez.
+  P.log.push({t:'sys',x:`Duelo en ${DIV[q.divId].n} · ${q.stat.toUpperCase()}.`});
+  P.fase='duelos';
   resolverDuelo(P,q.divId,q.stat,{});
   render();
 }
@@ -1563,7 +1946,7 @@ function avisoCodigo(r){
 function cerrarOv(){ const o=$('#ov'); if(o) o.remove(); }
 
 document.addEventListener('click',e=>{
-  const t=e.target.closest('[data-nav],[data-a],[data-f],[data-carta],[data-slot],[data-poner],[data-rec],[data-rol],[data-veto],[data-dsel],[data-ssel],[data-cambio],[data-camaleon],[data-incomodo],[data-eleccion],[data-pido],[data-ofrezco]');
+  const t=e.target.closest('[data-nav],[data-a],[data-f],[data-carta],[data-slot],[data-poner],[data-rec],[data-rol],[data-veto],[data-dsel],[data-ssel],[data-cambio],[data-camaleon],[data-incomodo],[data-especialista],[data-eleccion],[data-pido],[data-ofrezco],[data-vetstat]');
   if(!t) return;
   const d=t.dataset;
 
@@ -1579,7 +1962,13 @@ document.addEventListener('click',e=>{
   }
   if(d.rol){ online()?enviarRed({t:'rol',v:d.rol}):elegirRol(d.rol); return; }
   if(d.veto){ online()?enviarRed({t:'veto',division:d.veto}):vetar(d.veto); return; }
-  if(d.dsel){ if(tmp.divSel!==d.dsel) tmp.camaleon=null; tmp.divSel=d.dsel; render(); return; }
+  if(d.dsel){ if(tmp.divSel!==d.dsel){ tmp.camaleon=null; tmp.statSel=null; tmp.jugada=null; }
+    tmp.divSel=d.dsel; render(); return; }
+  if(d.vetstat){
+    if(online()){ enviarRed({t:'veterano',usar:true,stat:d.vetstat}); return; }
+    P.jugada.j=true; P.pendienteConf.stat=d.vetstat;
+    P.log.push({t:'sys',x:`🧠 Tu Veterano cambia la stat a ${d.vetstat.toUpperCase()}.`});
+    render(); return; }
   if(d.ssel){ tmp.statSel=d.ssel; render(); return; }
   if(d.cambio!==undefined&&d.cambio!==''){
     const c=cambiosPosibles(P,'j')[+d.cambio];
@@ -1699,9 +2088,38 @@ document.addEventListener('click',e=>{
       cerrarOv(); conectar(c); break; }
     case 'reconectar': if(SALA) conectar(SALA.codigo); break;
     case 'salirsala2': salirDeSala(); ir('directo'); break;
-    case 'quitarjugada': tmp.jugada=null; render(); break;
-    case 'vetusar':  enviarRed({t:'veterano',usar:true,stat:d.s||null}); break;
-    case 'vetpasar': enviarRed({t:'veterano',usar:false}); break;
+    case 'tutorial': empezarTutorial(); break;
+    case 'tutorok':{
+      const p=pasoTutor(); if(p) P.tutorVistos.push(p.id);
+      // Si el jugador llega al final, ya no hace falta ofrecérselo en el inicio.
+      if(p&&p.id==='fin'){ S.tutorialHecho=true; guardar(); }
+      render(); break; }
+    case 'tutorsaltar': S.tutorCortado=true; guardar(); render(); break;
+    case 'reactivartutor': S.tutorCortado=false; guardar(); render(); break;
+    case 'quitarjugada': tmp.jugada=null; tmp.camaleon=null; tmp.incomodo=false; render(); break;
+    case 'otracarta': tmp.divSel=null; tmp.statSel=null; tmp.camaleon=null; tmp.jugada=null; render(); break;
+    case 'especialista':
+      if(online()) tmp.jugada={tipo:'especialista',stat:tmp.statSel};
+      else { tmp.jugada={tipo:'especialista',stat:tmp.statSel}; tmp.especialista=true; }
+      render(); break;
+
+    /* ── el defensor manda su carta: nada se resuelve sin este toque ── */
+    case 'enviarcarta':
+      if(online()){ enviarRed({t:'confirmar'}); break; }
+      resolverPendiente(); break;
+    case 'vetazar':{
+      if(online()){ enviarRed({t:'veterano',usar:true}); break; }
+      const q=P.pendienteConf; const otras=P.statsVivas.filter(x=>x!==q.stat);
+      if(!otras.length) break;
+      P.jugada.j=true;
+      q.stat=otras[Math.floor(Math.random()*otras.length)];
+      P.log.push({t:'sys',x:`🧠 Tu Veterano cambia la stat a ${q.stat.toUpperCase()}.`});
+      render(); break; }
+    case 'espdefensor':{
+      if(online()){ enviarRed({t:'especialista'}); break; }
+      P.jugada.j=true; P.pendienteConf.especialista='j';
+      P.log.push({t:'sys',x:`🎯 Activas Especialista en ${P.pendienteConf.stat.toUpperCase()}.`});
+      render(); break; }
     case 'gratis':{
       const g=GRATIS.find(x=>x.id===d.g); if(!g||!listoGratis(g)) break;
       if(g.espera>0) S.gratis[g.id]=Date.now();
@@ -1803,6 +2221,8 @@ document.addEventListener('click',e=>{
         tmp.incomodo=false;
       }
       const dv=tmp.divSel, st=tmp.statSel;
+      if(tmp.especialista){ P.jugada.j=true; extra.especialista='j';
+        P.log.push({t:'sys',x:`🎯 Activas Especialista en ${st.toUpperCase()}.`}); tmp.especialista=false; }
       tmp.camaleon=null;
       P.log.push({t:'sys',x:`Declaras ${DIV[dv].n} · ${st.toUpperCase()}.`});
       declarar(dv,st,extra); break; }

@@ -98,8 +98,8 @@ for (let vuelta = 0; vuelta < 200 && A.P.fase !== 'fin'; vuelta++) {
     if (P.fase === 'vetos' && ((P.vetados.length % 2 === 0) === (P.vetoPrimero === 'j'))) {
       const libres = DIVISIONES.map(d => d.id).filter(x => !P.vetados.includes(x));
       c.enviar({ t: 'veto', division: libres[0] });
-    } else if (P.fase === 'veterano' && P.pendienteVet) {
-      c.enviar({ t: 'veterano', usar: false });
+    } else if (P.fase === 'confirmar' && P.pendienteConf && P.pendienteConf.defensor === 'j') {
+      c.enviar({ t: 'confirmar' });
     } else if (P.fase === 'incomodo' && P.pendiente) {
       c.enviar({ t: 'incomodo', idx: 0 });
     } else if (P.fase === 'duelos' && P.turno === 'j') {

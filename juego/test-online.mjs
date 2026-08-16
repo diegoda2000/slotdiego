@@ -121,14 +121,14 @@ while (vueltas++ < 160) {
       libres: P.fase === 'vetos'
         ? DIVISIONES.map(d => d.id).filter(x => !P.vetados.includes(x))
         : librePara(P, 'j'),
-      stats: P.statsVivas, pend: !!P.pendiente, vet: !!P.pendienteVet,
+      stats: P.statsVivas, pend: !!P.pendiente,
+      confMia: P.fase === 'confirmar' && P.pendienteConf && P.pendienteConf.defensor === 'j',
     }));
     if (est.fase === 'vetos' && est.vetoMio)
       await pg.evaluate(d => enviarRed({ t: 'veto', division: d }), est.libres[0]);
-    else if (est.fase === 'veterano' && est.vet) {
+    else if (est.confMia) {
       vetPreguntados++;
-      await pg.evaluate(() => enviarRed({ t: 'veterano', usar: Math.random() < 0.5,
-        stat: P.pendienteVet.opciones[0] }));
+      await pg.evaluate(() => enviarRed({ t: 'confirmar' }));
     }
     else if (est.fase === 'incomodo' && est.pend)
       await pg.evaluate(() => enviarRed({ t: 'incomodo', idx: Math.floor(Math.random() * 2) }));
@@ -154,10 +154,11 @@ comprobar(finA.fin !== finB.fin, 'uno gana y el otro pierde, no los dos lo mismo
 comprobar(indebidasTotales === 0,
   `en toda la partida, cero cartas del rival filtradas antes de resolverse (${indebidasTotales})`);
 comprobar(finA.duelos >= 4, `se han resuelto duelos de verdad (${finA.duelos})`);
+comprobar(vetPreguntados >= finA.duelos - 1,
+  `cada duelo lo cerró el defensor mandando su carta (${vetPreguntados} envíos, ${finA.duelos} duelos)`);
 const vetAuto = await A.evaluate(() =>
   P.log.some(l => l.t === 'sys' && /Veterano/.test(l.x || '')));
-comprobar(!vetAuto || vetPreguntados > 0,
-  `el Veterano solo actúa si el jugador lo decide (preguntado ${vetPreguntados} veces)`);
+comprobar(!vetAuto, 'y ningún rasgo saltó solo: nadie pidió Veterano, así que no hay ninguno en el registro');
 // y al terminar sí se destapa todo, que es lo que hace legible el resultado
 const alFinal = await A.evaluate(() => Object.values(P.cartas.r).filter(Boolean).length);
 comprobar(alFinal >= 6, `al acabar se revela la plantilla del rival (${alFinal} cartas)`);
@@ -231,8 +232,8 @@ const estadoE = await E.evaluate(() => ({ tieneP: !!P, sala: SALA ? SALA.estado 
 comprobar(!estadoE.tieneP, 'el tercero no recibe estado de partida');
 comprobar(await D.evaluate(() => !!P), 'y los dos de dentro siguen con su partida');
 
-/* ── 7. El Veterano lo decide el jugador, no la máquina ───────────────── */
-console.log('\n7. El Veterano pregunta, no salta solo');
+/* ── 7. Nada se resuelve solo: la carta la manda el defensor ──────────── */
+console.log('\n7. El defensor manda su carta y decide sus rasgos');
 const F = await abrirJugador('Fran', 'veterano');
 const G = await abrirJugador('Gala', 'veterano');
 await F.locator('[data-a="crearsala"]').click();
@@ -243,8 +244,8 @@ await F.evaluate(() => enviarRed({ t: 'rol', v: 'vetar' }));
 await G.evaluate(() => enviarRed({ t: 'rol', v: 'declarar' }));
 await esperar(async () => (await F.evaluate(() => P.fase)) === 'vetos');
 
-let vetVistos = 0, vetUsados = 0, v2 = 0;
-while (v2++ < 160) {
+let confVistas = 0, vetOfrecidos = 0, vetUsados = 0, esperasSostenidas = 0, v2 = 0;
+while (v2++ < 220) {
   if ((await F.evaluate(() => P.fase)) === 'fin') break;
   for (const pg of [F, G]) {
     const e = await pg.evaluate(() => ({
@@ -252,20 +253,36 @@ while (v2++ < 160) {
       vetoMio: P.fase === 'vetos' && ((P.vetados.length % 2 === 0) === (P.vetoPrimero === 'j')),
       libres: P.fase === 'vetos'
         ? DIVISIONES.map(x => x.id).filter(x => !P.vetados.includes(x)) : librePara(P, 'j'),
-      stats: P.statsVivas, vet: P.pendienteVet || null, pend: !!P.pendiente,
+      stats: P.statsVivas, pend: !!P.pendiente,
+      conf: P.fase === 'confirmar' ? P.pendienteConf : null,
     }));
     if (e.fase === 'vetos' && e.vetoMio)
       await pg.evaluate(d => enviarRed({ t: 'veto', division: d }), e.libres[0]);
-    else if (e.fase === 'veterano' && e.vet) {
-      vetVistos++;
-      // se comprueba que la pantalla ofrece de verdad la decisión, no un aviso
-      const botones = await pg.evaluate(() =>
-        document.querySelectorAll('[data-a="vetusar"]').length > 0 &&
-        document.querySelectorAll('[data-a="vetpasar"]').length > 0);
-      if (!botones) { console.log('  ✗ la pantalla del Veterano no ofrece elegir'); fallos++; }
-      const usar = vetVistos === 1;   // la primera vez sí, para ver el efecto
-      if (usar) vetUsados++;
-      await pg.evaluate(u => enviarRed({ t: 'veterano', usar: u, stat: P.pendienteVet.opciones[0] }), usar);
+    else if (e.conf && e.conf.defensor === 'j') {
+      confVistas++;
+      const pantalla = await pg.evaluate(() => ({
+        enviar: document.querySelectorAll('[data-a="enviarcarta"]').length,
+        vet: document.querySelectorAll('[data-a="vetazar"],[data-vetstat]').length,
+      }));
+      if (!pantalla.enviar) { console.log('  ✗ el defensor no tiene botón para mandar su carta'); fallos++; }
+
+      // el duelo NO puede resolverse mientras no se mande la carta
+      const antes = await pg.evaluate(() => P.log.filter(l => l.t === 'duelo').length);
+      await new Promise(r => setTimeout(r, 220));
+      const despues = await pg.evaluate(() => ({
+        duelos: P.log.filter(l => l.t === 'duelo').length, fase: P.fase }));
+      if (despues.duelos === antes && despues.fase === 'confirmar') esperasSostenidas++;
+      else { console.log('  ✗ el duelo se resolvió sin que el defensor mandara su carta'); fallos++; }
+
+      if (pantalla.vet) {
+        vetOfrecidos++;
+        if (vetOfrecidos === 1) {   // la primera vez sí, para ver el efecto
+          vetUsados++;
+          await pg.evaluate(() => enviarRed({ t: 'veterano', usar: true }));
+          await new Promise(r => setTimeout(r, 160));
+        }
+      }
+      await pg.evaluate(() => enviarRed({ t: 'confirmar' }));
     }
     else if (e.fase === 'incomodo' && e.pend)
       await pg.evaluate(() => enviarRed({ t: 'incomodo', idx: 0 }));
@@ -276,10 +293,13 @@ while (v2++ < 160) {
   }
   await new Promise(r => setTimeout(r, 50));
 }
-comprobar(vetVistos > 0, `con plantillas llenas de Veteranos, el rasgo pregunta (${vetVistos} veces)`);
+comprobar(confVistas > 0, `a cada duelo se le pide la carta al defensor (${confVistas} veces)`);
+comprobar(esperasSostenidas === confVistas,
+  `y ninguno se resolvió antes de mandarla (${esperasSostenidas} de ${confVistas})`);
+comprobar(vetOfrecidos > 0, `con plantillas llenas de Veteranos, el rasgo se ofrece (${vetOfrecidos} veces)`);
 const registro = await F.evaluate(() => P.log.filter(l => l.t === 'sys' && /Veterano/.test(l.x || '')).length);
 comprobar(registro === vetUsados,
-  `solo queda registrado el Veterano que se usó a propósito (${registro} de ${vetVistos} preguntas)`);
+  `solo queda registrado el Veterano que se usó a propósito (${registro} de ${vetOfrecidos} ofertas)`);
 comprobar(await F.evaluate(() => P.fase) === 'fin', 'la partida con Veteranos también termina');
 
 /* ── resultado ────────────────────────────────────────────────────────── */

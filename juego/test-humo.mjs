@@ -396,10 +396,201 @@ comprobar(inc.penalizada, 'come la penalización en el duelo declarado');
 comprobar(inc.suHuecoLimpio, 'pero su propio duelo lo pelea sin penalización: un fallo, un castigo');
 comprobar(inc.sinIntercambio, 'ya no hay intercambio de huecos, que con el plus creaba duelos imposibles');
 
+/* ── 2g. Empate exacto y rasgos que no saltan solos ───────────────────── */
+console.log('\n2g. Empate exacto y activación de rasgos');
+const emp = await page.evaluate(() => {
+  const pj = {}, pr = {}, usados = new Set();
+  for (const d of DIVISIONES) {
+    const pool = ROSTER.filter(c => c.alineable && c.division === d.id && !usados.has(c.persona));
+    pj[d.id] = pool[0]; pr[d.id] = pool[0]; usados.add(pool[0].persona);   // MISMAS cartas
+  }
+  let gana = 0; const tipos = {};
+  for (let i = 0; i < 400; i++) {
+    const P2 = nuevaPartida(pj, pr);
+    P2.enJuego = DIVISIONES.slice(0, 6).map(d => d.id); P2.fase = 'duelos';
+    resolverDuelo(P2, P2.enJuego[0], 'golpeo', {});
+    const l = P2.log.find(x => x.t === 'duelo');
+    tipos[l.tipo] = (tipos[l.tipo] || 0) + 1;
+    if (l.ganador === 'j') gana++;
+    if (l.margen !== 0) return { fallo: 'el margen no era 0' };
+  }
+  return { fallo: null, gana, tipos };
+});
+comprobar(!emp.fallo, 'dos cartas idénticas dan margen 0');
+comprobar(emp.tipos.empate === 400 && !emp.tipos['reñido'],
+  'el empate exacto se clasifica como empate, no como reñido');
+comprobar(emp.gana > 160 && emp.gana < 240,
+  `y se resuelve 50/50, no 65/35 (${emp.gana} victorias de 400 = ${(emp.gana / 4).toFixed(0)}%)`);
+
+const espec = await page.evaluate(() => {
+  const conEsp = ROSTER.find(c => c.alineable && c.rasgos.some(r => r.tipo === 'especialista'));
+  const r = conEsp.rasgos.find(x => x.tipo === 'especialista');
+  const pj = {}, pr = {}, usados = new Set();
+  for (const d of DIVISIONES) {
+    const pool = ROSTER.filter(c => c.alineable && c.division === d.id && !usados.has(c.persona));
+    pj[d.id] = pool[0]; pr[d.id] = pool[1] || pool[0]; usados.add(pool[0].persona);
+  }
+  pj[conEsp.division] = conEsp;
+  const jugar = opts => {
+    const P2 = nuevaPartida(pj, pr);
+    P2.enJuego = DIVISIONES.slice(0, 6).map(d => d.id); P2.fase = 'duelos';
+    const antes = P2.statsVivas.length;
+    resolverDuelo(P2, conEsp.division, r.stat, opts);
+    return P2.statsVivas.length === antes;
+  };
+  let sinActivar = 0, activado = 0;
+  for (let i = 0; i < 60; i++) if (jugar({})) sinActivar++;
+  for (let i = 0; i < 60; i++) if (jugar({ especialista: 'j' })) activado++;
+  return { sinActivar, activado, plus: r.plus };
+});
+comprobar(espec.sinActivar === 0,
+  'el Especialista NO salta solo: sin activarlo, la stat se gasta siempre');
+comprobar(espec.activado > 0,
+  `y sí funciona al activarlo (${espec.activado} de 60${espec.plus ? ', versión plus' : ''})`);
+
+/* ── 2h. Declarar tocando cartas, y el defensor manda la suya ──────────── */
+console.log('\n2h. Declarar por carta y confirmación del defensor');
+await page.evaluate(() => { vista = 'inicio'; render(); });
+await page.locator('[data-a="jugar"]').click();
+await page.locator('[data-rol="declarar"]').click();
+for (let i = 0; i < 40; i++) {
+  if (await page.evaluate(() => P.fase) !== 'vetos') break;
+  if (await page.evaluate(() => (P.vetados.length % 2 === 0) === (P.vetoPrimero === 'j')))
+    await page.locator('[data-veto]').first().click();
+  else await page.waitForTimeout(150);
+}
+// aunque el rol elegido manda, el primer duelo puede tocarle a la IA: se la deja pasar
+for (let i = 0; i < 30; i++) {
+  const e = await page.evaluate(() => ({ fase: P.fase, turno: P.turno,
+    mia: P.pendienteConf && P.pendienteConf.defensor === 'j' }));
+  if (e.fase === 'duelos' && e.turno === 'j') break;
+  if (e.fase === 'duelos') await page.locator('[data-a="iaturno"]').click();
+  else if (e.fase === 'confirmar' && e.mia) await page.locator('[data-a="enviarcarta"]').click();
+  else await page.waitForTimeout(200);
+}
+const pantalla = await page.evaluate(() => ({
+  fase: P.fase,
+  cartasTocables: document.querySelectorAll('[data-dsel]').length,
+  chipsDeStat: document.querySelectorAll('.chips [data-ssel]').length,
+}));
+comprobar(pantalla.fase === 'duelos', 'se llega a la fase de duelos');
+comprobar(pantalla.cartasTocables > 0, 'se declara tocando las cartas de los peleadores');
+comprobar(pantalla.chipsDeStat === 0, 'y ya no hay etiquetas de filtro para elegir la stat');
+
+await page.locator('[data-dsel]').first().click();
+const trasCarta = await page.evaluate(() => ({
+  filas: document.querySelectorAll('.fila-stat').length,
+  botonApagado: !!document.querySelector('[data-a="declarar"][disabled]'),
+}));
+comprobar(trasCarta.filas > 0, 'al tocar la carta salen sus stats sobre ella');
+comprobar(trasCarta.botonApagado, 'y no se puede declarar sin elegir stat');
+await page.locator('.fila-stat').first().click();
+await page.locator('[data-a="declarar"]:not([disabled])').click();
+comprobar(await page.evaluate(() => P.fase === 'confirmar' || P.fase === 'duelos'),
+  'declarar no resuelve el duelo por su cuenta');
+
+/* ── 2i. Contra la IA no hay dado: tu elección de rol manda siempre ────── */
+console.log('\n2i. La elección de rol contra la IA');
+const rolFuera = await page.evaluate(() => {
+  const out = { declararRespetado: 0, vetarRespetado: 0, dado: 0, n: 40 };
+  for (let i = 0; i < out.n; i++) {
+    for (const quiero of ['declarar', 'vetar']) {
+      P = nuevaPartida(plantillaIA(78), plantillaIA(78));
+      P.rival = 'x'; vista = 'partida';
+      elegirRol(quiero);
+      // empezar declarando = el primer duelo lo declaras tú = no empiezas vetando
+      if (quiero === 'declarar' && P.vetoPrimero === 'r') out.declararRespetado++;
+      if (quiero === 'vetar' && P.vetoPrimero === 'j') out.vetarRespetado++;
+      if (P.log.some(l => /[Dd]ado/.test(l.x || ''))) out.dado++;
+    }
+  }
+  return out;
+});
+comprobar(rolFuera.declararRespetado === rolFuera.n,
+  `pedir empezar declarando se respeta siempre (${rolFuera.declararRespetado}/${rolFuera.n})`);
+comprobar(rolFuera.vetarRespetado === rolFuera.n,
+  `y pedir empezar vetando también (${rolFuera.vetarRespetado}/${rolFuera.n})`);
+comprobar(rolFuera.dado === 0,
+  `ningún dado le quita al jugador lo que pidió (${rolFuera.dado} tiradas en ${rolFuera.n * 2} partidas)`);
+
+/* ── 2j. La partida tutorial ───────────────────────────────────────────── */
+console.log('\n2j. Partida tutorial');
+const tut = await page.evaluate(() => {
+  S.tutorialHecho = false; S.tutorCortado = false;
+  const pj = plantillaGuiada(['veterano', 'especialista', 'camaleon']);
+  const pr = plantillaGuiada(['incomodo', 'veterano']);
+  const legal = p => {
+    const c = Object.values(p);
+    return c.length === 11 && c.every(x => x && x.alineable)
+      && new Set(c.map(x => x.division)).size === 11
+      && new Set(c.map(x => x.persona)).size === 11;
+  };
+  const tiene = (p, t) => Object.values(p).some(c => c.rasgos.some(r => r.tipo === t));
+  return { legalJ: legal(pj), legalR: legal(pr),
+    vet: tiene(pj, 'veterano'), esp: tiene(pj, 'especialista'),
+    cam: tiene(pj, 'camaleon'), inc: tiene(pr, 'incomodo'),
+    pasos: TUTOR.length };
+});
+comprobar(tut.legalJ && tut.legalR, 'las dos plantillas del tutorial son legales: 11 divisiones, sin repetir peleador');
+comprobar(tut.vet && tut.esp && tut.cam, 'la tuya lleva Veterano, Especialista y Camaleón garantizados');
+comprobar(tut.inc, 'y la del sparring lleva Incómodo, para que lo veas de verdad');
+
+await page.evaluate(() => { vista = 'inicio'; S.tutorialHecho = false; render(); });
+comprobar(await page.locator('[data-a="tutorial"]').count() > 0,
+  'el tutorial se ofrece en el inicio mientras no se haya hecho');
+await page.locator('[data-a="tutorial"]').first().click();
+const arranque = await page.evaluate(() => ({
+  fase: P.fase, tut: !!P.tutorial,
+  coach: document.querySelectorAll('.coach').length,
+  titulo: (document.querySelector('.coach h3') || {}).textContent || '',
+}));
+comprobar(arranque.tut && arranque.fase === 'rol', 'arranca una partida de verdad, no una simulación');
+comprobar(arranque.coach === 1, `y el entrenador habla desde el primer momento ("${arranque.titulo}")`);
+
+// se juega la partida entera pulsando "Entendido" cada vez que aparece un aviso
+let avisos = 0, vueltasT = 0;
+while (vueltasT++ < 420) {
+  const f = await page.evaluate(() => P.fase);
+  if (f === 'fin') break;
+  if (await page.locator('[data-a="tutorok"]').count()) {
+    await page.locator('[data-a="tutorok"]').first().click(); avisos++; continue;
+  }
+  if (f === 'confirmar' && await page.locator('[data-a="enviarcarta"]').count())
+    await page.locator('[data-a="enviarcarta"]').first().click();
+  else if (f === 'rol') await page.locator('[data-rol="declarar"]').click();
+  else if (f === 'vetos' && await page.locator('[data-veto]').count())
+    await page.locator('[data-veto]').first().click();
+  else if (f === 'incomodo') await page.locator('[data-eleccion]').first().click();
+  else if (f === 'desempate') await page.locator('[data-a="desempate"]').click();
+  else if (f === 'duelos') {
+    if (await page.locator('[data-a="iaturno"]').count()) await page.locator('[data-a="iaturno"]').click();
+    else if (await page.locator('[data-a="declarar"]:not([disabled])').count())
+      await page.locator('[data-a="declarar"]:not([disabled])').click();
+    else if (await page.locator('.fila-stat').count()) await page.locator('.fila-stat').first().click();
+    else if (await page.locator('[data-dsel]').count()) await page.locator('[data-dsel]').first().click();
+    else await page.waitForTimeout(120);
+  } else await page.waitForTimeout(120);
+}
+const finT = await page.evaluate(() => ({
+  fase: P.fase, vistos: P.tutorVistos.length,
+  hecho: S.tutorialHecho, partidas: S.partidas,
+  premio: document.body.textContent.includes('Tutorial terminado'),
+}));
+comprobar(finT.fase === 'fin', `la partida tutorial se puede terminar jugando (${finT.fase})`);
+comprobar(avisos >= 8, `el entrenador explica los conceptos por el camino (${avisos} avisos)`);
+comprobar(finT.premio && finT.hecho, 'al acabar se marca como hecho y se entrega la recompensa');
+comprobar(finT.partidas === 0, 'y NO cuenta en tu registro de partidas: se juega con plantilla prestada');
+await page.evaluate(() => { vista = 'inicio'; render(); });
+comprobar(await page.locator('[data-a="tutorial"]').count() === 0,
+  'hecho el tutorial, el inicio deja de ofrecerlo');
+comprobar(await page.evaluate(() => { vista = 'reglas'; render();
+  return document.body.textContent.includes('Camaleón') && document.body.textContent.includes('65 de cada 100'); }),
+  'y las reglas completas siguen a mano en su pantalla');
+
 /* ── 3. Partidas completas ────────────────────────────────────────────── */
 console.log(`\n3. ${N_PARTIDAS} partidas completas`);
 const stats = { partidas: 0, victorias: 0, empates33: 0, duelos: 0,
-                finish: 0, decision: 0, renido: 0, jugadaUsada: 0, duelo6Real: 0 };
+                finish: 0, decision: 0, renido: 0, empate: 0, jugadaUsada: 0, duelo6Real: 0 };
 
 const clicVisible = async sel => {
   const el = page.locator(sel).first();
@@ -431,6 +622,12 @@ for (let n = 0; n < N_PARTIDAS; n++) {
     if (fase === 'fin') break;
     if (fase === 'desempate') { await clicVisible('[data-a="desempate"]'); continue; }
     if (fase === 'incomodo') { await clicVisible('[data-eleccion]'); continue; }
+    if (fase === 'confirmar') {           // el defensor manda su carta a mano
+      const mia = await page.evaluate(() => P.pendienteConf && P.pendienteConf.defensor === 'j');
+      if (mia) await clicVisible('[data-a="enviarcarta"]');
+      else await page.waitForTimeout(180);   // le toca mandar al rival
+      continue;
+    }
     if (fase !== 'duelos') break;
 
     const miTurno = await page.evaluate(() => P.turno === 'j');
@@ -441,15 +638,16 @@ for (let n = 0; n < N_PARTIDAS; n++) {
       divs: librePara(P, 'j').length, stats: P.statsVivas.length, duelo: P.duelo }));
     if (opciones.duelo === 6 && (opciones.divs > 1 || opciones.stats > 1)) stats.duelo6Real++;
 
-    await clicVisible('[data-dsel]');
-    await clicVisible('[data-ssel]');
+    await clicVisible('[data-dsel]');     // se toca la CARTA del peleador
+    await clicVisible('[data-ssel]');     // y luego la stat sobre esa misma carta
     // de vez en cuando gasta la jugada, para ejercitar cambios y rasgos
     if (Math.random() < .5) {
-      for (const sel of ['[data-cambio]', '[data-camaleon]', '[data-incomodo]']) {
+      for (const sel of ['[data-cambio]', '[data-camaleon]', '[data-incomodo]', '[data-especialista]']) {
         if (Math.random() < .4 && await clicVisible(sel)) break;
       }
     }
     if (!await clicVisible('[data-a="declarar"]:not([disabled])')) {
+      await clicVisible('[data-a="otracarta"]');
       await clicVisible('[data-dsel]'); await clicVisible('[data-ssel]');
       await clicVisible('[data-a="declarar"]');
     }
@@ -471,6 +669,7 @@ for (let n = 0; n < N_PARTIDAS; n++) {
     stats.duelos++;
     if (d.tipo === 'finish') stats.finish++;
     else if (d.tipo === 'decisión') stats.decision++;
+    else if (d.tipo === 'empate') stats.empate++;
     else stats.renido++;
   }
 }
@@ -488,6 +687,7 @@ console.log(`  llegan a 3-3 ............ ${pc(stats.empates33, stats.partidas)} 
 console.log(`  finish (margen 13+) ..... ${pc(stats.finish, stats.duelos)}   (objetivo: 15-25%)`);
 console.log(`  decisión (7-12) ......... ${pc(stats.decision, stats.duelos)}`);
 console.log(`  reñido (1-6) ............ ${pc(stats.renido, stats.duelos)}`);
+console.log(`  empate exacto (50/50) ... ${pc(stats.empate, stats.duelos)}`);
 console.log(`  jugada usada ............ ${pc(stats.jugadaUsada, stats.partidas)}   (objetivo: >80%)`);
 console.log(`  duelo 6 con elección .... ${pc(stats.duelo6Real, stats.partidas)}   (mide el "sexto duelo a trámite")`);
 

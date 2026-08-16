@@ -262,10 +262,18 @@ const rasgoTxt=r=>RASGOS[r.tipo].n+(r.plus?'+':'')+(r.stat?' · '+r.stat.toUpper
    ══════════════════════════════════════════════════════════════════════════ */
 const MARGENES={finish:13,decision:7};
 
+/* ¿Puede este lado activar el Especialista en este duelo? Necesita la carta con el
+   rasgo, que la stat declarada sea la suya, y no haber gastado la jugada. */
+function especialistaDisponible(P,lado,divId,stat){
+  if(P.jugada[lado]) return null;
+  const r=rasgoDe(P.cartas[lado][divId],'especialista');
+  return (r && r.stat===stat) ? r : null;
+}
+
 function nuevaPartida(plantillaJ,plantillaR){
   return {fase:'rol', rolJ:null, vetoPrimero:null, vetados:[], vetoAzar:null,
     enJuego:[], jugadas:[], statsVivas:SID.slice(), duelo:0, turno:null,
-    marcador:{j:0,r:0}, jugada:{j:false,r:false},
+    marcador:{j:0,r:0}, jugada:{j:false,r:false}, pendienteConf:null,
     cartas:{j:{...plantillaJ},r:{...plantillaR}}, // divId -> carta
     ajustes:{j:{},r:{}},  // divId -> {stat:delta}
     log:[], pendiente:null, fin:null};
@@ -350,7 +358,10 @@ function resolverDuelo(P,divId,stat,opts={}){
   const vj=valorCarta(P,'j',divId,stat), vr=valorCarta(P,'r',divId,stat);
   const m=Math.abs(vj-vr);
   let ganador, tipo;
-  if(m===0){ ganador=Math.random()<.5?'j':'r'; tipo='reñido'; }         // empate: moneda al aire
+  // Empate exacto: moneda al aire de verdad, 50/50, y con tipo propio. La tirada ya
+  // era correcta, pero al clasificarlo como "reñido" el registro imprimía "65/35",
+  // que era mentira.
+  if(m===0){ ganador=Math.random()<.5?'j':'r'; tipo='empate'; }
   else{
     const alto=vj>vr?'j':'r';
     if(m>=MARGENES.finish){ ganador=alto; tipo='finish'; }
@@ -359,14 +370,16 @@ function resolverDuelo(P,divId,stat,opts={}){
   }
   P.marcador[ganador]++;
   const cj=P.cartas.j[divId], cr=P.cartas.r[divId];
-  P.log.push({t:'duelo',div:divId,stat,vj,vr,ganador,tipo,
+  P.log.push({t:'duelo',div:divId,stat,vj,vr,margen:m,ganador,tipo,
     nj:cj?cj.nombre:'—',nr:cr?cr.nombre:'—',
     dobleJ:!!opts.dobleJ,dobleR:!!opts.dobleR});
 
-  // ESPECIALISTA: la stat puede no gastarse (revive para los dos)
+  // ESPECIALISTA: solo si su dueño lo ha activado. Antes saltaba solo y además gratis;
+  // el GDD §7 dice que TODOS los rasgos comparten la única activación de la partida.
   let revive=false;
-  for(const l of ['j','r']){
-    const c=P.cartas[l][divId]; const r=rasgoDe(c,'especialista');
+  if(opts.especialista){
+    const l=opts.especialista;
+    const r=rasgoDe(P.cartas[l][divId],'especialista');
     if(r && r.stat===stat && (r.plus || ganador===l)) revive=true;
   }
   if(!revive) P.statsVivas=P.statsVivas.filter(s=>s!==stat);
@@ -391,12 +404,12 @@ function resolverDesempate(P){
   if(m===0) ganador=Math.random()<.5?'j':'r';
   else{ const alto=vj>vr?'j':'r'; ganador=(m>=MARGENES.decision)?alto:(Math.random()<.65?alto:(alto==='j'?'r':'j')); }
   P.marcador[ganador]++;
-  P.log.push({t:'duelo',div:divId,stat,vj,vr,ganador,tipo:'desempate',
+  P.log.push({t:'duelo',div:divId,stat,vj,vr,margen:m,ganador,tipo:'desempate',
     nj:P.cartas.j[divId].nombre,nr:P.cartas.r[divId].nombre});
   P.fase='fin'; P.fin=ganador;
 }
 
-const MOTOR={DIVISIONES, DIV, contiguas, vecinas, STATS, SID, SUBSTATS, RAREZAS, ORDEN_RAREZA, ARQUETIPOS, RASGOS, PROMOTORAS, GIMNASIOS, PAISES, NOM_M, NOM_F, APE, APODOS, mulberry32, RNG, ri, pick, shuffle, clamp, ROSTER, generarCarta, asignarRasgos, generarRoster, alineables, rasgoTxt, MARGENES, nuevaPartida, terminarVetos, librePara, valorCarta, aplicarPenalizacion, penaliza, enviarAlDuelo, cambiosPosibles, hacerCambio, rasgoDe, camaleonesPosibles, resolverDuelo, resolverDesempate};
+const MOTOR={especialistaDisponible, DIVISIONES, DIV, contiguas, vecinas, STATS, SID, SUBSTATS, RAREZAS, ORDEN_RAREZA, ARQUETIPOS, RASGOS, PROMOTORAS, GIMNASIOS, PAISES, NOM_M, NOM_F, APE, APODOS, mulberry32, RNG, ri, pick, shuffle, clamp, ROSTER, generarCarta, asignarRasgos, generarRoster, alineables, rasgoTxt, MARGENES, nuevaPartida, terminarVetos, librePara, valorCarta, aplicarPenalizacion, penaliza, enviarAlDuelo, cambiosPosibles, hacerCambio, rasgoDe, camaleonesPosibles, resolverDuelo, resolverDesempate};
 raiz.MOTOR=MOTOR;
 // También sueltas en el global: el juego las usa por su nombre, sin prefijo.
 for(const k of Object.keys(MOTOR)) if(!(k in raiz)) raiz[k]=MOTOR[k];

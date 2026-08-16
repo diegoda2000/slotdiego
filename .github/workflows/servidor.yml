@@ -23,7 +23,8 @@ on:
       - 'claude/**'
     paths:
       - 'servidor/**'
-      - 'juego/motor.js'
+      - 'juego/**'
+      - 'android/**'
       - '.github/workflows/servidor.yml'
 
 permissions:

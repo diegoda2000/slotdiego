@@ -151,7 +151,7 @@ export class Sala {
       fin: P.fin ? (P.fin === mio ? 'j' : 'r') : null,
       rival: this.nombreDeLado(otro),
       pendiente: null,
-      pendienteVet: null,
+      pendienteConf: null,
       online: true,
     };
 
@@ -167,11 +167,13 @@ export class Sala {
       if (P.pendiente.defensor === mio) V.pendiente = { plus: P.pendiente.plus, opciones: P.pendiente.opciones };
       else V.fase = 'esperando';
     }
-    // La decisión del Veterano es del defensor; el atacante solo espera.
-    if (P.fase === 'veterano') {
-      const q = P.pendienteVet;
-      if (q.defensor === mio) V.pendienteVet = { divId: q.divId, stat: q.stat, plus: q.plus, opciones: q.opciones };
-      else V.fase = 'esperando';
+    /* El duelo declarado y esperando carta. Los dos lados reciben lo mismo — división
+       y stat son públicas en cuanto se declaran — y cada uno mira su pantalla según de
+       quién sea la carta que falta. Lo que NO viaja es si el defensor ha activado su
+       Especialista: eso lo cuenta el registro cuando ya está hecho. */
+    if (P.fase === 'confirmar') {
+      const q = P.pendienteConf;
+      V.pendienteConf = { divId: q.divId, stat: q.stat, defensor: q.defensor === mio ? 'j' : 'r' };
     }
     return V;
   }
@@ -189,6 +191,8 @@ export class Sala {
     if (msg.t === 'veto') return this.veto(lado, msg.division);
     if (msg.t === 'declarar') return this.declarar(lado, msg);
     if (msg.t === 'incomodo') return this.eleccionIncomodo(lado, msg.idx);
+    if (msg.t === 'confirmar') return this.confirmar(lado);
+    if (msg.t === 'especialista') return this.especialistaDefensor(lado);
     if (msg.t === 'veterano') return this.decidirVeterano(lado, msg);
     if (msg.t === 'desempate') return this.desempate(lado);
     throw new Error('mensaje desconocido');
@@ -298,6 +302,16 @@ export class Sala {
       opts.dobleJ = true;
     }
 
+    // El Especialista del que declara: lo activa él, y solo si la stat es la suya.
+    // Como todos los rasgos, gasta la única jugada de la partida.
+    if (jugada && jugada.tipo === 'especialista') {
+      if (!especialistaDisponible(P, lado, division, stat))
+        throw new Error('ese Especialista no se puede usar aquí');
+      P.jugada[lado] = true;
+      opts.especialista = lado;
+      P.log.push({ t: 'sys', x: `🎯 ${this.nombreDeLado(lado)} activa Especialista en ${stat.toUpperCase()}.` });
+    }
+
     if (jugada && jugada.tipo === 'incomodo') {
       const rasgo = rasgoDe(P.cartas[lado][division], 'incomodo');
       if (!rasgo) throw new Error('esa carta no tiene Incómodo');
@@ -321,42 +335,72 @@ export class Sala {
   /* El Veterano es reactivo, y en online los dos lados son personas: la decisión es
      del defensor y se le pregunta. Cuesta una ida y vuelta más por duelo, pero que la
      máquina gaste por ti tu única jugada de la partida no es aceptable. */
-  pedirVeterano(divId, stat, opts) {
-    const P = this.P, def = this.otroLado(P.turno);
-    const r = rasgoDe(P.cartas[def][divId], 'veterano');
-    if (!r || P.jugada[def]) return false;
-    const otras = P.statsVivas.filter(s => s !== stat);
-    if (!otras.length) return false;          // sin stats a las que cambiar no hay decisión
-    P.pendienteVet = { divId, stat, defensor: def, plus: r.plus, opciones: otras, opts: opts || {} };
-    P.fase = 'veterano';
-    return true;
-  }
-
-  decidirVeterano(lado, msg) {
+  resolver(division, stat, opts) {
     const P = this.P;
-    if (P.fase !== 'veterano') throw new Error('no hay ninguna decisión de Veterano pendiente');
-    const q = P.pendienteVet;
-    if (q.defensor !== lado) throw new Error('esa decisión no es tuya');
-
-    let stat = q.stat;
-    if (msg.usar) {
-      if (P.jugada[lado]) throw new Error('ya has gastado tu jugada');
-      P.jugada[lado] = true;
-      // el normal cambia a una al azar; el plus la elige quien lo usa
-      stat = q.plus
-        ? (q.opciones.includes(msg.stat) ? msg.stat : q.opciones[0])
-        : q.opciones[Math.floor(Math.random() * q.opciones.length)];
-      P.log.push({ t: 'sys', x: `🧠 Veterano de ${this.nombreDeLado(lado)}: la stat pasa de ${q.stat.toUpperCase()} a ${stat.toUpperCase()}.` });
-    }
-    const opts = q.opts;
-    P.pendienteVet = null; P.fase = 'duelos';
-    resolverDuelo(P, q.divId, stat, opts);
+    P.pendienteConf = { divId: division, stat, defensor: this.otroLado(P.turno),
+      opts: opts || {}, especialista: (opts && opts.especialista) || null };
+    P.fase = 'confirmar';
     this.mandarEstado();
   }
 
-  resolver(division, stat, opts) {
-    if (this.pedirVeterano(division, stat, opts)) { this.mandarEstado(); return; }
-    resolverDuelo(this.P, division, stat, opts);
+  // Vía directa, sin confirmación: la usa el Incómodo, donde elegir a ciegas entre
+  // las dos cartas YA es mandar la tuya, y volver a pedirla sería pedirla dos veces.
+  resolverYa(division, stat, opts) {
+    resolverDuelo(this.P, division, stat, opts || {});
+    this.mandarEstado();
+  }
+
+  confirmar(lado) {
+    const P = this.P;
+    if (P.fase !== 'confirmar') throw new Error('no hay ningún duelo esperando');
+    const q = P.pendienteConf;
+    if (q.defensor !== lado) throw new Error('la carta la manda el otro');
+
+    const opts = { ...(q.opts || {}) };
+    if (q.especialista) opts.especialista = q.especialista;
+    P.pendienteConf = null; P.fase = 'duelos';
+    P.log.push({ t: 'sys', x: `${this.nombreDeLado(lado)} manda a ${P.cartas[lado][q.divId].nombre} al duelo.` });
+    resolverDuelo(P, q.divId, q.stat, opts);
+    this.mandarEstado();
+  }
+
+  especialistaDefensor(lado) {
+    const P = this.P;
+    if (P.fase !== 'confirmar') throw new Error('no hay ningún duelo esperando');
+    const q = P.pendienteConf;
+    if (q.defensor !== lado) throw new Error('esa decisión no es tuya');
+    if (q.especialista) throw new Error('el Especialista de este duelo ya está activado');
+    if (!especialistaDisponible(P, lado, q.divId, q.stat))
+      throw new Error('ese Especialista no se puede usar aquí');
+    P.jugada[lado] = true;
+    q.especialista = lado;
+    P.log.push({ t: 'sys', x: `🎯 ${this.nombreDeLado(lado)} activa Especialista en ${q.stat.toUpperCase()}.` });
+    this.mandarEstado();
+  }
+
+  /* El Veterano es del defensor y se decide en la misma pantalla en la que manda su
+     carta: cambia la stat del duelo antes de enviarla. No usarlo no cuesta nada — no
+     hay que contestar que no, basta con enviar la carta. */
+  decidirVeterano(lado, msg) {
+    const P = this.P;
+    if (P.fase !== 'confirmar') throw new Error('no hay ningún duelo esperando');
+    const q = P.pendienteConf;
+    if (q.defensor !== lado) throw new Error('esa decisión no es tuya');
+    if (!msg.usar) return;
+    if (P.jugada[lado]) throw new Error('ya has gastado tu jugada');
+
+    const r = rasgoDe(P.cartas[lado][q.divId], 'veterano');
+    if (!r) throw new Error('esa carta no tiene Veterano');
+    const otras = P.statsVivas.filter(s => s !== q.stat);
+    if (!otras.length) throw new Error('no queda ninguna otra stat viva');
+
+    P.jugada[lado] = true;
+    // el normal cambia a una al azar; el plus la elige quien lo usa
+    const nueva = r.plus
+      ? (otras.includes(msg.stat) ? msg.stat : otras[0])
+      : otras[Math.floor(Math.random() * otras.length)];
+    P.log.push({ t: 'sys', x: `🧠 Veterano de ${this.nombreDeLado(lado)}: la stat pasa de ${q.stat.toUpperCase()} a ${nueva.toUpperCase()}.` });
+    q.stat = nueva;
     this.mandarEstado();
   }
 
@@ -378,11 +422,14 @@ export class Sala {
     }
     P.pendiente = null; P.fase = 'duelos';
     P.log.push({ t: 'sys', x: `Duelo en ${DIV[q.divId].n} · ${q.stat.toUpperCase()}.` });
-    this.resolver(q.divId, q.stat, {});
+    this.resolverYa(q.divId, q.stat, {});
   }
 
+  /* Los dos ven el botón de resolver el desempate, así que los dos pueden pulsarlo casi
+     a la vez. El segundo no ha hecho nada mal: sobra, y sobrar no es un error. */
   desempate(lado) {
     const P = this.P;
+    if (P.fase === 'fin') return;
     if (P.fase !== 'desempate') throw new Error('no hay desempate pendiente');
     resolverDesempate(P);
     this.mandarEstado();
