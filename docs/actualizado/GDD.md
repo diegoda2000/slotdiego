@@ -133,6 +133,18 @@ número exacto se ajusta al tamaño del roster final; en el prototipo son 8 de c
 1. **Elección de rol.** Los dos eligen a la vez: empezar vetando o empezar declarando. Si eligen distinto, cada uno a lo suyo. Si coinciden, dado y el más alto se queda lo que pidió.
    **[R2] El que empieza una cosa no empieza la otra**, siempre: es la contrapartida que equilibra el reparto, y por eso el dado se tira una sola vez y decide las dos.
    **[R2] Contra la IA no hay dado.** La máquina no compite por el rol: eliges tú y ella se queda lo otro. Un dado que le diera a la IA la primera declaración estaría quitándole al jugador su elección con azar, y eso solo tiene sentido cuando al otro lado hay una persona que también eligió.
+
+   **[R2] Qué significa exactamente cada opción**, escrito así en la pantalla de elección porque es la parte que se malinterpreta:
+
+   | Eliges | Vetos | Duelos que declaras |
+   |---|---|---|
+   | **Empezar vetando** | tiras el veto 1 y el 3 | **el primer duelo lo declara el rival**; tú declaras el 2, el 4 y el 6 |
+   | **Empezar declarando** | el primer veto lo tira el rival | declaras el 1, el 3 y el 5 |
+
+   Que el rival declare el primer duelo **no es un fallo cuando has pedido empezar vetando**: es
+   literalmente lo mismo dicho de otra manera. Si algún día se decide que el rival no declare nunca
+   el primero, entonces la opción de "empezar vetando" no puede existir — son incompatibles, y hay
+   que elegir una de las dos.
 2. **Vetos alternos y visibles.** 2 cada uno. Cada veto aparece en pantalla al hacerse, para que el otro pueda reaccionar.
 3. **Veto aleatorio, al final.** Rompe planes ya construidos, que es donde más impacto tiene.
 4. **La división del veto aleatorio será el desempate.** Los dos la ven desde el principio y condiciona toda la partida.
@@ -321,6 +333,10 @@ duelo ni se convierte en un aviso que aparece y desaparece.
 - **El servidor no se fía del cliente:** valida la plantilla al entrar (11 divisiones, todas
   alineables, sin peleador repetido) y rechaza cualquier jugada fuera de turno o ilegal.
 - **Reconectar recupera la partida** en el punto exacto en que se dejó.
+- **Que sobre una pulsación no es hacer trampa.** Hay botones que ven los dos jugadores —resolver el
+  desempate, por ejemplo— y los dos pueden pulsarlos casi a la vez. El segundo no ha hecho nada mal:
+  su mensaje sobra y se ignora, no se rechaza con un error. Lo mismo cuando alguien vuelve a pulsar
+  porque la pantalla todavía no se ha actualizado.
 
 ### 8.2 [R2] Retar plantillas es un modo aparte
 
@@ -423,12 +439,22 @@ ni nada simulado, así que todo lo que enseña es cierto—, contra un sparring 
 prestada**. Que sea prestada es lo que permite jugarla nada más instalar, antes del primer sobre.
 
 - Las dos plantillas se eligen del catálogo **para que los rasgos salgan seguro**. Si no, un novato
-  podría terminar el tutorial sin haber visto un Incómodo en su vida.
+  podría terminar el tutorial sin haber visto un Incómodo en su vida. La del jugador lleva Veterano,
+  Especialista y Camaleón; la del sparring, Incómodo.
 - Un entrenador habla **cuando toca y no antes**: cada aviso está atado al momento en que ese concepto
   aparece en pantalla. Se puede cortar de un botón en cualquier momento.
 - **No cuenta en el registro de partidas.** Se juega con plantilla prestada contra un sparring;
   sumarlo a las victorias sería mentir en la propia ficha del jugador.
-- Terminarlo entrega una recompensa de arranque, una sola vez.
+- Terminarlo entrega una recompensa de arranque, una sola vez: divisa y un sobre bueno.
+
+**Los conceptos, en el orden en que se aprenden.** Trece avisos cortos, uno por concepto, cada uno en
+su momento: qué es la partida (11 peleadores, 6 duelos, a 4) · vetar o declarar · los vetos y el veto
+aleatorio · leer el tablero (stats vivas y divisiones en juego) · elegir peleador tocando su carta ·
+las seis stats · tu única jugada · los cuatro rasgos y el plus · defender y mandar tu carta · la tabla
+de márgenes · el Incómodo · el desempate · el cierre.
+
+Si el jugador se salta un aviso porque actuó antes de leerlo, ese aviso **vuelve a aparecer la
+siguiente vez que su concepto sale en pantalla**. No se pierde ninguno por ir rápido.
 
 **Pantalla de reglas.** El tutorial enseña jugando; las reglas escritas son el papel al que se vuelve.
 Ahí no se resume: están los números exactos, porque la duda que lleva a alguien a esa pantalla suele
@@ -494,9 +520,9 @@ Las dos que hay que mirar:
 | 3 | §5 | Se **declara tocando la carta** y se elige la stat sobre ella |
 | 4 | §7 | **Ningún rasgo se activa solo**: siempre lo decide su dueño, y elige con qué stat |
 | 5 | §7 INCÓMODO | La carta de la **división real siempre queda fuera**; la enviada pelea los dos duelos; **no hay intercambio de huecos** |
-| 6 | §4.1 | **El que empieza una no empieza la otra**; contra la IA **no hay dado** |
-| 7 | §8.1 / §9.1 | PvP en vivo **por código de sala, sin cuentas, un solo servidor**; sobre básico **ilimitado, directo, de uno en uno, 1% o menos** de cartas altas; **9 cartas** en todos los sobres |
-| 8 | §11 | **Partida tutorial** y **pantalla de reglas** |
+| 6 | §4.1 | **El que empieza una no empieza la otra**; contra la IA **no hay dado**; y qué significa cada opción, con su tabla |
+| 7 | §8.1 / §9.1 | PvP en vivo **por código de sala, sin cuentas, un solo servidor**; una pulsación que sobra se ignora, no se rechaza; sobre básico **ilimitado, directo, de uno en uno, 1% o menos** de cartas altas; **9 cartas** en todos los sobres |
+| 8 | §11 | **Partida tutorial** de trece avisos y **pantalla de reglas** |
 
 Cambios menores que no alteran ninguna regla de partida: §2.2 y §2.6 (las cartas de colección no
 llevan sub-stats ni rasgos), §2.7 (mínimo de rasgos por clase en el roster), §9.4 (la carta de rasgo
