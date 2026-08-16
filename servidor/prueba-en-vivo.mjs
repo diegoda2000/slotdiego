@@ -91,10 +91,31 @@ A.enviar({ t: 'rol', v: 'vetar' });
 B.enviar({ t: 'rol', v: 'declarar' });
 comprobar(await esperar(() => A.P.fase === 'vetos'), 'la elección de rol se resuelve');
 
+/* Una jugada por estado, no una por vuelta.
+
+   El bucle gira cada 90 ms, y contra un servidor de verdad la respuesta tarda más que
+   eso: si se manda en cada vuelta, la misma jugada sale dos y tres veces antes de que
+   llegue el estado nuevo. La segunda la rechaza el servidor —con razón, ese duelo ya
+   está resuelto— y la prueba se cae por algo que no es un fallo del juego. Una persona
+   tampoco pulsa el botón otra vez mientras la pantalla sigue igual. */
+const firma = P => JSON.stringify([P.fase, P.vetados.length, P.jugadas.length,
+  P.turno, P.duelo, P.marcador.j, P.marcador.r]);
+
 let fugas = 0;
-for (let vuelta = 0; vuelta < 200 && A.P.fase !== 'fin'; vuelta++) {
+for (let vuelta = 0; vuelta < 400 && A.P.fase !== 'fin'; vuelta++) {
   for (const c of [A, B]) {
     const P = c.P; if (!P) continue;
+
+    // la vigilancia de fugas sí mira en cada vuelta: es lo que se está comprobando
+    if (P.fase !== 'fin') {
+      const permitidas = new Set(P.jugadas);
+      fugas += Object.entries(P.cartas.r).filter(([d, x]) => x && !permitidas.has(d)).length;
+    }
+
+    const f = firma(P);
+    if (c.ultima === f) continue;     // la pantalla no ha cambiado: nada nuevo que jugar
+    c.ultima = f;
+
     if (P.fase === 'vetos' && ((P.vetados.length % 2 === 0) === (P.vetoPrimero === 'j'))) {
       const libres = DIVISIONES.map(d => d.id).filter(x => !P.vetados.includes(x));
       c.enviar({ t: 'veto', division: libres[0] });
@@ -106,11 +127,6 @@ for (let vuelta = 0; vuelta < 200 && A.P.fase !== 'fin'; vuelta++) {
       c.enviar({ t: 'declarar', division: librePara(P, 'j')[0], stat: P.statsVivas[0] });
     } else if (P.fase === 'desempate') {
       c.enviar({ t: 'desempate' });
-    }
-    // mientras se juega, del rival solo pueden verse divisiones ya resueltas
-    if (P.fase !== 'fin') {
-      const permitidas = new Set(P.jugadas);
-      fugas += Object.entries(P.cartas.r).filter(([d, x]) => x && !permitidas.has(d)).length;
     }
   }
   await dormir(90);

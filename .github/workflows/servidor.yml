@@ -96,9 +96,14 @@ jobs:
       # Que el despliegue termine en verde solo dice que el archivo se subió. Esto abre
       # dos clientes contra la dirección publicada y juega una partida entera. Si falla,
       # el APK no se publica: más vale no publicar que publicar algo roto.
+      # Las salas son Durable Objects vivos: al desplegar tardan unos segundos en
+      # reiniciarse con el código nuevo. Probar al instante puede estar probando
+      # todavía la versión anterior, y entonces el resultado no dice nada.
       - name: Probar el servidor recién desplegado
         if: steps.comp.outputs.listo == 'si'
-        run: node servidor/prueba-en-vivo.mjs "${{ steps.deploy.outputs.url }}"
+        run: |
+          sleep 20
+          node servidor/prueba-en-vivo.mjs "${{ steps.deploy.outputs.url }}"
 
       # Aquí está la gracia: la dirección se mete en el juego, así que el APK que se
       # construya después ya la lleva dentro y nadie tiene que pegarla a mano.
