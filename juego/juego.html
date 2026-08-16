@@ -354,7 +354,7 @@ let S=null;
 
 function estadoNuevo(){
   const s={divisa:250,fichas:0,coleccion:[],plantilla:{},sobres:[],
-    partidas:0,victorias:0,gratis:{},sets:[],retos:[],vistoIntro:false};
+    partidas:0,victorias:0,gratis:{},sets:[],retos:[],nombre:'',amigos:[]};
   // Arranque garantizado: una carta por división (si no, es imposible alinear)
   for(const d of DIVISIONES){
     const cand=alineables().filter(c=>c.division===d.id&&c.rareza==='bronce');
@@ -403,8 +403,10 @@ const cartaDe=iid=>{const i=inst(iid);return i?PORID[i.cid]:null};
    5. ECONOMÍA — sobres, reciclaje, sets, retos, intercambio
    ══════════════════════════════════════════════════════════════════════════ */
 const TIPOS_SOBRE={
-  basico:{n:'Sobre básico', ic:'📦', coste:0,   cartas:4, alineables:3,
-    pesos:{bronce:66,plata:24,oro:8,elite:1.8,leyenda:.2}},
+  // El básico es ilimitado, así que su drop tiene que ser malo de verdad: es la red
+  // de seguridad para que nadie se quede sin poder alinear, no una vía de progreso.
+  basico:{n:'Sobre básico', ic:'📦', coste:0,   cartas:3, alineables:2,
+    pesos:{bronce:88,plata:10,oro:1.9,elite:0.1,leyenda:.01}},
   plata :{n:'Sobre de plata',ic:'🎁', coste:250, cartas:4, alineables:3,
     pesos:{bronce:46,plata:36,oro:15,elite:2.7,leyenda:.3}},
   oro   :{n:'Sobre de oro',  ic:'🥇', coste:600, cartas:5, alineables:4,
@@ -418,13 +420,15 @@ const TIPOS_SOBRE={
 // acumular veinte y abrirlos de golpe es el momento que engancha (GDD §9).
 // El de menos espera tiene el drop más bajo, como pide el GDD.
 const GRATIS=[
-  {id:'g1', tipo:'basico', espera:      3*60000},
+  {id:'g1', tipo:'basico', espera:            0},   // ilimitado, sin reloj
   {id:'g2', tipo:'plata',  espera:     20*60000},
   {id:'g3', tipo:'oro',    espera:  2*60*60000},
 ];
-const listoGratis=g=>Date.now()-(S.gratis[g.id]||0)>=g.espera;
+const listoGratis=g=>g.espera===0||Date.now()-(S.gratis[g.id]||0)>=g.espera;
 const restaGratis=g=>Math.max(0,g.espera-(Date.now()-(S.gratis[g.id]||0)));
-const nGratisListos=()=>GRATIS.filter(listoGratis).length;
+// El ilimitado no cuenta para el aviso del menú: estaría encendido siempre y dejaría
+// de significar nada.
+const nGratisListos=()=>GRATIS.filter(g=>g.espera>0&&listoGratis(g)).length;
 function reloj(ms){
   const s=Math.ceil(ms/1000), h=Math.floor(s/3600), m=Math.floor(s%3600/60), r=s%60;
   return h?`${h}:${String(m).padStart(2,'0')}:${String(r).padStart(2,'0')}`
@@ -497,6 +501,79 @@ const RETOS=[
    check:l=>l.length===4&&new Set(l.map(c=>c.pais)).size===4&&l.every(c=>c.rareza!=='bronce'),
    premio:{sobre:'elite',divisa:0}},
 ];
+
+/* ══════════════════════════════════════════════════════════════════════════
+   5b. AMIGOS Y CÓDIGOS DE SALA
+   ─────────────────────────────────────────────────────────────────────────
+   El PvP en vivo necesita un servidor: cartas ocultas significa que el rival no
+   puede vivir en tu móvil, y sin servidor autoritativo cualquiera lee la plantilla
+   contraria. Eso es la Fase 5 del plan de proyecto.
+
+   Lo que sí funciona hoy, sin servidor y sin cuentas, es esto: tu plantilla se
+   convierte en un código de texto que mandas por donde quieras. Quien lo pega te
+   añade y puede pelear contra tu plantilla real cuando le dé la gana. El resultado
+   vuelve como otro código. Cero infraestructura, cero permisos, funciona sin
+   cobertura y no se cae nunca.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+const b64e=s=>btoa(unescape(encodeURIComponent(s))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+const b64d=s=>decodeURIComponent(escape(atob(s.replace(/-/g,'+').replace(/_/g,'/'))));
+const suma=s=>{let h=0;for(let i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))%1296;
+  return h.toString(36).padStart(2,'0')};
+
+function codificar(pre,obj){ const p=b64e(JSON.stringify(obj)); return `${pre}.${p}.${suma(p)}`; }
+function decodificar(pre,txt){
+  const t=(txt||'').trim().replace(/\s+/g,'');
+  const p=t.split('.');
+  if(p.length!==3||p[0].toUpperCase()!==pre) return {error:'Ese no parece un código de '+(pre==='JA1'?'plantilla':'resultado')+'.'};
+  if(suma(p[1])!==p[2]) return {error:'El código está incompleto o mal copiado. Cópialo entero.'};
+  try{ return {ok:JSON.parse(b64d(p[1]))}; }catch(e){ return {error:'El código está dañado.'}; }
+}
+
+const miCodigo=()=>plantillaCompleta()
+  ? codificar('JA1',{n:(S.nombre||'Jugador').slice(0,20),
+      c:DIVISIONES.map(d=>inst(S.plantilla[d.id]).cid)})
+  : null;
+
+// Un código de fuera nunca se cree a la primera: si trae basura, la partida
+// reventaría a mitad y parecería un bug del juego.
+function validarPlantilla(ids){
+  if(!Array.isArray(ids)||ids.length!==11) return 'La plantilla del código no tiene 11 cartas.';
+  const cartas=ids.map(id=>PORID[id]);
+  if(cartas.some(c=>!c)) return 'El código trae cartas que esta versión del juego no conoce. Comprobad que tenéis la misma versión.';
+  if(cartas.some(c=>!c.alineable)) return 'El código trae cartas que no son alineables.';
+  if(new Set(cartas.map(c=>c.division)).size!==11) return 'La plantilla del código no cubre las 11 divisiones.';
+  if(new Set(cartas.map(c=>c.persona)).size!==11) return 'La plantilla del código repite peleador.';
+  return null;
+}
+
+function anadirAmigo(txt){
+  const r=decodificar('JA1',txt);
+  if(r.error) return r.error;
+  const mal=validarPlantilla(r.ok.c);
+  if(mal) return mal;
+  const nombre=String(r.ok.n||'Amigo').slice(0,20);
+  const yaEsta=S.amigos.find(a=>a.nombre.toLowerCase()===nombre.toLowerCase());
+  if(yaEsta){ yaEsta.cartas=r.ok.c; yaEsta.actualizado=Date.now(); guardar();
+    return {aviso:`Plantilla de ${nombre} actualizada.`}; }
+  S.amigos.push({id:'a'+Math.random().toString(36).slice(2,9),nombre,cartas:r.ok.c,
+    actualizado:Date.now(),g:0,p:0});
+  guardar(); return {aviso:`${nombre} añadido.`};
+}
+
+const codigoResultado=(amigo,marcador,gane)=>codificar('JAR',
+  {n:(S.nombre||'Jugador').slice(0,20),v:amigo.nombre,m:[marcador.j,marcador.r],g:gane?1:0});
+
+function registrarResultado(txt){
+  const r=decodificar('JAR',txt);
+  if(r.error) return r.error;
+  const a=S.amigos.find(x=>x.nombre.toLowerCase()===String(r.ok.n||'').toLowerCase());
+  if(!a) return `El resultado viene de "${esc(r.ok.n||'?')}", que no está en tu lista de amigos. Añádelo primero con su código de plantilla.`;
+  // Viene desde el lado del amigo, así que su victoria es tu derrota
+  if(r.ok.g) a.g++; else a.p++;
+  guardar();
+  return {aviso:`Registrado: ${a.nombre} ${r.ok.g?'ganó':'perdió'} ${r.ok.m[0]}-${r.ok.m[1]}.`};
+}
 
 /* ══════════════════════════════════════════════════════════════════════════
    6. MOTOR DE REGLAS  (puro: no toca el DOM — extraíble a packages/rules)
@@ -718,7 +795,7 @@ function render(){
   document.body.style.paddingBottom = vista==='partida'?'12px':'64px';
   const f={inicio:vInicio,sobres:vSobres,coleccion:vColeccion,plantilla:vPlantilla,
     mas:vMas,reciclaje:vReciclaje,sets:vSets,retos:vRetos,intercambio:vIntercambio,
-    partida:vPartida,notas:vNotas,apertura:vApertura}[vista]||vInicio;
+    partida:vPartida,notas:vNotas,apertura:vApertura,amigos:vAmigos}[vista]||vInicio;
   $('#app').innerHTML=f();
   $('#app').classList.remove('flash'); void $('#app').offsetWidth; $('#app').classList.add('flash');
 }
@@ -738,6 +815,8 @@ function vInicio(){
       <b>Te faltan divisiones por cubrir.</b><div class="sub">Necesitas una carta alineable en las 11 divisiones para poder jugar. Abre sobres o revisa la plantilla.</div></div>`}
     <button class="btn" data-a="jugar" ${ok?'':'disabled'} style="padding:15px;font-size:16px">🥊 Jugar partida</button>
     <div class="divider"></div>
+    <button class="btn sec mb" data-nav="amigos" ${ok?'':'disabled'}>
+      👥 Jugar contra un amigo${S.amigos.length?` (${S.amigos.length})`:''}</button>
     <button class="btn sec mb" data-nav="sobres">
       🎁 Sobres${listos?` — ${listos} gratis listo${listos>1?'s':''}`:S.sobres.length?` — ${S.sobres.length} sin abrir`:''}</button>
     <div class="card-panel">
@@ -768,17 +847,21 @@ function vSobres(){
 
     <h3>🎁 Gratis</h3>
     ${GRATIS.map(g=>{
-      const T=TIPOS_SOBRE[g.tipo], ok=listoGratis(g);
+      const T=TIPOS_SOBRE[g.tipo], ok=listoGratis(g), ilim=g.espera===0;
       return `<div class="card-panel" style="${ok?'border-color:var(--acc)':''}">
         <div class="row" style="align-items:center">
           <div style="flex:none;font-size:26px">${T.ic}</div>
           <div style="flex:2"><b>${T.n}</b>
+            ${ilim?'<span class="chip on" style="margin-left:5px">ILIMITADO</span>':''}
             <div class="tiny">${T.cartas} cartas · ${T.alineables} alineables garantizadas</div>
             <div class="tiny">${probs(T)}</div></div>
           <button class="btn sm" data-a="gratis" data-g="${g.id}"
-            data-reloj="${g.id}" ${ok?'':'disabled'} style="flex:none;min-width:96px">
+            data-reloj="${g.id}" ${ok?'':'disabled'} style="flex:none;min-width:92px">
             ${ok?'Reclamar':reloj(restaGratis(g))}</button>
-        </div></div>`;
+        </div>
+        ${ilim?`<button class="btn gho sm" data-a="gratis" data-g="${g.id}" data-n="10"
+          style="width:100%;margin-top:7px">Reclamar 10 de golpe</button>`:''}
+      </div>`;
     }).join('')}
 
     <h3 style="margin-top:14px">📥 Tus sobres</h3>
@@ -960,7 +1043,8 @@ function elegirParaSlot(divId){
 /* ── MÁS ── */
 function vMas(){
   return `<h2>Más</h2>
-    ${[['reciclaje','♻️','Reciclaje','Convierte repetidas en fichas'],
+    ${[['amigos','👥','Amigos','Añade por código y pelea contra su plantilla'],
+       ['reciclaje','♻️','Reciclaje','Convierte repetidas en fichas'],
        ['sets','🧩','Sets de colección','Completa y desbloquea cartas'],
        ['retos','📜','Retos','Entrega cartas, gana recompensas'],
        ['intercambio','🤝','Sala de intercambio','Trueque puro, cuesta 1 ficha'],
@@ -1073,6 +1157,69 @@ function vIntercambio(){
     <div class="divider"></div><button class="btn gho" data-a="salirsala">Salir de la sala (pierdes la ficha)</button>`;
 }
 
+/* ── AMIGOS ── */
+function vAmigos(){
+  const cod=miCodigo();
+  return `<h2>Amigos</h2>
+    <div class="sub mb">Tu plantilla cabe en un código de texto. Mándaselo a quien quieras
+    y podrá pelear contra ella; pégate el suyo y podrás pelear tú contra la suya.</div>
+
+    <div class="card-panel">
+      <h3>Tu nombre</h3>
+      <input id="minombre" value="${esc(S.nombre||'')}" placeholder="Cómo te verán tus amigos"
+        maxlength="20" style="width:100%;padding:10px;border-radius:8px;background:var(--bg3);
+        border:1px solid var(--line);color:var(--txt);font:inherit;margin-bottom:8px">
+      <button class="btn sec sm" data-a="guardarnombre" style="width:100%">Guardar nombre</button>
+    </div>
+
+    <div class="card-panel">
+      <h3>Tu código de plantilla</h3>
+      ${cod?`<div class="tiny mb">Cambia cada vez que cambies la plantilla. Si la cambias, reenvíalo.</div>
+        <div style="background:var(--bg3);border:1px solid var(--line);border-radius:8px;padding:10px;
+          font-family:ui-monospace,monospace;font-size:11px;word-break:break-all;margin-bottom:8px"
+          id="micodigo">${esc(cod)}</div>
+        <button class="btn sm" data-a="copiarcodigo" style="width:100%">📋 Copiar código</button>`
+      :`<div class="sub">Primero completa las 11 divisiones de tu plantilla.</div>`}
+    </div>
+
+    <div class="card-panel">
+      <h3>Añadir amigo</h3>
+      <div class="tiny mb">Pega aquí el código que te haya pasado.</div>
+      <input id="codigoamigo" placeholder="JA1...." style="width:100%;padding:10px;border-radius:8px;
+        background:var(--bg3);border:1px solid var(--line);color:var(--txt);font:inherit;margin-bottom:8px">
+      <button class="btn sm" data-a="anadiramigo" style="width:100%">Añadir</button>
+    </div>
+
+    <h3>Tus amigos</h3>
+    ${S.amigos.length?S.amigos.map(a=>{
+      const media=Math.round(a.cartas.reduce((s,id)=>s+PORID[id].media,0)/11);
+      return `<div class="card-panel"><div class="row" style="align-items:center">
+        <div style="flex:2"><b>${esc(a.nombre)}</b>
+          <div class="tiny">Plantilla de media ${media} · ${a.g}-${a.p} contra ti</div></div>
+        <button class="btn sm" data-a="retar" data-id="${a.id}" style="flex:none"
+          ${plantillaCompleta()?'':'disabled'}>Jugar</button>
+        <button class="btn gho sm" data-a="borraramigo" data-id="${a.id}" style="flex:none">✕</button>
+      </div></div>`;
+    }).join(''):'<div class="card-panel sub">Todavía no has añadido a nadie.</div>'}
+
+    <div class="card-panel">
+      <h3>Registrar un resultado</h3>
+      <div class="tiny mb">Cuando un amigo juegue contra tu plantilla, te mandará un código de
+      resultado. Pégalo aquí para que cuente en el marcador.</div>
+      <input id="codigores" placeholder="JAR...." style="width:100%;padding:10px;border-radius:8px;
+        background:var(--bg3);border:1px solid var(--line);color:var(--txt);font:inherit;margin-bottom:8px">
+      <button class="btn sec sm" data-a="registrarres" style="width:100%">Registrar</button>
+    </div>
+
+    <div class="card-panel">
+      <div class="sub"><b>Esto no es PvP en vivo.</b> Juegas contra la plantilla real de tu amigo,
+      pero sus decisiones las toma la IA, y el marcador se lleva por confianza: nada impide que
+      alguien no te mande el resultado que perdió. Para partidas en directo y con marcador fiable
+      hace falta un servidor, que es la Fase 5 del plan.</div>
+    </div>
+    <button class="btn sec" data-nav="mas">Volver</button>`;
+}
+
 /* ── NOTAS ── */
 function vNotas(){
   return `<h2>Notas del prototipo</h2>
@@ -1093,9 +1240,18 @@ function vNotas(){
     <b>Camaleón:</b> pelea dos veces. Es la excepción explícita a "cada peleador pelea una sola vez".<br><br>
     <b>Cartas no alineables:</b> llevan las 6 stats grandes pero no sub-stats.
   </div></div>
+  <div class="card-panel"><h3>Amigos por código</h3><div class="sub">
+    Tu plantilla se convierte en un código de texto que mandas por donde quieras. Quien lo pega
+    puede pelear contra tu plantilla <b>real</b>, y el resultado vuelve como otro código.
+    Sin servidor, sin cuentas, sin permisos y sin conexión.<br><br>
+    Lo que <b>no</b> es: PvP en vivo. Las decisiones de tu amigo las toma la IA, y el marcador va
+    por confianza — nadie está obligado a mandarte el resultado que perdió. Partidas simultáneas
+    con marcador fiable exigen un servidor autoritativo, porque las cartas están ocultas y el
+    rival no puede vivir en tu propio móvil. Eso es la Fase 5 del plan.
+  </div></div>
   <div class="card-panel"><h3>Qué NO está</h3><div class="sub">
-    PvP online real (el rival es una IA sencilla), competitivas y ligas, telemetría, arte, sonido,
-    y monetización. El intercambio empareja con un jugador simulado, no con gente de verdad.
+    PvP online en vivo, competitivas y ligas, telemetría, arte, sonido y monetización.
+    El intercambio empareja con un jugador simulado, no con gente de verdad.
   </div></div>
   <button class="btn sec" data-nav="mas">Volver</button>`;
 }
@@ -1103,10 +1259,16 @@ function vNotas(){
 /* ══════════════════════════════════════════════════════════════════════════
    9. PANTALLA DE PARTIDA
    ══════════════════════════════════════════════════════════════════════════ */
-function empezarPartida(){
+function empezarPartida(amigo){
   const pj={},media=Math.round(DIVISIONES.reduce((a,d)=>a+cartaDe(S.plantilla[d.id]).media,0)/11);
   for(const d of DIVISIONES) pj[d.id]=cartaDe(S.plantilla[d.id]);
-  P=nuevaPartida(pj,plantillaIA(media+ri(-2,2)));
+  let pr,nombre;
+  if(amigo){
+    pr={}; for(const id of amigo.cartas){ const c=PORID[id]; pr[c.division]=c; }
+    nombre=amigo.nombre;
+  }else{ pr=plantillaIA(media+ri(-2,2)); nombre='El rival'; }
+  P=nuevaPartida(pj,pr);
+  P.rival=nombre; P.amigoId=amigo?amigo.id:null;
   ir('partida');
 }
 
@@ -1114,6 +1276,7 @@ function marcadorHTML(){
   const vivas=STATS.map(s=>`<span class="chip ${P.statsVivas.includes(s.id)?'':'dead'}">${s.c}</span>`).join('');
   const divs=P.enJuego.map(id=>`<span class="chip ${P.jugadas.includes(id)?'dead':''}">${DIV[id].n}</span>`).join('');
   return `<div class="card-panel">
+    <div class="tiny center mb">${esc(S.nombre||'Tú')} <span style="color:var(--dim2)">contra</span> ${esc(P.rival||'El rival')}</div>
     <div class="mark"><span style="color:var(--ok)">${P.marcador.j}</span>
       <span class="vs">DUELO ${Math.min(P.duelo,6)}/6</span>
       <span style="color:var(--acc)">${P.marcador.r}</span></div>
@@ -1232,20 +1395,32 @@ function pDesempate(){
 function pFin(){
   const gane=P.fin==='j';
   const prem=gane?ri(180,320):ri(60,120);
+  const amigo=P.amigoId?S.amigos.find(a=>a.id===P.amigoId):null;
   if(!tmp.cobrado){
     tmp.cobrado=true; S.partidas++; if(gane)S.victorias++;
     S.divisa+=prem;
     if(gane&&Math.random()<.5) S.sobres.push({tipo:'basico'});
+    if(amigo){ if(gane) amigo.p++; else amigo.g++; }
     guardar();
   }
   return `<div class="card-panel center" style="padding:24px 14px">
     <div style="font-size:44px">${gane?'🏆':'💀'}</div>
     <h2>${gane?'Victoria':'Derrota'}</h2>
+    <div class="tiny">contra ${esc(P.rival||'El rival')}</div>
     <div class="mark" style="margin:10px 0"><span style="color:var(--ok)">${P.marcador.j}</span>
       <span class="vs">—</span><span style="color:var(--acc)">${P.marcador.r}</span></div>
     <div class="sub">Ganas 🪙 ${prem}</div></div>
+    ${amigo?`<div class="card-panel">
+      <h3>Mándale el resultado a ${esc(amigo.nombre)}</h3>
+      <div class="tiny mb">Lo pega en su pantalla de amigos y el marcador entre vosotros cuadra.</div>
+      <div style="background:var(--bg3);border:1px solid var(--line);border-radius:8px;padding:10px;
+        font-family:ui-monospace,monospace;font-size:11px;word-break:break-all;margin-bottom:8px"
+        id="micodigo">${esc(codigoResultado(amigo,P.marcador,gane))}</div>
+      <button class="btn sm sec" data-a="copiarcodigo" style="width:100%">📋 Copiar resultado</button>
+    </div>`:''}
     ${logHTML()}
-    <button class="btn" data-a="jugar" style="margin-top:10px">Otra partida</button>
+    <button class="btn" data-a="${amigo?'retar':'jugar'}" ${amigo?`data-id="${amigo.id}"`:''} style="margin-top:10px">
+      ${amigo?'Otra contra '+esc(amigo.nombre):'Otra partida'}</button>
     <button class="btn sec" data-nav="inicio" style="margin-top:8px">Volver al inicio</button>`;
 }
 
@@ -1393,6 +1568,26 @@ function ov(html){
   d.innerHTML=`<div class="box">${html}</div>`;
   document.body.appendChild(d);
 }
+function copiaManual(t){
+  const a=document.createElement('textarea');
+  a.value=t; a.style.position='fixed'; a.style.opacity='0';
+  document.body.appendChild(a); a.select();
+  try{document.execCommand('copy')}catch(e){}
+  a.remove();
+}
+// Los errores de código se explican, no se dicen con un "error" a secas: casi siempre
+// es un copia y pega a medias y el jugador tiene que saber qué arreglar.
+function avisoCodigo(r){
+  if(typeof r==='string'){
+    ov(`<div class="center"><div style="font-size:34px">⚠️</div><h3>No se ha podido</h3>
+      <div class="sub mb">${esc(r)}</div>
+      <button class="btn" data-a="cerrarov">Vale</button></div>`);
+  }else{
+    render();
+    ov(`<div class="center"><div style="font-size:34px">✅</div><h3>${esc(r.aviso)}</h3>
+      <button class="btn" data-a="cerrarov">Vale</button></div>`);
+  }
+}
 function cerrarOv(){ const o=$('#ov'); if(o) o.remove(); }
 
 document.addEventListener('click',e=>{
@@ -1437,11 +1632,40 @@ document.addEventListener('click',e=>{
   }
 
   switch(d.a){
-    case 'jugar': empezarPartida(); break;
+    case 'jugar': empezarPartida(null); break;
+    case 'retar':{
+      const a=S.amigos.find(x=>x.id===d.id);
+      if(a&&plantillaCompleta()) empezarPartida(a);
+      break; }
+    case 'guardarnombre':{
+      const v=($('#minombre')||{}).value||'';
+      S.nombre=v.trim().slice(0,20); guardar(); render();
+      ov(`<div class="center"><h3>Guardado</h3><div class="sub mb">Tus amigos te verán como
+        <b>${esc(S.nombre||'Jugador')}</b>. Reenvíales tu código para que se actualice.</div>
+        <button class="btn" data-a="cerrarov">Vale</button></div>`); break; }
+    case 'copiarcodigo':{
+      const t=($('#micodigo')||{}).textContent||'';
+      const hecho=()=>ov(`<div class="center"><div style="font-size:34px">📋</div>
+        <h3>Copiado</h3><div class="sub mb">Pégalo donde quieras y mándaselo.</div>
+        <button class="btn" data-a="cerrarov">Vale</button></div>`);
+      // navigator.clipboard falla en algunos WebView; el respaldo nunca falla
+      if(navigator.clipboard&&navigator.clipboard.writeText)
+        navigator.clipboard.writeText(t).then(hecho,()=>{copiaManual(t);hecho()});
+      else { copiaManual(t); hecho(); }
+      break; }
+    case 'anadiramigo':{
+      const r=anadirAmigo(($('#codigoamigo')||{}).value);
+      avisoCodigo(r); break; }
+    case 'registrarres':{
+      const r=registrarResultado(($('#codigores')||{}).value);
+      avisoCodigo(r); break; }
+    case 'borraramigo':
+      S.amigos=S.amigos.filter(a=>a.id!==d.id); guardar(); render(); break;
     case 'gratis':{
       const g=GRATIS.find(x=>x.id===d.g); if(!g||!listoGratis(g)) break;
-      S.gratis[g.id]=Date.now();
-      S.sobres.push({tipo:g.tipo});   // se guarda, no se abre: acumular es la gracia
+      if(g.espera>0) S.gratis[g.id]=Date.now();
+      const n=Math.max(1,Math.min(50,+(d.n||1)));
+      for(let i=0;i<n;i++) S.sobres.push({tipo:g.tipo});  // se guardan, no se abren
       guardar(); render(); break; }
     case 'comprar':{
       const T=TIPOS_SOBRE[d.t]; if(S.divisa<T.coste) break;
@@ -1556,6 +1780,8 @@ if(!cargar()) S=estadoNuevo();
 if(!S.sets) S.sets=[];
 if(!S.retos) S.retos=[];
 if(!S.gratis) S.gratis={};        // partidas guardadas antes de los sobres gratis por niveles
+if(!S.amigos) S.amigos=[];        // ni antes de los amigos
+if(S.nombre===undefined) S.nombre='';
 guardar();
 render();
 

@@ -73,21 +73,23 @@ comprobar(sobres.alineables >= 4, 'el sobre respeta los huecos alineables garant
 
 // Los gratis: siempre presentes, se reclaman y se acumulan sin abrirse
 await page.evaluate(() => { S.gratis = {}; S.sobres = []; ir('sobres'); });
-const gratisVisibles = await page.locator('[data-a="gratis"]').count();
-comprobar(gratisVisibles === 3, 'los 3 sobres gratis están siempre en la tienda');
-const activos = await page.locator('[data-a="gratis"]:not([disabled])').count();
-comprobar(activos === 3, 'arrancan los 3 reclamables');
+comprobar(await page.locator('[data-reloj]').count() === 3,
+  'los 3 sobres gratis están siempre en la tienda');
+comprobar(await page.locator('[data-reloj]:not([disabled])').count() === 3,
+  'arrancan los 3 reclamables');
 
-await page.locator('[data-a="gratis"]').first().click();
+// se reclama uno CON reloj, para comprobar que pasa a cuenta atrás
+const conReloj = await page.evaluate(() => GRATIS.findIndex(g => g.espera > 0));
+await page.locator('[data-reloj]').nth(conReloj).click();
 const trasReclamar = await page.evaluate(() => ({
   guardados: S.sobres.length, vista,
-  reclamadoSigueAhi: !!document.querySelector('[data-a="gratis"]'),
-  ahoraEnEspera: document.querySelectorAll('[data-a="gratis"][disabled]').length,
+  siguenTres: document.querySelectorAll('[data-reloj]').length,
+  enEspera: document.querySelectorAll('[data-reloj][disabled]').length,
 }));
 comprobar(trasReclamar.guardados === 1, 'reclamar guarda el sobre en vez de abrirlo');
 comprobar(trasReclamar.vista === 'sobres', 'reclamar no te saca de la tienda');
-comprobar(trasReclamar.reclamadoSigueAhi, 'el sobre gratis sigue en pantalla tras reclamarlo');
-comprobar(trasReclamar.ahoraEnEspera === 1, 'el reclamado pasa a cuenta atrás');
+comprobar(trasReclamar.siguenTres === 3, 'los sobres gratis siguen en pantalla tras reclamar');
+comprobar(trasReclamar.enEspera === 1, 'el reclamado pasa a cuenta atrás');
 
 /* ── 2b. Apertura: atrás, saltar y resumen ────────────────────────────── */
 console.log('\n2b. Pantalla de apertura');
@@ -114,6 +116,83 @@ const resumen = await page.evaluate(() => ({
 comprobar(resumen.enResumen, 'saltar lleva al resumen');
 comprobar(resumen.mostradas === resumen.total && resumen.total > 0,
   'el resumen enseña todas las cartas del sobre');
+
+/* ── 2c. Sobre básico ilimitado ───────────────────────────────────────── */
+console.log('\n2c. Sobre básico ilimitado');
+const ilim = await page.evaluate(() => {
+  S.gratis = {}; S.sobres = []; ir('sobres');
+  const g = GRATIS.find(x => x.espera === 0);
+  for (let i = 0; i < 5; i++) {
+    if (!listoGratis(g)) return { fallo: 'dejó de estar disponible en la vuelta ' + i };
+    S.gratis[g.id] = Date.now(); S.sobres.push({ tipo: g.tipo });
+  }
+  const T = TIPOS_SOBRE.basico, tot = Object.values(T.pesos).reduce((a, b) => a + b, 0);
+  return { fallo: null, guardados: S.sobres.length, buenas: (T.pesos.oro + T.pesos.elite + T.pesos.leyenda) / tot };
+});
+comprobar(!ilim.fallo, 'el básico sigue disponible por muchas veces que se reclame');
+comprobar(ilim.guardados === 5, 'cada reclamo acumula un sobre');
+comprobar(ilim.buenas < 0.03, `el básico casi nunca da cartas buenas (${(ilim.buenas * 100).toFixed(1)}%)`);
+comprobar(await page.evaluate(() => nGratisListos() <= 2),
+  'el ilimitado no infla el aviso del menú');
+
+/* ── 2d. Amigos por código ────────────────────────────────────────────── */
+console.log('\n2d. Amigos por código');
+const cods = await page.evaluate(() => {
+  S.nombre = 'Diego'; S.amigos = [];
+  const mio = miCodigo();
+  // simula el código de otro jugador con una plantilla legal distinta.
+  // Ojo: hay peleadores con carta en dos divisiones, así que hay que evitar repetir persona.
+  const usados = new Set(), otra = [];
+  for (const d of DIVISIONES) {
+    const pool = ROSTER.filter(c => c.alineable && c.division === d.id && !usados.has(c.persona));
+    const c = pool[pool.length - 1];
+    usados.add(c.persona); otra.push(c.id);
+  }
+  return { mio, ajeno: codificar('JA1', { n: 'Ana', c: otra }) };
+});
+comprobar(/^JA1\./.test(cods.mio), 'tu plantilla genera un código');
+
+const pruebas = await page.evaluate(cs => {
+  const r = {};
+  r.roto = anadirAmigo(cs.ajeno.slice(0, -4));                 // truncado
+  r.basura = anadirAmigo('esto no es un codigo');
+  r.malaPlantilla = anadirAmigo(codificar('JA1', { n: 'X', c: ['c0', 'c1'] }));
+  r.bien = anadirAmigo(cs.ajeno);
+  r.repetido = anadirAmigo(cs.ajeno);
+  r.amigos = S.amigos.length;
+  return r;
+}, cods);
+comprobar(typeof pruebas.roto === 'string', 'un código truncado se rechaza con explicación');
+comprobar(typeof pruebas.basura === 'string', 'un texto cualquiera se rechaza');
+comprobar(typeof pruebas.malaPlantilla === 'string', 'una plantilla ilegal se rechaza');
+comprobar(!!pruebas.bien.aviso, 'un código válido añade al amigo');
+comprobar(pruebas.amigos === 1, 'volver a pegar el mismo código actualiza en vez de duplicar');
+
+// partida completa contra la plantilla del amigo
+await page.evaluate(() => { const a = S.amigos[0]; empezarPartida(a); });
+comprobar(await page.evaluate(() => P.rival === 'Ana' && !!P.amigoId),
+  'la partida se juega contra la plantilla del amigo');
+const mismaPlantilla = await page.evaluate(() => {
+  const a = S.amigos[0];
+  return a.cartas.every(id => P.cartas.r[PORID[id].division].id === id);
+});
+comprobar(mismaPlantilla, 'el rival alinea exactamente las cartas del código');
+
+const resu = await page.evaluate(() => {
+  const a = S.amigos[0];
+  const propio = codigoResultado(a, { j: 4, r: 2 }, true);   // el que TÚ le mandas a Ana
+  const ajeno = codificar('JAR', { n: 'Ana', v: 'Diego', m: [4, 1], g: 1 }); // el que Ana te manda
+  const antes = a.p;
+  const rMio = registrarResultado(propio);   // lleva tu nombre: no es de un amigo
+  const rAna = registrarResultado(ajeno);
+  return { propio, rMio, rAna, subio: S.amigos[0].g === 1, tocado: S.amigos[0].p !== antes };
+});
+comprobar(/^JAR\./.test(resu.propio), 'la victoria genera un código de resultado');
+comprobar(typeof resu.rMio === 'string', 'un resultado que no viene de un amigo se rechaza');
+comprobar(!!resu.rAna.aviso, 'el resultado que te manda un amigo se acepta');
+comprobar(resu.subio && !resu.tocado, 'la victoria del amigo suma en su columna, no en la tuya');
+
+await page.evaluate(() => { vista = 'inicio'; render(); });
 
 /* ── 3. Partidas completas ────────────────────────────────────────────── */
 console.log(`\n3. ${N_PARTIDAS} partidas completas`);

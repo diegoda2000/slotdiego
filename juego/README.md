@@ -40,10 +40,15 @@ márgenes con el 65/35 en los reñidos, victoria a 4 y desempate con stat al aza
 **Los recursos.** Una jugada por partida, compartida entre el cambio de división —con sus
 penalizaciones selectivas al subir y al bajar— y los cuatro rasgos con sus versiones plus.
 
-**Los sobres.** Tres sobres gratis **permanentes**, al estilo Pacybits/MadFUT: siempre están
-en la tienda, cada uno con su propio reloj —básico cada 3 min, plata cada 20, oro cada 2 h— y
-el de espera más corta es el de peor drop, como pide el GDD. Reclamarlos **no los abre**: se
-guardan, porque acumular veinte y reventarlos de golpe es justamente el momento que engancha.
+**Los sobres.** Tres sobres gratis **permanentes**, al estilo Pacybits/MadFUT. El **básico es
+ilimitado**, sin reloj, y por eso su drop es malísimo —2% de carta buena— : es la red de
+seguridad para que nadie se quede sin poder alinear, no una vía de progreso. Los otros dos van
+por reloj: plata cada 20 min, oro cada 2 h. Reclamarlos **no los abre**: se guardan, porque
+acumular veinte y reventarlos de golpe es justamente el momento que engancha.
+
+> Consecuencia a vigilar: con el básico ilimitado, la chatarra para reciclar es infinita, y las
+> fichas salen de reciclar. Eso devalúa la entrada a la sala de intercambio. Si la sala llega a
+> importar, la contención sería que las cartas de sobre básico no den fichas.
 
 La apertura es una pantalla propia con **botón de atrás y de saltar**, revelado carta a carta
 tocando en cualquier sitio, aviso destacado cuando sale una élite o una leyenda, y un resumen
@@ -54,11 +59,25 @@ perder nada: las cartas entran en la colección antes de revelarse.
 sets de colección por gimnasio, promotora y nacionalidad, retos que consumen cartas, y sala
 de intercambio de trueque puro.
 
+**Amigos por código.** Tu plantilla se convierte en un código de texto que mandas por donde
+quieras. Quien lo pega te añade y puede pelear contra tu plantilla **real** cuando quiera; el
+resultado vuelve como otro código que se pega para que el marcador entre vosotros cuadre. Sin
+servidor, sin cuentas, sin permisos y sin conexión.
+
+Los códigos llevan suma de verificación, y una plantilla que llegue de fuera se valida entera
+—11 divisiones, todas alineables, sin peleador repetido— antes de aceptarse. Un pegado a
+medias se rechaza explicando qué pasa, en vez de reventar a mitad de partida.
+
 ## Qué no está
 
-PvP online de verdad: el rival es una IA sencilla que declara donde tiene ventaja. Tampoco
-hay ligas, telemetría, arte, sonido ni monetización. La sala de intercambio empareja con un
-jugador simulado.
+**PvP en vivo.** Es la ausencia importante y conviene ser claro sobre por qué: las cartas están
+ocultas hasta que se resuelve el duelo, así que la plantilla del rival no puede vivir en tu
+móvil. Hacen falta un servidor autoritativo y cuentas, y eso es la Fase 5 del plan —el 22% del
+proyecto—. Lo de los amigos por código da partidas contra plantillas reales hoy, pero las
+decisiones del rival las toma la IA y el marcador va por confianza.
+
+Tampoco hay ligas ni competitivas, telemetría, arte, sonido ni monetización. La sala de
+intercambio empareja con un jugador simulado.
 
 ---
 
