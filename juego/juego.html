@@ -1135,46 +1135,66 @@ function vAmigos(){
     </div>
 
     <div class="card-panel">
-      <div class="sub"><b>Esto no es PvP en vivo.</b> Juegas contra la plantilla real de tu amigo,
-      pero sus decisiones las toma la IA, y el marcador se lleva por confianza: nada impide que
-      alguien no te mande el resultado que perdió. Para partidas en directo y con marcador fiable
-      hace falta un servidor, que es la Fase 5 del plan.</div>
+      <div class="sub"><b>Esto no es la partida en directo.</b> Juegas contra la plantilla real de
+      tu amigo, pero sus decisiones las toma la IA porque él no está delante, y el marcador va por
+      confianza. Sirve para picarse a cualquier hora y sin conexión.<br><br>
+      Para jugar <b>los dos a la vez</b>, cada uno decidiendo lo suyo, usa
+      <b>Partida en directo</b>: eso ya funciona.</div>
     </div>
     <button class="btn sec" data-nav="mas">Volver</button>`;
 }
 
 /* ── NOTAS ── */
 function vNotas(){
+  const srv=servidorURL();
   return `<h2>Notas del prototipo</h2>
+
+  <div class="card-panel" style="border-color:var(--ok)"><h3>🟢 Partidas en directo</h3><div class="sub">
+    <b>Funcionan.</b> Los dos jugáis a la vez, cada uno en su móvil, decidiendo lo vuestro:
+    vetos, declaraciones y jugada. <b>La IA no participa en nada</b> — ni siquiera el Veterano,
+    que es reactivo y se le pregunta al defensor en vez de saltar solo.<br><br>
+    Hay un servidor haciendo de árbitro, y su dirección viene puesta de fábrica: nadie tiene que
+    configurar nada. Solo manda las cartas del rival de las divisiones ya resueltas, así que la
+    plantilla contraria no está en tu móvil ni se puede leer.<br><br>
+    ${srv?`Servidor: <span style="font-family:ui-monospace,monospace;font-size:11px;word-break:break-all">${esc(srv)}</span>`
+      :'<b>Aún sin servidor configurado.</b> Es cosa de quien mantiene el juego, no tuya.'}
+  </div></div>
+
   <div class="card-panel"><h3>Qué está implementado</h3><div class="sub">
     Elección de rol con dado, vetos alternos visibles, veto aleatorio final, 6 divisiones en juego,
     declaraciones 3 y 3 con pool de stats compartido, tabla de márgenes con el 65/35, victoria a 4,
     desempate en la división del veto aleatorio con stat al azar, cambios de división con penalización
     selectiva, los cuatro rasgos con sus versiones plus, una sola jugada por partida, sobres que no
-    caducan, reciclaje con las tres ratios, sets, retos y sala de intercambio.
+    caducan, reciclaje con las tres ratios, sets, retos y sala de intercambio.<br><br>
+    Y tres formas de jugar: <b>contra la IA</b> para entrenar, <b>en directo</b> contra una persona
+    por código de sala, y <b>retar plantillas</b> de amigos sin conexión.
   </div></div>
+
   <div class="card-panel"><h3>Decisiones que el GDD no cerraba</h3><div class="sub">
     <b>Empate a 0 de margen:</b> moneda al aire. El GDD no lo contempla.<br><br>
     <b>Contigüidad:</b> dos escaleras independientes, sin puente entre géneros.<br><br>
-    <b>Incómodo:</b> la carta que envías pelea en la división declarada; si fallas, come la penalización
-    y las dos cartas intercambian slot, así cada peleador sigue peleando una sola vez.<br><br>
+    <b>Incómodo:</b> la carta que envías pelea en la división declarada; si fallas, come la
+    penalización <b>y sigue disponible para su propio duelo</b>, mientras que la carta de la
+    división declarada se descarta sin pelear. Un fallo, un castigo.<br><br>
     <b>Veterano:</b> se bloquea cuando quedan menos de 2 stats vivas, no "en el duelo 6" —
     con un Especialista en juego puede haber dos stats vivas en el sexto.<br><br>
     <b>Camaleón:</b> pelea dos veces. Es la excepción explícita a "cada peleador pelea una sola vez".<br><br>
     <b>Cartas no alineables:</b> llevan las 6 stats grandes pero no sub-stats.
   </div></div>
-  <div class="card-panel"><h3>Amigos por código</h3><div class="sub">
+
+  <div class="card-panel"><h3>Retar plantillas (lo asíncrono)</h3><div class="sub">
     Tu plantilla se convierte en un código de texto que mandas por donde quieras. Quien lo pega
-    puede pelear contra tu plantilla <b>real</b>, y el resultado vuelve como otro código.
-    Sin servidor, sin cuentas, sin permisos y sin conexión.<br><br>
-    Lo que <b>no</b> es: PvP en vivo. Las decisiones de tu amigo las toma la IA, y el marcador va
-    por confianza — nadie está obligado a mandarte el resultado que perdió. Partidas simultáneas
-    con marcador fiable exigen un servidor autoritativo, porque las cartas están ocultas y el
-    rival no puede vivir en tu propio móvil. Eso es la Fase 5 del plan.
+    puede pelear contra tu plantilla <b>real</b> cuando le venga bien, y el resultado vuelve como
+    otro código. Sin servidor y sin conexión.<br><br>
+    Esto <b>sí</b> lo juega la IA por tu amigo, porque él no está delante, y el marcador va por
+    confianza. Es un modo aparte: para jugar los dos a la vez está <b>Partida en directo</b>.
   </div></div>
+
   <div class="card-panel"><h3>Qué NO está</h3><div class="sub">
-    PvP online en vivo, competitivas y ligas, telemetría, arte, sonido y monetización.
-    El intercambio empareja con un jugador simulado, no con gente de verdad.
+    Cuentas y clasificación: la identidad es un identificador del propio móvil, así que vale para
+    jugar con amigos pero no para una liga competitiva. Tampoco hay emparejamiento con
+    desconocidos —solo salas por código—, ni ligas, telemetría, arte, sonido o monetización.
+    La sala de intercambio empareja con un jugador simulado.
   </div></div>
   <button class="btn sec" data-nav="mas">Volver</button>`;
 }
@@ -1495,8 +1515,8 @@ function aplicarVeteranoJugador(divId,stat){
 }
 
 // Resolución del Incómodo: la carta elegida pelea en la división declarada.
-// Si fallas, come la penalización y las dos cartas intercambian slot —
-// así cada peleador sigue peleando una sola vez y el calendario cuadra.
+// Si fallas come la penalización y sigue disponible para su propio duelo, mientras
+// que la carta de la división declarada se descarta: su único duelo acaba de jugarse.
 function resolverIncomodo(idx){
   const q=P.pendiente, elegida=q.opciones[idx];
   if(elegida===q.divId){
