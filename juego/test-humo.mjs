@@ -82,20 +82,56 @@ console.log('\n2. Sobres');
 const sobres = await page.evaluate(() => {
   const antes = S.coleccion.length;
   const salida = abrirSobre('oro');
+  const porTipo = {};
+  for (const t of Object.keys(TIPOS_SOBRE)) {
+    const r = abrirSobre(t);
+    porTipo[t] = { n: r.length, al: r.filter(i => PORID[i.cid].alineable).length };
+  }
   return { antes, despues: S.coleccion.length, sacadas: salida.length,
-           alineables: salida.filter(i => PORID[i.cid].alineable).length };
+           alineables: salida.filter(i => PORID[i.cid].alineable).length, porTipo };
 });
-comprobar(sobres.despues === sobres.antes + sobres.sacadas, 'las cartas del sobre entran en la colección');
-comprobar(sobres.alineables >= 4, 'el sobre respeta los huecos alineables garantizados');
+comprobar(sobres.despues === sobres.antes + sobres.sacadas + 4 * 9, 'las cartas del sobre entran en la colección');
+comprobar(Object.values(sobres.porTipo).every(x => x.n === 9),
+  'los cuatro sobres reparten 9 cartas: ' + Object.entries(sobres.porTipo).map(([t, x]) => `${t} ${x.n}`).join(' · '));
+comprobar(Object.values(sobres.porTipo).every(x => x.al === 7),
+  'y 7 alineables garantizadas en todos');
 
 // Los gratis: siempre presentes, se reclaman y se acumulan sin abrirse
 await page.evaluate(() => { S.gratis = {}; S.sobres = []; ir('sobres'); });
 comprobar(await page.locator('[data-reloj]').count() === 3,
   'los 3 sobres gratis están siempre en la tienda');
 comprobar(await page.locator('[data-reloj]:not([disabled])').count() === 3,
-  'arrancan los 3 reclamables');
+  'arrancan los 3 disponibles');
+
+// el básico se abre en el sitio, sin pasar por "Tus sobres"
+await page.evaluate(() => { S.gratis = {}; S.sobres = []; ir('sobres'); });
+const idBasico = await page.evaluate(() => GRATIS.find(g => TIPOS_SOBRE[g.tipo].unico).id);
+comprobar(await page.locator(`[data-a="abrirgratis"][data-g="${idBasico}"]`).count() === 1,
+  'el básico tiene botón de abrir, no de reclamar');
+comprobar(await page.locator(`[data-a="gratis"][data-g="${idBasico}"]`).count() === 0,
+  'y ya no se puede reclamar para guardarlo');
+comprobar(await page.locator('[data-n]').count() === 0, 'ya no existe el "reclamar 10 de golpe"');
+await page.locator(`[data-a="abrirgratis"][data-g="${idBasico}"]`).click();
+const directo = await page.evaluate(() => ({ vista, guardados: S.sobres.length,
+  enTanda: tmp.ap ? tmp.ap.items.length : 0 }));
+comprobar(directo.vista === 'apertura', 'abrir el básico lleva directo a la apertura');
+comprobar(directo.guardados === 0, 'y el sobre no pasa por "Tus sobres"');
+comprobar(directo.enTanda === 9, 'con sus 9 cartas');
+
+// ni siquiera con restos de una versión anterior se puede abrir más de uno a la vez
+await page.evaluate(() => { S.sobres = [{ tipo: 'basico' }, { tipo: 'basico' }, { tipo: 'basico' }]; ir('sobres'); });
+comprobar(await page.locator('[data-a="abrirtodo"][data-t="basico"]').count() === 0,
+  'el básico nunca ofrece abrir en tanda, ni con varios guardados');
+await page.evaluate(() => { S.sobres = [{ tipo: 'oro' }, { tipo: 'oro' }]; render(); });
+comprobar(await page.locator('[data-a="abrirtodo"][data-t="oro"]').count() === 1,
+  'los de reloj y de pago sí se abren en tanda');
+
+// ningún premio del juego regala algo que ya es gratis e infinito
+const premios = await page.evaluate(() => RETOS.map(r => r.premio.sobre));
+comprobar(!premios.includes('basico'), 'ningún reto premia con un sobre básico');
 
 // se reclama uno CON reloj, para comprobar que pasa a cuenta atrás
+await page.evaluate(() => { S.gratis = {}; S.sobres = []; ir('sobres'); });
 const conReloj = await page.evaluate(() => GRATIS.findIndex(g => g.espera > 0));
 await page.locator('[data-reloj]').nth(conReloj).click();
 const trasReclamar = await page.evaluate(() => ({
@@ -139,14 +175,16 @@ console.log('\n2c. Sobre básico ilimitado');
 const ilim = await page.evaluate(() => {
   S.gratis = {}; S.sobres = []; ir('sobres');
   const g = GRATIS.find(x => x.espera === 0);
+  let cartas = 0;
   for (let i = 0; i < 5; i++) {
     if (!listoGratis(g)) return { fallo: 'dejó de estar disponible en la vuelta ' + i };
-    S.gratis[g.id] = Date.now(); S.sobres.push({ tipo: g.tipo });
+    cartas += abrirSobre(g.tipo).length;
   }
-  return { fallo: null, guardados: S.sobres.length };
+  return { fallo: null, cartas, guardados: S.sobres.length };
 });
-comprobar(!ilim.fallo, 'el básico sigue disponible por muchas veces que se reclame');
-comprobar(ilim.guardados === 5, 'cada reclamo acumula un sobre');
+comprobar(!ilim.fallo, 'el básico sigue disponible por muchas veces que se abra');
+comprobar(ilim.cartas === 45, 'cinco aperturas seguidas dan 45 cartas');
+comprobar(ilim.guardados === 0, 'y ninguna se queda guardada sin abrir');
 comprobar(await page.evaluate(() => nGratisListos() <= 2),
   'el ilimitado no infla el aviso del menú');
 

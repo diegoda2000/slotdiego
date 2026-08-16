@@ -216,18 +216,24 @@ const BANDA_IDS=BANDAS.map(b=>b.id);
 const BANDAS_TOP=['oroAlto','elite','leyenda'];
 const bandaDe=c=>(BANDAS.find(b=>b.cumple(c))||BANDAS[0]).id;
 
+// Todos los sobres reparten lo mismo: 9 cartas, 7 alineables garantizadas y 2 huecos
+// de colección de regalo. Lo que distingue a un sobre de otro es solo la CALIDAD, no
+// la cantidad — más fácil de entender y de equilibrar.
+const CARTAS_POR_SOBRE=9, ALINEABLES_POR_SOBRE=7;
 const TIPOS_SOBRE={
-  // Ilimitado: da platas y oros bajos a menudo —es el suelo del que nadie baja— pero
-  // oro alto o mejor suma 0,8%, así que no es una vía para llegar arriba.
-  basico:{n:'Sobre básico', ic:'📦', coste:0,   cartas:3, alineables:2,
+  // Ilimitado y de apertura directa: da platas y oros bajos a menudo —es el suelo del
+  // que nadie baja— pero oro alto o mejor suma 0,8%, así que no es vía para llegar arriba.
+  // 'unico' significa que no se guarda ni se abre en tanda: uno cada vez.
+  basico:{n:'Sobre básico', ic:'📦', coste:0,   unico:true,
     pesos:{bronce:13, plata:45, oroBajo:40, oroMedio:1.2, oroAlto:0.6, elite:0.18, leyenda:0.02}},
-  plata :{n:'Sobre de plata',ic:'🎁', coste:250, cartas:4, alineables:3,
+  plata :{n:'Sobre de plata',ic:'🎁', coste:250,
     pesos:{bronce:2,  plata:30, oroBajo:40, oroMedio:20,  oroAlto:6,   elite:1.8,  leyenda:0.2}},
-  oro   :{n:'Sobre de oro',  ic:'🥇', coste:600, cartas:5, alineables:4,
+  oro   :{n:'Sobre de oro',  ic:'🥇', coste:600,
     pesos:{bronce:0,  plata:12, oroBajo:30, oroMedio:30,  oroAlto:20,  elite:7,    leyenda:1}},
-  elite :{n:'Sobre de élite',ic:'💎', coste:2200,cartas:5, alineables:4,
+  elite :{n:'Sobre de élite',ic:'💎', coste:2200,
     pesos:{bronce:0,  plata:0,  oroBajo:12, oroMedio:25,  oroAlto:38,  elite:22,   leyenda:3}},
 };
+for(const t of Object.values(TIPOS_SOBRE)){ t.cartas=CARTAS_POR_SOBRE; t.alineables=ALINEABLES_POR_SOBRE; }
 
 // Sobres gratis permanentes, estilo Pacybits/MadFUT: siempre están en la tienda,
 // cada uno con su propio reloj. Al reclamarlos NO se abren — se guardan, porque
@@ -315,7 +321,7 @@ const setListo=s=>s.req.every(cid=>copias(cid)>0);
 const RETOS=[
   {id:'r1',n:'Cantera',   d:'Entrega 3 cartas de bronce de divisiones distintas',
    check:l=>l.length===3&&l.every(c=>c.rareza==='bronce')&&new Set(l.map(c=>c.division)).size===3,
-   premio:{sobre:'basico',divisa:120}},
+   premio:{sobre:'plata',divisa:120}},
   {id:'r2',n:'Base sólida',d:'Entrega 3 platas de divisiones distintas',
    check:l=>l.length===3&&l.every(c=>c.rareza==='plata')&&new Set(l.map(c=>c.division)).size===3,
    premio:{sobre:'oro',divisa:0}},
@@ -635,21 +641,20 @@ function vSobres(){
 
     <h3>🎁 Gratis</h3>
     ${GRATIS.map(g=>{
-      const T=TIPOS_SOBRE[g.tipo], ok=listoGratis(g), ilim=g.espera===0;
+      const T=TIPOS_SOBRE[g.tipo], ok=listoGratis(g), directo=!!T.unico;
       return `<div class="card-panel" style="${ok?'border-color:var(--acc)':''}">
         <div class="row" style="align-items:center">
           <div style="flex:none;font-size:26px">${T.ic}</div>
           <div style="flex:2"><b>${T.n}</b>
-            ${ilim?'<span class="chip on" style="margin-left:5px">ILIMITADO</span>':''}
+            ${directo?'<span class="chip on" style="margin-left:5px">ILIMITADO</span>':''}
             <div class="tiny">${T.cartas} cartas · ${T.alineables} alineables garantizadas</div>
             <div class="tiny">${probs(T)}</div>
             <div class="tiny" style="color:var(--warn)">Oro alto o mejor: ${pctTop(T)}%</div></div>
-          <button class="btn sm" data-a="gratis" data-g="${g.id}"
+          <button class="btn sm" data-a="${directo?'abrirgratis':'gratis'}" data-g="${g.id}"
             data-reloj="${g.id}" ${ok?'':'disabled'} style="flex:none;min-width:92px">
-            ${ok?'Reclamar':reloj(restaGratis(g))}</button>
+            ${ok?(directo?'Abrir':'Reclamar'):reloj(restaGratis(g))}</button>
         </div>
-        ${ilim?`<button class="btn gho sm" data-a="gratis" data-g="${g.id}" data-n="10"
-          style="width:100%;margin-top:7px">Reclamar 10 de golpe</button>`:''}
+        ${directo?'<div class="tiny" style="margin-top:6px">Se abre al momento, de uno en uno.</div>':''}
       </div>`;
     }).join('')}
 
@@ -660,7 +665,7 @@ function vSobres(){
         <div style="flex:none;font-size:22px">${TIPOS_SOBRE[t].ic}</div>
         <div style="flex:2"><b>${TIPOS_SOBRE[t].n}</b> <span class="chip">×${pend[t]}</span></div>
         <button class="btn sm" data-a="abrir" data-t="${t}" style="flex:none">Abrir</button>
-        ${pend[t]>1?`<button class="btn sm sec" data-a="abrirtodo" data-t="${t}" style="flex:none">Abrir ${pend[t]}</button>`:''}
+        ${(pend[t]>1&&!TIPOS_SOBRE[t].unico)?`<button class="btn sm sec" data-a="abrirtodo" data-t="${t}" style="flex:none">Abrir ${pend[t]}</button>`:''}
       </div>`).join('')
       :'<div class="sub">No tienes sobres guardados. Reclama los gratis de arriba.</div>'}
     </div>
@@ -732,7 +737,9 @@ function vApertura(){
         return `<div>${cartaHTML(c,{attr:`data-carta="${it.iid}"`})}
           <div class="tiny center" style="margin-top:3px">${a.nuevas.includes(it.iid)?'<span class="chip on">nueva</span>':'repetida'}</div></div>`;
       }).join('')}</div>
-      ${S.sobres.some(s=>s.tipo===a.tipo)
+      ${TIPOS_SOBRE[a.tipo].unico
+        ? `<button class="btn mb" data-a="abrirgratis" data-g="${(GRATIS.find(g=>g.tipo===a.tipo)||{}).id||''}">Abrir otro ${TIPOS_SOBRE[a.tipo].n}</button>`
+        : S.sobres.some(s=>s.tipo===a.tipo)
         ? `<button class="btn mb" data-a="abrir" data-t="${a.tipo}">Abrir otro ${TIPOS_SOBRE[a.tipo].n}</button>` : ''}
       <button class="btn sec mb" data-nav="sobres">Volver a los sobres</button>
       <button class="btn gho" data-nav="coleccion">Ver la colección</button>`;
@@ -1336,7 +1343,7 @@ function pFin(){
   if(!tmp.cobrado){
     tmp.cobrado=true; S.partidas++; if(gane)S.victorias++;
     S.divisa+=prem;
-    if(gane&&Math.random()<.5) S.sobres.push({tipo:'basico'});
+    if(gane&&Math.random()<.5) S.sobres.push({tipo:'plata'});   // el básico es gratis e infinito: no es premio
     if(amigo){ if(gane) amigo.p++; else amigo.g++; }
     guardar();
   }
@@ -1670,9 +1677,13 @@ document.addEventListener('click',e=>{
     case 'gratis':{
       const g=GRATIS.find(x=>x.id===d.g); if(!g||!listoGratis(g)) break;
       if(g.espera>0) S.gratis[g.id]=Date.now();
-      const n=Math.max(1,Math.min(50,+(d.n||1)));
-      for(let i=0;i<n;i++) S.sobres.push({tipo:g.tipo});  // se guardan, no se abren
+      S.sobres.push({tipo:g.tipo});   // se guarda, no se abre: acumular es la gracia
       guardar(); render(); break; }
+    case 'abrirgratis':{
+      // El básico no se guarda: se abre en el sitio y de uno en uno.
+      const g=GRATIS.find(x=>x.id===d.g); if(!g||!listoGratis(g)) break;
+      if(g.espera>0) S.gratis[g.id]=Date.now();
+      abrirTanda(abrirSobre(g.tipo),g.tipo); break; }
     case 'comprar':{
       const T=TIPOS_SOBRE[d.t]; if(S.divisa<T.coste) break;
       S.divisa-=T.coste; S.sobres.push({tipo:d.t}); guardar(); render(); break; }

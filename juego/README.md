@@ -40,24 +40,34 @@ márgenes con el 65/35 en los reñidos, victoria a 4 y desempate con stat al aza
 **Los recursos.** Una jugada por partida, compartida entre el cambio de división —con sus
 penalizaciones selectivas al subir y al bajar— y los cuatro rasgos con sus versiones plus.
 
-**Los sobres.** Tres sobres gratis **permanentes**, al estilo Pacybits/MadFUT. El **básico es
-ilimitado**, sin reloj: da sobre todo **platas y oros bajos**, con algún bronce de vez en
-cuando, y **oro alto o mejor solo el 0,8%**. Es el suelo del que nadie baja, no una vía para
-llegar arriba. Los otros dos van por reloj: plata cada 20 min, oro cada 2 h.
+**Los sobres.** Todos reparten **9 cartas**, 7 alineables garantizadas y 2 de colección de
+regalo: lo que distingue a un sobre de otro es la **calidad**, no la cantidad.
+
+Tres sobres gratis **permanentes**, al estilo Pacybits/MadFUT. El **básico es ilimitado y se
+abre en el sitio**, de uno en uno, sin guardarlo: da sobre todo **platas y oros bajos**, con
+algún bronce de vez en cuando, y **oro alto o mejor solo el 0,8%**. Es el suelo del que nadie
+baja, no una vía para llegar arriba. Los otros dos van por reloj —plata cada 20 min, oro cada
+2 h—, se reclaman, se acumulan y se pueden abrir en tanda.
 
 El sorteo no va por rareza sino por **bandas de calidad**, que parten el oro por su media
 (bajo 75-80, medio 81-84, alto 85-88). Sin eso no se puede dar oros a menudo sin dar oros
 buenos, que es justo lo que distingue un sobre gratis de uno de pago. Cada sobre enseña en la
 tienda su porcentaje de "oro alto o mejor", que es el dato que de verdad importa.
 
-Reclamarlos **no los abre**: se guardan, porque acumular veinte y reventarlos de golpe es
-justamente el momento que engancha.
+Reclamar los de reloj **no los abre**: se guardan, porque acumular veinte y reventarlos de
+golpe es justamente el momento que engancha. Para el ilimitado ese paso sobraba —guardar algo
+que puedes conseguir otra vez en dos segundos es fricción sin premio—, así que se abre directo.
 
-> Dos consecuencias a vigilar. La primera: con el básico ilimitado la chatarra para reciclar es
-> infinita, y las fichas salen de reciclar, así que la entrada a la sala de intercambio se
-> devalúa; la contención sería que las cartas de sobre básico no den fichas. La segunda: el
-> suelo de plantilla sube a ~78 para todo el mundo, y eso hay que medirlo con la métrica
-> "85 contra 78" del plan — si una plantilla de 85 gana más del 85%, la colección aplasta.
+Como el básico es gratis e infinito, **ningún premio del juego da sobres básicos**: ni ganar
+una partida ni superar un reto. Dan sobres de plata.
+
+> Consecuencia a vigilar, y no es pequeña: **9 cartas por toque, sin límite ni espera, es un
+> grifo abierto**. En un minuto se sacan cientos de cartas, cualquiera tiene enseguida la mejor
+> plantilla posible de oros bajos, y la chatarra para reciclar —y por tanto las fichas— es
+> infinita. Está así porque se pidió así. Si molesta, las palancas por orden de menor intrusión
+> son: menos cartas en el básico, una espera corta, o que sus cartas no den fichas al reciclar.
+> Y conviene medir el suelo de ~78 con la métrica "85 contra 78" del plan: si una plantilla de
+> 85 gana más del 85%, la colección aplasta.
 
 La apertura es una pantalla propia con **botón de atrás y de saltar**, revelado carta a carta
 tocando en cualquier sitio, aviso destacado cuando sale una élite o una leyenda, y un resumen
