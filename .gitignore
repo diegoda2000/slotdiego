@@ -10,3 +10,6 @@ run.log
 # Cache de Python
 __pycache__/
 *.pyc
+
+# Salida del scraper de rankings (se regenera ejecutando el script)
+rankings.json
