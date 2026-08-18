@@ -16,14 +16,59 @@ Opciones:
 Se puede parar con Ctrl+C y relanzar: continua donde lo dejo.
 """
 
-import requests, time, json, re, string, os, sys, argparse
+import requests, time, json, re, string, os, sys, argparse, glob
 from bs4 import BeautifulSoup
 
 BASE = "http://ufcstats.com"
-HEAD = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
+UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+      "(KHTML, like Gecko) Chrome/120.0 Safari/537.36")
+HEAD = {"User-Agent": UA}
 PAUSA = 0.4                      # no bajar de 0.3
 SALIDA = "ufcstats_data.json"
 PROGRESO = "ufcstats_progreso.json"
+
+# UFCStats sirve un intersticial con un reto JavaScript en vez de la pagina.
+# Lo resuelve un Chromium real ejecutando el script del propio sitio, igual
+# que haria el navegador de cualquier visitante; luego se reutiliza la cookie
+# de sesion que deja, como hace el navegador con sus siguientes peticiones.
+MURO = "Checking your browser"
+SESION = requests.Session()
+SESION.headers.update(HEAD)
+
+
+def chromium():
+    """Ruta al Chromium ya instalado (no descarga nada)."""
+    for patron in ("/opt/pw-browsers/chromium-*/chrome-linux/chrome",
+                   "/opt/pw-browsers/chromium_headless_shell-*/chrome-linux/headless_shell"):
+        encontrados = sorted(glob.glob(patron))
+        if encontrados:
+            return encontrados[-1]
+    return None
+
+
+def resolver_reto(espera=40):
+    """Abre el navegador, deja que resuelva el reto y guarda la cookie."""
+    from playwright.sync_api import sync_playwright
+    ruta = chromium()
+    print("    resolviendo el reto de acceso con Chromium...", file=sys.stderr)
+    with sync_playwright() as p:
+        nav = p.chromium.launch(headless=True, executable_path=ruta,
+                                args=["--no-sandbox"])
+        ctx = nav.new_context(user_agent=UA)
+        pag = ctx.new_page()
+        pag.goto(f"{BASE}/statistics/events/completed",
+                 timeout=60000, wait_until="domcontentloaded")
+        for _ in range(espera):
+            if MURO not in pag.content():
+                break
+            time.sleep(1)
+        galletas = {c["name"]: c["value"] for c in ctx.cookies()}
+        nav.close()
+    for k, v in galletas.items():
+        SESION.cookies.set(k, v)
+    if not galletas:
+        print("    el navegador no obtuvo cookie de sesion", file=sys.stderr)
+    return galletas
 
 # Iconos que UFCStats pone en las filas del historial.
 # Clave = fichero en /static/images/, valor = como lo guardamos.
@@ -41,8 +86,13 @@ def sopa(url, reintentos=3):
     ultimo = None
     for i in range(reintentos):
         try:
-            r = requests.get(url, headers=HEAD, timeout=25)
+            r = SESION.get(url, timeout=25)
             if r.status_code == 200:
+                if MURO in r.text:
+                    # La cookie ha caducado: volver a pasar por el navegador.
+                    ultimo = "muro de acceso"
+                    resolver_reto()
+                    continue
                 return BeautifulSoup(r.text, "html.parser")
             ultimo = f"HTTP {r.status_code}"
             if r.status_code in (403, 407):
@@ -117,6 +167,11 @@ def enlace_pelea(fila):
     return None
 
 
+ALIAS = {"Str. Def": "Str. Def.", "Str. Acc": "Str. Acc.",
+         "TD Def": "TD Def.", "TD Acc": "TD Acc.",
+         "TD Avg": "TD Avg.", "Sub. Avg": "Sub. Avg."}
+
+
 def ficha(url):
     s = sopa(url)
     if not s:
@@ -149,7 +204,10 @@ def ficha(url):
         v = li.get_text(" ", strip=True)
         v = v.replace(i.get_text(strip=True), "", 1).strip()
         if k:
-            bruto[k] = v if v else None
+            # UFCStats escribe unas etiquetas con punto final y otras sin el
+            # ("Str. Def" frente a "TD Def."). Solo se unifica el nombre de la
+            # etiqueta; el valor se guarda tal cual viene.
+            bruto[ALIAS.get(k, k)] = v if v else None
     d["ficha"] = bruto
 
     # Historial de combates UFC
@@ -238,6 +296,9 @@ def main():
     if os.path.exists(PROGRESO):
         with open(PROGRESO, encoding="utf-8") as fh:
             hechos = json.load(fh)
+
+    print("0/2 Abriendo sesion con UFCStats...")
+    resolver_reto()
 
     print("1/2 Leyendo el indice...")
     lista = indice(args.letras)
