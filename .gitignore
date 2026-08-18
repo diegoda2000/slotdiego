@@ -1,0 +1,12 @@
+# Salida del extractor (se regenera ejecutando el script)
+ufcstats_data.json
+ufcstats_progreso.json
+ufcstats_progreso.json.tmp
+ufcstats_data.json.tmp
+
+# Log de ejecucion
+run.log
+
+# Cache de Python
+__pycache__/
+*.pyc
