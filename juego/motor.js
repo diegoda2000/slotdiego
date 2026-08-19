@@ -85,9 +85,20 @@ const EST = Object.fromEntries(ESTATUS.map(e=>[e.id,e]));
 /* Lo que se pinta arriba a la izquierda de la carta. Con el ranking real en la mano se
    enseña el puesto exacto —#6 dice mucho más que "top 6-10"— y la corona para el campeón. */
 function etiquetaEstatus(c){
-  if(c.rk===0) return '🏆';
+  // Texto y no emoji: un 🏆 a este tamaño no se lee, y cada sistema lo dibuja distinto.
+  if(c.rk===0) return '#C';
   if(c.rk) return '#'+c.rk;
   return '';
+}
+
+/* Cuánto puede medir el nombre para llenar la placa sin salirse.
+
+   La placa deja unos 45 puntos de ancho de carta por dentro, y Oswald gasta algo menos
+   de medio punto por letra. Con eso sale el tamaño que llena el hueco, y se le pone un
+   techo para que "Bo Nickal" no acabe con letras de cartel de feria. */
+function tamNombre(nombre){
+  const largo=Math.max(nombre.length,6);
+  return Math.min(5.1, 45/(largo*0.47)).toFixed(2);
 }
 const ORDEN_ESTATUS = ESTATUS.map(e=>e.id);
 
@@ -383,7 +394,41 @@ function resolverDesempate(P){
   P.fase='fin'; P.fin=ganador;
 }
 
-const MOTOR={especialistaDisponible, etiquetaEstatus, veteranoDisponible, ultimoDuelo, defendiendo, ESTATUS, EST, ORDEN_ESTATUS, TRAMOS, tramoDe, ordenar, comparar, sortearDuelo, REÑIDO, DIVISIONES, DIV, contiguas, vecinas, STATS, SID, SUBSTATS, RAREZAS, ORDEN_RAREZA, RASGOS, mulberry32, RNG, ri, pick, shuffle, clamp, ROSTER, generarRoster, alineables, rasgoTxt, MARGENES, nuevaPartida, terminarVetos, librePara, valorCarta, aplicarPenalizacion, penaliza, enviarAlDuelo, cambiosPosibles, hacerCambio, rasgoDe, camaleonesPosibles, resolverDuelo, resolverDesempate};
+
+/* ── BANDERAS Y SIGLAS DE PESO ──
+   La bandera se compone con los dos indicadores regionales del código de país, que es
+   como funcionan las banderas en Unicode. Inglaterra y Escocia no son países en ISO,
+   así que llevan sus banderas de subdivisión, que sí existen. */
+const PAIS_ISO = {
+  'Afganistán':'AF','Alemania':'DE','Angola':'AO','Argentina':'AR','Armenia':'AM',
+  'Australia':'AU','Austria':'AT','Azerbaiyán':'AZ','Baréin':'BH','Birmania':'MM',
+  'Brasil':'BR','Bélgica':'BE','Canadá':'CA','Chequia':'CZ','China':'CN','Croacia':'HR',
+  'Ecuador':'EC','Emiratos Árabes Unidos':'AE','Eslovaquia':'SK','España':'ES',
+  'Estados Unidos':'US','Francia':'FR','Georgia':'GE','Irak':'IQ','Irlanda':'IE',
+  'Italia':'IT','Jamaica':'JM','Japón':'JP','Kazajistán':'KZ','Kirguistán':'KG',
+  'Lituania':'LT','Marruecos':'MA','Moldavia':'MD','México':'MX','Nigeria':'NG',
+  'Nueva Zelanda':'NZ','Panamá':'PA','Países Bajos':'NL','Perú':'PE','Polonia':'PL',
+  'Portugal':'PT','Rep. Dominicana':'DO','Rumanía':'RO','Rusia':'RU','Serbia':'RS',
+  'Sudáfrica':'ZA','Suecia':'SE','Suiza':'CH','Tailandia':'TH','Turquía':'TR',
+  'Ucrania':'UA','Uganda':'UG','Uzbekistán':'UZ','Venezuela':'VE','Zimbabue':'ZW',
+};
+// Las dos que no tienen código ISO propio: van con su bandera de subdivisión.
+const PAIS_SUELTO = { 'Inglaterra':'gb-eng', 'Escocia':'gb-sct' };
+/* Devuelve el archivo de la bandera. Son imágenes y no emojis a propósito: el emoji de
+   bandera lo dibuja cada sistema a su manera —y Windows directamente no lo dibuja, pone
+   las dos letras— así que la misma carta se vería distinta en cada móvil. */
+function banderaSrc(pais){
+  const cod=PAIS_SUELTO[pais]||(PAIS_ISO[pais]||'').toLowerCase();
+  return cod?('banderas/'+cod+'.webp'):'';
+}
+
+/* Sigla de la división, al estilo de las tarjetas de la UFC. */
+const SIGLA_DIV = {
+  m7:'HW', m6:'LHW', m5:'MW', m4:'WW', m3:'LW', m2:'FW', m1:'BW', m0:'FLW',
+  f2:'WBW', f1:'WFLW', f0:'WSW',
+};
+
+const MOTOR={especialistaDisponible, tamNombre, banderaSrc, PAIS_ISO, SIGLA_DIV, etiquetaEstatus, veteranoDisponible, ultimoDuelo, defendiendo, ESTATUS, EST, ORDEN_ESTATUS, TRAMOS, tramoDe, ordenar, comparar, sortearDuelo, REÑIDO, DIVISIONES, DIV, contiguas, vecinas, STATS, SID, SUBSTATS, RAREZAS, ORDEN_RAREZA, RASGOS, mulberry32, RNG, ri, pick, shuffle, clamp, ROSTER, generarRoster, alineables, rasgoTxt, MARGENES, nuevaPartida, terminarVetos, librePara, valorCarta, aplicarPenalizacion, penaliza, enviarAlDuelo, cambiosPosibles, hacerCambio, rasgoDe, camaleonesPosibles, resolverDuelo, resolverDesempate};
 raiz.MOTOR=MOTOR;
 // También sueltas en el global: el juego las usa por su nombre, sin prefijo.
 for(const k of Object.keys(MOTOR)) if(!(k in raiz)) raiz[k]=MOTOR[k];

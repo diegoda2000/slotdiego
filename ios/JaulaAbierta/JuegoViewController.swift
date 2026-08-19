@@ -78,7 +78,9 @@ final class ManejadorDeAssets: NSObject, WKURLSchemeHandler {
                                 "js": "text/javascript; charset=utf-8",
                                 "css": "text/css; charset=utf-8",
                                 "json": "application/json",
-                                "png": "image/png", "svg": "image/svg+xml"]
+                                "png": "image/png", "svg": "image/svg+xml",
+                                "webp": "image/webp", "jpg": "image/jpeg", "jpeg": "image/jpeg",
+                                "woff2": "font/woff2", "woff": "font/woff"]
 
     func webView(_ w: WKWebView, start tarea: WKURLSchemeTask) {
         guard let url = tarea.request.url else { return fallar(tarea) }

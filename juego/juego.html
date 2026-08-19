@@ -5,7 +5,17 @@
    PROTOTIPO JUGABLE — juego de cartas de MMA
    Cartas y peleadores 100% inventados.
    ═══════════════════════════════════════════════════════════════ */
+/* Oswald: condensada y de peso alto, que es por dónde va la tipografía de la UFC.
+   Va dentro de la aplicación, no de un servidor de fuentes: el juego tiene que verse
+   igual sin conexión y dentro del APK. 40 KB los dos subconjuntos. */
+@font-face{font-family:Oswald;src:url(fuentes/oswald-latin.woff2) format('woff2');
+  font-weight:200 700;font-display:swap;
+  unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+2122,U+2212}
+@font-face{font-family:Oswald;src:url(fuentes/oswald-latin-ext.woff2) format('woff2');
+  font-weight:200 700;font-display:swap;
+  unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+1E00-1E9F,U+2C60-2C7F,U+A720-A7FF}
 :root{
+  --titulo:Oswald,"Roboto Condensed","Avenir Next Condensed","Arial Narrow",system-ui,sans-serif;
   --bg:#0d1014; --bg2:#141920; --bg3:#1c232c; --line:#2a323d;
   --txt:#e8edf3; --dim:#8b97a6; --dim2:#5d6874;
   --acc:#e0483a; --acc2:#ff6b5b; --ok:#3fb96b; --warn:#e8b13a;
@@ -15,13 +25,13 @@
 body{background:var(--bg);color:var(--txt);font:15px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif;
   overscroll-behavior:none;padding-bottom:64px}
 #app{max-width:760px;margin:0 auto;padding:12px 12px 20px}
-h1,h2,h3{font-weight:700;letter-spacing:-.02em}
+h1,h2,h3{font-family:var(--titulo);font-weight:600;letter-spacing:.005em;text-transform:uppercase}
 h2{font-size:19px;margin-bottom:2px}
 h3{font-size:15px;margin-bottom:8px}
 .sub{color:var(--dim);font-size:13px}
 .tiny{font-size:12px;color:var(--dim2)}
 button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
-.btn{background:var(--acc);color:#fff;border-radius:9px;padding:11px 16px;font-weight:650;font-size:14px;
+.btn{font-family:var(--titulo);letter-spacing:.03em;background:var(--acc);color:#fff;border-radius:9px;padding:11px 16px;font-weight:650;font-size:14px;
   display:inline-flex;align-items:center;justify-content:center;gap:7px;transition:.12s;width:100%}
 .btn:active{transform:scale(.975)}
 .btn:disabled{opacity:.32;cursor:default;transform:none}
@@ -43,56 +53,111 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 /* ── navegación ── */
 #nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:var(--bg2);
   border-top:1px solid var(--line);z-index:50;padding-bottom:env(safe-area-inset-bottom)}
-#nav button{flex:1;padding:9px 2px 10px;font-size:10.5px;color:var(--dim2);
+#nav button{font-family:var(--titulo);letter-spacing:.03em;flex:1;padding:9px 2px 10px;font-size:10.5px;color:var(--dim2);
   display:flex;flex-direction:column;align-items:center;gap:3px;font-weight:600}
 #nav button .ic{font-size:19px;line-height:1}
 #nav button.on{color:var(--acc2)}
 #nav .badge{position:absolute;transform:translate(15px,-4px);background:var(--acc);color:#fff;
   border-radius:9px;font-size:9px;padding:1px 5px;font-weight:700}
 
-/* ── CARTA ── */
-.carta{position:relative;background:linear-gradient(160deg,var(--c1),var(--c2));border-radius:11px;
-  padding:8px;color:#fff;overflow:hidden;border:1px solid rgba(255,255,255,.13);cursor:pointer;
-  display:flex;flex-direction:column;min-height:150px}
-.carta.plata{--c1:#5c6773;--c2:#333b45}
-.carta.oro{--c1:#8a6520;--c2:#4a3712}
-/* Campeón y top 5 no cambian de calidad —siguen siendo oro— pero se distinguen a
-   simple vista: es la informacion que ordena toda la coleccion. */
-.carta.top5{--c1:#a37820;--c2:#5a4110;border-color:rgba(255,215,106,.5)}
-.carta.campeon{--c1:#c08f22;--c2:#6b4d0f;border-color:var(--corona);
-  box-shadow:0 0 0 1px rgba(255,215,106,.35),0 4px 16px rgba(255,215,106,.18)}
-.carta::after{content:"";position:absolute;inset:0;background:
-  radial-gradient(circle at 78% 8%,rgba(255,255,255,.16),transparent 46%);pointer-events:none}
-.carta .hd{display:flex;align-items:flex-start;gap:6px}
-.carta .est{font-size:19px;font-weight:800;line-height:.95;letter-spacing:-.03em;
-  min-height:19px;text-shadow:0 1px 2px rgba(0,0,0,.4)}
-.carta .div{font-size:8.5px;text-transform:uppercase;letter-spacing:.07em;opacity:.82;font-weight:700}
-.carta .av{margin-left:auto;width:38px;height:38px;border-radius:50%;background:rgba(0,0,0,.28);
-  display:grid;place-items:center;font-size:19px;flex:none}
-.carta .nm{font-weight:750;font-size:12.5px;margin-top:6px;line-height:1.15;
-  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.carta .ap{font-size:9.5px;opacity:.72;font-style:italic;margin-bottom:5px;
-  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-height:12px}
-.carta .st{display:grid;grid-template-columns:1fr 1fr 1fr;gap:2px 5px;margin-top:auto;font-size:9.5px}
-.carta .st b{font-weight:750;font-size:10.5px}
-.carta .st .hi b{color:#7dffa8}
-.carta .rg{display:flex;gap:3px;flex-wrap:wrap;margin-top:5px}
-.tag{font-size:8px;font-weight:750;text-transform:uppercase;letter-spacing:.05em;
-  background:rgba(0,0,0,.36);padding:2px 5px;border-radius:4px;white-space:nowrap}
-.tag.plus{background:#f0c33c;color:#2a1c00}
-.tag.nof{background:rgba(255,255,255,.14)}
-.carta.mini{min-height:0;padding:6px}
-.carta.mini .est{font-size:14px}
-.carta.mini .av{width:26px;height:26px;font-size:13px}
-.carta.mini .st,.carta.mini .rg,.carta.mini .ap{display:none}
-.carta.oculta{background:repeating-linear-gradient(45deg,#1d242e,#1d242e 8px,#222a35 8px,#222a35 16px);
-  align-items:center;justify-content:center;font-size:32px;color:var(--dim2)}
-.carta.sel{outline:2.5px solid var(--acc2);outline-offset:1px}
+/* ── CARTA ──
+   La carta es el marco (una imagen) con el texto colocado encima en porcentajes, así
+   que se ve igual a cualquier tamaño: no hay una versión por tamaño, hay una sola que
+   escala. Las medidas salen de medir los huecos del propio marco, no a ojo.
+
+   El tamaño de letra va en `cqw` —porcentaje del ancho de la carta— para que el texto
+   encoja con ella. Delante va siempre un valor en px que hace de red por si el motor
+   es viejo y no entiende consultas de contenedor. */
+.carta{position:relative;container-type:inline-size;aspect-ratio:620/877;
+  font-family:var(--titulo);
+  background:#0b0d10 center/100% 100% no-repeat;border-radius:9px;overflow:hidden;
+  cursor:pointer;color:#fff;font-size:11px;font-size:3.4cqw;line-height:1.1;
+  transition:transform .15s,filter .15s}
+.carta.oro  {background-image:url(marcos/oro.webp)}
+.carta.plata{background-image:url(marcos/plata.webp)}
+.carta.sel{outline:2px solid var(--acc);outline-offset:1px}
+.carta:active{transform:scale(.985)}
+
+/* Los huecos del marco, medidos sobre la propia imagen con un cuentapíxeles. */
+
+/* Pestaña del ranking: el oro macizo va de x 6,64 a 11,10% y de y 1,61 a 10,79%, así que
+   la caja se centra justo ahí. */
+/* La pestaña es un trapecio: 24% de ancho arriba y 13% abajo. Midiéndolo fila a fila,
+   la caja más grande que entra entera va de x 5,5 a 16,5% y de y 2,6 a 9,6%. */
+.carta .c-rk{position:absolute;left:5.5%;width:11%;top:2.6%;height:7%;
+  display:flex;align-items:center;justify-content:center;line-height:1;
+  font-weight:700;color:#3a2a09;font-size:14px;font-size:6.2cqw;letter-spacing:-.04em;
+  text-shadow:0 .07em 0 rgba(255,255,255,.42), 0 -.04em .03em rgba(0,0,0,.5)}
+.carta.plata .c-rk{color:#23272c;
+  text-shadow:0 .07em 0 rgba(255,255,255,.5), 0 -.04em .03em rgba(0,0,0,.45)}
+
+.carta .c-mid{position:absolute;left:12%;right:12%;top:15%;height:40%;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:6%;text-align:center}
+.carta .c-icono{font-size:34px;font-size:17cqw;line-height:1;
+  filter:drop-shadow(0 2px 6px rgba(0,0,0,.6))}
+.carta .c-rasgo{font-weight:600;letter-spacing:.07em;text-transform:uppercase;
+  font-size:8px;font-size:2.7cqw;line-height:1.2;color:var(--warn)}
+.carta.plata .c-rasgo{color:#cfd6dd}
+.carta .c-record{position:absolute;left:11%;right:11%;top:58%;text-align:center;
+  opacity:.72;font-size:8px;font-size:2.6cqw;letter-spacing:.03em}
+
+/* Placa del nombre: x 25,3–74,2%, y 66,02–70,51%. Centrado en los dos ejes, y el tamaño
+   de letra lo pone tamNombre() según lo largo que sea, para llenar la placa sin salirse. */
+.carta .c-nom{position:absolute;left:25.3%;right:25.8%;top:66.02%;height:4.49%;
+  display:flex;align-items:center;justify-content:center;line-height:1;
+  color:#2e2107;font-weight:700;font-size:11px;
+  overflow:hidden;white-space:nowrap;padding:0 1.5%;
+  text-shadow:0 .07em 0 rgba(255,255,255,.45), 0 -.04em .03em rgba(0,0,0,.45)}
+.carta.plata .c-nom{color:#1a1e22;
+  text-shadow:0 .07em 0 rgba(255,255,255,.55), 0 -.04em .03em rgba(0,0,0,.4)}
+
+/* El reflejo. Una franja de luz cruzada por encima, que es lo que hace que el texto
+   parezca parte del metal y no una pegatina puesta encima. */
+.carta .brillo{position:absolute;inset:0;pointer-events:none;border-radius:inherit;
+  background:linear-gradient(104deg,
+    rgba(255,255,255,0) 26%, rgba(255,255,255,.34) 41%,
+    rgba(255,255,255,.10) 52%, rgba(255,255,255,0) 66%)}
+
+/* El número va dentro del rombo, centrado; el nombre de la stat, centrado sobre su
+   línea y apoyado en ella. */
+.carta .c-num{position:absolute;height:2.15%;display:flex;align-items:center;
+  justify-content:center;line-height:1;color:#2b1f07;font-weight:700;
+  font-size:8px;font-size:2.7cqw;font-variant-numeric:tabular-nums}
+.carta.plata .c-num{color:#15181c}
+.carta .c-num.pen{color:#7a1109}
+.carta .c-num.up{color:#0f4a22}
+.carta .c-et{position:absolute;height:2.9%;display:flex;align-items:flex-end;
+  justify-content:center;line-height:1;color:#3a3d42;font-weight:600;
+  letter-spacing:.05em;font-size:7px;font-size:2.5cqw}
+
+/* Bandera y peso, centrados en el hueco libre del panel blanco (y 91–97%). */
+.carta .c-pie{position:absolute;left:10%;right:10%;top:92%;height:4.4%;
+  display:flex;align-items:center;justify-content:center;gap:4%;
+  color:#2b2e33;font-weight:700;letter-spacing:.08em;line-height:1;
+  font-size:9px;font-size:3.1cqw}
+.carta .c-pie .bnd{height:78%;width:auto;display:block;border-radius:1px;
+  box-shadow:0 0 0 .5px rgba(0,0,0,.35)}
+
+/* Boca abajo: la del rival mientras no se resuelve el duelo. */
+.carta.tapada{display:grid;place-items:center;font-size:44px;font-weight:800;color:#46525f;
+  background:repeating-linear-gradient(135deg,#1b222b,#1b222b 9px,#222b35 9px,#222b35 18px);
+  border:1px dashed #3a4551;aspect-ratio:620/877;border-radius:9px}
+.carta.oculta{display:grid;place-items:center;background:var(--bg2);
+  border:1px dashed var(--line);color:var(--dim2);aspect-ratio:620/877;border-radius:9px}
+
+/* Compacta, para que las once de la plantilla quepan a la vez: el marco se mantiene
+   —es lo que distingue un oro de una plata de un vistazo— y se cae lo que a ese tamaño
+   ya no se puede leer. */
+.carta.compacta .c-record,.carta.compacta .c-rasgo,.carta.compacta .c-et{display:none}
+.carta.compacta .c-icono{font-size:13cqw}
+.carta.compacta .c-pie{letter-spacing:.04em}
+
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(108px,1fr));gap:8px}
 .grid.g3{grid-template-columns:repeat(3,1fr)}
 
 /* ── varios ── */
-.chip{display:inline-block;background:var(--bg3);border:1px solid var(--line);border-radius:6px;
+.chip{font-family:var(--titulo);letter-spacing:.05em;display:inline-block;background:var(--bg3);border:1px solid var(--line);border-radius:6px;
   padding:3px 8px;font-size:11.5px;color:var(--dim);font-weight:600}
 .chip.on{background:var(--acc);border-color:var(--acc);color:#fff}
 .chip.dead{opacity:.28;text-decoration:line-through}
@@ -106,7 +171,7 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 .log{font-size:12.5px;color:var(--dim);border-left:2px solid var(--line);padding:4px 0 4px 9px;margin-bottom:5px}
 .log b{color:var(--txt)}
 .log.win{border-color:var(--ok)} .log.lose{border-color:var(--acc)}
-.mark{display:flex;gap:6px;align-items:center;justify-content:center;font-size:26px;font-weight:800;
+.mark{font-family:var(--titulo);display:flex;gap:6px;align-items:center;justify-content:center;font-size:26px;font-weight:800;
   letter-spacing:-.03em}
 .mark .vs{font-size:13px;color:var(--dim2);font-weight:600}
 .ov{position:fixed;inset:0;background:rgba(6,8,11,.9);z-index:100;display:flex;
@@ -152,20 +217,13 @@ th{color:var(--dim2);font-size:11px;text-transform:uppercase;letter-spacing:.04e
 /* ── PLANTILLA QUE CABE ──
    Cuatro columnas y tres filas para once divisiones. La altura de cada carta sale del
    alto de la ventana, así que entra entera en cualquier móvil sin scroll. */
-.pgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:5px}
+.pgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:4px}
 .pgrid .pslot{display:flex;flex-direction:column}
 .pgrid .pnom{margin-top:2px;font-size:8.5px;line-height:1.1}
-.carta.compacta{min-height:0;height:clamp(96px,calc((100vh - 235px)/3),168px);padding:5px;border-radius:9px}
-.carta.compacta .est{font-size:13px;min-height:13px}
-.carta.compacta .div{font-size:7px;letter-spacing:.04em}
-.carta.compacta .av{width:22px;height:22px;font-size:12px}
-.carta.compacta .nm{font-size:9px;margin-top:3px}
-.carta.compacta .ap{display:none}
-.carta.compacta .st{gap:1px 3px;font-size:8px;margin-top:auto}
-.carta.compacta .st b{font-size:9.5px}
-.carta.compacta .rg{gap:2px}
-.carta.compacta .tag{font-size:6.5px;padding:1px 3px}
-.carta.oculta.compacta{height:clamp(96px,calc((100vh - 235px)/3),168px);min-height:0}
+
+/* La plantilla usa cinco columnas: con la proporción real de la carta, cuatro dejan
+   filas demasiado altas y la última se sale de la pantalla. */
+.carta.oculta.compacta{aspect-ratio:620/877}
 
 /* ── EL DUELO CARA A CARA ──
    Dos cartas enfrentadas. Mientras no se resuelve, la del rival va tapada: es la regla
@@ -184,10 +242,6 @@ th{color:var(--dim2);font-size:11px;text-transform:uppercase;letter-spacing:.04e
   border-radius:6px;background:var(--bg3);border:1px solid var(--line);color:var(--dim)}
 .duelo .stat-duelo.on{background:#3a2a12;border-color:var(--warn);color:var(--warn)}
 .duelo .vsl{font-size:11px;color:var(--dim2);margin-top:6px;font-weight:700}
-.carta.tapada{display:grid;place-items:center;font-size:44px;font-weight:800;color:#46525f;
-  background:repeating-linear-gradient(135deg,#1b222b,#1b222b 9px,#222b35 9px,#222b35 18px);
-  border:1px dashed #3a4551;min-height:150px;border-radius:11px}
-
 .coach{position:sticky;top:0;z-index:40;background:linear-gradient(180deg,#17251f,#131a17);
   border:1px solid #2f6b4d;border-radius:12px;padding:12px 13px;margin-bottom:10px;
   box-shadow:0 6px 18px rgba(0,0,0,.45)}
@@ -221,10 +275,15 @@ function estadoNuevo(){
   const s={divisa:250,fichas:0,coleccion:[],plantilla:{},sobres:[],
     partidas:0,victorias:0,gratis:{},sets:[],retos:[],nombre:'',amigos:[],
     tutorialHecho:false,tutorCortado:false};
-  // Arranque garantizado: una plata por división. Sin esto es imposible alinear.
+  /* Arranque garantizado: una plata por división. Sin repetir peleador — hay quien
+     tiene carta de plata en dos divisiones, y si al sortear cae el mismo en las dos, una
+     división se queda sin nadie alineable y el jugador nuevo no puede ni empezar. */
+  const usados=new Set();
   for(const d of DIVISIONES){
-    const cand=alineables().filter(c=>c.division===d.id&&c.estatus==='plata');
-    s.coleccion.push({iid:'i'+Math.random().toString(36).slice(2,9),cid:pick(cand).id});
+    const cand=alineables().filter(c=>c.division===d.id&&c.estatus==='plata'&&!usados.has(c.persona));
+    const c=pick(cand.length?cand:alineables().filter(x=>x.division===d.id&&x.estatus==='plata'));
+    usados.add(c.persona);
+    s.coleccion.push({iid:'i'+Math.random().toString(36).slice(2,9),cid:c.id});
   }
   // Carta de rasgo inicial: fija, rasgo normal, no traspasable. Sin ella un novato
   // juega sin la única herramienta de la partida. La más floja que cumpla: es una
@@ -751,26 +810,59 @@ let vista='inicio', P=null, tmp={};
 const $=s=>document.querySelector(s);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
+/* La carta.
+
+   Un solo dibujo para todos los tamaños: el marco es la imagen de fondo y todo lo demás
+   va colocado encima en porcentajes medidos sobre ese marco. La ventana grande de arriba
+   no lleva foto —no hay derechos de imagen y 398 fotos hincharían la aplicación— así que
+   la ocupa el atributo, que es lo que de verdad cambia cómo juegas esa carta. */
+/* Las seis casillas de stat, medidas sobre el marco con un cuentapíxeles y no a ojo:
+   el rombo donde va el número y el tramo de línea donde va el nombre de la stat.
+
+   `rombo` es la caja SEGURA del rombo, la parte donde es macizo en toda su altura: como
+   está inclinado, su rectángulo interior es más estrecho que su ancho aparente, y usar
+   el aparente hacía que los números se salieran por el filo. */
+const FILAS_STAT = [
+  {rombo:'76.07%', linea:'75.32%'},
+  {rombo:'82.37%', linea:'81.55%'},
+  {rombo:'88.74%', linea:'87.92%'},
+];
+const COLS_STAT = [
+  {rombo:'17.2%,5.2%',  linea:'24.2%,21.2%'},
+  {rombo:'56.1%,5.2%',  linea:'63.1%,20.9%'},
+];
+
 function cartaHTML(c,o={}){
   if(!c) return `<div class="carta oculta">?</div>`;
-  if(o.oculta) return `<div class="carta oculta">🥊</div>`;
-  // El color va por calidad (oro o plata) y la corona marca a campeones y top 5.
-  const cls=c.rareza+(c.estatus==='campeon'?' campeon':c.estatus==='top5'?' top5':'');
+  if(o.oculta) return `<div class="carta tapada">?</div>`;
   const aj=o.ajuste||{};
-  const st=STATS.map(s=>{
+
+  const st=STATS.map((s,i)=>{
     const base=c.stats[s.id], d=aj[s.id]||0, v=base+d;
-    const hi=v>=85?' hi':'';
-    return `<div class="${hi.trim()}">${s.c} <b class="${d<0?'pen':''}">${v}</b></div>`;
+    const f=FILAS_STAT[i>>1], col=COLS_STAT[i&1];
+    const [rx,rw]=col.rombo.split(','), [lx,lw]=col.linea.split(',');
+    return `<div class="c-num ${d<0?'pen':d>0?'up':''}" style="left:${rx};width:${rw};top:${f.rombo}">${v}</div>
+      <div class="c-et" style="left:${lx};width:${lw};top:${f.linea}">${s.n}</div>`;
   }).join('');
-  const rg=c.rasgos.map(r=>`<span class="tag ${r.plus?'plus':''}">${RASGOS[r.tipo].ic} ${RASGOS[r.tipo].n}${r.plus?'+':''}</span>`).join('')
-    +(c.alineable?'':`<span class="tag nof">colección</span>`);
-  const nCop=o.copias&&o.copias>1?`<span class="tag" style="position:absolute;top:6px;right:6px">×${o.copias}</span>`:'';
-  return `<div class="carta ${cls} ${o.compacta?'compacta':''} ${o.sel?'sel':''}" ${o.attr||''}>
-    ${nCop}<div class="hd"><div><div class="est">${etiquetaEstatus(c)}</div>
-    <div class="div">${DIV[c.division].n}</div></div>
-    <div class="av">${c.alineable?'🥊':'📘'}</div></div>
-    <div class="nm">${esc(c.nombre)}</div><div class="ap">${c.apodo?'"'+esc(c.apodo)+'"':''}</div>
-    <div class="st">${st}</div><div class="rg">${rg}</div></div>`;
+
+  const r=c.rasgos[0];
+  const bnd=banderaSrc(c.pais);
+  const nCop=o.copias&&o.copias>1?`<div class="c-copias">×${o.copias}</div>`:'';
+  return `<div class="carta ${c.rareza} ${o.compacta?'compacta':''} ${o.sel?'sel':''}" ${o.attr||''}>
+    <div class="c-rk">${etiquetaEstatus(c)}<i class="brillo"></i></div>
+    ${nCop}
+    <div class="c-mid">
+      <div class="c-icono">${r?RASGOS[r.tipo].ic:'🥊'}</div>
+      ${r?`<div class="c-rasgo">${RASGOS[r.tipo].n}${r.plus?'+':''}${r.stat?' · '+r.stat.toUpperCase():''}</div>`:''}
+    </div>
+    <div class="c-record">${esc(c.record||'')}</div>
+    <div class="c-nom" style="font-size:${tamNombre(c.nombre)}cqw">${esc(c.nombre)}<i class="brillo"></i></div>
+    ${st}
+    <div class="c-pie">
+      ${bnd?`<img class="bnd" src="${bnd}" alt="${esc(c.pais)}" loading="lazy">`:''}
+      <span>${SIGLA_DIV[c.division]}</span>
+    </div>
+  </div>`;
 }
 
 function navHTML(){
