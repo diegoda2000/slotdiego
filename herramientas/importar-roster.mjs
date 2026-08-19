@@ -153,9 +153,11 @@ for (const c of cartas) {
    por división y ni un puesto repetido. Un ranking con dos números 3 en la misma
    división ordenaría la colección de forma distinta cada vez que se abre el juego. */
 for (const [d, lista] of Object.entries(porDivision)) {
+  /* Al menos un campeón por división. Puede haber más de uno: un doble campeón lleva C
+     en las dos divisiones donde tuvo el cinturón, así que la suya convive con la del
+     campeón actual. Lo que sí es único son los puestos numerados. */
   const campeones = lista.filter(c => c.rk === 0);
-  if (campeones.length !== 1)
-    fallos.push(`${d} tiene ${campeones.length} campeones, tiene que haber exactamente 1`);
+  if (!campeones.length) fallos.push(`${d} no tiene campeón`);
   const puestos = lista.filter(c => c.rk).map(c => c.rk);
   const repes = puestos.filter((n, i) => puestos.indexOf(n) !== i);
   if (repes.length) fallos.push(`${d} repite los puestos ${[...new Set(repes)].join(', ')}`);

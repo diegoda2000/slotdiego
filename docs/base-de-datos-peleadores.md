@@ -1,6 +1,6 @@
 # Base de datos de peleadores
 
-**396 cartas · 351 peleadores · 57 países · 170 cartas rankeadas**
+**398 cartas · 351 peleadores · 57 países · 173 cartas rankeadas**
 **18 de agosto de 2026 · rev. 19 de agosto: columnas País y Rk · dos rankeados corregidos de plata a oro**
 
 Seis stats sobre 100. **Sin media de ningún tipo**: la carta se lee por sus números.
@@ -11,12 +11,13 @@ Seis stats sobre 100. **Sin media de ningún tipo**: la carta se lee por sus nú
 - **Solo las cartas de oro llevan atributo.** La plata no se alinea en la práctica, pero sí entra en los sets de colección, en los SBC y en el reciclaje. Completar una colección entera —platas incluidas— desbloquea cartas especiales.
 - **Bronce vacío**, reservado a Cage Warriors, KSW, LFA y demás promotoras.
 - **Cada carta lleva un ranking congelado** en la fecha de impresión: C para campeón, 1-15 para clasificados, — para el resto. Solo en la división donde el peleador está rankeado
+- **Un doble campeón lleva C en las dos divisiones**, así que una división puede tener dos cartas con C: la del campeón actual y la del doble campeón. Los puestos numerados 1-15 sí son únicos por división
 - **Cada carta lleva un país**, el de la bandera con la que compite. Una sola nacionalidad por carta, y las versiones de doble división cuentan una vez en los sets
 - Un peleador puede tener carta en varias divisiones, con stats distintas según lo que hizo en cada una. **Un peleador, un slot**: no puedes alinear dos versiones a la vez.
 
 | Rareza | Quién entra | Banda | Cartas |
 |---|---|---|---|
-| **Oro** | Rankeado, racha de 3+, 2+ peleas de título, o 12+ victorias UFC con +4 | 74-89 | 238 |
+| **Oro** | Rankeado, racha de 3+, 2+ peleas de título, o 12+ victorias UFC con +4 | 74-89 | 240 |
 | **Plata** | Resto del roster UFC | 64-82 | 158 |
 | Bronce | Otras promotoras (pendiente) | 55-74 | 0 |
 | Especiales | Capa aparte | hasta 92 | — |
@@ -41,14 +42,14 @@ Datos de UFCStats sobre el historial completo de cada peleador. **Cada pelea se 
 | Veterano | 47 |
 | Camaleón | 19 |
 | Especialista DUREZA | 8 |
-| Incómodo | 7 |
-| Especialista IQ | 6 |
+| Incómodo | 8 |
+| Especialista IQ | 7 |
 | Especialista LUCHA | 6 |
 | Especialista CARDIO | 6 |
 | Especialista SUELO | 5 |
 | Especialista GOLPEO | 4 |
 | Camaleón+ | 2 |
-| **Total** | **110** de 238 oros |
+| **Total** | **112** de 240 oros |
 
 ---
 
@@ -184,11 +185,11 @@ clasificado.
 
 | | Cartas |
 |---|---|
-| Con ranking (C + 1-15) | 170 |
-| Sin rankear | 226 |
-| **Total** | **396** |
+| Con ranking (C + 1-15) | 173 |
+| Sin rankear | 225 |
+| **Total** | **398** |
 
-Once campeones y 159 clasificados. Los 226 restantes son el fondo de la colección: platas, cartas
+Once cinturones, doce cartas de campeón —Makhachev tiene la suya en dos divisiones— y 161 clasificados. Los 226 restantes son el fondo de la colección: platas, cartas
 secundarias de doble-división y oros que llegaron por racha, peleas de título o recorrido en la
 compañía, que son las otras tres vías a oro.
 
@@ -196,10 +197,10 @@ compañía, que son las otras tres vías a oro.
 
 Cruzar la base contra el ranking real ha sacado cuatro cosas, en orden de importancia.
 
-**1. Makhachev es campeón de welter.** El GDD lo tenía como decisión pendiente: la carta principal
-era la de ligero por las cuatro defensas, con welter como secundaria. El cinturón está hoy en welter
-y el ligero lo tiene Gaethje. Esa decisión ya se puede cerrar, y probablemente hay que darle la
-vuelta.
+**1. Makhachev es campeón de welter** — cerrado el 19 de agosto. El cinturón está en welter y el
+ligero lo tiene Gaethje, pero Makhachev es **doble campeón**, así que lleva carta de campeón en las
+dos divisiones. Ligero tiene por tanto dos cartas con C: la de Gaethje, campeón actual, y la de
+Makhachev, que ganó el cinturón y lo defendió cuatro veces. Los puestos 1-15 siguen siendo únicos.
 
 **2. Dos rankeados estaban puestos como plata** — corregido el 19 de agosto. Estar rankeado es una
 de las cuatro vías a oro, así que los dos pasan a oro:
@@ -213,16 +214,17 @@ Kavanagh era el caso serio: un #6 de la división en una carta que, por diseño,
 no se alineaba nunca. Los dos siguen sin atributo —solo 110 de los oros llevan— pero ya se alinean,
 ordenan por su puesto y cuestan lo que cuesta un rankeado al reciclar.
 
-**3. Dos peleadores están rankeados en una división en la que no tienen carta.** Ambos tienen ficha,
-pero solo en peso medio:
+**3. Dos peleadores estaban rankeados en una división en la que no tenían carta** — corregido el
+19 de agosto. Ya tienen ficha en las dos, con stats propias y no una copia penalizada, siguiendo el
+mismo criterio que el resto de dobles divisiones del archivo:
 
-| División del ranking | Rk | Peleador | Dónde está su carta |
+| Peleador | Nueva carta | Rk | Cómo se han sacado las stats |
 |---|---|---|---|
-| Semipesado (M) | #12 | Robert Whittaker | Peso medio |
-| Welter (M) | #14 | Michael Page | Peso medio |
+| Robert Whittaker | Semipesado (M) | #12 | Sube de peso, así que baja como bajan Adesanya y Cannonier al subir de medio: −3 golpeo, −2 suelo, cardio y dureza, −3 IQ, −1 lucha |
+| Michael Page | Welter (M) | #14 | Welter es su peso de siempre, así que mejora como mejoran Holland, Buckley y Usman al volver al suyo. El cardio topa en 88, que es el techo de la banda de oro |
 
-Son candidatos naturales a carta de doble división, con el criterio ya establecido: stats propias
-según lo que hizo en cada peso, no una copia penalizada.
+Los dos mantienen su atributo en las dos cartas, igual que Pereira, Adesanya o Holland. Y como
+cualquier doble división: se pueden coleccionar las dos, pero **solo alinear una**.
 
 **4. Cuatro rankeados no están en la base de datos:**
 
@@ -297,6 +299,7 @@ del roster.
 | **Magomed Ankalaev** | Rusia | 1 | 85 | 81 | 79 | 85 | 85 | 87 | — | 22-2-1 (1 NC) |
 | **Carlos Ulberg** | Nueva Zelanda | C | 88 | 82 | 77 | 76 | 88 | 87 | — | 15-1-0 |
 | **Jan Blachowicz** | Polonia | 9 | 83 | 77 | 78 | 84 | 85 | 85 | Veterano | 29-12-2 |
+| **Robert Whittaker** ◆ | Australia | 12 | 85 | 78 | 76 | 85 | 83 | 84 | Especialista IQ | 28-9-0 |
 | **Navajo Stirling** | Nueva Zelanda | 5 | 85 | 75 | 74 | 82 | 88 | 85 | — | 11-0-0 |
 | **Azamat Murzakanov** | Rusia | 8 | 84 | 80 | 75 | 77 | 85 | 87 | — | 16-1-0 |
 | **Israel Adesanya** ◆ | Nigeria | — | 84 | 74 | 77 | 85 | 82 | 85 | Veterano | 24-6-0 |
@@ -346,7 +349,7 @@ del roster.
 | **Nassourdine Imavov** ◆ | Francia | 3 | 88 | 79 | 80 | 87 | 88 | 86 | — | 17-4-0 (1 NC) |
 | **Anthony Hernandez** | Estados Unidos | 6 | 82 | 88 | 86 | 80 | 85 | 86 | Especialista CARDIO | 15-3-0 (1 NC) |
 | **Caio Borralho** | Brasil | 5 | 81 | 83 | 78 | 87 | 88 | 87 | — | 18-2-0 (1 NC) |
-| **Robert Whittaker** | Australia | — | 88 | 79 | 78 | 87 | 85 | 87 | Especialista IQ | 28-9-0 |
+| **Robert Whittaker** ◆ | Australia | — | 88 | 79 | 78 | 87 | 85 | 87 | Especialista IQ | 28-9-0 |
 | **Sean Strickland** ◆ | Estados Unidos | C | 88 | 75 | 75 | 86 | 89 | 87 | Especialista DUREZA | 31-7-0 |
 | **Israel Adesanya** ◆ | Nigeria | 8 | 87 | 74 | 79 | 87 | 84 | 88 | Veterano | 24-6-0 |
 | **Bo Nickal** | Estados Unidos | 14 | 81 | 85 | 85 | 75 | 84 | 86 | Especialista LUCHA | 9-1-0 |
@@ -356,7 +359,7 @@ del roster.
 | **Jared Cannonier** ◆ | Estados Unidos | 12 | 84 | 74 | 78 | 86 | 86 | 85 | Veterano | 18-10-0 |
 | **Dricus du Plessis** ◆ | Sudáfrica | 2 | 85 | 76 | 82 | 86 | 86 | 77 | Camaleón | 24-3-0 |
 | **Kamaru Usman** ◆ | Nigeria | — | 80 | 81 | 74 | 85 | 84 | 88 | — | 21-5-0 |
-| **Michael Page** | Inglaterra | — | 82 | 74 | 75 | 87 | 87 | 85 | Incómodo | 25-3-0 |
+| **Michael Page** ◆ | Inglaterra | — | 82 | 74 | 75 | 87 | 87 | 85 | Incómodo | 25-3-0 |
 | **Reinier de Ridder** | Países Bajos | 9 | 82 | 74 | 84 | 84 | 85 | 80 | Especialista SUELO | 21-4-0 |
 | **Brendan Allen** | Estados Unidos | 4 | 82 | 74 | 85 | 82 | 86 | 79 | Veterano | 27-7-0 |
 | **Gregory Rodrigues** | Brasil | 11 | 83 | 83 | 75 | 77 | 83 | 85 | — | 19-6-0 |
@@ -406,6 +409,7 @@ del roster.
 | **Rinat Fakhretdinov** | Rusia | — | 82 | 81 | 79 | 84 | 88 | 86 | — | 24-1-1 |
 | **Shavkat Rakhmonov** | Kazajistán | — | 82 | 81 | 85 | 79 | 87 | 85 | — | 19-0-0 |
 | **Michael Morales** | Ecuador | 3 | 84 | 84 | 75 | 79 | 88 | 87 | — | 19-0-0 |
+| **Michael Page** ◆ | Inglaterra | 14 | 85 | 74 | 75 | 88 | 88 | 86 | Incómodo | 25-3-0 |
 | **Islam Makhachev** ◆ | Rusia | C | 81 | 84 | 82 | 80 | 80 | 87 | Camaleón+ | 29-1-0 |
 | **Yaroslav Amosov** | Ucrania | 11 | 82 | 83 | 86 | 78 | 84 | 81 | Veterano | 30-1-0 |
 | **Ian Machado Garry** | Irlanda | 1 | 83 | 75 | 75 | 88 | 88 | 84 | — | 17-2-0 |
@@ -451,7 +455,7 @@ del roster.
 
 | Peleador | País | Rk | GOL | LUC | SUE | CAR | DUR | IQ | Atributo | Récord |
 |---|---|---|---|---|---|---|---|---|---|---|
-| **Islam Makhachev** ◆ | Rusia | — | 83 | 88 | 86 | 84 | 83 | 89 | Camaleón+ | 29-1-0 |
+| **Islam Makhachev** ◆ | Rusia | C | 83 | 88 | 86 | 84 | 83 | 89 | Camaleón+ | 29-1-0 |
 | **Rafa Garcia** | México | — | 81 | 86 | 78 | 86 | 88 | 86 | — | 19-4-0 |
 | **Bobby Green** | Estados Unidos | — | 88 | 81 | 79 | 83 | 84 | 88 | Veterano | 36-17-1 (1 NC) |
 | **Mateusz Gamrot** | Polonia | 9 | 80 | 84 | 78 | 84 | 88 | 87 | Especialista LUCHA | 26-5-0 (1 NC) |
@@ -822,12 +826,14 @@ del roster.
 | Loopy Godinez | mosca F · paja F |
 | Max Holloway | ligero · pluma |
 | Mayra Bueno Silva | gallo F · mosca F |
+| Michael Page | medio · welter |
 | Michel Pereira | medio · welter |
 | Nassourdine Imavov | medio · welter |
 | Nathaniel Wood | pluma · gallo |
 | Patricio Pitbull | ligero · pluma |
 | Paulo Costa | semipesado · medio |
 | Renato Moicano | ligero · pluma |
+| Robert Whittaker | medio · semipesado |
 | Rose Namajunas | mosca F · paja F |
 | Ryan Spann | pesado · semipesado |
 | Sean Strickland | medio · welter |

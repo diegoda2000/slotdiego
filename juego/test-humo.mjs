@@ -48,11 +48,14 @@ const info = await page.evaluate(() => ({
   paises: new Set(ROSTER.map(c => c.pais)).size,
   rankeadas: ROSTER.filter(c => c.rk !== null).length,
   // un campeón por división y ni un puesto repetido dentro de la misma
+  // Cada división tiene campeón, y los puestos numerados no se repiten. La C sí puede
+  // repetirse: un doble campeón lleva carta de campeón en sus dos divisiones.
   rankingLimpio: DIVISIONES.every(d => {
     const l = ROSTER.filter(c => c.division === d.id && c.rk !== null);
-    const p = l.map(c => c.rk);
-    return l.filter(c => c.rk === 0).length === 1 && new Set(p).size === p.length;
+    const p = l.filter(c => c.rk).map(c => c.rk);
+    return l.some(c => c.rk === 0) && new Set(p).size === p.length;
   }),
+  dobleCampeon: new Set(ROSTER.filter(c => c.rk === 0).map(c => c.persona)).size < ROSTER.filter(c => c.rk === 0).length,
   // la plata nunca lleva puesto: la rareza manda en el orden
   plataSinRanking: ROSTER.every(c => c.rareza !== 'plata' || c.rk === null),
   personaPorDivision: (() => {
@@ -81,7 +84,7 @@ const info = await page.evaluate(() => ({
 console.log(`  roster: ${info.total} cartas (${info.alineables} alineables, ${info.campeones} campeones)`);
 comprobar(info.total > 150, 'el roster se genera');
 comprobar(info.soloOroYPlata, 'solo hay oro y plata: el bronce ya no existe');
-comprobar(info.campeones === 11, `un campeón por división, ni más ni menos (${info.campeones})`);
+comprobar(info.campeones >= 11, `hay carta de campeón en las 11 divisiones (${info.campeones} cartas)`);
 comprobar(info.sinMedia, 'NINGUNA carta tiene media, ni visible ni guardada');
 comprobar(info.sumaOk, 'la suma interna es la suma real de las 6 stats');
 comprobar(info.conRecord === info.total, 'todas las cartas traen el récord del peleador');
@@ -90,7 +93,8 @@ comprobar(info.personaPorDivision, 'ningún peleador aparece dos veces en la mis
 comprobar(info.dobles > 20, `hay peleadores con carta en varias divisiones (${info.dobles})`);
 comprobar(info.conPais === info.total, `todas las cartas traen país (${info.paises} distintos)`);
 comprobar(info.rankeadas > 150, `el ranking real viene en las cartas (${info.rankeadas} rankeadas)`);
-comprobar(info.rankingLimpio, 'un campeón por división y ningún puesto repetido');
+comprobar(info.rankingLimpio, 'cada división tiene campeón y ningún puesto numerado se repite');
+comprobar(info.dobleCampeon, 'el doble campeón lleva carta de campeón en sus dos divisiones');
 comprobar(info.plataSinRanking, 'ninguna plata lleva puesto de ranking: la rareza manda en el orden');
 comprobar(info.rangosOk, 'todas las stats caen en la banda que declara la base de datos');
 comprobar(info.ordenOk, 'el orden va por estatus deportivo y, dentro del tramo, por suma');
