@@ -106,8 +106,16 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 .carta .c-rasgo{font-weight:600;letter-spacing:.07em;text-transform:uppercase;
   font-size:calc(var(--cw,110px)*.027);line-height:1.2;color:var(--warn)}
 .carta.plata .c-rasgo{color:#cfd6dd}
-.carta .c-record{position:absolute;left:11%;right:11%;top:58%;text-align:center;
-  opacity:.72;font-size:calc(var(--cw,110px)*.026);letter-spacing:.03em}
+/* El récord va en el panel blanco, entre la placa del nombre y las stats. Medida
+   sobre el marco: la franja de y 70,6% a 75,3% está limpia de lado a lado, y las
+   etiquetas de las stats empiezan en el 75,32%, así que cabe con aire. */
+.carta .c-record{position:absolute;left:12%;right:12%;top:71.2%;height:3.6%;
+  display:flex;align-items:center;justify-content:center;line-height:1;
+  color:#3a3d42;font-weight:700;letter-spacing:.05em;
+  font-size:calc(var(--cw,110px)*.028)}
+.carta.plata .c-record{color:#33383e}
+/* En la carta compacta de la plantilla no cabe, y a ese tamaño no se leería. */
+.carta.compacta .c-record{display:none}
 
 /* Placa del nombre: x 25,3–74,2%, y 66,02–70,51%. Centrado en los dos ejes. Lo largo
    que sea el nombre lo pone tamNombre() en --nom, para llenar la placa sin salirse. */
@@ -130,21 +138,35 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
    línea y apoyado en ella. */
 .carta .c-num{position:absolute;height:2.15%;display:flex;align-items:center;
   justify-content:center;line-height:1;color:#2b1f07;font-weight:700;
-  font-size:calc(var(--cw,110px)*.027);font-variant-numeric:tabular-nums}
+  font-size:calc(var(--cw,110px)*.037);font-variant-numeric:tabular-nums}
 .carta.plata .c-num{color:#15181c}
 .carta .c-num.pen{color:#7a1109}
 .carta .c-num.up{color:#0f4a22}
 .carta .c-et{position:absolute;height:2.9%;display:flex;align-items:flex-end;
   justify-content:center;line-height:1;color:#3a3d42;font-weight:600;
-  letter-spacing:.05em;font-size:calc(var(--cw,110px)*.025)}
+  letter-spacing:.03em;font-size:calc(var(--cw,110px)*.042)}
 
 /* Bandera y peso, centrados en el hueco libre del panel blanco (y 91–97%). */
+/* Bandera y peso. Centrar el par como un bloque los deja torcidos: la bandera es más
+   ancha que "HW", así que el hueco entre las dos cae a la derecha del eje de la carta
+   y la bandera se ve escorada. Con dos mitades iguales, la frontera entre columnas
+   ES el eje: la bandera se pega a él por la izquierda y el peso por la derecha, y sale
+   simétrico con cualquier sigla, desde "HW" hasta "WFLW". */
 .carta .c-pie{position:absolute;left:10%;right:10%;top:92%;height:4.4%;
-  display:flex;align-items:center;justify-content:center;gap:4%;
+  display:grid;grid-template-columns:1fr 1fr;align-items:center;column-gap:5%;
   color:#2b2e33;font-weight:700;letter-spacing:.08em;line-height:1;
   font-size:calc(var(--cw,110px)*.031)}
-.carta .c-pie .bnd{height:78%;width:auto;display:block;border-radius:1px;
-  box-shadow:0 0 0 .5px rgba(0,0,0,.35)}
+/* El alto va en em, no en porcentaje: dentro de una rejilla el porcentaje se resuelve
+   contra una fila que aún no tiene altura definida y la bandera se dispara. En em queda
+   además emparejada con la altura de las letras del peso, que es como debe leerse. */
+.carta .c-pie .bnd{height:1.45em;width:auto;display:block;border-radius:1px;
+  justify-self:end;box-shadow:0 0 0 .5px rgba(0,0,0,.35)}
+/* Las letras del peso, a la misma altura que la bandera: el factor sale de medir,
+   no de la ratio teórica de la fuente: se midió la tinta con las métricas del propio
+   motor de texto y salió 1,74 em, no los 2 em que daba la cuenta a ojo. */
+.carta .c-pie .peso{justify-self:start;font-size:1.74em;line-height:1}
+/* Sin bandera —un país que no tenemos— el peso se queda centrado y no de lado. */
+.carta .c-pie.sinbandera{display:flex;justify-content:center}
 
 /* Boca abajo: la del rival mientras no se resuelve el duelo. */
 .carta.tapada{display:grid;place-items:center;font-size:44px;font-weight:800;color:#46525f;
@@ -156,7 +178,7 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 /* Compacta, para que las once de la plantilla quepan a la vez: el marco se mantiene
    —es lo que distingue un oro de una plata de un vistazo— y se cae lo que a ese tamaño
    ya no se puede leer. */
-.carta.compacta .c-record,.carta.compacta .c-rasgo,.carta.compacta .c-et{display:none}
+.carta.compacta .c-rasgo,.carta.compacta .c-et{display:none}
 .carta.compacta .c-icono{font-size:calc(var(--cw,110px)*.13)}
 .carta.compacta .c-pie{letter-spacing:.04em}
 
@@ -169,6 +191,109 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
   filter:drop-shadow(0 10px 26px rgba(0,0,0,.6))}
 .apertura-tit{font-size:15px;font-weight:800;letter-spacing:.1em;color:var(--warn)}
 .apertura-pie{opacity:.75}
+
+/* ── El aviso, la carta llenándose ──
+   Todo pasa DENTRO de la carta: no hay panel aparte. Se pinta el marco entero y se
+   destapa por partes, cada una en su hueco. Las clases se acumulan desde JS —ve-pais,
+   ve-peso, ve-record, ve-rk, ve-todo— en vez de usar un selector por nivel, porque así
+   funciona en cualquier motor, incluidos los WebView viejos. */
+.aviso{gap:12px}
+.aviso .apertura-carta{filter:drop-shadow(0 0 30px color-mix(in srgb,var(--luz) 55%,transparent))}
+.aviso .aviso-et{font-family:var(--titulo);letter-spacing:.1em;text-transform:uppercase;
+  font-size:11px;color:var(--luz)}
+
+/* De partida, todo lo que se destapa después está oculto. */
+.carta.revelando .c-pie .bnd,
+.carta.revelando .c-pie .peso,
+.carta.revelando .c-record,
+.carta.revelando .c-rk,
+.carta.revelando .c-mid,
+.carta.revelando .c-nom,
+.carta.revelando .c-num,
+.carta.revelando .c-et{opacity:0;visibility:hidden}
+
+/* Y cada clase enciende su parte. */
+.carta.ve-pais   .c-pie .bnd,
+.carta.ve-peso   .c-pie .peso,
+.carta.ve-record .c-record,
+.carta.ve-rk     .c-rk,
+.carta.ve-todo   .c-mid,
+.carta.ve-todo   .c-nom,
+.carta.ve-todo   .c-num,
+.carta.ve-todo   .c-et{opacity:1;visibility:visible;animation:aparece .34s ease both}
+@keyframes aparece{from{opacity:0;transform:translateY(-4%) scale(.94)}
+                   to  {opacity:1;transform:none}}
+
+/* El ranking es el dato que más dice, así que entra con un destello. */
+.carta.ve-rk .c-rk{animation:aparece .34s ease both, chispa .7s ease-out}
+@keyframes chispa{0%{filter:brightness(2.6) drop-shadow(0 0 10px #fff)}
+                  100%{filter:none}}
+
+/* El resplandor del nivel, latiendo detrás de la carta mientras se llena. */
+.aviso .apertura-carta{position:relative}
+.aviso .apertura-carta::before{content:'';position:absolute;inset:-14%;z-index:-1;
+  border-radius:50%;pointer-events:none;
+  background:radial-gradient(closest-side,color-mix(in srgb,var(--luz) 40%,transparent),transparent 72%);
+  animation:latido 1.5s ease-in-out infinite}
+@keyframes latido{0%,100%{opacity:.45;transform:scale(.94)}
+                  50%   {opacity:1;transform:scale(1.05)}}
+
+/* ── El aterrizaje de la carta ya completa ──
+   La entrada va con la calidad: una plata entra y ya está, y una corona llega con
+   golpe, rebote y aura. Es donde se nota si te ha tocado algo o no, incluso antes
+   de leer nada. */
+.aterriza{position:relative;
+  animation:aterrizar var(--ent,.42s) cubic-bezier(.2,1.5,.35,1) both}
+@keyframes aterrizar{
+  0%  {opacity:0;transform:scale(.86) translateY(10px)}
+  60% {opacity:1;transform:scale(1.035) translateY(0)}
+  100%{opacity:1;transform:none}}
+.aterriza.n-plata,.aterriza.n-oro   {--ent:.34s}
+.aterriza.n-top15,.aterriza.n-top10 {--ent:.46s}
+.aterriza.n-top5                    {--ent:.60s}
+.aterriza.n-corona                  {--ent:.74s}
+/* De top 5 para arriba, además, el aura del nivel queda latiendo detrás. */
+.aterriza.n-top5::before,.aterriza.n-corona::before{content:'';position:absolute;
+  inset:-12%;z-index:-1;border-radius:50%;pointer-events:none;
+  background:radial-gradient(closest-side,color-mix(in srgb,var(--luz) 46%,transparent),transparent 72%);
+  animation:latido 1.6s ease-in-out infinite}
+/* Y la corona, un temblor corto al caer: es el golpe. */
+.aterriza.n-corona{animation:aterrizar var(--ent) cubic-bezier(.2,1.5,.35,1) both,
+  temblor .32s .62s ease-out}
+@keyframes temblor{0%,100%{transform:none}
+  20%{transform:translateX(-1.2%) rotate(-.5deg)}
+  50%{transform:translateX(1.1%) rotate(.45deg)}
+  78%{transform:translateX(-.5%) rotate(-.2deg)}}
+
+/* El destello final: una franja de luz que barre la carta entera justo al aparecer,
+   como girarla bajo un foco. Es lo que la remata; sin esto la carta solo "sale". */
+.destello{position:absolute;inset:0;pointer-events:none;border-radius:9px;
+  overflow:hidden;mix-blend-mode:screen}
+.destello::after{content:'';position:absolute;top:-60%;bottom:-60%;width:46%;left:-60%;
+  transform:skewX(-18deg);
+  background:linear-gradient(90deg,
+    rgba(255,255,255,0), rgba(255,255,255,.16) 34%,
+    rgba(255,255,255,.62) 50%, rgba(255,255,255,.16) 66%, rgba(255,255,255,0));
+  animation:barrido .85s var(--barre,.24s) cubic-bezier(.3,0,.2,1) both}
+@keyframes barrido{from{left:-60%}to{left:118%}}
+.aterriza.n-top5 .destello::after   {--barre:.34s;animation-duration:.95s}
+.aterriza.n-corona .destello::after {--barre:.42s;animation-duration:1.05s}
+/* La corona se lleva un segundo barrido, más tenue, detrás del primero. */
+.aterriza.n-corona .destello::before{content:'';position:absolute;top:-60%;bottom:-60%;
+  width:30%;left:-60%;transform:skewX(-18deg);
+  background:linear-gradient(90deg,rgba(255,255,255,0),
+    color-mix(in srgb,var(--luz) 55%,transparent) 50%,rgba(255,255,255,0));
+  animation:barrido 1.05s .74s cubic-bezier(.3,0,.2,1) both}
+
+/* Quien pide menos movimiento en su móvil no tiene por qué tragarse nada de esto. */
+@media (prefers-reduced-motion: reduce){
+  .aviso .apertura-carta::before{animation:none}
+  .carta.ve-pais .c-pie .bnd,.carta.ve-peso .c-pie .peso,.carta.ve-record .c-record,
+  .carta.ve-rk .c-rk,.carta.ve-todo .c-mid,.carta.ve-todo .c-nom,
+  .carta.ve-todo .c-num,.carta.ve-todo .c-et,.aterriza{animation-duration:.01ms}
+  .aterriza.n-top5::before,.aterriza.n-corona::before,
+  .destello::after,.aterriza.n-corona .destello::before{animation:none;opacity:0}
+}
 
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(108px,1fr));gap:8px}
 .grid.g3{grid-template-columns:repeat(3,1fr)}
@@ -291,7 +416,7 @@ let S=null;
 function estadoNuevo(){
   const s={divisa:250,fichas:0,coleccion:[],plantilla:{},sobres:[],
     partidas:0,victorias:0,gratis:{},sets:[],retos:[],nombre:'',amigos:[],
-    tutorialHecho:false,tutorCortado:false};
+    tutorialHecho:false,tutorCortado:false,mudo:false};
   /* Arranque garantizado: una plata por división. Sin repetir peleador — hay quien
      tiene carta de plata en dos divisiones, y si al sortear cae el mismo en las dos, una
      división se queda sin nadie alineable y el jugador nuevo no puede ni empezar. */
@@ -877,7 +1002,11 @@ function cartaHTML(c,o={}){
   const r=c.rasgos[0];
   const bnd=banderaSrc(c.pais);
   const nCop=o.copias&&o.copias>1?`<div class="c-copias">×${o.copias}</div>`:'';
-  return `<div class="carta ${c.rareza} ${o.compacta?'compacta':''} ${o.sel?'sel':''}" ${o.attr||''}>
+  /* Destapado por partes, para la apertura de sobres. Las clases se acumulan: con
+     've-record' puesta ya están puestas también 've-pais' y 've-peso'. Se hace con
+     clases y no con un selector por nivel para que funcione en cualquier motor. */
+  const rev=o.rev?('revelando '+o.rev.map(k=>'ve-'+k).join(' ')):'';
+  return `<div class="carta ${c.rareza} ${o.compacta?'compacta':''} ${o.sel?'sel':''} ${rev}" ${o.attr||''}>
     <div class="c-rk">${etiquetaEstatus(c)}<i class="brillo"></i></div>
     ${nCop}
     <div class="c-mid">
@@ -887,9 +1016,9 @@ function cartaHTML(c,o={}){
     <div class="c-record">${esc(c.record||'')}</div>
     <div class="c-nom" style="--nom:${tamNombre(c.nombre)}">${esc(c.nombre)}<i class="brillo"></i></div>
     ${st}
-    <div class="c-pie">
+    <div class="c-pie${bnd?'':' sinbandera'}">
       ${bnd?`<img class="bnd" src="${bnd}" alt="${esc(c.pais)}" loading="lazy">`:''}
-      <span>${SIGLA_DIV[c.division]}</span>
+      <span class="peso">${SIGLA_DIV[c.division]}</span>
     </div>
   </div>`;
 }
@@ -937,7 +1066,9 @@ function medirCartas(raiz){
 // Girar el móvil o abrir el teclado cambia el ancho de las cartas, así que se vuelven a medir.
 addEventListener('resize', ()=>medirCartas());
 
-function ir(v){ vista=v; tmp={}; window.scrollTo(0,0); render(); }
+// Irse a otra pantalla corta el aviso de la apertura: si no, el temporizador
+// seguiría vivo y volvería a pintar encima de donde esté el jugador.
+function ir(v){ clearTimeout(arrancarAviso.t); vista=v; tmp={}; window.scrollTo(0,0); render(); }
 
 /* ── INICIO ── */
 function vInicio(){
@@ -1072,6 +1203,98 @@ function actualizarRelojes(){
   if(badge && badge.textContent!==String(n)) badge.textContent=n;
 }
 
+/* ── SONIDO ──
+   Sintetizado con Web Audio, sin un solo archivo. Tres razones y en este orden:
+   no hay licencias que arrastrar —y este proyecto ya carga con las de usar
+   peleadores reales—, no suma un byte al APK ni al IPA, y funciona sin conexión.
+   Cuando el juego tenga sonido de verdad se sustituye aquí dentro y nada más
+   se entera.
+
+   Los móviles no dejan sonar nada hasta que el jugador toca la pantalla, así que
+   el contexto se crea en el primer toque y no antes. Si el motor no trae Web Audio
+   —o falla por lo que sea— todo esto se queda mudo y el juego sigue igual. */
+const SONIDO={
+  ctx:null,
+  activar(){                     // hay que llamarlo DENTRO de un toque
+    if(S.mudo) return null;
+    try{
+      const AC=window.AudioContext||window.webkitAudioContext;
+      if(!AC) return null;
+      if(!this.ctx) this.ctx=new AC();
+      if(this.ctx.state==='suspended') this.ctx.resume();
+      return this.ctx;
+    }catch(e){ return null; }
+  },
+  // Un tono con su envolvente. Todo lo demás se construye con esto.
+  tono({f=220, f2=null, t=0.3, tipo='sine', vol=0.2, retraso=0}={}){
+    const c=this.activar(); if(!c) return;
+    const t0=c.currentTime+retraso;
+    const osc=c.createOscillator(), g=c.createGain();
+    osc.type=tipo;
+    osc.frequency.setValueAtTime(f,t0);
+    if(f2) osc.frequency.exponentialRampToValueAtTime(Math.max(f2,1),t0+t);
+    g.gain.setValueAtTime(0.0001,t0);
+    g.gain.exponentialRampToValueAtTime(vol,t0+Math.min(0.02,t*0.15));
+    g.gain.exponentialRampToValueAtTime(0.0001,t0+t);
+    osc.connect(g).connect(c.destination);
+    osc.start(t0); osc.stop(t0+t+0.05);
+  },
+  // Ruido corto: es lo que da el cuerpo del golpe, un tono solo suena a pitido.
+  golpe({t=0.18, vol=0.25, corte=1400, retraso=0}={}){
+    const c=this.activar(); if(!c) return;
+    const t0=c.currentTime+retraso, n=Math.floor(c.sampleRate*t);
+    const buf=c.createBuffer(1,n,c.sampleRate), d=buf.getChannelData(0);
+    for(let i=0;i<n;i++) d[i]=(Math.random()*2-1)*Math.pow(1-i/n,2.2);
+    const src=c.createBufferSource(); src.buffer=buf;
+    const f=c.createBiquadFilter(); f.type='lowpass'; f.frequency.value=corte;
+    const g=c.createGain(); g.gain.value=vol;
+    src.connect(f).connect(g).connect(c.destination);
+    src.start(t0);
+  },
+
+  /* Un dato que cae. Cada uno entra más agudo que el anterior, así que la propia
+     escalera de tonos va contando cuánto queda para ver la carta. El del ranking
+     —el último y el que más dice— entra más fuerte y con un golpe detrás. */
+  dato(i, total, nivel, gordo){
+    const N=NIVEL_APERTURA[nivel]||NIVEL_APERTURA.oro;
+    const paso=total>1?i/(total-1):1;
+    const f=N.hz[0]+(N.hz[1]-N.hz[0])*paso;
+    this.tono({f, t:0.20, tipo:'triangle', vol:gordo?0.15:0.10});
+    this.tono({f:f*2, t:0.11, tipo:'sine', vol:gordo?0.09:0.05});
+    if(gordo) this.golpe({t:0.14, vol:0.14, corte:N.corte});
+  },
+  /* El impacto de cuando la carta aterriza. */
+  impacto(nivel){
+    const N=NIVEL_APERTURA[nivel]||NIVEL_APERTURA.oro;
+    this.golpe({t:N.pegada, vol:0.22, corte:N.corte});
+    this.tono({f:N.hz[1]*0.75, f2:N.hz[1]*0.36, t:0.34, tipo:'triangle', vol:0.13});
+    // La campana del octógono, solo para la corona. Es lo único reservado.
+    if(nivel==='corona'){
+      for(const [r,f] of [[0.02,880],[0.02,1320],[0.30,880],[0.30,1320]])
+        this.tono({f, t:1.5, tipo:'sine', vol:0.10, retraso:r});
+    }
+  },
+  clic(){ this.tono({f:520, f2:340, t:0.07, tipo:'square', vol:0.05}); },
+};
+
+/* Lo que define cada nivel en la apertura: cuánto dura el aviso, de qué color es,
+   y a qué suena. Una sola tabla para animación y sonido, para que no puedan
+   contarte cosas distintas. */
+const NIVEL_APERTURA={
+  corona:{n:'corona', paso:700, hz:[150,760], pegada:0.34, corte:2600,
+          luz:'#ffd24a', luz2:'#ff4a3d'},
+  top5  :{n:'top5',   paso:560, hz:[150,620], pegada:0.28, corte:2100,
+          luz:'#ffcf3f', luz2:'#e8a021'},
+  top10 :{n:'top10',  paso:430, hz:[160,500], pegada:0.22, corte:1700,
+          luz:'#dfe6ee', luz2:'#9fb4c8'},
+  top15 :{n:'top15',  paso:430, hz:[160,440], pegada:0.19, corte:1500,
+          luz:'#cfd6de', luz2:'#8d9aa8'},
+  oro   :{n:'oro',    paso:340, hz:[170,370], pegada:0.16, corte:1200,
+          luz:'#b9c1ca', luz2:'#79838f'},
+  plata :{n:'plata',  paso:340, hz:[170,330], pegada:0.14, corte:1100,
+          luz:'#aab2bb', luz2:'#6e7883'},
+};
+
 /* ── APERTURA DE SOBRES ──
    Pantalla propia con su propio estado, para que el atrás funcione en cualquier
    momento. Las cartas ya están en la colección antes de revelarse: salir a medias
@@ -1082,9 +1305,63 @@ function actualizarRelojes(){
    son ocho toques de trámite. */
 function abrirTanda(items,tipo){
   vista='apertura';
+  const mejor=items.length?PORID[items[0].cid]:null;
   tmp={ap:{items,tipo,resumen:items.length===0,
+    nivel:mejor?(mejor.estatus==='campeon'||mejor.estatus==='top5'
+      ?(mejor.estatus==='campeon'?'corona':'top5'):mejor.estatus):'plata',
+    fase:items.length?'aviso':'resumen',
     nuevas:items.filter(it=>S.coleccion.filter(x=>x.cid===it.cid).length===1).map(it=>it.iid)}};
   window.scrollTo(0,0); render();
+  arrancarAviso();
+}
+
+/* El aviso: la carta se destapa por partes, y en un orden que va de lo que menos
+   dice a lo que más — nacionalidad, peso, récord, ranking, y al final la foto con
+   las stats. Cada dato que cae estrecha el cerco: cuando ya sabes que es un pesado
+   invicto, el ranking es la última carta boca abajo.
+
+   El color de todo el bloque va del nivel que viene, así que además de los datos
+   la pantalla te está diciendo desde el principio si viene algo bueno. Es a
+   propósito: esa tensión es el momento que engancha, más que la carta en sí.
+
+   Dos condiciones para que no canse: dura poco —de 1 s por una plata a 2,8 s por
+   una corona— y **se salta tocando**. Quien va por su sobre número cuarenta no
+   puede estar obligado a mirarlo entero. */
+function pasosAviso(c){
+  // Nacionalidad, peso, récord, ranking, y al final la foto con las stats. Cada uno
+  // aparece EN SU SITIO de la carta, no en una lista aparte: lo que se está viendo
+  // es la carta llenándose.
+  const p=[
+    {k:'pais',   et:'Nacionalidad'},
+    {k:'peso',   et:'Peso'},
+    {k:'record', et:'Récord'},
+  ];
+  // El ranking solo si lo tiene. En una carta sin rankear no hay nada que destapar,
+  // y una pestaña vacía encendiéndose sería peor: parecería que falla algo.
+  if(c.rk===0||c.rk) p.push({k:'rk', et:'Ranking', gordo:true});
+  p.push({k:'todo', et:'El peleador', gordo:true});
+  return p;
+}
+function arrancarAviso(){
+  clearTimeout(arrancarAviso.t);
+  const a=tmp.ap; if(!a||a.fase!=='aviso') return;
+  const N=NIVEL_APERTURA[a.nivel]||NIVEL_APERTURA.oro;
+  const pasos=pasosAviso(PORID[a.items[0].cid]);
+  a.paso=(a.paso||0);
+  if(a.paso>=pasos.length){ soltarCarta(); return; }
+  const p=pasos[a.paso];
+  // Cada dato entra un poco más agudo que el anterior: la escalera se oye subir.
+  SONIDO.dato(a.paso, pasos.length, a.nivel, p.gordo);
+  render();
+  a.paso++;
+  arrancarAviso.t=setTimeout(arrancarAviso, N.paso);
+}
+function soltarCarta(){
+  clearTimeout(arrancarAviso.t);
+  const a=tmp.ap; if(!a||a.fase!=='aviso') return;
+  a.fase='carta';
+  SONIDO.impacto(a.nivel);
+  render();
 }
 
 function vApertura(){
@@ -1114,14 +1391,33 @@ function vApertura(){
       <button class="btn gho" data-nav="coleccion">Ver la colección</button>`;
   }
 
+  const N=NIVEL_APERTURA[a.nivel]||NIVEL_APERTURA.oro;
+
+  /* El aviso. La carta ya está ahí, en grande, pero vacía: se va llenando por partes
+     —nacionalidad, peso, récord, ranking, y al final el peleador con sus stats—. El
+     resplandor va del nivel que viene, así que además la pantalla ya está avisando. */
+  if(a.fase==='aviso'){
+    const c=PORID[a.items[0].cid];
+    const todos=pasosAviso(c);
+    const vistos=todos.slice(0, Math.max(1, a.paso||1));
+    const ult=vistos[vistos.length-1];
+    return barra+`
+      <div class="apertura aviso" data-a="saltaraviso"
+        style="--luz:${N.luz};--luz2:${N.luz2}">
+        <div class="apertura-carta">${cartaHTML(c,{rev:vistos.map(p=>p.k)})}</div>
+        <div class="sub center aviso-et">${ult?ult.et:''}</div>
+        <div class="tiny center apertura-pie">Toca para saltar</div>
+      </div>`;
+  }
+
   // La carta que enseña el sobre: la mejor de las nueve, a pantalla casi completa.
   // Un toque encima y sale el sobre entero. Nada de ir pasando una a una.
   const c=PORID[a.items[0].cid];
   const gorda=c.estatus==='campeon'||c.estatus==='top5';
   return barra+`
-    <div class="apertura" data-a="revelar">
+    <div class="apertura" data-a="revelar" style="--luz:${N.luz};--luz2:${N.luz2}">
       ${gorda?`<div class="pop apertura-tit">★ ${EST[c.estatus].n.toUpperCase()} ★</div>`:''}
-      <div class="pop apertura-carta">${cartaHTML(c)}</div>
+      <div class="apertura-carta aterriza n-${a.nivel}">${cartaHTML(c)}<i class="destello"></i></div>
       <div class="sub center">${DIV[c.division].n} · ${esc(c.pais||'')} · ${esc(c.record||'')}</div>
       <div class="tiny center apertura-pie">Toca la carta para ver el sobre entero</div>
     </div>`;
@@ -1226,6 +1522,15 @@ function vMas(){
         <div class="row" style="align-items:center"><div style="flex:none;font-size:22px">${i}</div>
         <div style="flex:2"><b>${t}</b><div class="sub">${d}</div></div><div style="flex:none;color:var(--dim2)">›</div>
         </div></div>`).join('')}
+    <div class="divider"></div>
+    <div class="card-panel" data-a="mudo" style="cursor:pointer">
+      <div class="row" style="align-items:center">
+        <div style="flex:none;font-size:22px">${S.mudo?'🔇':'🔊'}</div>
+        <div style="flex:2"><b>Sonido</b>
+          <div class="sub">${S.mudo?'Apagado':'Encendido — se oye al abrir sobres'}</div></div>
+        <div style="flex:none"><span class="chip ${S.mudo?'':'on'}">${S.mudo?'OFF':'ON'}</span></div>
+      </div>
+    </div>
     <div class="divider"></div>
     <button class="btn gho" data-a="reiniciar">Borrar partida y empezar de cero</button>`;
 }
@@ -2618,9 +2923,16 @@ document.addEventListener('click',e=>{
       const items=[];
       for(let i=S.sobres.length-1;i>=0;i--) if(S.sobres[i].tipo===d.t){ S.sobres.splice(i,1); items.push(...abrirSobre(d.t)); }
       abrirTanda(items,d.t); break; }
+    case 'saltaraviso':                  // el aviso siempre se puede saltar
+      soltarCarta(); break;
     case 'revelar':                      // un toque en la carta y sale el sobre entero
       if(!tmp.ap||tmp.ap.resumen) break;
+      clearTimeout(arrancarAviso.t);
       tmp.ap.resumen=true; window.scrollTo(0,0); render(); break;
+    case 'mudo':
+      S.mudo=!S.mudo; guardar();
+      if(!S.mudo) SONIDO.clic();         // se oye al encenderlo, que es lo que se espera
+      render(); break;
     case 'salirapertura': ir('sobres'); break;
     case 'autoplantilla': autoPlantilla(S,true); guardar(); render(); break;
     case 'reciclar':{

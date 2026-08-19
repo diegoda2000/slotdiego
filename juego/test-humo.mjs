@@ -198,16 +198,30 @@ const oficio = await page.evaluate(() => {
     }
     out[tipo] = { oros: oros / N, platas: platas / N, pctAlto: conAlto / N * 100 };
   }
+  /* Y la cifra exacta, salida de la propia tabla en vez de a base de tiradas: con
+     60.000 sobres el muestreo baila una décima, y el límite del GDD es justo el 1%. */
+  out.exacto = {};
+  for (const tipo of Object.keys(TIPOS_SOBRE)) {
+    const T = TIPOS_SOBRE[tipo];
+    const totN = Object.values(T.nivel).reduce((a, b) => a + b, 0);
+    const p = (T.nivel.corona + T.nivel.top10) / totN;
+    const totO = Object.values(T.oros).reduce((a, b) => a + b, 0);
+    let q = 0;   // probabilidad de NO sacar ninguna alta, pesada por cuántos oros trae
+    for (const [n, peso] of Object.entries(T.oros)) q += (peso / totO) * Math.pow(1 - p, +n);
+    out.exacto[tipo] = (1 - q) * 100;
+  }
   return out;
 });
 comprobar(oficio.basico.oros >= 4,
   `el básico da oros de sobra para montarse un equipo (${oficio.basico.oros.toFixed(2)} por sobre)`);
-comprobar(oficio.basico.pctAlto <= 1,
-  `pero un oro alto es casi imposible, el 1% o menos que manda el GDD (${oficio.basico.pctAlto.toFixed(2)}% de los sobres)`);
+comprobar(oficio.exacto.basico <= 1,
+  `pero un oro alto es casi imposible, el 1% o menos que manda el GDD (${oficio.exacto.basico.toFixed(2)}% de los sobres)`);
+comprobar(Math.abs(oficio.basico.pctAlto - oficio.exacto.basico) < 0.25,
+  `y las tiradas dan lo que dice la tabla (${oficio.basico.pctAlto.toFixed(2)}% medido)`);
 comprobar(oficio.plata.platas >= 6,
   `el de plata es sobre todo platas, que es para lo que se compra (${oficio.plata.platas.toFixed(2)} por sobre)`);
-comprobar(oficio.basico.pctAlto < oficio.plata.pctAlto && oficio.plata.pctAlto < oficio.oro.pctAlto,
-  `y la carta alta sube con el sobre (${oficio.basico.pctAlto.toFixed(2)}% · ${oficio.plata.pctAlto.toFixed(2)}% · ${oficio.oro.pctAlto.toFixed(2)}%)`);
+comprobar(oficio.exacto.basico < oficio.exacto.plata && oficio.exacto.plata < oficio.exacto.oro,
+  `y la carta alta sube con el sobre (${oficio.exacto.basico.toFixed(2)}% · ${oficio.exacto.plata.toFixed(2)}% · ${oficio.exacto.oro.toFixed(2)}%)`);
 
 // Solo el básico es gratis: los de plata y oro se compran o se ganan.
 await page.evaluate(() => { S.gratis = {}; S.sobres = []; ir('sobres'); });
@@ -271,6 +285,67 @@ await page.evaluate(() => { S.sobres = [{ tipo: 'oro' }, { tipo: 'oro' }]; ir('s
 await page.locator('[data-a="abrir"]').first().click();
 comprobar(await page.evaluate(() => vista === 'apertura'), 'abrir lleva a la pantalla de apertura');
 comprobar(await page.locator('[data-a="salirapertura"]').count() === 1, 'hay botón de atrás');
+
+/* Antes de la carta entera va el aviso, y pasa TODO SOBRE LA CARTA: el marco está
+   ahí desde el primer momento y se va llenando por partes, en el orden pedido —
+   nacionalidad, peso, récord, ranking— y al final el peleador con sus stats. */
+const aviso = await page.evaluate(() => ({
+  // se para el reloj del aviso: si sigue corriendo va cambiando de paso él solo
+  // y pisa los que pone la prueba
+  _: clearTimeout(arrancarAviso.t),
+  orden: pasosAviso(PORID[tmp.ap.items[0].cid]).map(p => p.k),
+  rk: PORID[tmp.ap.items[0].cid].rk,
+  panel: !!document.querySelector('.aviso-caja'),
+  marco: !!document.querySelector('.apertura-carta .carta'),
+}));
+/* Cada paso se mira DESPUÉS de que su animación de entrada termine. Leyéndolo antes,
+   la opacidad todavía va por 0 —es el fotograma inicial de la animación— y parecería
+   que no se ha destapado nada. */
+aviso.visto = [];
+for (let i = 1; i <= aviso.orden.length; i++) {
+  await page.evaluate(x => { tmp.ap.paso = x; render(); }, i);
+  await page.waitForTimeout(420);
+  aviso.visto.push(await page.evaluate(() => {
+    const carta = document.querySelector('.apertura-carta .carta');
+    const puesto = sel => { const e = carta.querySelector(sel); if (!e) return false;
+      const s = getComputedStyle(e);
+      return s.visibility !== 'hidden' && +s.opacity > 0.9; };
+    return { bandera: puesto('.c-pie .bnd'), peso: puesto('.c-pie .peso'),
+      record: puesto('.c-record'), rk: puesto('.c-rk'),
+      foto: puesto('.c-mid'), nombre: puesto('.c-nom'), stats: puesto('.c-num') };
+  }));
+}
+comprobar(!aviso.panel && aviso.marco,
+  'el aviso pasa sobre la propia carta, no en un recuadro aparte');
+comprobar(aviso.orden.slice(0, 3).join(',') === 'pais,peso,record',
+  `y se destapa en el orden pedido (${aviso.orden.join(' → ')})`);
+comprobar(aviso.rk === null
+    ? !aviso.orden.includes('rk')
+    : aviso.orden[3] === 'rk',
+  aviso.rk === null ? 'una carta sin rankear no destapa la pestaña del ranking'
+                    : 'el ranking va justo antes del peleador');
+comprobar(aviso.orden[aviso.orden.length - 1] === 'todo',
+  'y lo último en salir son la foto y las stats');
+
+const v = aviso.visto;
+comprobar(v[0].bandera && !v[0].peso && !v[0].record && !v[0].rk && !v[0].foto,
+  'en el primer paso solo está la bandera');
+comprobar(v[1].bandera && v[1].peso && !v[1].record,
+  'en el segundo se suma el peso, sin perder la bandera');
+comprobar(v[2].record && !v[2].foto && !v[2].stats,
+  'en el tercero el récord, y el peleador sigue tapado');
+if (aviso.rk !== null) comprobar(v[3].rk && !v[3].foto && !v[3].stats,
+  'en el cuarto el ranking, y el peleador todavía tapado');
+const ult = v[v.length - 1];
+comprobar(ult.foto && ult.nombre && ult.stats && ult.bandera && ult.record,
+  'y al final está la carta entera, sin haber perdido nada por el camino');
+
+// Tocando se salta el aviso y aparece la carta sin esperar.
+await page.evaluate(() => { tmp.ap.fase = 'aviso'; tmp.ap.paso = 1; render();
+  clearTimeout(arrancarAviso.t); });
+await page.locator('.apertura').click();
+comprobar(await page.evaluate(() => tmp.ap.fase === 'carta' && !tmp.ap.resumen),
+  'un toque durante el aviso lo salta y suelta la carta');
 
 // La carta que enseña el sobre es la mejor de las nueve, y manda en la pantalla.
 // Se mide en una ventana de móvil, que es donde se juega: en una de escritorio, ancha
