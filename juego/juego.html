@@ -80,11 +80,14 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 
 /* Los huecos del marco, medidos sobre la propia imagen con un cuentapíxeles. */
 
-/* Pestaña del ranking: el oro macizo va de x 6,64 a 11,10% y de y 1,61 a 10,79%, así que
-   la caja se centra justo ahí. */
-/* La pestaña es un trapecio: 24% de ancho arriba y 13% abajo. Midiéndolo fila a fila,
-   la caja más grande que entra entera va de x 5,5 a 16,5% y de y 2,6 a 9,6%. */
-.carta .c-rk{position:absolute;left:5.5%;width:11%;top:2.6%;height:7%;
+/* Pestaña del ranking. Es un paralelogramo inclinado hacia abajo-izquierda: arriba va de
+   x 6,5 a 29,8% y baja con pendiente -1,41% de x por cada 1% de y, así que su esquina
+   inferior izquierda se sale de la carta y queda cortada por el borde.
+   Centrar dentro de la figura real deja el número escorado a la izquierda, porque el ojo
+   ve el hueco recortado, de x 1,9 a 29,8%, cuyo centro está en el 15,9%. Así que se centra
+   como si fuera un rectángulo, tirando a la derecha hasta donde la tinta sigue pisando
+   metal: con la altura de las cifras, el límite está en el 13,9%. */
+.carta .c-rk{position:absolute;left:8.4%;width:11%;top:2.4%;height:7%;
   display:flex;align-items:center;justify-content:center;line-height:1;
   font-weight:700;color:#3a2a09;font-size:14px;font-size:6.2cqw;letter-spacing:-.04em;
   text-shadow:0 .07em 0 rgba(255,255,255,.42), 0 -.04em .03em rgba(0,0,0,.5)}
