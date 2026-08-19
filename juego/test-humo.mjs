@@ -236,31 +236,76 @@ comprobar(rec.quedanOro === 3, 'los oros que no llegaban a ficha se quedan intac
 await page.evaluate(() => { S = estadoNuevo(); for (let i = 0; i < 4; i++) abrirSobre('oro');
   autoPlantilla(S, true); guardar(); ir('inicio'); });
 
-/* ── 2b. Apertura: atrás, saltar y resumen ────────────────────────────── */
+/* ── 2b. Apertura: la carta grande, un toque, y el sobre entero ────────── */
 console.log('\n2b. Pantalla de apertura');
 await page.evaluate(() => { S.sobres = [{ tipo: 'oro' }, { tipo: 'oro' }]; ir('sobres'); });
 await page.locator('[data-a="abrir"]').first().click();
 comprobar(await page.evaluate(() => vista === 'apertura'), 'abrir lleva a la pantalla de apertura');
 comprobar(await page.locator('[data-a="salirapertura"]').count() === 1, 'hay botón de atrás');
-comprobar(await page.locator('[data-a="saltar"]').count() === 1, 'hay botón de saltar');
+
+// La carta que enseña el sobre es la mejor de las nueve, y manda en la pantalla.
+// Se mide en una ventana de móvil, que es donde se juega: en una de escritorio, ancha
+// y baja, la carta la limita el alto y ocuparía poco ancho con toda la razón.
+const ventana = page.viewportSize();
+await page.setViewportSize({ width: 390, height: 780 });
+await page.waitForTimeout(120);
+const portada = await page.evaluate(() => {
+  const carta = document.querySelector('.apertura-carta .carta');
+  const r = carta.getBoundingClientRect();
+  const mejor = tmp.ap.items.map(it => PORID[it.cid]).sort(comparar)[0];
+  return { anchoCarta: r.width, anchoPantalla: innerWidth, altoCarta: r.height,
+           altoPantalla: innerHeight,
+           esLaMejor: carta.textContent.includes(mejor.nombre),
+           botones: document.querySelectorAll('.apertura button').length };
+});
+comprobar(portada.esLaMejor, 'enseña la mejor carta del sobre');
+comprobar(portada.anchoCarta / portada.anchoPantalla > 0.85,
+  `la carta ocupa casi todo el ancho (${(portada.anchoCarta / portada.anchoPantalla * 100).toFixed(0)}%)`);
+comprobar(portada.altoCarta <= portada.altoPantalla,
+  'y cabe de alto sin salirse de la pantalla');
+comprobar(portada.botones === 0, 'no hay botón de continuar: se toca la carta');
+if (ventana) await page.setViewportSize(ventana);
 
 const guardadasAlEntrar = await page.evaluate(() => S.coleccion.length);
-await page.locator('[data-a="revelar"]').last().click();          // revela una
-await page.locator('[data-a="salirapertura"]').click();           // y se sale a medias
+await page.locator('[data-a="salirapertura"]').click();           // se sale a medias
 const trasSalir = await page.evaluate(() => ({ vista, cartas: S.coleccion.length }));
 comprobar(trasSalir.vista === 'sobres', 'el atrás sale de la apertura');
 comprobar(trasSalir.cartas === guardadasAlEntrar, 'salir a medias no pierde ninguna carta');
 
 await page.locator('[data-a="abrir"]').first().click();
-await page.locator('[data-a="saltar"]').click();
+await page.locator('.apertura').click();                          // un solo toque
 const resumen = await page.evaluate(() => ({
   enResumen: tmp.ap && tmp.ap.resumen,
   mostradas: document.querySelectorAll('[data-carta]').length,
   total: tmp.ap ? tmp.ap.items.length : 0,
 }));
-comprobar(resumen.enResumen, 'saltar lleva al resumen');
+comprobar(resumen.enResumen, 'un toque en la carta lleva al sobre entero');
 comprobar(resumen.mostradas === resumen.total && resumen.total > 0,
   'el resumen enseña todas las cartas del sobre');
+
+/* El texto de la carta se mide contra su propio ancho, así que tiene que caer en su
+   sitio a cualquier tamaño. Esto es lo que se rompía en la rejilla del resumen. */
+const encaje = await page.evaluate(() => {
+  const malos = [];
+  document.querySelectorAll('.grid .carta').forEach(carta => {
+    const R = carta.getBoundingClientRect();
+    const dentro = (el, holgura = 0) => {
+      const b = el.getBoundingClientRect();
+      const r = document.createRange(); r.selectNodeContents(el);
+      const t = r.getBoundingClientRect();
+      return t.width <= b.width + holgura && t.left >= b.left - holgura
+          && t.right <= b.right + holgura;
+    };
+    if (!carta.style.getPropertyValue('--cw')) malos.push('sin --cw');
+    carta.querySelectorAll('.c-et,.c-num,.c-nom').forEach(el => {
+      if (el.textContent.trim() && !dentro(el, R.width * 0.01))
+        malos.push(el.className + ':' + el.textContent.trim());
+    });
+  });
+  return malos;
+});
+comprobar(encaje.length === 0,
+  `en la rejilla, nombres y stats caben en su hueco (${encaje.slice(0, 4).join(', ') || 'todos'})`);
 
 /* ── 2c. Sobre básico ilimitado ───────────────────────────────────────── */
 console.log('\n2c. Sobre básico ilimitado');

@@ -65,13 +65,16 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
    que se ve igual a cualquier tamaño: no hay una versión por tamaño, hay una sola que
    escala. Las medidas salen de medir los huecos del propio marco, no a ojo.
 
-   El tamaño de letra va en `cqw` —porcentaje del ancho de la carta— para que el texto
-   encoja con ella. Delante va siempre un valor en px que hace de red por si el motor
-   es viejo y no entiende consultas de contenedor. */
-.carta{position:relative;container-type:inline-size;aspect-ratio:620/877;
+   Todo el texto se mide contra `--cw`, el ancho de la propia carta en píxeles, que lo
+   pone medirCartas() después de cada pintado. Antes esto iba en `cqw`, que es más
+   elegante —lo resuelve el navegador solo—, pero las consultas de contenedor no existen
+   en los WebView antiguos, y ahí el texto se quedaba en un tamaño fijo: en la rejilla de
+   sobres y colección, con cartas de 124 px, los números se salían de los rombos y los
+   nombres del recuadro. Con una variable y calc() se ve igual en cualquier motor. */
+.carta{position:relative;aspect-ratio:620/877;
   font-family:var(--titulo);
   background:#0b0d10 center/100% 100% no-repeat;border-radius:9px;overflow:hidden;
-  cursor:pointer;color:#fff;font-size:11px;font-size:3.4cqw;line-height:1.1;
+  cursor:pointer;color:#fff;font-size:calc(var(--cw,110px)*.034);line-height:1.1;
   transition:transform .15s,filter .15s}
 .carta.oro  {background-image:url(marcos/oro.webp)}
 .carta.plata{background-image:url(marcos/plata.webp)}
@@ -86,10 +89,11 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
    Centrar dentro de la figura real deja el número escorado a la izquierda, porque el ojo
    ve el hueco recortado, de x 1,9 a 29,8%, cuyo centro está en el 15,9%. Así que se centra
    como si fuera un rectángulo, tirando a la derecha hasta donde la tinta sigue pisando
-   metal: con la altura de las cifras, el límite está en el 13,9%. */
-.carta .c-rk{position:absolute;left:8.4%;width:11%;top:2.4%;height:7%;
+   metal. El límite duro son las cifras a la altura del 13,9%; se deja en el 12,9%, un pelo
+   a la izquierda, que es donde el ojo lo da por centrado. */
+.carta .c-rk{position:absolute;left:7.4%;width:11%;top:2.4%;height:7%;
   display:flex;align-items:center;justify-content:center;line-height:1;
-  font-weight:700;color:#3a2a09;font-size:14px;font-size:6.2cqw;letter-spacing:-.04em;
+  font-weight:700;color:#3a2a09;font-size:calc(var(--cw,110px)*.062);letter-spacing:-.04em;
   text-shadow:0 .07em 0 rgba(255,255,255,.42), 0 -.04em .03em rgba(0,0,0,.5)}
 .carta.plata .c-rk{color:#23272c;
   text-shadow:0 .07em 0 rgba(255,255,255,.5), 0 -.04em .03em rgba(0,0,0,.45)}
@@ -97,19 +101,19 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 .carta .c-mid{position:absolute;left:12%;right:12%;top:15%;height:40%;
   display:flex;flex-direction:column;align-items:center;justify-content:center;
   gap:6%;text-align:center}
-.carta .c-icono{font-size:34px;font-size:17cqw;line-height:1;
+.carta .c-icono{font-size:calc(var(--cw,110px)*.17);line-height:1;
   filter:drop-shadow(0 2px 6px rgba(0,0,0,.6))}
 .carta .c-rasgo{font-weight:600;letter-spacing:.07em;text-transform:uppercase;
-  font-size:8px;font-size:2.7cqw;line-height:1.2;color:var(--warn)}
+  font-size:calc(var(--cw,110px)*.027);line-height:1.2;color:var(--warn)}
 .carta.plata .c-rasgo{color:#cfd6dd}
 .carta .c-record{position:absolute;left:11%;right:11%;top:58%;text-align:center;
-  opacity:.72;font-size:8px;font-size:2.6cqw;letter-spacing:.03em}
+  opacity:.72;font-size:calc(var(--cw,110px)*.026);letter-spacing:.03em}
 
-/* Placa del nombre: x 25,3–74,2%, y 66,02–70,51%. Centrado en los dos ejes, y el tamaño
-   de letra lo pone tamNombre() según lo largo que sea, para llenar la placa sin salirse. */
+/* Placa del nombre: x 25,3–74,2%, y 66,02–70,51%. Centrado en los dos ejes. Lo largo
+   que sea el nombre lo pone tamNombre() en --nom, para llenar la placa sin salirse. */
 .carta .c-nom{position:absolute;left:25.3%;right:25.8%;top:66.02%;height:4.49%;
   display:flex;align-items:center;justify-content:center;line-height:1;
-  color:#2e2107;font-weight:700;font-size:11px;
+  color:#2e2107;font-weight:700;font-size:calc(var(--cw,110px)*var(--nom,.045));
   overflow:hidden;white-space:nowrap;padding:0 1.5%;
   text-shadow:0 .07em 0 rgba(255,255,255,.45), 0 -.04em .03em rgba(0,0,0,.45)}
 .carta.plata .c-nom{color:#1a1e22;
@@ -126,19 +130,19 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
    línea y apoyado en ella. */
 .carta .c-num{position:absolute;height:2.15%;display:flex;align-items:center;
   justify-content:center;line-height:1;color:#2b1f07;font-weight:700;
-  font-size:8px;font-size:2.7cqw;font-variant-numeric:tabular-nums}
+  font-size:calc(var(--cw,110px)*.027);font-variant-numeric:tabular-nums}
 .carta.plata .c-num{color:#15181c}
 .carta .c-num.pen{color:#7a1109}
 .carta .c-num.up{color:#0f4a22}
 .carta .c-et{position:absolute;height:2.9%;display:flex;align-items:flex-end;
   justify-content:center;line-height:1;color:#3a3d42;font-weight:600;
-  letter-spacing:.05em;font-size:7px;font-size:2.5cqw}
+  letter-spacing:.05em;font-size:calc(var(--cw,110px)*.025)}
 
 /* Bandera y peso, centrados en el hueco libre del panel blanco (y 91–97%). */
 .carta .c-pie{position:absolute;left:10%;right:10%;top:92%;height:4.4%;
   display:flex;align-items:center;justify-content:center;gap:4%;
   color:#2b2e33;font-weight:700;letter-spacing:.08em;line-height:1;
-  font-size:9px;font-size:3.1cqw}
+  font-size:calc(var(--cw,110px)*.031)}
 .carta .c-pie .bnd{height:78%;width:auto;display:block;border-radius:1px;
   box-shadow:0 0 0 .5px rgba(0,0,0,.35)}
 
@@ -153,8 +157,18 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
    —es lo que distingue un oro de una plata de un vistazo— y se cae lo que a ese tamaño
    ya no se puede leer. */
 .carta.compacta .c-record,.carta.compacta .c-rasgo,.carta.compacta .c-et{display:none}
-.carta.compacta .c-icono{font-size:13cqw}
+.carta.compacta .c-icono{font-size:calc(var(--cw,110px)*.13)}
 .carta.compacta .c-pie{letter-spacing:.04em}
+
+/* La carta que enseña el sobre manda en la pantalla: se lleva todo el alto que queda
+   por debajo de la barra, y el ancho sale de ahí por la proporción de la carta, así que
+   ocupa lo máximo posible sin deformarse ni salirse por abajo. */
+.apertura{display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:10px;cursor:pointer;min-height:calc(100vh - 210px);min-height:calc(100dvh - 210px)}
+.apertura-carta{width:min(92vw, calc((100vh - 260px) * 620/877), calc((100dvh - 260px) * 620/877));
+  filter:drop-shadow(0 10px 26px rgba(0,0,0,.6))}
+.apertura-tit{font-size:15px;font-weight:800;letter-spacing:.1em;color:var(--warn)}
+.apertura-pie{opacity:.75}
 
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(108px,1fr));gap:8px}
 .grid.g3{grid-template-columns:repeat(3,1fr)}
@@ -859,7 +873,7 @@ function cartaHTML(c,o={}){
       ${r?`<div class="c-rasgo">${RASGOS[r.tipo].n}${r.plus?'+':''}${r.stat?' · '+r.stat.toUpperCase():''}</div>`:''}
     </div>
     <div class="c-record">${esc(c.record||'')}</div>
-    <div class="c-nom" style="font-size:${tamNombre(c.nombre)}cqw">${esc(c.nombre)}<i class="brillo"></i></div>
+    <div class="c-nom" style="--nom:${tamNombre(c.nombre)}">${esc(c.nombre)}<i class="brillo"></i></div>
     ${st}
     <div class="c-pie">
       ${bnd?`<img class="bnd" src="${bnd}" alt="${esc(c.pais)}" loading="lazy">`:''}
@@ -892,7 +906,25 @@ function render(){
     online:vOnline,directo:vDirecto}[vista]||vInicio;
   $('#app').innerHTML=f();
   $('#app').classList.remove('flash'); void $('#app').offsetWidth; $('#app').classList.add('flash');
+  medirCartas();
 }
+
+/* Le dice a cada carta lo ancha que es, en píxeles, y con eso escala su texto.
+   Se leen TODOS los anchos y luego se escriben TODOS: mezclarlos obligaría al
+   navegador a recalcular la página una vez por carta, y en la colección hay
+   cuatrocientas. */
+function medirCartas(raiz){
+  const cartas=(raiz||document).querySelectorAll('.carta');
+  if(!cartas.length) return;
+  const anchos=new Array(cartas.length);
+  for(let i=0;i<cartas.length;i++) anchos[i]=cartas[i].getBoundingClientRect().width;
+  for(let i=0;i<cartas.length;i++)
+    if(anchos[i]) cartas[i].style.setProperty('--cw', anchos[i].toFixed(2)+'px');
+}
+
+// Girar el móvil o abrir el teclado cambia el ancho de las cartas, así que se vuelven a medir.
+addEventListener('resize', ()=>medirCartas());
+
 function ir(v){ vista=v; tmp={}; window.scrollTo(0,0); render(); }
 
 /* ── INICIO ── */
@@ -1031,10 +1063,14 @@ function actualizarRelojes(){
 /* ── APERTURA DE SOBRES ──
    Pantalla propia con su propio estado, para que el atrás funcione en cualquier
    momento. Las cartas ya están en la colección antes de revelarse: salir a medias
-   no pierde nada, solo se salta la animación. */
+   no pierde nada, solo se salta la animación.
+
+   Dos pasos y ya: la mejor carta del sobre a pantalla casi completa, se toca, y sale
+   el sobre entero. Antes se iban pasando las nueve una a una, que para nueve cartas
+   son ocho toques de trámite. */
 function abrirTanda(items,tipo){
   vista='apertura';
-  tmp={ap:{items,tipo,i:0,resumen:items.length===0,
+  tmp={ap:{items,tipo,resumen:items.length===0,
     nuevas:items.filter(it=>S.coleccion.filter(x=>x.cid===it.cid).length===1).map(it=>it.iid)}};
   window.scrollTo(0,0); render();
 }
@@ -1043,9 +1079,8 @@ function vApertura(){
   const a=tmp.ap;
   const barra=`<div class="row mb" style="align-items:center">
       <button class="btn gho sm" data-a="salirapertura" style="flex:none">← Salir</button>
-      <div class="tiny center" style="flex:2">${a.resumen?`${a.items.length} CARTAS`:`CARTA ${a.i+1} DE ${a.items.length}`}</div>
-      ${a.resumen?'<div style="flex:none;width:64px"></div>'
-        :`<button class="btn gho sm" data-a="saltar" style="flex:none">Saltar ⏭</button>`}
+      <div class="tiny center" style="flex:2">${a.items.length} CARTAS</div>
+      <div style="flex:none;width:64px"></div>
     </div>`;
 
   if(a.resumen){
@@ -1066,19 +1101,16 @@ function vApertura(){
       <button class="btn gho" data-nav="coleccion">Ver la colección</button>`;
   }
 
-  const it=a.items[a.i], c=PORID[it.cid];
-  const nueva=a.nuevas.includes(it.iid);
+  // La carta que enseña el sobre: la mejor de las nueve, a pantalla casi completa.
+  // Un toque encima y sale el sobre entero. Nada de ir pasando una a una.
+  const c=PORID[a.items[0].cid];
   const gorda=c.estatus==='campeon'||c.estatus==='top5';
   return barra+`
-    <div class="center" data-a="revelar" style="cursor:pointer;padding-top:6px">
-      ${gorda?`<div class="pop" style="font-size:15px;font-weight:800;letter-spacing:.1em;
-        color:var(--warn);margin-bottom:6px">★ ${EST[c.estatus].n.toUpperCase()} ★</div>`:''}
-      <div class="pop" style="max-width:225px;margin:0 auto 12px">${cartaHTML(c)}</div>
-      <div class="mb">${nueva?'<span class="chip on">NUEVA</span>':'<span class="chip">repetida</span>'}
-        ${c.alineable?'':'<span class="chip">colección</span>'}</div>
-      <div class="sub mb">${DIV[c.division].n} · ${esc(c.pais||'')} · ${esc(c.record||'')}</div>
-      <button class="btn" data-a="revelar">${a.i+1<a.items.length?'Siguiente':'Ver el resumen'}</button>
-      <div class="tiny" style="margin-top:8px">Toca en cualquier sitio para continuar</div>
+    <div class="apertura" data-a="revelar">
+      ${gorda?`<div class="pop apertura-tit">★ ${EST[c.estatus].n.toUpperCase()} ★</div>`:''}
+      <div class="pop apertura-carta">${cartaHTML(c)}</div>
+      <div class="sub center">${DIV[c.division].n} · ${esc(c.pais||'')} · ${esc(c.record||'')}</div>
+      <div class="tiny center apertura-pie">Toca la carta para ver el sobre entero</div>
     </div>`;
 }
 
@@ -2335,6 +2367,7 @@ function ov(html){
   const d=document.createElement('div'); d.className='ov'; d.id='ov';
   d.innerHTML=`<div class="box">${html}</div>`;
   document.body.appendChild(d);
+  medirCartas(d);          // la ficha de una carta lleva la carta dentro
 }
 function copiaManual(t){
   const a=document.createElement('textarea');
@@ -2572,13 +2605,9 @@ document.addEventListener('click',e=>{
       const items=[];
       for(let i=S.sobres.length-1;i>=0;i--) if(S.sobres[i].tipo===d.t){ S.sobres.splice(i,1); items.push(...abrirSobre(d.t)); }
       abrirTanda(items,d.t); break; }
-    case 'revelar':
+    case 'revelar':                      // un toque en la carta y sale el sobre entero
       if(!tmp.ap||tmp.ap.resumen) break;
-      if(tmp.ap.i+1>=tmp.ap.items.length) tmp.ap.resumen=true; else tmp.ap.i++;
-      render(); break;
-    case 'saltar':
-      if(tmp.ap) tmp.ap.resumen=true;
-      render(); break;
+      tmp.ap.resumen=true; window.scrollTo(0,0); render(); break;
     case 'salirapertura': ir('sobres'); break;
     case 'autoplantilla': autoPlantilla(S,true); guardar(); render(); break;
     case 'reciclar':{

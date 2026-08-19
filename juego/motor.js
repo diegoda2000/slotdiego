@@ -98,7 +98,7 @@ function etiquetaEstatus(c){
    techo para que "Bo Nickal" no acabe con letras de cartel de feria. */
 function tamNombre(nombre){
   const largo=Math.max(nombre.length,6);
-  return Math.min(5.1, 45/(largo*0.47)).toFixed(2);
+  return (Math.min(5.1, 45/(largo*0.47))/100).toFixed(4);   // fracción del ancho de la carta
 }
 const ORDEN_ESTATUS = ESTATUS.map(e=>e.id);
 

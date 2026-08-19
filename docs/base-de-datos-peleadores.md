@@ -1,7 +1,7 @@
 # Base de datos de peleadores
 
-**398 cartas · 351 peleadores · 57 países · 173 cartas rankeadas**
-**18 de agosto de 2026 · rev. 19 de agosto: columnas País y Rk · dos rankeados corregidos de plata a oro**
+**402 cartas · 355 peleadores · 57 países · 177 cartas rankeadas**
+**18 de agosto de 2026 · rev. 19 de agosto: columnas País y Rk · dos rankeados de plata a oro · los cuatro rankeados que faltaban**
 
 Seis stats sobre 100. **Sin media de ningún tipo**: la carta se lee por sus números.
 
@@ -17,7 +17,7 @@ Seis stats sobre 100. **Sin media de ningún tipo**: la carta se lee por sus nú
 
 | Rareza | Quién entra | Banda | Cartas |
 |---|---|---|---|
-| **Oro** | Rankeado, racha de 3+, 2+ peleas de título, o 12+ victorias UFC con +4 | 74-89 | 240 |
+| **Oro** | Rankeado, racha de 3+, 2+ peleas de título, o 12+ victorias UFC con +4 | 74-89 | 244 |
 | **Plata** | Resto del roster UFC | 64-82 | 158 |
 | Bronce | Otras promotoras (pendiente) | 55-74 | 0 |
 | Especiales | Capa aparte | hasta 92 | — |
@@ -39,7 +39,7 @@ Datos de UFCStats sobre el historial completo de cada peleador. **Cada pelea se 
 
 | Atributo | Cartas |
 |---|---|
-| Veterano | 47 |
+| Veterano | 49 |
 | Camaleón | 19 |
 | Especialista DUREZA | 8 |
 | Incómodo | 8 |
@@ -49,7 +49,7 @@ Datos de UFCStats sobre el historial completo de cada peleador. **Cada pelea se 
 | Especialista SUELO | 5 |
 | Especialista GOLPEO | 4 |
 | Camaleón+ | 2 |
-| **Total** | **112** de 240 oros |
+| **Total** | **114** de 244 oros |
 
 ---
 
@@ -185,17 +185,18 @@ clasificado.
 
 | | Cartas |
 |---|---|
-| Con ranking (C + 1-15) | 173 |
+| Con ranking (C + 1-15) | 177 |
 | Sin rankear | 225 |
-| **Total** | **398** |
+| **Total** | **402** |
 
-Once cinturones, doce cartas de campeón —Makhachev tiene la suya en dos divisiones— y 161 clasificados. Los 226 restantes son el fondo de la colección: platas, cartas
+Once cinturones, doce cartas de campeón —Makhachev tiene la suya en dos divisiones— y 165 clasificados,
+que son los quince puestos de las once divisiones sin un hueco. Las 225 restantes son el fondo de la colección: platas, cartas
 secundarias de doble-división y oros que llegaron por racha, peleas de título o recorrido en la
 compañía, que son las otras tres vías a oro.
 
 ### Lo que el cruce ha destapado
 
-Cruzar la base contra el ranking real ha sacado cuatro cosas, en orden de importancia.
+Cruzar la base contra el ranking real sacó cuatro cosas, en orden de importancia. Las cuatro están cerradas.
 
 **1. Makhachev es campeón de welter** — cerrado el 19 de agosto. El cinturón está en welter y el
 ligero lo tiene Gaethje, pero Makhachev es **doble campeón**, así que lleva carta de campeón en las
@@ -226,18 +227,37 @@ mismo criterio que el resto de dobles divisiones del archivo:
 Los dos mantienen su atributo en las dos cartas, igual que Pereira, Adesanya o Holland. Y como
 cualquier doble división: se pueden coleccionar las dos, pero **solo alinear una**.
 
-**4. Cuatro rankeados no están en la base de datos:**
+**4. Los cuatro rankeados que faltaban ya están** — cerrado el 19 de agosto:
 
-| División | Rk | Peleador |
-|---|---|---|
-| Gallo (M) | #8 | David Martinez |
-| Mosca (M) | #10 | Ramazan Temirov |
-| Paja (F) | #4 | Yan Xiaonan |
-| Paja (F) | #12 | Amanda Ribas |
+| División | Rk | Peleador | País | Récord | Suma |
+|---|---|---|---|---|---|
+| Gallo (M) | #8 | David Martinez | México | 14-1-0 | 497 |
+| Mosca (M) | #10 | Ramazan Temirov | Uzbekistán | 20-3-0 | 487 |
+| Paja (F) | #4 | Yan Xiaonan | China | 19-5-0 (1 NC) | 497 |
+| Paja (F) | #12 | Amanda Ribas | Brasil | 13-7-0 | 493 |
 
-Los cuatro son oro por la vía del ranking. Yan Xiaonan siendo #4 de paja es el hueco más llamativo,
-y cae justo en una de las tres divisiones femeninas, que ya estaban señaladas como el punto flaco
-del roster.
+Los cuatro entran como oro por la vía del ranking. Las sumas caen donde caen las de su puesto: la
+media de un #8 es 497, la de un #10 es 486, la de un #4 es 493 y la de un #12 es 490.
+
+Los números salen del mismo sitio que los demás, del historial en UFCStats:
+
+- **David Martinez** — oro del World Games en K1 y cinturón negro de kárate y kickboxing: 10 KO en 14
+  victorias y 4,62 golpes significativos por minuto sostienen GOLPEO 86. No se le conoce juego de
+  derribo, así que LUCHA 76. Con 14-1 y sin haber sido finalizado nunca, DUREZA 87, y el 69% de
+  defensa de golpeo deja IQ 85. Tres peleas en UFC son muestra corta, así que el resto tira a la media
+- **Ramazan Temirov** — kárate, 11 KO y más del 60% de finalizaciones: GOLPEO 85. El 100% de defensa
+  de derribo sube LUCHA a 81 pese a apenas derribar él. Y justo porque finaliza tanto, sus peleas no
+  llegan a las tarjetas: CARDIO 80, que es lo que mide esa stat
+- **Yan Xiaonan** — 25 peleas, pelea de título y #13 del libra por libra. Volumen de kickboxing (4,69
+  por minuto) pero solo 0,15 derribos por golpe, así que GOLPEO 85 y no más. Absorbe 3,23 por minuto,
+  de las cifras más bajas de la división: DUREZA 86. Su agujero real es el 65% de defensa de derribo,
+  y por ahí baja LUCHA a 78. **Veterano** por trayectoria
+- **Amanda Ribas** — cinturón negro de judo y de BJJ: 2,07 derribos por 15 minutos y 85% de defensa
+  de derribo dan LUCHA 84, y 0,65 intentos de sumisión por 15 minutos con cuatro sumisiones ganadas,
+  SUELO 84. Lo que le pesa son las siete derrotas y haber sido finalizada tres veces: DUREZA 79, su
+  número más bajo. **Veterano** por trayectoria
+
+Con esto **las 11 divisiones tienen sus 15 puestos y su campeón completos**, sin un solo hueco.
 
 ---
 
@@ -575,6 +595,7 @@ del roster.
 | **Marlon Vera** | Ecuador | 10 | 81 | 74 | 84 | 85 | 87 | 86 | Especialista DUREZA | 23-12-1 |
 | **Payton Talbott** | Estados Unidos | 11 | 83 | 78 | 78 | 84 | 88 | 86 | — | 11-1-0 |
 | **Aljamain Sterling** ◆ | Estados Unidos | — | 83 | 74 | 84 | 88 | 83 | 85 | Camaleón | 26-5-0 |
+| **David Martinez** | México | 8 | 86 | 76 | 78 | 85 | 87 | 85 | — | 14-1-0 |
 | **Aiemann Zahabi** | Canadá | 7 | 81 | 76 | 78 | 86 | 85 | 87 | — | 14-3-0 |
 | **Marcus McGhee** | Estados Unidos | 15 | 80 | 79 | 79 | 82 | 88 | 85 | — | 11-2-0 |
 | **Song Yadong** | China | 6 | 81 | 76 | 78 | 85 | 88 | 84 | Veterano | 23-9-1 (1 NC) |
@@ -630,6 +651,7 @@ del roster.
 | **Brandon Royval** | Estados Unidos | 3 | 82 | 74 | 85 | 84 | 84 | 79 | Incómodo | 18-9-0 |
 | **Edgar Chairez** | México | 15 | 81 | 74 | 86 | 79 | 88 | 80 | — | 14-6-0 (1 NC) |
 | **Kyoji Horiguchi** ◆ | Japón | 5 | 80 | 77 | 75 | 86 | 84 | 85 | Veterano | 36-6-0 (1 NC) |
+| **Ramazan Temirov** | Uzbekistán | 10 | 85 | 81 | 75 | 80 | 86 | 80 | — | 20-3-0 |
 | **Lone'er Kavanagh** | Inglaterra | 6 | 82 | 82 | 75 | 82 | 82 | 82 | — | 10-2-0 |
 | **Steve Erceg** | Australia | 12 | 81 | 74 | 76 | 87 | 84 | 78 | — | 14-5-0 |
 | **Deiveson Figueiredo** ◆ | Brasil | — | 85 | 74 | 86 | 74 | 83 | 77 | Camaleón | 25-7-1 |
@@ -765,7 +787,9 @@ del roster.
 | **Alice Ardelean** | Rumanía | — | 80 | 82 | 79 | 85 | 88 | 85 | — | 12-7-0 |
 | **Jessica Andrade** ◆ | Brasil | 9 | 87 | 86 | 75 | 78 | 88 | 84 | Veterano | 26-15-0 |
 | **Fatima Kline** | Estados Unidos ? | 6 | 83 | 81 | 76 | 85 | 88 | 85 | — | 10-1-0 |
+| **Yan Xiaonan** | China | 4 | 85 | 78 | 76 | 87 | 86 | 85 | Veterano | 19-5-0 (1 NC) |
 | **Angela Hill** | Estados Unidos | 13 | 83 | 74 | 78 | 87 | 87 | 84 | Especialista CARDIO | 19-16-0 |
+| **Amanda Ribas** | Brasil | 12 | 81 | 84 | 84 | 83 | 79 | 82 | Veterano | 13-7-0 |
 | **Tabatha Ricci** ◆ | Brasil | 10 | 82 | 76 | 76 | 86 | 88 | 82 | — | 12-5-0 |
 | **Amanda Lemos** | Brasil | 11 | 82 | 75 | 81 | 83 | 86 | 81 | — | 15-7-1 |
 | **Gillian Robertson** ◆ | Canadá | 5 | 81 | 74 | 86 | 79 | 87 | 80 | — | 17-9-0 |
