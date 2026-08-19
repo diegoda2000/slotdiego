@@ -91,9 +91,12 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
    como si fuera un rectángulo, tirando a la derecha hasta donde la tinta sigue pisando
    metal. El límite duro son las cifras a la altura del 13,9%; se deja en el 12,9%, un pelo
    a la izquierda, que es donde el ojo lo da por centrado. */
+/* El ranking NO lleva el desplazamiento por altura de mayúsculas que sí llevan los
+   números y el nombre. Aquí el hueco no es un rectángulo sino un paralelogramo que se
+   estrecha hacia abajo, así que bajar la cifra la descentra en vez de centrarla: se
+   queda donde la caja la pone. */
 .carta .c-rk{position:absolute;left:7.4%;width:11%;top:2.4%;height:7%;
   display:flex;align-items:center;justify-content:center;line-height:1;
-  transform:translateY(.42em);
   font-weight:700;color:#3a2a09;font-size:calc(var(--cw,110px)*.062);letter-spacing:-.04em;
   text-shadow:0 .07em 0 rgba(255,255,255,.42), 0 -.04em .03em rgba(0,0,0,.5)}
 .carta.plata .c-rk{color:#23272c;
@@ -126,16 +129,16 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
   color:#2e2107;font-weight:700;font-size:calc(var(--cw,110px)*var(--nom,.045));
   overflow:hidden;white-space:nowrap;padding:0 1.5%;
   text-shadow:0 .07em 0 rgba(255,255,255,.45), 0 -.04em .03em rgba(0,0,0,.45)}
+/* Como al nombre sí se le ha bajado 0,42 em, su reflejo deshace ese movimiento para
+   seguir cayendo sobre la placa del marco y no sobre el texto. */
+.carta .c-nom .brillo{transform:translateY(-.42em)}
 .carta.plata .c-nom{color:#1a1e22;
   text-shadow:0 .07em 0 rgba(255,255,255,.55), 0 -.04em .03em rgba(0,0,0,.4)}
 
 /* El reflejo. Una franja de luz cruzada por encima, que es lo que hace que el texto
    parezca parte del metal y no una pegatina puesta encima. */
-/* El reflejo va pegado al hueco del marco, no al texto: como al texto se le ha bajado
-   0,42 em para centrarlo por altura de mayúsculas, aquí se deshace ese mismo movimiento
-   para que la franja de luz siga cayendo donde está la placa. */
+/* El reflejo va pegado al hueco del marco, no al texto. */
 .carta .brillo{position:absolute;inset:0;pointer-events:none;border-radius:inherit;
-  transform:translateY(-.42em);
   background:linear-gradient(104deg,
     rgba(255,255,255,0) 26%, rgba(255,255,255,.34) 41%,
     rgba(255,255,255,.10) 52%, rgba(255,255,255,0) 66%)}
@@ -285,10 +288,23 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
   .aviso .apertura-carta::before{animation:none;opacity:1}
   .suelta .destello::after,.suelta .apertura-carta.n-corona .destello::before{animation:none;opacity:0}
 }
-}
 
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(108px,1fr));gap:8px}
 .grid.g3{grid-template-columns:repeat(3,1fr)}
+
+/* Rejillas que caben en pantalla: el número de columnas lo fija cada pantalla y el
+   ancho total lo calcula ajustarRejillas() midiendo el hueco que queda. */
+.grid.fit{grid-template-columns:repeat(var(--cols,3),1fr);gap:6px;
+  max-width:var(--rejilla,100%);margin:0 auto}
+.grid.fit .pie-carta{margin-top:1px;font-size:8px;line-height:1.1;text-align:center;
+  color:var(--dim2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.grid.fit>div{display:flex;flex-direction:column;min-width:0}
+
+/* El álbum de la colección: páginas de 4×4 que se pasan, nunca scroll. */
+.album-nav{display:flex;align-items:center;justify-content:center;gap:14px;margin-top:8px}
+.album-nav .pag{font-family:var(--titulo);font-size:12px;color:var(--dim);
+  letter-spacing:.06em;min-width:96px;text-align:center}
+.album-nav button{flex:none;min-width:52px}
 
 /* ── varios ── */
 .chip{font-family:var(--titulo);letter-spacing:.05em;display:inline-block;background:var(--bg3);border:1px solid var(--line);border-radius:6px;
@@ -355,7 +371,7 @@ th{color:var(--dim2);font-size:11px;text-transform:uppercase;letter-spacing:.04e
    columnas y cada carta ocupa dos, así que colocando la penúltima en la columna 2 la
    pareja de abajo queda centrada sin trucos ni huecos falsos. */
 .pgrid{display:grid;grid-template-columns:repeat(6,1fr);gap:5px;
-  max-width:var(--pancho,100%);margin:0 auto}
+  max-width:var(--rejilla,100%);margin:0 auto}
 .pgrid .pslot{grid-column:span 2;display:flex;flex-direction:column}
 .pgrid .pslot:nth-last-child(2){grid-column:2/span 2}
 .pgrid .pnom{margin-top:1px;font-size:8px;line-height:1.1}
@@ -1085,41 +1101,47 @@ function render(){
     online:vOnline,directo:vDirecto}[vista]||vInicio;
   $('#app').innerHTML=f();
   $('#app').classList.remove('flash'); void $('#app').offsetWidth; $('#app').classList.add('flash');
-  ajustarPlantilla();   // antes de medir: cambia lo anchas que son las cartas
+  ajustarRejillas();    // antes de medir: cambia lo anchas que son las cartas
   medirCartas();
 }
 
-/* La plantilla se estira hasta llenar la pantalla.
+/* Las rejillas de cartas se estiran hasta llenar la pantalla, y ninguna se desplaza.
 
-   Las once tienen que caber a la vez —una plantilla que hay que recorrer con el dedo no
-   se lee de un vistazo, y leerla de un vistazo es para lo que sirve—, pero además tienen
-   que ser lo más grandes que quepan. Cuánto sitio hay depende del móvil, del alto de la
-   barra de abajo y de si el botón parte en dos líneas, así que no se puede dejar escrito
-   en el CSS: se mide.
+   Una pantalla de cartas que hay que recorrer con el dedo no se lee de un vistazo, y en
+   este juego mirar las cartas ES el juego. Así que en vez de dejar que la rejilla crezca
+   hacia abajo, se mide el hueco real que queda y las cartas se estiran o encogen para
+   llenarlo exactamente.
 
-   Cuatro filas de cartas con proporción 620/877, más el nombre de la división debajo de
-   cada una, más los huecos. De ahí sale lo ancha que puede ser una carta, y el ancho de
-   la rejilla es tres de esas más dos huecos. */
-function ajustarPlantilla(){
-  const g=document.querySelector('.pgrid'); if(!g) return;
-  const HUECO=5, NOMBRE=11, FILAS=4, COLS=3;
-  const arriba=g.getBoundingClientRect().top;
-  /* Lo que hay debajo: el botón, y el hueco que el body ya reserva para la barra de
-     navegación. Sumar además el alto de la barra sería contarla dos veces, que es lo
-     que dejaba a las cartas más pequeñas de lo que podían ser. */
-  const boton=document.querySelector('.pauto');
-  const reserva=parseFloat(getComputedStyle(document.body).paddingBottom)||0;
-  const abajo=(boton?boton.getBoundingClientRect().height+12:0)+reserva+6;
-  const alto=Math.max(180, innerHeight-arriba-abajo);
-  const porFila=(alto-HUECO*(FILAS-1))/FILAS;
-  let ancho=(porFila-NOMBRE)*620/877;
-  // Nunca más ancha de lo que da la pantalla, ni tan pequeña que no se lea.
-  const tope=(g.parentElement.clientWidth-HUECO*(COLS-1))/COLS;
-  ancho=Math.max(58, Math.min(ancho, tope));
-  g.style.setProperty('--pancho', (ancho*COLS+HUECO*(COLS-1)).toFixed(1)+'px');
+   Cuánto sitio hay depende del móvil, del alto de la barra de abajo y de lo que haya
+   encima y debajo de la rejilla, así que no se puede dejar escrito en el CSS: se mide
+   después de cada pintado.
+
+   Cualquier rejilla marcada con data-fit="columnas,filas" entra por aquí. */
+function ajustarRejillas(){
+  for(const g of document.querySelectorAll('[data-fit]')){
+    const [cols,filas]=g.dataset.fit.split(',').map(Number);
+    if(!cols||!filas) continue;
+    const HUECO=parseFloat(getComputedStyle(g).gap)||6;
+    const PIE=g.dataset.pie?parseFloat(g.dataset.pie):0;   // el rótulo bajo cada carta
+    const arriba=g.getBoundingClientRect().top;
+    /* Lo que ocupa lo que va DEBAJO de la rejilla, más el hueco que el body ya reserva
+       para la barra de navegación. Sumar además el alto de la barra sería contarla dos
+       veces, que es lo que dejaba las cartas más pequeñas de lo que podían ser. */
+    let abajo=parseFloat(getComputedStyle(document.body).paddingBottom)||0;
+    for(let e=g.nextElementSibling;e;e=e.nextElementSibling){
+      const r=e.getBoundingClientRect();
+      if(r.height) abajo+=r.height+8;
+    }
+    const alto=Math.max(120, innerHeight-arriba-abajo-12);
+    const porFila=(alto-HUECO*(filas-1))/filas;
+    let ancho=(porFila-PIE)*620/877;
+    const tope=(g.parentElement.clientWidth-HUECO*(cols-1))/cols;
+    ancho=Math.max(46, Math.min(ancho, tope));
+    g.style.setProperty('--rejilla', (ancho*cols+HUECO*(cols-1)).toFixed(1)+'px');
+  }
 }
 
-/* Le dice a cada carta lo ancha que es, en píxeles, y con eso escala su texto.
+/* Le dice a cada carta lo ancha que es/* Le dice a cada carta lo ancha que es, en píxeles, y con eso escala su texto.
    Se leen TODOS los anchos y luego se escriben TODOS: mezclarlos obligaría al
    navegador a recalcular la página una vez por carta, y en la colección hay
    cuatrocientas. */
@@ -1133,7 +1155,7 @@ function medirCartas(raiz){
 }
 
 // Girar el móvil o abrir el teclado cambia el ancho de las cartas, así que se rehace la cuenta.
-addEventListener('resize', ()=>{ ajustarPlantilla(); medirCartas(); });
+addEventListener('resize', ()=>{ ajustarRejillas(); medirCartas(); });
 
 // Irse a otra pantalla corta el aviso de la apertura: si no, el temporizador
 // seguiría vivo y volvería a pintar encima de donde esté el jugador.
@@ -1466,10 +1488,10 @@ function vApertura(){
     return barra+`
       <div class="center mb"><h2>${TIPOS_SOBRE[a.tipo].ic} ${TIPOS_SOBRE[a.tipo].n}</h2>
         <div class="sub">${nuevas} nueva${nuevas===1?'':'s'} de ${a.items.length}</div></div>
-      <div class="grid mb">${a.items.map(it=>{
+      <div class="grid fit mb" style="--cols:3" data-fit="3,3" data-pie="12">${a.items.map(it=>{
         const c=PORID[it.cid];
         return `<div>${cartaHTML(c,{attr:`data-carta="${it.iid}"`})}
-          <div class="tiny center" style="margin-top:3px">${a.nuevas.includes(it.iid)?'<span class="chip on">nueva</span>':'repetida'}</div></div>`;
+          <div class="pie-carta">${a.nuevas.includes(it.iid)?'nueva':'repetida'}</div></div>`;
       }).join('')}</div>
       ${/* Solo se encadena lo que ya tienes guardado. El básico se reclama en la
              pantalla de sobres y en ningún otro sitio: encadenarlo aquí convierte
@@ -1517,14 +1539,22 @@ function vColeccion(){
   if(f.al==='no') l=l.filter(o=>!o.c.alineable);
   l.sort((a,b)=>comparar(a.c,b.c));      // siempre de mejor a peor
   const total=ROSTER.length, distintas=new Set(S.coleccion.map(x=>x.cid)).size;
-  return `<h2>Colección</h2>
-    <div class="sub mb">${distintas} de ${total} cartas distintas · ${S.coleccion.length} en total</div>
+
+  /* La colección es un ÁLBUM, no una lista: páginas de 4×4 que se pasan. Una colección
+     que se recorre con el dedo hacia abajo no se mira, se escanea, y aquí mirar las
+     cartas es medio juego. Con páginas, cada una es una hoja del álbum. */
+  const POR_PAG=16;
+  const pags=Math.max(1, Math.ceil(l.length/POR_PAG));
+  if(tmp.pag===undefined) tmp.pag=0;
+  tmp.pag=Math.max(0, Math.min(tmp.pag, pags-1));
+  const hoja=l.slice(tmp.pag*POR_PAG, (tmp.pag+1)*POR_PAG);
+
+  return `<div class="pcab"><h2>Colección</h2>
+      <span class="sub">${distintas} de ${total} distintas · ${S.coleccion.length} en total</span></div>
     <div class="bar mb"><div style="width:${distintas/total*100}%"></div></div>
     <div class="chips mb">
       <span class="chip ${!f.rar?'on':''}" data-f="rar" data-v="">Todas</span>
       ${ORDEN_ESTATUS.map(r=>`<span class="chip ${f.rar===r?'on':''}" data-f="rar" data-v="${r}">${EST[r].n}</span>`).join('')}
-    </div>
-    <div class="chips mb">
       <span class="chip ${!f.al?'on':''}" data-f="al" data-v="">Todo</span>
       <span class="chip ${f.al==='si'?'on':''}" data-f="al" data-v="si">Alineables</span>
       <span class="chip ${f.al==='no'?'on':''}" data-f="al" data-v="no">Colección</span>
@@ -1533,7 +1563,14 @@ function vColeccion(){
       <span class="chip ${!f.div?'on':''}" data-f="div" data-v="">Todas</span>
       ${DIVISIONES.map(d=>`<span class="chip ${f.div===d.id?'on':''}" data-f="div" data-v="${d.id}">${d.n}</span>`).join('')}
     </div>
-    ${l.length?`<div class="grid">${l.map(o=>cartaHTML(o.c,{attr:`data-carta="${o.x.iid}"`})).join('')}</div>`
+    ${l.length?`
+      <div class="grid fit" style="--cols:4" data-fit="4,4">${hoja.map(o=>
+        cartaHTML(o.c,{attr:`data-carta="${o.x.iid}"`})).join('')}</div>
+      <div class="album-nav">
+        <button class="btn gho sm" data-a="pag" data-v="-1" ${tmp.pag?'':'disabled'}>‹</button>
+        <span class="pag">HOJA ${tmp.pag+1} DE ${pags}</span>
+        <button class="btn gho sm" data-a="pag" data-v="1" ${tmp.pag<pags-1?'':'disabled'}>›</button>
+      </div>`
       :'<div class="card-panel sub">Nada con esos filtros.</div>'}`;
 }
 
@@ -1569,7 +1606,7 @@ function vPlantilla(){
      línea que se quita aquí se la quedan las cartas, que es lo que hay que leer. */
   return `<div class="pcab"><h2>Plantilla</h2>
     <span class="sub">Una por división, sin repetir peleador</span></div>
-    <div class="pgrid">${DIVISIONES.map(d=>{
+    <div class="pgrid" data-fit="3,4" data-pie="11">${DIVISIONES.map(d=>{
       const iid=S.plantilla[d.id], c=iid?cartaDe(iid):null;
       return `<div class="pslot" data-slot="${d.id}">${c?cartaHTML(c,{attr:`data-slot="${d.id}"`,compacta:true})
         :`<div class="carta oculta compacta" data-slot="${d.id}">
@@ -1628,6 +1665,13 @@ function vReciclaje(){
   for(const x of S.coleccion) if(reciclable(x.iid)) lista.push({x,c:PORID[x.cid]});
   lista.sort((a,b)=>comparar(a.c,b.c));
   const {fichas,detalle}=cuentaReciclaje(sel);
+  // Por páginas, igual que la colección: los repetidos se cuentan por decenas y una
+  // lista que hay que recorrer con el dedo no deja ver lo que estás triturando.
+  const POR_PAG=12;
+  const pags=Math.max(1, Math.ceil(lista.length/POR_PAG));
+  if(tmp.pag===undefined) tmp.pag=0;
+  tmp.pag=Math.max(0, Math.min(tmp.pag, pags-1));
+  const hoja=lista.slice(tmp.pag*POR_PAG,(tmp.pag+1)*POR_PAG);
   const filas=Object.entries(TRAMOS).map(([id,t])=>{
     const d=detalle[id];
     return `<tr><td>${t.n}</td><td style="text-align:right">${t.repes} repes</td>
@@ -1646,8 +1690,15 @@ function vReciclaje(){
         <button class="btn sm" data-a="reciclar" ${fichas<1?'disabled':''}>Reciclar</button>
       </div>
     </div>
-    ${lista.length?`<div class="grid">${lista.map(o=>cartaHTML(o.c,{
-      attr:`data-rec="${o.x.iid}"`,sel:sel.includes(o.x.iid),copias:S.coleccion.filter(y=>y.cid===o.x.cid).length})).join('')}</div>`
+    ${hoja.length?`
+      <div class="grid fit" style="--cols:4" data-fit="4,3">${hoja.map(o=>cartaHTML(o.c,{
+        attr:`data-rec="${o.x.iid}"`,sel:sel.includes(o.x.iid),
+        copias:S.coleccion.filter(y=>y.cid===o.x.cid).length})).join('')}</div>
+      ${pags>1?`<div class="album-nav">
+        <button class="btn gho sm" data-a="pag" data-v="-1" ${tmp.pag?'':'disabled'}>‹</button>
+        <span class="pag">HOJA ${tmp.pag+1} DE ${pags}</span>
+        <button class="btn gho sm" data-a="pag" data-v="1" ${tmp.pag<pags-1?'':'disabled'}>›</button>
+      </div>`:''}`
       :'<div class="card-panel sub">No tienes ningún repetido. Solo se reciclan repetidos.</div>'}`;
 }
 
@@ -2800,7 +2851,9 @@ document.addEventListener('click',e=>{
   const d=t.dataset;
 
   if(d.nav){ cerrarOv(); ir(d.nav); return; }
-  if(d.f!==undefined){ tmp.filtro={...(tmp.filtro||{})}; tmp.filtro[d.f]=d.v||null; render(); return; }
+  // Cambiar de filtro devuelve a la primera hoja del álbum: si no, te quedas mirando
+  // una hoja vacía porque la selección nueva tiene menos cartas que la anterior.
+  if(d.f!==undefined){ tmp.filtro={...(tmp.filtro||{})}; tmp.filtro[d.f]=d.v||null; tmp.pag=0; render(); return; }
   if(d.carta){ detalleCarta(d.carta); return; }
   if(d.slot&&vista==='plantilla'){ elegirParaSlot(d.slot); return; }
   if(d.poner){ S.plantilla[d.div]=d.poner; guardar(); cerrarOv(); render(); return; }
@@ -3008,6 +3061,8 @@ document.addEventListener('click',e=>{
       const items=[];
       for(let i=S.sobres.length-1;i>=0;i--) if(S.sobres[i].tipo===d.t){ S.sobres.splice(i,1); items.push(...abrirSobre(d.t)); }
       abrirTanda(items,d.t); break; }
+    case 'pag':                          // pasar hoja del álbum de la colección
+      tmp.pag=(tmp.pag||0)+Number(d.v); window.scrollTo(0,0); render(); break;
     case 'saltaraviso':                  // el aviso siempre se puede saltar
       soltarCarta(); break;
     case 'revelar':                      // un toque en la carta y sale el sobre entero
@@ -3021,7 +3076,7 @@ document.addEventListener('click',e=>{
     case 'salirapertura': ir('sobres'); break;
     case 'autoplantilla': autoPlantilla(S,true); guardar(); render(); break;
     case 'reciclar':{
-      const g=reciclar(tmp.sel||[]); tmp.sel=[];
+      const g=reciclar(tmp.sel||[]); tmp.sel=[]; tmp.pag=0;
       ov(`<div class="center"><div style="font-size:38px">🎟️</div><h3>+${g} ficha(s)</h3>
         <button class="btn" data-a="cerrarov">Vale</button></div>`); render(); break; }
     case 'canjearset':{
