@@ -112,15 +112,32 @@ const TRAMOS = {
 };
 const tramoDe = c => EST[c.estatus].tramo;
 
-/* EL ORDEN, en un solo sitio: estatus primero, y dentro del mismo estatus la suma de
-   las seis stats de mayor a menor. Si también empatan, alfabético. La suma es interna:
-   solo decide quién va antes, nunca se enseña. */
+/* EL ORDEN, en un solo sitio, y en este orden exacto:
+
+     1. Rankeado antes que sin rankear. Siempre, y sin importar los números: un #15 va
+        antes que el oro sin rankear más completo del roster. El ranking es lo que el
+        jugador persigue, y es lo que la carta enseña.
+     2. Entre rankeados, por PUESTO: campeón, #1, #2… hasta #15. Antes se agrupaba por
+        tramos de cinco y dentro del tramo mandaba la suma, y eso ponía a un #15 por
+        delante de un #11 si sumaba más. Manda el puesto.
+     3. Entre los que no tienen ranking, primero el oro y luego la plata, y dentro de
+        cada uno por la suma de las seis stats, de mayor a menor.
+     4. Y si aún hay empate, alfabético.
+
+   La suma es interna: solo decide quién va antes, nunca se enseña. */
 function ordenar(cartas){
   return cartas.slice().sort(comparar);
 }
 function comparar(a,b){
-  const d = ORDEN_ESTATUS.indexOf(a.estatus) - ORDEN_ESTATUS.indexOf(b.estatus);
-  if(d) return d;
+  const ra = (a.rk===0||a.rk) ? a.rk : null;
+  const rb = (b.rk===0||b.rk) ? b.rk : null;
+  if(ra!==null && rb!==null){ if(ra!==rb) return ra-rb; }
+  else if(ra!==null) return -1;
+  else if(rb!==null) return 1;
+  else {
+    const d = ORDEN_ESTATUS.indexOf(a.estatus) - ORDEN_ESTATUS.indexOf(b.estatus);
+    if(d) return d;
+  }
   if(b.suma !== a.suma) return b.suma - a.suma;
   return a.nombre.localeCompare(b.nombre,'es');
 }

@@ -127,6 +127,18 @@ metal y no como una pegatina encima.
 consultas de contenedor y hubo que cambiarlo: no existen en los WebView antiguos, y allí el texto
 se quedaba en un tamaño fijo y se salía de los huecos en cuanto la carta era pequeña.
 
+**Todas las medidas salen de medir el marco a nivel de píxel, no de ajustarlas a ojo.** Es lo que
+permite afirmar cosas como las de abajo en vez de discutirlas:
+
+| Elemento | Dónde y por qué |
+|---|---|
+| **Récord** | En el **panel blanco**, entre la placa del nombre y las stats. La franja de y 70,6% a 75,3% está limpia de lado a lado y las etiquetas de las stats no empiezan hasta el 75,32%, así que cabe con aire |
+| **Números** | Llenan el rombo: la tinta mide 3,06% de ancho de carta contra los 3,07% que el rombo ofrece de alto. Lleno del todo, sin tocar los bordes |
+| **Nombres de stat** | Ocupaban menos de la mitad de su hueco. Ahora 13,2% de tinta sobre una caja de 21,2% |
+| **Bandera y peso** | **Dos mitades iguales**, no un bloque centrado. Centrar el par como bloque dejaba el hueco entre los dos 1,28% a la derecha del eje, porque la bandera es más ancha que "HW"; con dos columnas iguales la frontera **es** el eje, y sale simétrico con cualquier sigla, de "HW" a "WFLW" |
+| **Altura del peso** | Las mayúsculas del peso miden lo mismo que la bandera: 4,52% contra 4,49%. El factor se sacó **midiendo la tinta** con las métricas del motor de texto, porque la ratio nominal de la fuente daba un 15% de más |
+| **Ranking** | Centrado en la pestaña **como si fuera un rectángulo**, no dentro del paralelogramo real: su esquina inferior izquierda se sale de la carta y el ojo ve el hueco recortado, cuyo centro está en otro sitio |
+
 ### 2.4 [R3] Rangos por rareza — solo oro y plata
 
 El bronce **no existe**. Queda reservado por si algún día entran Cage Warriors, KSW, LFA y demás
@@ -145,9 +157,14 @@ el roster real de UFC los números están **mucho más juntos**, porque los pele
 parecen más entre sí que las cartas inventadas. Medido sobre partidas completas, los finish caen al
 **6-14%** de los duelos, frente al 52% que daba el roster inventado.
 
-No es un fallo, es lo que pasa al usar datos reales, y hay que decidirlo a conciencia: o se acepta
-que el finish sea raro y valioso —que es defendible, en MMA real también lo es—, o se estiran las
-stats de la élite para volver a abrir el hueco. **Está sin decidir.**
+**Decidido el 19 de agosto: se acepta.** El finish pasa a ser raro y valioso, y no se tocan las
+stats de la élite para forzarlo. La alternativa era estirar los números de arriba hasta reabrir el
+hueco, y se descarta: falsear 402 cartas para que salte una tabla es arreglar el síntoma. En MMA de
+verdad el finish tampoco es lo normal, así que que lo sea aquí es coherente, no un defecto.
+
+Lo que sí cambia es lo que un finish significa: si es raro, **desempata**. Por eso a 3-3 el primer
+criterio son los finishes (§5.4). Una pelea acabada antes de tiempo ya no es solo un punto más
+bonito, es lo que decide una eliminatoria igualada.
 
 ### 2.5 Escala de habilidad, no de peso
 
@@ -185,6 +202,24 @@ número exacto se ajusta al tamaño del roster final; en el prototipo son 8 de c
 - **Sin banquillo.** Se descartó: con sets de colección como sumidero, el banquillo solo añadía gestión aburrida
 - Puedes alinear **todas las cartas con rasgo que quieras**, y pueden repetir rasgo entre ellas. El límite está en cuántas puedes activar, no en cuántas puedes llevar
 - Repetir rasgo no da potencia extra, porque solo activas uno. Da **fiabilidad**: si llevas tres Camaleones en divisiones distintas, es más probable que al menos uno quede en posición útil después de los vetos
+
+### 3.1 [R3] Las once, a la vez y lo más grandes que quepan
+
+**Las once caben en la pantalla sin desplazar**, y no es un capricho: una plantilla que hay que
+recorrer con el dedo no se lee de un vistazo, y leerla de un vistazo es exactamente para lo que
+sirve. De ahí salen dos reglas de la pantalla:
+
+- **Se colocan 3 + 3 + 3 + 2, con las dos últimas centradas.** Con cuatro columnas las cartas salen
+  más pequeñas de lo necesario y sobra hueco por debajo; con tres, la carta gana tamaño y la
+  plantilla llena la pantalla.
+- **El tamaño de la carta se calcula, no se escribe.** Cuánto sitio hay depende del móvil, del alto
+  de la barra de abajo y de si el botón parte en dos líneas, así que se mide el hueco real y las
+  cartas se estiran hasta llenarlo. En un móvil pequeño salen a 61 px y en uno grande a 112 px, y en
+  los dos casos entran las once sin desplazar.
+
+Y por lo mismo, **todo lo que rodea a la rejilla está al mínimo**: el título y su nota van en una
+sola línea, y la explicación del botón vive dentro del propio botón. Cada línea que se ahorra ahí se
+la quedan las cartas.
 
 ---
 
@@ -476,11 +511,57 @@ las probabilidades, no la cantidad: así el jugador compara sobres por una sola 
 
 Dos pasos, y ya:
 
-1. La **mejor carta de las nueve** ocupa casi toda la pantalla, centrada.
+1. **El walkout**: la mejor carta de las nueve ocupa casi toda la pantalla, pero **vacía**, y se va
+   llenando por partes.
 2. **Un toque encima** y sale el sobre entero.
 
 No hay botón de continuar ni se van pasando una a una. Nueve cartas de una en una son ocho toques de
 puro trámite, y el momento que engancha —ver qué te ha tocado— es justo el que se diluye repitiéndolo.
+
+#### [R3] El walkout
+
+La carta se destapa **por partes y en un orden que va de lo que menos dice a lo que más**:
+
+1. **Nacionalidad** — la bandera, abajo
+2. **Peso** — la sigla, al lado
+3. **Récord** — en el panel blanco
+4. **Ranking** — la pestaña de arriba, y solo si lo tiene
+5. **El peleador** — su icono, el nombre y las seis stats
+
+Cada dato estrecha el cerco. Cuando ya sabes que es un pesado invicto, el ranking es la última carta
+boca abajo. Todo ocurre **sobre la propia carta**, en su hueco: no hay panel, ni lista, ni ventana
+aparte. Lo que se está viendo es la carta llenándose.
+
+**El resplandor de detrás va del nivel que viene**, así que la pantalla te está diciendo si viene
+algo bueno antes de que leas una palabra. Es deliberado: esa tensión es el momento, más que la carta.
+
+Y **la entrada de la carta ya completa va con lo que vale**: una plata cae y ya está; un campeón
+llega con golpe, temblor y un aura que se queda latiendo. Al aparecer, **una franja de luz barre la
+carta entera**, y el campeón se lleva un segundo barrido dorado detrás del primero.
+
+Dos condiciones para que no canse, y son innegociables porque el sobre básico es ilimitado:
+
+- **Dura poco** — de un segundo por una plata a menos de tres por un campeón.
+- **Se salta tocando.** Quien va por su sobre número cuarenta no puede estar obligado a mirarlo.
+
+#### [R3] El sonido
+
+**Sintetizado, sin un solo archivo de audio.** Tres razones y en este orden: no hay licencias que
+arrastrar —y el proyecto ya carga conscientemente con las de usar peleadores reales—, no suma un
+byte al APK ni al IPA, y funciona sin conexión. Cuando el juego tenga dirección de sonido de verdad
+se sustituye por dentro y nada más se entera.
+
+- Cada dato que cae suena **un tono más agudo que el anterior**, así que la escalera va contando
+  sola lo que queda para ver la carta.
+- El **ranking** entra más fuerte y con un golpe detrás.
+- El **campeón** se lleva la **campana del octógono**. Es lo único reservado a la corona.
+
+Dos cosas que son de la plataforma, no del diseño, y hay que respetarlas: los móviles no dejan sonar
+nada hasta que hay un toque, así que el contexto de audio se crea **dentro** del toque que abre el
+sobre; y en iPhone la aplicación **calla si el móvil está en silencio**, que es lo correcto — forzar
+que suene con el móvil silenciado se paga con desinstalaciones.
+
+Hay un **interruptor de sonido en Más**, y se recuerda entre sesiones.
 
 Y **desde ahí no se encadena un básico**. El gratis se reclama en la pantalla de sobres y en ningún
 otro sitio: ofrecer "abrir otro" al final de cada apertura convierte esa pantalla en una palanca de
@@ -491,22 +572,38 @@ la que no sales. Lo que sí se encadena es lo que ya tienes guardado en la mochi
 Es el error de lectura fácil, y hay que dejarlo escrito: **el básico no es una versión peor del de
 plata**. Cada uno hace una cosa distinta, y por eso no se comparan por cuántos oros dan.
 
-| | Coste | Oros | Platas | Rankeadas | ≥1 corona | ≥1 oro alto |
-|---|---|---|---|---|---|---|
-| **Básico** | gratis, ilimitado | 5,48 | 3,52 | 1,00 | 0,10% | **0,97%** |
-| **Plata** | 250 | 1,80 | 7,20 | 0,76 | 0,54% | 4,07% |
-| **Oro** | 600 | 7,95 | 1,05 | 3,98 | 4,65% | 26,39% |
+| | Coste | Oros | Platas | Rankeadas | 1 rankeada cada | ≥1 del Top 11 o mejor | ≥1 corona |
+|---|---|---|---|---|---|---|---|
+| **Básico** | gratis, ilimitado | 4,50 | 4,50 | 0,18 | 6 sobres | 0,46% | 0,048% |
+| **Plata** | 250 | 1,80 | 7,20 | 0,76 | 2 sobres | 4,02% | 0,54% |
+| **Oro** | 600 | 7,95 | 1,05 | 3,98 | 1 sobre | 26,35% | 4,64% |
 
-- El **básico** da muchos oros **a propósito**: es lo que permite que cualquiera se monte un once
-  desde el primer día sin gastar nada. Lo que casi no da es un oro **alto** — una corona cada mil
-  sobres, y un oro alto en el 0,97% de ellos, que es el «1% o menos» de arriba. Se hace un equipo,
-  no se hace un equipo de campeones.
+- El **básico** reparte **mitad oros y mitad platas**. Los oros son lo que permite montarse un once
+  desde el primer día sin gastar nada, pero **casi todos son sin rankear**: cae un clasificado cada
+  seis sobres, y cuando cae **el 97% de las veces es del 12-15**, la cola de la tabla. Del 11 para
+  arriba la probabilidad es simbólica y una corona es una entre dos mil. Se hace un equipo; no se
+  hace un equipo de campeones, y no se hace por acumulación.
 - El **de plata** se compra para **cerrar la colección de platas**, que es lo que desbloquea las
-  cartas especiales. Por eso trae 7,20 platas y solo 1,80 oros. No compite con el básico: hace otra
-  cosa.
-- El **de oro** es el único que reparte cartas de arriba de verdad, y es el caro.
+  cartas especiales. Trae 7,20 platas contra 1,80 oros, y **el 92% de esas platas son bajas**: las
+  de arriba son las que cuesta completar, y si cayeran por igual el sobre se quedaría sin recorrido
+  a las pocas compras.
+- El **de oro** es el caro y el único que reparte cartas de arriba de verdad.
 
-Lo que sí tiene que crecer con el precio es **la carta alta**, y crece: 0,97% → 4,07% → 26,39%.
+Lo que sí tiene que crecer con el precio es **la carta alta**, y crece: 0,46% → 4,02% → 26,35%.
+
+#### [R3] Los niveles de un sobre no son los tramos de estatus
+
+Son dos cosas distintas y conviene no confundirlas:
+
+- El **estatus** ordena la colección y pone el precio del reciclaje. Va por bloques de cinco
+  puestos: campeón, Top 5, Top 6-10, Top 11-15, oro sin rankear, plata.
+- Los **niveles de sobre** deciden qué sale al abrir, y necesitan más filo: el básico tiene que
+  poder repartir un 12-15 de vez en cuando **sin repartir nunca un 11**. Por eso el corte está en
+  **corona (C y 1-5) · Top 6-11 · Top 12-15 · oro sin rankear**, donde manda el reparto.
+
+Y las **platas se parten en dos** —alta y baja— por la suma interna de sus seis stats, la misma que
+desempata en el orden. El tercio de arriba son las altas. Es lo que le da recorrido al sobre de
+plata: si las repartiera por igual, la colección se cerraría sola.
 
 ### 9.2 [R3] Fichas de intercambio
 
@@ -683,6 +780,14 @@ Las dos que hay que mirar:
 | 19 | §7 VETERANO | Se queda con lo que hacía el Especialista: **su stat no se gasta** del pool — al ganar en el normal, gane o pierda en el plus. **Inusable en el duelo 6**, con el botón apagado y el motivo escrito |
 | 20 | §8 | En vivo: **reloj de 25 s** llevado por el servidor, **cerrar la aplicación es rendirse**, **botón de rendición** explícito y **chat** en la partida |
 | 21 | §2 / §9 | El roster es la **base de datos real de UFC**: 402 cartas, 355 peleadores, 57 países, 177 rankeadas, con las once divisiones completas de campeón a #15 |
+| 22 | §2.4 | **Cerrado**: se acepta que el finish sea raro con el roster real. No se estiran las stats de la élite para forzarlo, y a cambio el finish gana peso como criterio de desempate |
+| 23 | §9.1 | **El walkout**: la carta se destapa por partes —nacionalidad, peso, récord, ranking, y al final el peleador con sus stats—, todo sobre la propia carta, con el resplandor del nivel avisando desde el principio. Corto y saltable |
+| 24 | §9.1 | **Sonido sintetizado**, sin archivos ni licencias: un tono por dato, más agudo cada vez, y campana de octógono para la corona. Interruptor en Más |
+| 25 | §2.3.1 | Las medidas de la carta, todas sacadas de medir el marco: récord al panel blanco, números llenando el rombo, nombres de stat más grandes, y bandera y peso simétricos respecto al eje |
+| 26 | §3.1 | La plantilla pasa a **3 + 3 + 3 + 2 con las dos últimas centradas**, y el tamaño de carta **se calcula** contra el hueco real para que las once llenen la pantalla en cualquier móvil |
+| 27 | §9.1 | **El básico, reajustado**: mitad oros y mitad platas, un rankeado cada seis sobres y, cuando cae, el 97% de las veces es del **12-15**. Del 11 para arriba, simbólico |
+| 28 | §9.1 | Los **niveles de sobre** dejan de coincidir con los tramos de estatus: se cortan en corona · 6-11 · 12-15 · oro, que es donde manda el reparto |
+| 29 | §9.1 | Las **platas se parten en alta y baja** por su suma interna, y el sobre de plata reparte **92% bajas**, que es lo que le da recorrido |
 
 Cambios menores que no alteran ninguna regla de partida: §2.2 y §2.6 (las cartas de colección no
 llevan sub-stats ni rasgos), §2.7 (mínimo de rasgos por clase en el roster), §9.4 (la carta de rasgo

@@ -66,16 +66,28 @@ const info = await page.evaluate(() => ({
   // Cada stat cae dentro de la banda que declara la base de datos para su calidad.
   rangosOk: ROSTER.every(c =>
     SID.every(s => c.stats[s] >= EST[c.estatus].min - 6 && c.stats[s] <= EST[c.estatus].max)),
-  // el orden es el deportivo, y dentro del tramo la suma manda
+  /* El orden: rankeado antes que sin rankear siempre, entre rankeados por PUESTO
+     —campeón, #1, #2… #15—, y entre los que no tienen ranking por la suma. */
   ordenOk: (() => {
     const o = ordenar(ROSTER.filter(c => c.alineable));
+    const pos = c => (c.rk === 0 || c.rk) ? c.rk : null;
     for (let i = 1; i < o.length; i++) {
-      const a = o[i - 1], b = o[i];
-      const ia = ORDEN_ESTATUS.indexOf(a.estatus), ib = ORDEN_ESTATUS.indexOf(b.estatus);
-      if (ia > ib) return false;
-      if (ia === ib && a.suma < b.suma) return false;
+      const a = o[i - 1], b = o[i], ra = pos(a), rb = pos(b);
+      if (ra === null && rb !== null) return false;          // sin rankear delante de rankeado
+      if (ra !== null && rb !== null && ra > rb) return false; // peor puesto delante del mejor
+      if (ra === null && rb === null) {
+        const ia = ORDEN_ESTATUS.indexOf(a.estatus), ib = ORDEN_ESTATUS.indexOf(b.estatus);
+        if (ia > ib) return false;
+        if (ia === ib && a.suma < b.suma) return false;
+      }
     }
     return true;
+  })(),
+  // y un #11 va por delante de un #15 aunque el #15 sume más
+  puestoManda: (() => {
+    const o = ordenar(ROSTER.filter(c => c.rk));
+    const once = o.findIndex(c => c.rk === 11), quince = o.findIndex(c => c.rk === 15);
+    return once >= 0 && quince >= 0 && once < quince;
   })(),
   rasgosDistintos: ROSTER.every(c => new Set(c.rasgos.map(r => r.tipo)).size === c.rasgos.length),
   camaleonesValidos: ROSTER.every(c => !c.rasgos.some(r => r.tipo === 'camaleon') || c.dobleDiv),
@@ -97,7 +109,8 @@ comprobar(info.rankingLimpio, 'cada división tiene campeón y ningún puesto nu
 comprobar(info.dobleCampeon, 'el doble campeón lleva carta de campeón en sus dos divisiones');
 comprobar(info.plataSinRanking, 'ninguna plata lleva puesto de ranking: la rareza manda en el orden');
 comprobar(info.rangosOk, 'todas las stats caen en la banda que declara la base de datos');
-comprobar(info.ordenOk, 'el orden va por estatus deportivo y, dentro del tramo, por suma');
+comprobar(info.ordenOk, 'el orden va por puesto real, y los rankeados siempre antes que los demás');
+comprobar(info.puestoManda, 'un #11 va antes que un #15 aunque el #15 sume más');
 comprobar(info.rasgosDistintos, 'ninguna carta lleva dos rasgos del mismo tipo');
 comprobar(info.camaleonesValidos, 'el Camaleón solo va en peleadores de dos divisiones');
 // Sin esto no se detecta el peor fallo posible en los rasgos: que una clase entera
@@ -161,7 +174,7 @@ const reparto = await page.evaluate(() => {
     for (let i = 0; i < N; i++) {
       const r = repartoSobre(t);
       huecos += r.length;
-      oros += r.filter(x => x !== 'plata').length;
+      oros += r.filter(x => !esPlata(x)).length;
       coronas += r.filter(x => x === 'corona').length;
     }
     const esperadosOros = Object.entries(T.oros)
@@ -191,8 +204,8 @@ const oficio = await page.evaluate(() => {
       const s = repartoSobre(tipo);
       let alto = 0;
       for (const n of s) {
-        if (n === 'plata') platas++; else oros++;
-        if (n === 'corona' || n === 'top10') alto++;
+        if (esPlata(n)) platas++; else oros++;
+        if (n === 'corona' || n === 'top611') alto++;
       }
       if (alto) conAlto++;
     }
@@ -204,7 +217,7 @@ const oficio = await page.evaluate(() => {
   for (const tipo of Object.keys(TIPOS_SOBRE)) {
     const T = TIPOS_SOBRE[tipo];
     const totN = Object.values(T.nivel).reduce((a, b) => a + b, 0);
-    const p = (T.nivel.corona + T.nivel.top10) / totN;
+    const p = (T.nivel.corona + T.nivel.top611) / totN;
     const totO = Object.values(T.oros).reduce((a, b) => a + b, 0);
     let q = 0;   // probabilidad de NO sacar ninguna alta, pesada por cuántos oros trae
     for (const [n, peso] of Object.entries(T.oros)) q += (peso / totO) * Math.pow(1 - p, +n);
@@ -220,6 +233,39 @@ comprobar(Math.abs(oficio.basico.pctAlto - oficio.exacto.basico) < 0.25,
   `y las tiradas dan lo que dice la tabla (${oficio.basico.pctAlto.toFixed(2)}% medido)`);
 comprobar(oficio.plata.platas >= 6,
   `el de plata es sobre todo platas, que es para lo que se compra (${oficio.plata.platas.toFixed(2)} por sobre)`);
+
+/* Lo que define a cada sobre, escrito para que no se deshaga sin querer. */
+const perfil = await page.evaluate(() => {
+  const N = 120000, out = {};
+  for (const tipo of Object.keys(TIPOS_SOBRE)) {
+    const c = {}; let conRank = 0;
+    for (let i = 0; i < N; i++) {
+      const s = repartoSobre(tipo); let rk = 0;
+      for (const n of s) { c[n] = (c[n] || 0) + 1;
+        if (n === 'corona' || n === 'top611' || n === 'top1215') rk++; }
+      if (rk) conRank++;
+    }
+    const oros = (c.corona || 0) + (c.top611 || 0) + (c.top1215 || 0) + (c.oro || 0);
+    const pl = (c.plataAlta || 0) + (c.plataBaja || 0);
+    out[tipo] = { pctOro: oros / (oros + pl) * 100,
+      pctRank: conRank / N * 100,
+      deLosRank1215: (c.top1215 || 0) / ((c.corona || 0) + (c.top611 || 0) + (c.top1215 || 0)) * 100,
+      pctPlataAlta: (c.plataAlta || 0) / pl * 100 };
+  }
+  return out;
+});
+comprobar(Math.abs(perfil.basico.pctOro - 50) < 2,
+  `el básico reparte mitad y mitad oros y platas (${perfil.basico.pctOro.toFixed(1)}% de oro)`);
+comprobar(perfil.basico.pctRank < 25,
+  `y un rankeado es raro: uno cada ${Math.round(100 / perfil.basico.pctRank)} sobres`);
+comprobar(perfil.basico.deLosRank1215 > 90,
+  `cuando cae uno, casi siempre es de los últimos puestos (${perfil.basico.deLosRank1215.toFixed(1)}% son del 12-15)`);
+comprobar(perfil.plata.pctPlataAlta < 15,
+  `el de plata reparte platas bajas, y altas rara vez (${perfil.plata.pctPlataAlta.toFixed(1)}% altas)`);
+const bandas = await page.evaluate(() =>
+  ({ alta: poolNivel('plataAlta').length, baja: poolNivel('plataBaja').length }));
+comprobar(bandas.alta > 20 && bandas.baja > 20,
+  `y las dos bandas de plata tienen fondo de sobra (${bandas.alta} altas · ${bandas.baja} bajas)`);
 comprobar(oficio.exacto.basico < oficio.exacto.plata && oficio.exacto.plata < oficio.exacto.oro,
   `y la carta alta sube con el sobre (${oficio.exacto.basico.toFixed(2)}% · ${oficio.exacto.plata.toFixed(2)}% · ${oficio.exacto.oro.toFixed(2)}%)`);
 
@@ -377,7 +423,10 @@ comprobar(trasSalir.vista === 'sobres', 'el atrás sale de la apertura');
 comprobar(trasSalir.cartas === guardadasAlEntrar, 'salir a medias no pierde ninguna carta');
 
 await page.locator('[data-a="abrir"]').first().click();
-await page.locator('.apertura').click();                          // un solo toque
+// Un toque salta el aviso y suelta la carta; el siguiente abre el sobre entero.
+// Son dos toques en total y ninguno es de trámite: el primero se puede no dar.
+await page.locator('.apertura').click();
+await page.locator('.apertura').click();
 const resumen = await page.evaluate(() => ({
   enResumen: tmp.ap && tmp.ap.resumen,
   mostradas: document.querySelectorAll('[data-carta]').length,
@@ -467,8 +516,8 @@ for (const [e, nombre] of dist.orden)
   console.log(`     ${nombre.padEnd(11)} ${((dist.cuenta[e] || 0) / dist.n * 100).toFixed(2)}%`);
 comprobar(dist.corona <= 0.005,
   `campeón o top 5 por debajo del 0,5% de las cartas (${(dist.corona * 100).toFixed(3)}%)`);
-comprobar(Math.abs(dist.oro - 5.7 / 9) < 0.03,
-  `los oros salen al ritmo declarado, 5,7 de 9 (${(dist.oro * 9).toFixed(2)})`);
+comprobar(Math.abs(dist.oro - 4.5 / 9) < 0.03,
+  `los oros salen al ritmo declarado, mitad y mitad (${(dist.oro * 9).toFixed(2)} de 9)`);
 comprobar(dist.plata > 0.2, `y el resto son platas (${(dist.plata * 100).toFixed(1)}%)`);
 
 // La escalera de calidad tiene que subir de un sobre al siguiente.

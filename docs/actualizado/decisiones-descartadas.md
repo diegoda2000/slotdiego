@@ -234,3 +234,26 @@ antiguos**, y allí el texto se quedaba en un tamaño fijo: en la rejilla de sob
 cartas de 124 píxeles, los números se salían de los rombos y los nombres del recuadro. Ahora cada
 carta se mide a sí misma y publica su ancho, y todo el texto sale de ahí. Funciona en cualquier
 motor.
+
+**Estirar las stats de la élite para que vuelvan a saltar los finish.**
+Descartado el 19 de agosto. Con el roster real los finish caen al 6-14% de los duelos, contra el
+52% que daba el roster inventado, porque los peleadores de verdad se parecen mucho más entre sí.
+La tentación era abrir el hueco a mano subiendo a los de arriba. No: sería falsear 402 cartas para
+que salte una tabla, y es arreglar el síntoma. **Se acepta que el finish sea raro** —en MMA de
+verdad tampoco es lo normal— y a cambio gana peso: a 3-3, desempata.
+
+**Ir pasando el sobre carta a carta, y enseñar el walkout en un panel aparte.**
+Descartado. Lo primero son ocho toques de trámite por sobre. Lo segundo lo probamos y estaba mal:
+si los datos del peleador salen en una lista al lado, lo que el jugador mira es la lista, no la
+carta. El walkout ocurre **sobre la carta**, cada dato en su hueco, y lo que se ve es la carta
+llenándose.
+
+**Buscar archivos de audio reales para el prototipo.**
+Descartado por ahora, no para siempre. Suenan mejor —un rugido de público no se sintetiza— pero
+hay que sourcearlos con licencia clara, pesan en las dos aplicaciones y este proyecto ya carga
+conscientemente con el riesgo legal de usar peleadores reales. El sonido se sintetiza con Web
+Audio: cero archivos, cero licencias, cero peso. Se sustituye cuando haya dirección de sonido.
+
+**Forzar que el sonido suene con el iPhone en silencio.**
+Descartado. Se puede hacer, y es exactamente lo que hace que se desinstale una aplicación. El
+interruptor de silencio del móvil manda.

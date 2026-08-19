@@ -93,6 +93,7 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
    a la izquierda, que es donde el ojo lo da por centrado. */
 .carta .c-rk{position:absolute;left:7.4%;width:11%;top:2.4%;height:7%;
   display:flex;align-items:center;justify-content:center;line-height:1;
+  transform:translateY(.42em);
   font-weight:700;color:#3a2a09;font-size:calc(var(--cw,110px)*.062);letter-spacing:-.04em;
   text-shadow:0 .07em 0 rgba(255,255,255,.42), 0 -.04em .03em rgba(0,0,0,.5)}
 .carta.plata .c-rk{color:#23272c;
@@ -121,6 +122,7 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
    que sea el nombre lo pone tamNombre() en --nom, para llenar la placa sin salirse. */
 .carta .c-nom{position:absolute;left:25.3%;right:25.8%;top:66.02%;height:4.49%;
   display:flex;align-items:center;justify-content:center;line-height:1;
+  transform:translateY(.42em);
   color:#2e2107;font-weight:700;font-size:calc(var(--cw,110px)*var(--nom,.045));
   overflow:hidden;white-space:nowrap;padding:0 1.5%;
   text-shadow:0 .07em 0 rgba(255,255,255,.45), 0 -.04em .03em rgba(0,0,0,.45)}
@@ -129,16 +131,29 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 
 /* El reflejo. Una franja de luz cruzada por encima, que es lo que hace que el texto
    parezca parte del metal y no una pegatina puesta encima. */
+/* El reflejo va pegado al hueco del marco, no al texto: como al texto se le ha bajado
+   0,42 em para centrarlo por altura de mayúsculas, aquí se deshace ese mismo movimiento
+   para que la franja de luz siga cayendo donde está la placa. */
 .carta .brillo{position:absolute;inset:0;pointer-events:none;border-radius:inherit;
+  transform:translateY(-.42em);
   background:linear-gradient(104deg,
     rgba(255,255,255,0) 26%, rgba(255,255,255,.34) 41%,
     rgba(255,255,255,.10) 52%, rgba(255,255,255,0) 66%)}
 
 /* El número va dentro del rombo, centrado; el nombre de la stat, centrado sobre su
    línea y apoyado en ella. */
+/* Los translateY de este bloque y de la placa del nombre y la pestaña del ranking NO son
+   ajustes a ojo. Centrar con flex centra la CAJA DE LÍNEA, y la caja de Oswald reserva
+   sitio bajo la base para las colas de las letras: el texto queda alto dentro de su hueco.
+   En los números se notaba, porque se salían del rombo por arriba — la tinta iba del
+   74,92% al 77,09% y el rombo va del 76,05% al 78,22%.
+   Lo correcto es centrar por ALTURA DE MAYÚSCULAS, no por la tinta entera: si no, un
+   nombre con "p" o con "y" se subiría para compensar su propia cola. Medido sobre nombres
+   con y sin colas, ese desplazamiento es 0,42 em, constante, y viene de la fuente. */
 .carta .c-num{position:absolute;height:2.15%;display:flex;align-items:center;
   justify-content:center;line-height:1;color:#2b1f07;font-weight:700;
-  font-size:calc(var(--cw,110px)*.037);font-variant-numeric:tabular-nums}
+  transform:translateY(.42em);
+  font-size:calc(var(--cw,110px)*.036);font-variant-numeric:tabular-nums}
 .carta.plata .c-num{color:#15181c}
 .carta .c-num.pen{color:#7a1109}
 .carta .c-num.up{color:#0f4a22}
@@ -220,79 +235,56 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 .carta.ve-todo   .c-mid,
 .carta.ve-todo   .c-nom,
 .carta.ve-todo   .c-num,
-.carta.ve-todo   .c-et{opacity:1;visibility:visible;animation:aparece .34s ease both}
-@keyframes aparece{from{opacity:0;transform:translateY(-4%) scale(.94)}
-                   to  {opacity:1;transform:none}}
+.carta.ve-todo   .c-et{opacity:1;visibility:visible;animation:aparece .5s ease both}
+/* Desvanecido puro: solo opacidad. Cualquier salto o cambio de tamaño aquí se lee como
+   un parpadeo de la carta, que es justo lo contrario de lo que tiene que parecer —el
+   dato apareciendo de la nada, como un desvanecido al revés. */
+@keyframes aparece{from{opacity:0}to{opacity:1}}
 
-/* El ranking es el dato que más dice, así que entra con un destello. */
-.carta.ve-rk .c-rk{animation:aparece .34s ease both, chispa .7s ease-out}
-@keyframes chispa{0%{filter:brightness(2.6) drop-shadow(0 0 10px #fff)}
-                  100%{filter:none}}
-
-/* El resplandor del nivel, latiendo detrás de la carta mientras se llena. */
-.aviso .apertura-carta{position:relative}
-.aviso .apertura-carta::before{content:'';position:absolute;inset:-14%;z-index:-1;
-  border-radius:50%;pointer-events:none;
+/* ── Nada de esto puede parpadear ──
+   La carta está en pantalla de principio a fin y no se mueve. Lo único que ocurre es que
+   sus partes APARECEN —el efecto contrario a desvanecerse—, y para eso solo se toca la
+   opacidad: ni saltos, ni escalas, ni temblores. Cualquier cosa que mueva o redibuje la
+   carta entera se lee como un parpadeo, que es justo lo que no se quiere. */
+.apertura-carta{position:relative;transition:filter .5s ease}
+.aviso .apertura-carta{filter:drop-shadow(0 0 22px color-mix(in srgb,var(--luz) 40%,transparent))}
+.aviso.suelta .apertura-carta{filter:drop-shadow(0 0 34px color-mix(in srgb,var(--luz) 62%,transparent))}
+/* El aura del nivel: entra desvaneciéndose hacia dentro y se queda quieta. No late. */
+.aviso .apertura-carta::before{content:'';position:absolute;inset:-12%;z-index:-1;
+  border-radius:50%;pointer-events:none;opacity:0;
   background:radial-gradient(closest-side,color-mix(in srgb,var(--luz) 40%,transparent),transparent 72%);
-  animation:latido 1.5s ease-in-out infinite}
-@keyframes latido{0%,100%{opacity:.45;transform:scale(.94)}
-                  50%   {opacity:1;transform:scale(1.05)}}
+  animation:aparece .9s ease both}
+/* El título de corona o top 5, apagado hasta que la carta está entera. */
+.apertura-tit{transition:opacity .5s ease}
+.apertura-tit.apagado{opacity:0;visibility:hidden}
 
-/* ── El aterrizaje de la carta ya completa ──
-   La entrada va con la calidad: una plata entra y ya está, y una corona llega con
-   golpe, rebote y aura. Es donde se nota si te ha tocado algo o no, incluso antes
-   de leer nada. */
-.aterriza{position:relative;
-  animation:aterrizar var(--ent,.42s) cubic-bezier(.2,1.5,.35,1) both}
-@keyframes aterrizar{
-  0%  {opacity:0;transform:scale(.86) translateY(10px)}
-  60% {opacity:1;transform:scale(1.035) translateY(0)}
-  100%{opacity:1;transform:none}}
-.aterriza.n-plata,.aterriza.n-oro   {--ent:.34s}
-.aterriza.n-top15,.aterriza.n-top10 {--ent:.46s}
-.aterriza.n-top5                    {--ent:.60s}
-.aterriza.n-corona                  {--ent:.74s}
-/* De top 5 para arriba, además, el aura del nivel queda latiendo detrás. */
-.aterriza.n-top5::before,.aterriza.n-corona::before{content:'';position:absolute;
-  inset:-12%;z-index:-1;border-radius:50%;pointer-events:none;
-  background:radial-gradient(closest-side,color-mix(in srgb,var(--luz) 46%,transparent),transparent 72%);
-  animation:latido 1.6s ease-in-out infinite}
-/* Y la corona, un temblor corto al caer: es el golpe. */
-.aterriza.n-corona{animation:aterrizar var(--ent) cubic-bezier(.2,1.5,.35,1) both,
-  temblor .32s .62s ease-out}
-@keyframes temblor{0%,100%{transform:none}
-  20%{transform:translateX(-1.2%) rotate(-.5deg)}
-  50%{transform:translateX(1.1%) rotate(.45deg)}
-  78%{transform:translateX(-.5%) rotate(-.2deg)}}
-
-/* El destello final: una franja de luz que barre la carta entera justo al aparecer,
-   como girarla bajo un foco. Es lo que la remata; sin esto la carta solo "sale". */
+/* El destello final: una franja de luz que barre la carta entera una sola vez, cuando ya
+   está completa. Es lo que la remata, y es lo único que se mueve en toda la pantalla. */
 .destello{position:absolute;inset:0;pointer-events:none;border-radius:9px;
-  overflow:hidden;mix-blend-mode:screen}
-.destello::after{content:'';position:absolute;top:-60%;bottom:-60%;width:46%;left:-60%;
+  overflow:hidden;mix-blend-mode:screen;opacity:0}
+.suelta .destello{opacity:1}
+.suelta .destello::after{content:'';position:absolute;top:-60%;bottom:-60%;width:46%;left:-60%;
   transform:skewX(-18deg);
   background:linear-gradient(90deg,
     rgba(255,255,255,0), rgba(255,255,255,.16) 34%,
     rgba(255,255,255,.62) 50%, rgba(255,255,255,.16) 66%, rgba(255,255,255,0));
-  animation:barrido .85s var(--barre,.24s) cubic-bezier(.3,0,.2,1) both}
+  animation:barrido .9s .1s cubic-bezier(.3,0,.2,1) both}
 @keyframes barrido{from{left:-60%}to{left:118%}}
-.aterriza.n-top5 .destello::after   {--barre:.34s;animation-duration:.95s}
-.aterriza.n-corona .destello::after {--barre:.42s;animation-duration:1.05s}
-/* La corona se lleva un segundo barrido, más tenue, detrás del primero. */
-.aterriza.n-corona .destello::before{content:'';position:absolute;top:-60%;bottom:-60%;
-  width:30%;left:-60%;transform:skewX(-18deg);
+/* La corona se lleva un segundo barrido, más tenue y del color de su nivel. */
+.suelta .apertura-carta.n-corona .destello::before{content:'';position:absolute;
+  top:-60%;bottom:-60%;width:30%;left:-60%;transform:skewX(-18deg);
   background:linear-gradient(90deg,rgba(255,255,255,0),
     color-mix(in srgb,var(--luz) 55%,transparent) 50%,rgba(255,255,255,0));
-  animation:barrido 1.05s .74s cubic-bezier(.3,0,.2,1) both}
+  animation:barrido 1.05s .5s cubic-bezier(.3,0,.2,1) both}
 
 /* Quien pide menos movimiento en su móvil no tiene por qué tragarse nada de esto. */
 @media (prefers-reduced-motion: reduce){
-  .aviso .apertura-carta::before{animation:none}
   .carta.ve-pais .c-pie .bnd,.carta.ve-peso .c-pie .peso,.carta.ve-record .c-record,
   .carta.ve-rk .c-rk,.carta.ve-todo .c-mid,.carta.ve-todo .c-nom,
-  .carta.ve-todo .c-num,.carta.ve-todo .c-et,.aterriza{animation-duration:.01ms}
-  .aterriza.n-top5::before,.aterriza.n-corona::before,
-  .destello::after,.aterriza.n-corona .destello::before{animation:none;opacity:0}
+  .carta.ve-todo .c-num,.carta.ve-todo .c-et{animation-duration:.01ms}
+  .aviso .apertura-carta::before{animation:none;opacity:1}
+  .suelta .destello::after,.suelta .apertura-carta.n-corona .destello::before{animation:none;opacity:0}
+}
 }
 
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(108px,1fr));gap:8px}
@@ -359,9 +351,21 @@ th{color:var(--dim2);font-size:11px;text-transform:uppercase;letter-spacing:.04e
 /* ── PLANTILLA QUE CABE ──
    Cuatro columnas y tres filas para once divisiones. La altura de cada carta sale del
    alto de la ventana, así que entra entera en cualquier móvil sin scroll. */
-.pgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:4px}
-.pgrid .pslot{display:flex;flex-direction:column}
-.pgrid .pnom{margin-top:2px;font-size:8.5px;line-height:1.1}
+/* La plantilla: 3 + 3 + 3 + 2, con las dos últimas centradas. Se monta sobre seis
+   columnas y cada carta ocupa dos, así que colocando la penúltima en la columna 2 la
+   pareja de abajo queda centrada sin trucos ni huecos falsos. */
+.pgrid{display:grid;grid-template-columns:repeat(6,1fr);gap:5px;
+  max-width:var(--pancho,100%);margin:0 auto}
+.pgrid .pslot{grid-column:span 2;display:flex;flex-direction:column}
+.pgrid .pslot:nth-last-child(2){grid-column:2/span 2}
+.pgrid .pnom{margin-top:1px;font-size:8px;line-height:1.1}
+/* Cabecera y botón, al mínimo: cada píxel que se ahorra aquí se lo quedan las cartas. */
+.pcab{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin:0 0 7px}
+.pcab h2{margin:0;font-size:19px}
+.pcab .sub{font-size:11px}
+.pauto{margin-top:12px;padding:9px 12px;display:flex;flex-direction:column;gap:1px;
+  line-height:1.2}
+.pauto .tiny{color:var(--dim2);font-weight:400;font-size:10px}
 
 /* La plantilla usa cinco columnas: con la proporción real de la carta, cuatro dejan
    filas demasiado altas y la última se sale de la pantalla. */
@@ -498,13 +502,32 @@ const cartaDe=iid=>{const i=inst(iid);return i?PORID[i.cid]:null};
    top 5, que en la tabla de probabilidades van juntos. */
 const CARTAS_POR_SOBRE=9;
 
+/* Los niveles de un sobre NO son los tramos de estatus. El estatus ordena la colección
+   y pone el precio del reciclaje, y va por bloques de cinco puestos. Aquí hace falta más
+   fino: el sobre básico tiene que poder repartir un 12-15 de vez en cuando sin repartir
+   nunca un 11, así que el corte está donde manda el reparto, no donde manda el orden. */
 const NIVELES=[
-  {id:'corona', n:'Campeón o Top 5', cumple:c=>c.estatus==='campeon'||c.estatus==='top5'},
-  {id:'top10',  n:'Top 6-10',        cumple:c=>c.estatus==='top10'},
-  {id:'top15',  n:'Top 11-15',       cumple:c=>c.estatus==='top15'},
-  {id:'oro',    n:'Oro sin rankear', cumple:c=>c.estatus==='oro'},
+  {id:'corona',  n:'Campeón o Top 5', cumple:c=>c.rk===0||(c.rk>=1&&c.rk<=5)},
+  {id:'top611',  n:'Top 6-11',        cumple:c=>c.rk>=6&&c.rk<=11},
+  {id:'top1215', n:'Top 12-15',       cumple:c=>c.rk>=12&&c.rk<=15},
+  {id:'oro',     n:'Oro sin rankear', cumple:c=>c.rareza==='oro'&&!c.rk&&c.rk!==0},
 ];
 const NIVEL_IDS=NIVELES.map(n=>n.id);
+
+/* Y las platas también se parten en dos. El sobre de plata está para cerrar la colección
+   de platas, y si repartiera por igual las buenas y las malas dejaría de tener recorrido:
+   lo que cuesta completar son las de arriba. El corte va por la suma interna de las seis
+   stats —la misma que desempata en el orden— y deja arriba un tercio. */
+const PLATAS=[
+  {id:'plataAlta', n:'Plata alta'},
+  {id:'plataBaja', n:'Plata baja'},
+];
+const PLATA_IDS=PLATAS.map(p=>p.id);
+let CORTE_PLATA=0;
+function calcularCortePlata(){
+  const sumas=ROSTER.filter(c=>c.rareza==='plata').map(c=>c.suma).sort((a,b)=>a-b);
+  CORTE_PLATA=sumas.length?sumas[Math.floor(sumas.length*2/3)]:0;
+}
 
 /* Los tres sobres NO son el mismo sobre a distintos precios: cada uno hace una cosa.
 
@@ -519,16 +542,26 @@ const NIVEL_IDS=NIVELES.map(n=>n.id);
 
    El de ORO es el caro y el único que reparte cartas de arriba de verdad. */
 const TIPOS_SOBRE={
-  // Gratis y sin límite: se abre en el sitio y de uno en uno.
+  /* BÁSICO — gratis e ilimitado. Mitad oros y mitad platas, para que cualquiera monte
+     un once desde el primer día. Lo que casi nunca da es un rankeado: cuando cae uno es
+     de los últimos puestos, 12-15, y de ahí para arriba la probabilidad es simbólica.
+     Se hace un equipo, no se hace un equipo de campeones. */
   basico:{n:'Sobre básico', ic:'📦', coste:0, unico:true, gratis:true,
-    oros :{4:20, 5:30, 6:32, 7:18},
-    nivel:{corona:0.02, top10:0.16, top15:18, oro:81.82}},
+    oros  :{3:15, 4:35, 5:35, 6:15},
+    nivel :{corona:0.01, top611:0.09, top1215:3.9, oro:96},
+    platas:{plataAlta:40, plataBaja:60}},
+  /* PLATA — se compra para cerrar la colección de platas. Reparte sobre todo platas
+     BAJAS: las de arriba son las que cuesta completar, y si cayeran por igual el sobre
+     se quedaría sin recorrido a las pocas compras. */
   plata :{n:'Sobre de plata', ic:'🎁', coste:250,
-    oros :{1:40, 2:40, 3:20},
-    nivel:{corona:0.30, top10:2, top15:40, oro:57.7}},
+    oros  :{1:40, 2:40, 3:20},
+    nivel :{corona:0.30, top611:2, top1215:40, oro:57.7},
+    platas:{plataAlta:8, plataBaja:92}},
+  /* ORO — el caro, y el único que reparte cartas de arriba de verdad. */
   oro   :{n:'Sobre de oro', ic:'🥇', coste:600,
-    oros :{7:30, 8:45, 9:25},
-    nivel:{corona:0.60, top10:3.20, top15:46.2, oro:50}},
+    oros  :{7:30, 8:45, 9:25},
+    nivel :{corona:0.60, top611:3.20, top1215:46.2, oro:50},
+    platas:{plataAlta:55, plataBaja:45}},
 };
 for(const t of Object.values(TIPOS_SOBRE)) t.cartas=CARTAS_POR_SOBRE;
 
@@ -560,19 +593,24 @@ function repartoSobre(tipo){
   const nOros=+sortearClave(T.oros);
   const niveles=[];
   for(let i=0;i<nOros;i++) niveles.push(sortearClave(T.nivel));
-  while(niveles.length<T.cartas) niveles.push('plata');
+  // Y el resto, platas: cada sobre tiene su propia mezcla de altas y bajas.
+  while(niveles.length<T.cartas) niveles.push(sortearClave(T.platas));
   return niveles;
 }
 
-const poolNivel=nivelId=>nivelId==='plata'
-  ? ROSTER.filter(c=>c.estatus==='plata')
-  : ROSTER.filter(NIVELES.find(n=>n.id===nivelId).cumple);
+const poolNivel=nivelId=>{
+  if(nivelId==='plataAlta') return ROSTER.filter(c=>c.rareza==='plata'&&c.suma>=CORTE_PLATA);
+  if(nivelId==='plataBaja') return ROSTER.filter(c=>c.rareza==='plata'&&c.suma< CORTE_PLATA);
+  if(nivelId==='plata')     return ROSTER.filter(c=>c.rareza==='plata');
+  return ROSTER.filter(NIVELES.find(n=>n.id===nivelId).cumple);
+};
+const esPlata=nivelId=>nivelId==='plata'||PLATA_IDS.includes(nivelId);
 
 /* Un sobre no repite carta dentro de sí mismo. Si el nivel sorteado se queda sin
    candidatos nuevos —pasa en corona, que es un pool corto— se baja al nivel de al
    lado en vez de saltar a cualquier cosa: una sorpresa así parece un fallo. */
 function cartaDeNivel(nivelId,yaEnElSobre){
-  const orden=[...NIVEL_IDS,'plata'];
+  const orden=[...NIVEL_IDS,...PLATA_IDS];
   const i=orden.indexOf(nivelId);
   for(let d=0;d<orden.length;d++){
     for(const j of (d===0?[i]:[i+d,i-d])){
@@ -1047,7 +1085,38 @@ function render(){
     online:vOnline,directo:vDirecto}[vista]||vInicio;
   $('#app').innerHTML=f();
   $('#app').classList.remove('flash'); void $('#app').offsetWidth; $('#app').classList.add('flash');
+  ajustarPlantilla();   // antes de medir: cambia lo anchas que son las cartas
   medirCartas();
+}
+
+/* La plantilla se estira hasta llenar la pantalla.
+
+   Las once tienen que caber a la vez —una plantilla que hay que recorrer con el dedo no
+   se lee de un vistazo, y leerla de un vistazo es para lo que sirve—, pero además tienen
+   que ser lo más grandes que quepan. Cuánto sitio hay depende del móvil, del alto de la
+   barra de abajo y de si el botón parte en dos líneas, así que no se puede dejar escrito
+   en el CSS: se mide.
+
+   Cuatro filas de cartas con proporción 620/877, más el nombre de la división debajo de
+   cada una, más los huecos. De ahí sale lo ancha que puede ser una carta, y el ancho de
+   la rejilla es tres de esas más dos huecos. */
+function ajustarPlantilla(){
+  const g=document.querySelector('.pgrid'); if(!g) return;
+  const HUECO=5, NOMBRE=11, FILAS=4, COLS=3;
+  const arriba=g.getBoundingClientRect().top;
+  /* Lo que hay debajo: el botón, y el hueco que el body ya reserva para la barra de
+     navegación. Sumar además el alto de la barra sería contarla dos veces, que es lo
+     que dejaba a las cartas más pequeñas de lo que podían ser. */
+  const boton=document.querySelector('.pauto');
+  const reserva=parseFloat(getComputedStyle(document.body).paddingBottom)||0;
+  const abajo=(boton?boton.getBoundingClientRect().height+12:0)+reserva+6;
+  const alto=Math.max(180, innerHeight-arriba-abajo);
+  const porFila=(alto-HUECO*(FILAS-1))/FILAS;
+  let ancho=(porFila-NOMBRE)*620/877;
+  // Nunca más ancha de lo que da la pantalla, ni tan pequeña que no se lea.
+  const tope=(g.parentElement.clientWidth-HUECO*(COLS-1))/COLS;
+  ancho=Math.max(58, Math.min(ancho, tope));
+  g.style.setProperty('--pancho', (ancho*COLS+HUECO*(COLS-1)).toFixed(1)+'px');
 }
 
 /* Le dice a cada carta lo ancha que es, en píxeles, y con eso escala su texto.
@@ -1063,8 +1132,8 @@ function medirCartas(raiz){
     if(anchos[i]) cartas[i].style.setProperty('--cw', anchos[i].toFixed(2)+'px');
 }
 
-// Girar el móvil o abrir el teclado cambia el ancho de las cartas, así que se vuelven a medir.
-addEventListener('resize', ()=>medirCartas());
+// Girar el móvil o abrir el teclado cambia el ancho de las cartas, así que se rehace la cuenta.
+addEventListener('resize', ()=>{ ajustarPlantilla(); medirCartas(); });
 
 // Irse a otra pantalla corta el aviso de la apertura: si no, el temporizador
 // seguiría vivo y volvería a pintar encima de donde esté el jugador.
@@ -1352,16 +1421,36 @@ function arrancarAviso(){
   const p=pasos[a.paso];
   // Cada dato entra un poco más agudo que el anterior: la escalera se oye subir.
   SONIDO.dato(a.paso, pasos.length, a.nivel, p.gordo);
-  render();
+  /* Se le añade la clase A LA CARTA QUE YA ESTÁ, no se repinta la pantalla. Repintando,
+     el navegador crea elementos nuevos y vuelve a lanzar la animación de entrada de todo
+     lo que ya estaba visible: la carta entera parpadea en cada paso. */
+  const carta=document.querySelector('.aviso .carta');
+  if(carta) carta.classList.add('ve-'+p.k);
+  else render();
   a.paso++;
   arrancarAviso.t=setTimeout(arrancarAviso, N.paso);
 }
+/* Soltar la carta NO repinta nada. Se le añaden a la que ya está en pantalla las clases
+   que faltan y se cambian los dos textos a mano. Repintar aquí destruiría la carta y la
+   volvería a crear, y eso se ve como un parpadeo justo en el momento importante. */
 function soltarCarta(){
   clearTimeout(arrancarAviso.t);
   const a=tmp.ap; if(!a||a.fase!=='aviso') return;
   a.fase='carta';
   SONIDO.impacto(a.nivel);
-  render();
+  const caja=document.querySelector('.apertura.aviso');
+  const carta=caja&&caja.querySelector('.carta');
+  if(!caja||!carta){ render(); return; }
+  const c=PORID[a.items[0].cid];
+  for(const p of pasosAviso(c)) carta.classList.add('ve-'+p.k);
+  caja.classList.add('suelta');
+  caja.dataset.a='revelar';
+  const tit=caja.querySelector('.apertura-tit');
+  if(tit&&(c.estatus==='campeon'||c.estatus==='top5')) tit.classList.remove('apagado');
+  const et=caja.querySelector('.aviso-et');
+  if(et) et.textContent=`${DIV[c.division].n} · ${c.pais||''} · ${c.record||''}`;
+  const pie=caja.querySelector('.apertura-pie');
+  if(pie) pie.textContent='Toca la carta para ver el sobre entero';
 }
 
 function vApertura(){
@@ -1396,30 +1485,25 @@ function vApertura(){
   /* El aviso. La carta ya está ahí, en grande, pero vacía: se va llenando por partes
      —nacionalidad, peso, récord, ranking, y al final el peleador con sus stats—. El
      resplandor va del nivel que viene, así que además la pantalla ya está avisando. */
-  if(a.fase==='aviso'){
-    const c=PORID[a.items[0].cid];
-    const todos=pasosAviso(c);
-    const vistos=todos.slice(0, Math.max(1, a.paso||1));
-    const ult=vistos[vistos.length-1];
-    return barra+`
-      <div class="apertura aviso" data-a="saltaraviso"
-        style="--luz:${N.luz};--luz2:${N.luz2}">
-        <div class="apertura-carta">${cartaHTML(c,{rev:vistos.map(p=>p.k)})}</div>
-        <div class="sub center aviso-et">${ult?ult.et:''}</div>
-        <div class="tiny center apertura-pie">Toca para saltar</div>
-      </div>`;
-  }
-
-  // La carta que enseña el sobre: la mejor de las nueve, a pantalla casi completa.
-  // Un toque encima y sale el sobre entero. Nada de ir pasando una a una.
+  /* Aviso y carta comparten EXACTAMENTE el mismo armazón: la misma carta, en el mismo
+     sitio, desde el primer momento hasta el final. Lo único que cambia son clases y dos
+     textos. Si el HTML fuera distinto, pasar de una fase a otra volvería a crear los
+     nodos y la carta desaparecería y volvería un fotograma después: eso es el parpadeo.
+     Nunca se sustituye la carta. Solo se le van encendiendo las partes. */
   const c=PORID[a.items[0].cid];
+  const todos=pasosAviso(c);
+  const enAviso=a.fase==='aviso';
+  const vistos=enAviso ? todos.slice(0, Math.max(1, a.paso||1)) : todos;
+  const ult=vistos[vistos.length-1];
   const gorda=c.estatus==='campeon'||c.estatus==='top5';
   return barra+`
-    <div class="apertura" data-a="revelar" style="--luz:${N.luz};--luz2:${N.luz2}">
-      ${gorda?`<div class="pop apertura-tit">★ ${EST[c.estatus].n.toUpperCase()} ★</div>`:''}
-      <div class="apertura-carta aterriza n-${a.nivel}">${cartaHTML(c)}<i class="destello"></i></div>
-      <div class="sub center">${DIV[c.division].n} · ${esc(c.pais||'')} · ${esc(c.record||'')}</div>
-      <div class="tiny center apertura-pie">Toca la carta para ver el sobre entero</div>
+    <div class="apertura aviso${enAviso?'':' suelta'}" data-a="${enAviso?'saltaraviso':'revelar'}"
+      style="--luz:${N.luz};--luz2:${N.luz2}">
+      <div class="apertura-tit${gorda&&!enAviso?'':' apagado'}">★ ${gorda?EST[c.estatus].n.toUpperCase():''} ★</div>
+      <div class="apertura-carta n-${a.nivel}">${cartaHTML(c,{rev:vistos.map(p=>p.k)})}<i class="destello"></i></div>
+      <div class="sub center aviso-et">${enAviso?(ult?ult.et:'')
+        :`${DIV[c.division].n} · ${esc(c.pais||'')} · ${esc(c.record||'')}`}</div>
+      <div class="tiny center apertura-pie">${enAviso?'Toca para saltar':'Toca la carta para ver el sobre entero'}</div>
     </div>`;
 }
 
@@ -1481,8 +1565,10 @@ function vPlantilla(){
   /* Las once cartas caben a la vez en la pantalla: cuatro columnas y tres filas, con la
      altura atada al alto de la ventana. Una plantilla que hay que recorrer con el dedo
      no se puede leer de un vistazo, y leerla de un vistazo es para lo que sirve. */
-  return `<h2>Plantilla</h2><div class="sub mb">Una carta por división, las once a la vista.
-    Solo alineables y sin repetir peleador.</div>
+  /* Sin línea de subtítulo aparte: la nota va pegada al título, en la misma fila. Cada
+     línea que se quita aquí se la quedan las cartas, que es lo que hay que leer. */
+  return `<div class="pcab"><h2>Plantilla</h2>
+    <span class="sub">Una por división, sin repetir peleador</span></div>
     <div class="pgrid">${DIVISIONES.map(d=>{
       const iid=S.plantilla[d.id], c=iid?cartaDe(iid):null;
       return `<div class="pslot" data-slot="${d.id}">${c?cartaHTML(c,{attr:`data-slot="${d.id}"`,compacta:true})
@@ -1490,10 +1576,9 @@ function vPlantilla(){
           <div style="font-size:10px;text-align:center;line-height:1.2">${d.n}<br><span style="font-size:20px">＋</span></div></div>`}
         <div class="tiny center pnom">${d.n}</div></div>`;
     }).join('')}</div>
-    <div class="divider"></div>
-    <button class="btn sec" data-a="autoplantilla">Rellenar con lo mejor</button>
-    <div class="tiny" style="margin-top:6px;color:var(--dim2)">Rehace la alineación entera con tus
-    mejores cartas: campeones primero, luego rankeados, y dentro de cada tramo el más completo.</div>`;
+    <button class="btn sec pauto" data-a="autoplantilla">Rellenar con lo mejor
+      <span class="tiny">Campeones, rankeados, y el más completo de cada tramo</span>
+    </button>`;
 }
 function elegirParaSlot(divId){
   const cands=S.coleccion.map(x=>({x,c:PORID[x.cid]}))
@@ -3028,6 +3113,7 @@ document.addEventListener('click',e=>{
    12. ARRANQUE
    ══════════════════════════════════════════════════════════════════════════ */
 generarRoster();
+calcularCortePlata();   // el corte entre plata alta y baja sale del roster ya cargado
 SETS=construirSets();
 if(!cargar()) S=estadoNuevo();
 if(!S.sets) S.sets=[];
