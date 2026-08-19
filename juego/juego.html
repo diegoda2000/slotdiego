@@ -9,7 +9,7 @@
   --bg:#0d1014; --bg2:#141920; --bg3:#1c232c; --line:#2a323d;
   --txt:#e8edf3; --dim:#8b97a6; --dim2:#5d6874;
   --acc:#e0483a; --acc2:#ff6b5b; --ok:#3fb96b; --warn:#e8b13a;
-  --bronce:#9c6b45; --plata:#9aa8b5; --oro:#d9a441; --elite:#8b5cd6; --leyenda:#e0483a;
+  --plata:#9aa8b5; --oro:#d9a441; --corona:#ffd76a;
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 body{background:var(--bg);color:var(--txt);font:15px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif;
@@ -54,15 +54,18 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 .carta{position:relative;background:linear-gradient(160deg,var(--c1),var(--c2));border-radius:11px;
   padding:8px;color:#fff;overflow:hidden;border:1px solid rgba(255,255,255,.13);cursor:pointer;
   display:flex;flex-direction:column;min-height:150px}
-.carta.bronce{--c1:#5b4130;--c2:#33261c}
 .carta.plata{--c1:#5c6773;--c2:#333b45}
 .carta.oro{--c1:#8a6520;--c2:#4a3712}
-.carta.elite{--c1:#553296;--c2:#2c1a52}
-.carta.leyenda{--c1:#98241c;--c2:#4d100c}
+/* Campeón y top 5 no cambian de calidad —siguen siendo oro— pero se distinguen a
+   simple vista: es la informacion que ordena toda la coleccion. */
+.carta.top5{--c1:#a37820;--c2:#5a4110;border-color:rgba(255,215,106,.5)}
+.carta.campeon{--c1:#c08f22;--c2:#6b4d0f;border-color:var(--corona);
+  box-shadow:0 0 0 1px rgba(255,215,106,.35),0 4px 16px rgba(255,215,106,.18)}
 .carta::after{content:"";position:absolute;inset:0;background:
   radial-gradient(circle at 78% 8%,rgba(255,255,255,.16),transparent 46%);pointer-events:none}
 .carta .hd{display:flex;align-items:flex-start;gap:6px}
-.carta .med{font-size:25px;font-weight:800;line-height:.92;letter-spacing:-.04em}
+.carta .est{font-size:19px;font-weight:800;line-height:.95;letter-spacing:-.03em;
+  min-height:19px;text-shadow:0 1px 2px rgba(0,0,0,.4)}
 .carta .div{font-size:8.5px;text-transform:uppercase;letter-spacing:.07em;opacity:.82;font-weight:700}
 .carta .av{margin-left:auto;width:38px;height:38px;border-radius:50%;background:rgba(0,0,0,.28);
   display:grid;place-items:center;font-size:19px;flex:none}
@@ -79,7 +82,7 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 .tag.plus{background:#f0c33c;color:#2a1c00}
 .tag.nof{background:rgba(255,255,255,.14)}
 .carta.mini{min-height:0;padding:6px}
-.carta.mini .med{font-size:17px}
+.carta.mini .est{font-size:14px}
 .carta.mini .av{width:26px;height:26px;font-size:13px}
 .carta.mini .st,.carta.mini .rg,.carta.mini .ap{display:none}
 .carta.oculta{background:repeating-linear-gradient(45deg,#1d242e,#1d242e 8px,#222a35 8px,#222a35 16px);
@@ -135,6 +138,56 @@ th{color:var(--dim2);font-size:11px;text-transform:uppercase;letter-spacing:.04e
 .fila-stat.on b{color:var(--acc2)}
 /* El entrenador del tutorial: pegado arriba, para que no haya que buscarlo, y con el
    mismo peso visual que un panel — no es un aviso de error ni un anuncio. */
+/* ── RELOJ Y CHAT DE LA PARTIDA EN DIRECTO ── */
+.reloj-caja{display:flex;align-items:center;gap:7px;justify-content:center;margin-bottom:8px;
+  background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:6px 10px}
+.reloj{font-size:22px;font-weight:800;font-variant-numeric:tabular-nums;color:var(--txt);min-width:26px;text-align:center}
+.reloj.urgente{color:var(--acc);animation:lat .6s ease-in-out infinite}
+@keyframes lat{50%{transform:scale(1.14)}}
+.chatbox{max-height:150px;overflow-y:auto;display:flex;flex-direction:column;gap:4px;margin-top:7px}
+.chatm{font-size:12.5px;background:var(--bg3);border-radius:8px;padding:5px 8px;align-self:flex-start;max-width:88%}
+.chatm.mio{align-self:flex-end;background:#2a3a2f}
+.chatm b{color:var(--dim);font-weight:700;margin-right:4px}
+
+/* ── PLANTILLA QUE CABE ──
+   Cuatro columnas y tres filas para once divisiones. La altura de cada carta sale del
+   alto de la ventana, así que entra entera en cualquier móvil sin scroll. */
+.pgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:5px}
+.pgrid .pslot{display:flex;flex-direction:column}
+.pgrid .pnom{margin-top:2px;font-size:8.5px;line-height:1.1}
+.carta.compacta{min-height:0;height:clamp(96px,calc((100vh - 235px)/3),168px);padding:5px;border-radius:9px}
+.carta.compacta .est{font-size:13px;min-height:13px}
+.carta.compacta .div{font-size:7px;letter-spacing:.04em}
+.carta.compacta .av{width:22px;height:22px;font-size:12px}
+.carta.compacta .nm{font-size:9px;margin-top:3px}
+.carta.compacta .ap{display:none}
+.carta.compacta .st{gap:1px 3px;font-size:8px;margin-top:auto}
+.carta.compacta .st b{font-size:9.5px}
+.carta.compacta .rg{gap:2px}
+.carta.compacta .tag{font-size:6.5px;padding:1px 3px}
+.carta.oculta.compacta{height:clamp(96px,calc((100vh - 235px)/3),168px);min-height:0}
+
+/* ── EL DUELO CARA A CARA ──
+   Dos cartas enfrentadas. Mientras no se resuelve, la del rival va tapada: es la regla
+   de oro del juego hecha imagen. Al resolverse se destapa y se ve de un vistazo quién
+   ha ganado — la ganadora se enciende, la perdedora se apaga. */
+.duelo{display:flex;align-items:flex-start;gap:6px;justify-content:center}
+.duelo .lado{flex:1;max-width:150px;transition:opacity .18s,transform .18s}
+.duelo .lado.gana{transform:translateY(-3px)}
+.duelo .lado.gana .carta{border-color:var(--ok);box-shadow:0 0 0 2px rgba(63,185,107,.55),0 6px 20px rgba(63,185,107,.28)}
+.duelo .lado.pierde{opacity:.42;filter:grayscale(.7)}
+.duelo .cifra{text-align:center;font-size:26px;font-weight:800;line-height:1.1;margin-top:5px;
+  font-variant-numeric:tabular-nums;color:var(--dim)}
+.duelo .cifra.on{color:var(--ok)}
+.duelo .vsx{flex:none;width:62px;padding-top:34px;text-align:center}
+.duelo .stat-duelo{font-size:10px;font-weight:800;letter-spacing:.06em;padding:4px 3px;
+  border-radius:6px;background:var(--bg3);border:1px solid var(--line);color:var(--dim)}
+.duelo .stat-duelo.on{background:#3a2a12;border-color:var(--warn);color:var(--warn)}
+.duelo .vsl{font-size:11px;color:var(--dim2);margin-top:6px;font-weight:700}
+.carta.tapada{display:grid;place-items:center;font-size:44px;font-weight:800;color:#46525f;
+  background:repeating-linear-gradient(135deg,#1b222b,#1b222b 9px,#222b35 9px,#222b35 18px);
+  border:1px dashed #3a4551;min-height:150px;border-radius:11px}
+
 .coach{position:sticky;top:0;z-index:40;background:linear-gradient(180deg,#17251f,#131a17);
   border:1px solid #2f6b4d;border-radius:12px;padding:12px 13px;margin-bottom:10px;
   box-shadow:0 6px 18px rgba(0,0,0,.45)}
@@ -167,26 +220,39 @@ function estadoNuevo(){
   const s={divisa:250,fichas:0,coleccion:[],plantilla:{},sobres:[],
     partidas:0,victorias:0,gratis:{},sets:[],retos:[],nombre:'',amigos:[],
     tutorialHecho:false,tutorCortado:false};
-  // Arranque garantizado: una carta por división (si no, es imposible alinear)
+  // Arranque garantizado: una plata por división. Sin esto es imposible alinear.
   for(const d of DIVISIONES){
-    const cand=alineables().filter(c=>c.division===d.id&&c.rareza==='bronce');
+    const cand=alineables().filter(c=>c.division===d.id&&c.estatus==='plata');
     s.coleccion.push({iid:'i'+Math.random().toString(36).slice(2,9),cid:pick(cand).id});
   }
-  // Carta de rasgo inicial: fija, rasgo normal, no traspasable (propuesta del plan).
-  // Sin ella un novato juega sin la única herramienta de la partida.
-  const conRasgo=alineables().filter(c=>c.rasgos.length===1&&!c.rasgos[0].plus)
-    .sort((a,b)=>a.media-b.media);            // la más floja que cumpla: es una herramienta, no un regalo
+  // Carta de rasgo inicial: fija, rasgo normal, no traspasable. Sin ella un novato
+  // juega sin la única herramienta de la partida. La más floja que cumpla: es una
+  // herramienta, no un regalo.
+  const conRasgo=ordenar(alineables().filter(c=>c.rasgos.length===1&&!c.rasgos[0].plus)).reverse();
   if(conRasgo.length) s.coleccion.push({iid:'i-start',cid:conRasgo[0].id,notraspasable:true});
-  s.sobres=[{tipo:'basico'},{tipo:'basico'},{tipo:'oro'}];
+  // Bono de bienvenida, una sola vez: 2 de oro y 2 de plata, gratis.
+  s.sobres=[{tipo:'oro'},{tipo:'oro'},{tipo:'plata'},{tipo:'plata'}];
   autoPlantilla(s);
   return s;
 }
-function autoPlantilla(s){
-  for(const d of DIVISIONES){
+/* Rellenar con lo mejor. Antes solo tocaba los huecos VACÍOS, así que en cuanto tenías
+   los once puestos el botón no hacía absolutamente nada — parecía roto porque lo estaba.
+   Con `rehacer` tira la alineación y la monta entera desde cero.
+
+   El criterio es el orden deportivo: campeón, top 5, top 6-10, top 11-15, oro sin
+   rankear y plata; y dentro del mismo tramo, el de más stats sumadas.
+
+   Se recorre por divisiones EMPEZANDO por las que menos donde elegir tienen, porque
+   quien reparte primero se lleva a los peleadores dobles y deja al resto sin nada. */
+function autoPlantilla(s,rehacer){
+  if(rehacer) s.plantilla={};
+  const porDivision=d=>s.coleccion.filter(x=>{const c=PORID[x.cid];return c.alineable&&c.division===d.id});
+  const orden=DIVISIONES.slice().sort((a,b)=>porDivision(a).length-porDivision(b).length);
+  for(const d of orden){
     if(s.plantilla[d.id]) continue;
-    const cands=s.coleccion.filter(x=>{const c=PORID[x.cid];return c.alineable&&c.division===d.id});
+    const cands=porDivision(d);
     if(!cands.length) continue;
-    cands.sort((a,b)=>PORID[b.cid].media-PORID[a.cid].media);
+    cands.sort((a,b)=>comparar(PORID[a.cid],PORID[b.cid]));   // orden deportivo: mejor primero
     for(const cd of cands){ if(!personaRepetida(s,cd,d.id)){ s.plantilla[d.id]=cd.iid; break; } }
   }
 }
@@ -219,102 +285,179 @@ const cartaDe=iid=>{const i=inst(iid);return i?PORID[i.cid]:null};
 /* ══════════════════════════════════════════════════════════════════════════
    5. ECONOMÍA — sobres, reciclaje, sets, retos, intercambio
    ══════════════════════════════════════════════════════════════════════════ */
-/* Bandas de calidad. Sortear por rareza a secas no distingue un oro de 76 de uno de 87,
-   y esa diferencia es justo la que decide si un sobre gratis te regala una plantilla.
-   Partir el oro por su media es lo que permite que el básico dé oros a menudo sin que
-   dé nunca oros buenos. */
-const BANDAS=[
-  {id:'bronce',  n:'Bronce',    cumple:c=>c.rareza==='bronce'},
-  {id:'plata',   n:'Plata',     cumple:c=>c.rareza==='plata'},
-  {id:'oroBajo', n:'Oro bajo',  cumple:c=>c.rareza==='oro'&&c.media<=80},
-  {id:'oroMedio',n:'Oro medio', cumple:c=>c.rareza==='oro'&&c.media>80&&c.media<=84},
-  {id:'oroAlto', n:'Oro alto',  cumple:c=>c.rareza==='oro'&&c.media>84},
-  {id:'elite',   n:'Élite',     cumple:c=>c.rareza==='elite'},
-  {id:'leyenda', n:'Leyenda',   cumple:c=>c.rareza==='leyenda'},
-];
-const BANDA_IDS=BANDAS.map(b=>b.id);
-// De aquí para arriba es lo que la gente persigue: la cifra que se enseña en la tienda.
-const BANDAS_TOP=['oroAlto','elite','leyenda'];
-const bandaDe=c=>(BANDAS.find(b=>b.cumple(c))||BANDAS[0]).id;
+/* ── SOBRES ───────────────────────────────────────────────────────────────
+   Dos sorteos por sobre, no uno. Primero se decide CUÁNTOS OROS trae; el resto de los
+   nueve huecos se rellena con platas. Después, cada oro tira su nivel por separado.
 
-// Todos los sobres reparten lo mismo: 9 cartas, 7 alineables garantizadas y 2 huecos
-// de colección de regalo. Lo que distingue a un sobre de otro es solo la CALIDAD, no
-// la cantidad — más fácil de entender y de equilibrar.
-const CARTAS_POR_SOBRE=9, ALINEABLES_POR_SOBRE=7;
+   Separarlo así es lo que permite prometer "este sobre trae siete u ocho oros" sin que
+   la calidad se dispare sola: la cantidad y el nivel son perillas independientes.
+
+   Los niveles van por ESTATUS DEPORTIVO, no por ninguna media. "Corona" es campeón o
+   top 5, que en la tabla de probabilidades van juntos. */
+const CARTAS_POR_SOBRE=9;
+
+const NIVELES=[
+  {id:'corona', n:'Campeón o Top 5', cumple:c=>c.estatus==='campeon'||c.estatus==='top5'},
+  {id:'top10',  n:'Top 6-10',        cumple:c=>c.estatus==='top10'},
+  {id:'top15',  n:'Top 11-15',       cumple:c=>c.estatus==='top15'},
+  {id:'oro',    n:'Oro sin rankear', cumple:c=>c.estatus==='oro'},
+];
+const NIVEL_IDS=NIVELES.map(n=>n.id);
+
 const TIPOS_SOBRE={
-  // Ilimitado y de apertura directa: da platas y oros bajos a menudo —es el suelo del
-  // que nadie baja— pero oro alto o mejor suma 0,8%, así que no es vía para llegar arriba.
-  // 'unico' significa que no se guarda ni se abre en tanda: uno cada vez.
-  basico:{n:'Sobre básico', ic:'📦', coste:0,   unico:true,
-    pesos:{bronce:13, plata:45, oroBajo:40, oroMedio:1.2, oroAlto:0.6, elite:0.18, leyenda:0.02}},
-  plata :{n:'Sobre de plata',ic:'🎁', coste:250,
-    pesos:{bronce:2,  plata:30, oroBajo:40, oroMedio:20,  oroAlto:6,   elite:1.8,  leyenda:0.2}},
-  oro   :{n:'Sobre de oro',  ic:'🥇', coste:600,
-    pesos:{bronce:0,  plata:12, oroBajo:30, oroMedio:30,  oroAlto:20,  elite:7,    leyenda:1}},
-  elite :{n:'Sobre de élite',ic:'💎', coste:2200,
-    pesos:{bronce:0,  plata:0,  oroBajo:12, oroMedio:25,  oroAlto:38,  elite:22,   leyenda:3}},
+  // Gratis y sin límite: se abre en el sitio y de uno en uno.
+  basico:{n:'Sobre básico', ic:'📦', coste:0, unico:true, gratis:true,
+    oros :{4:15, 5:25, 6:35, 7:25},
+    nivel:{corona:0.15, top10:1.35, top15:38.5, oro:60}},
+  plata :{n:'Sobre de plata', ic:'🎁', coste:250,
+    oros :{1:40, 2:40, 3:20},
+    nivel:{corona:0.30, top10:2, top15:40, oro:57.7}},
+  oro   :{n:'Sobre de oro', ic:'🥇', coste:600,
+    oros :{7:30, 8:45, 9:25},
+    nivel:{corona:0.60, top10:3.20, top15:46.2, oro:50}},
 };
-for(const t of Object.values(TIPOS_SOBRE)){ t.cartas=CARTAS_POR_SOBRE; t.alineables=ALINEABLES_POR_SOBRE; }
+for(const t of Object.values(TIPOS_SOBRE)) t.cartas=CARTAS_POR_SOBRE;
 
-// Sobres gratis permanentes, estilo Pacybits/MadFUT: siempre están en la tienda,
-// cada uno con su propio reloj. Al reclamarlos NO se abren — se guardan, porque
-// acumular veinte y abrirlos de golpe es el momento que engancha (GDD §9).
-// El de menos espera tiene el drop más bajo, como pide el GDD.
-const GRATIS=[
-  {id:'g1', tipo:'basico', espera:            0},   // ilimitado, sin reloj
-  {id:'g2', tipo:'plata',  espera:     20*60000},
-  {id:'g3', tipo:'oro',    espera:  2*60*60000},
-];
+/* Solo el básico se reclama gratis. Los de plata y oro se compran o se ganan en
+   desafíos: ya no se regalan por reloj. */
+const GRATIS=[{id:'g1', tipo:'basico', espera:0}];
 const listoGratis=g=>g.espera===0||Date.now()-(S.gratis[g.id]||0)>=g.espera;
 const restaGratis=g=>Math.max(0,g.espera-(Date.now()-(S.gratis[g.id]||0)));
-// El ilimitado no cuenta para el aviso del menú: estaría encendido siempre y dejaría
-// de significar nada.
+// El ilimitado no cuenta para el aviso del menú: estaría encendido siempre.
 const nGratisListos=()=>GRATIS.filter(g=>g.espera>0&&listoGratis(g)).length;
 function reloj(ms){
   const s=Math.ceil(ms/1000), h=Math.floor(s/3600), m=Math.floor(s%3600/60), r=s%60;
   return h?`${h}:${String(m).padStart(2,'0')}:${String(r).padStart(2,'0')}`
           :`${m}:${String(r).padStart(2,'0')}`;
 }
-function sorteaBanda(pesos){
-  const tot=BANDA_IDS.reduce((a,b)=>a+(pesos[b]||0),0);
+
+const sortearClave=tabla=>{
+  const claves=Object.keys(tabla);
+  const tot=claves.reduce((a,k)=>a+tabla[k],0);
   let r=Math.random()*tot;
-  for(const b of BANDA_IDS){ if((r-=(pesos[b]||0))<0) return b; }
-  return 'plata';
+  for(const k of claves){ if((r-=tabla[k])<0) return k; }
+  return claves[claves.length-1];
+};
+
+/* Reparto del sobre: cuántos oros y de qué nivel cada uno. Se saca aparte de la
+   apertura para poder comprobarlo con miles de tiradas sin tocar la colección. */
+function repartoSobre(tipo){
+  const T=TIPOS_SOBRE[tipo];
+  const nOros=+sortearClave(T.oros);
+  const niveles=[];
+  for(let i=0;i<nOros;i++) niveles.push(sortearClave(T.nivel));
+  while(niveles.length<T.cartas) niveles.push('plata');
+  return niveles;
 }
-// Si una banda se queda sin cartas —pasa en el pool corto de colección— se cae a la
-// contigua, no a una carta cualquiera: saltar de "oro alto" a "bronce" de golpe sería
-// justo el tipo de sorpresa que hace pensar que el juego está roto.
-function cartaDeBanda(bandaId,alineable){
-  const i=BANDA_IDS.indexOf(bandaId);
-  for(let d=0;d<BANDA_IDS.length;d++){
-    for(const j of (d===0?[i]:[i-d,i+d])){
-      if(j<0||j>=BANDAS.length) continue;
-      const pool=ROSTER.filter(c=>c.alineable===alineable&&BANDAS[j].cumple(c));
+
+const poolNivel=nivelId=>nivelId==='plata'
+  ? ROSTER.filter(c=>c.estatus==='plata')
+  : ROSTER.filter(NIVELES.find(n=>n.id===nivelId).cumple);
+
+/* Un sobre no repite carta dentro de sí mismo. Si el nivel sorteado se queda sin
+   candidatos nuevos —pasa en corona, que es un pool corto— se baja al nivel de al
+   lado en vez de saltar a cualquier cosa: una sorpresa así parece un fallo. */
+function cartaDeNivel(nivelId,yaEnElSobre){
+  const orden=[...NIVEL_IDS,'plata'];
+  const i=orden.indexOf(nivelId);
+  for(let d=0;d<orden.length;d++){
+    for(const j of (d===0?[i]:[i+d,i-d])){
+      if(j<0||j>=orden.length) continue;
+      const pool=poolNivel(orden[j]).filter(c=>!yaEnElSobre.has(c.id));
       if(pool.length) return pick(pool);
     }
   }
-  return pick(ROSTER.filter(c=>c.alineable===alineable));
+  return pick(ROSTER.filter(c=>!yaEnElSobre.has(c.id))) || pick(ROSTER);
 }
-// Un solo tipo de sobre con huecos alineables garantizados + huecos de colección
-// de regalo (propuesta del plan para "el sobre que decepciona").
+
 function abrirSobre(tipo){
-  const T=TIPOS_SOBRE[tipo], salida=[];
-  for(let i=0;i<T.cartas;i++){
-    const c=cartaDeBanda(sorteaBanda(T.pesos), i<T.alineables);
+  const salida=[], dentro=new Set();
+  for(const nivel of repartoSobre(tipo)){
+    const c=cartaDeNivel(nivel,dentro);
+    dentro.add(c.id);
     const it={iid:'i'+Math.random().toString(36).slice(2,9),cid:c.id};
     S.coleccion.push(it); salida.push(it);
   }
+  // Siempre de mejor a peor: el orden deportivo manda también aquí.
+  salida.sort((a,b)=>comparar(PORID[a.cid],PORID[b.cid]));
   guardar(); return salida;
 }
-function reciclar(iids){
-  let fr=0;
+
+/* Probabilidad real de que un sobre traiga al menos una carta de corona. Es la cifra
+   que de verdad quiere saber quien va a gastarse la divisa, así que se calcula en vez
+   de escribirla a mano. */
+function pctCorona(tipo){
+  const T=TIPOS_SOBRE[tipo];
+  const totOros=Object.values(T.oros).reduce((a,b)=>a+b,0);
+  const totNiv=Object.values(T.nivel).reduce((a,b)=>a+b,0);
+  const pCorona=T.nivel.corona/totNiv;
+  let p=0;
+  for(const [n,peso] of Object.entries(T.oros))
+    p+=(peso/totOros)*(1-Math.pow(1-pCorona,+n));
+  return p*100;
+}
+const orosTexto=tipo=>{
+  const k=Object.keys(TIPOS_SOBRE[tipo].oros).map(Number).sort((a,b)=>a-b);
+  return `${k[0]}-${k[k.length-1]} oros`;
+};
+
+/* ── RECICLAJE ────────────────────────────────────────────────────────────
+   Dos reglas duras:
+
+   1. La PRIMERA copia de una carta no se recicla jamás. Da igual lo floja que sea:
+      si la reciclas pierdes la carta de la colección, y un juego de coleccionar no
+      puede dejarte destruir lo único que tienes de alguien. Solo se reciclan repetidos.
+
+   2. Una ficha sale de UN SOLO TRAMO. No se juntan tres platas y un oro para completar
+      una: cada tramo tiene su cuenta y sus restos se quedan donde están. */
+const repesDe=cid=>Math.max(0,S.coleccion.filter(x=>x.cid===cid).length-1);
+
+// ¿Es esta instancia concreta reciclable? Lo es si NO es la última copia que queda
+// de esa carta y no está alineada.
+function reciclable(iid){
+  const it=inst(iid); if(!it) return false;
+  if(Object.values(S.plantilla).includes(iid)) return false;
+  return repesDe(it.cid)>0;
+}
+
+// Cuántas fichas dan estos repetidos, tramo por tramo, y qué sobra en cada uno.
+function cuentaReciclaje(iids){
+  const porTramo={};
   for(const iid of iids){
     const it=inst(iid); if(!it) continue;
-    if(Object.values(S.plantilla).includes(iid)) continue;
-    fr+=RAREZAS[PORID[it.cid].rareza].fichas;
-    S.coleccion=S.coleccion.filter(x=>x.iid!==iid);
+    const t=tramoDe(PORID[it.cid]);
+    (porTramo[t]=porTramo[t]||[]).push(iid);
   }
-  const g=Math.floor(fr); S.fichas+=g; guardar(); return g;
+  let fichas=0; const detalle={};
+  for(const [t,lista] of Object.entries(porTramo)){
+    const n=TRAMOS[t].repes;
+    detalle[t]={tengo:lista.length, porFicha:n, fichas:Math.floor(lista.length/n),
+      faltan:(lista.length%n)?n-(lista.length%n):0};
+    fichas+=detalle[t].fichas;
+  }
+  return {fichas, detalle};
+}
+
+/* Recicla solo lo que completa fichas enteras, y por tramos. Lo que sobra se devuelve
+   a la colección en vez de desaparecer: destruir cartas que no han pagado nada sería
+   cobrar dos veces. */
+function reciclar(iids){
+  const validos=iids.filter(reciclable);
+  const porTramo={};
+  for(const iid of validos){
+    const t=tramoDe(PORID[inst(iid).cid]);
+    (porTramo[t]=porTramo[t]||[]).push(iid);
+  }
+  let g=0;
+  for(const [t,lista] of Object.entries(porTramo)){
+    const n=TRAMOS[t].repes;
+    const gasta=Math.floor(lista.length/n)*n;
+    if(!gasta) continue;
+    g+=gasta/n;
+    const fuera=new Set(lista.slice(0,gasta));
+    S.coleccion=S.coleccion.filter(x=>!fuera.has(x.iid));
+  }
+  S.fichas+=g; guardar(); return g;
 }
 function copias(cid){ return S.coleccion.filter(x=>x.cid===cid).length; }
 
@@ -323,7 +466,7 @@ function construirSets(){
   const out=[];
   for(const g of GIMNASIOS.slice(0,6)){
     const req=ROSTER.filter(c=>c.gimnasio===g).slice(0,4).map(c=>c.id);
-    if(req.length===4) out.push({id:'gim-'+g,n:'Gimnasio · '+g,req,premio:'elite'});
+    if(req.length===4) out.push({id:'gim-'+g,n:'Gimnasio · '+g,req,premio:'top5'});
   }
   for(const p of PROMOTORAS.slice(1)){
     const req=ROSTER.filter(c=>c.promotora===p.id).slice(0,5).map(c=>c.id);
@@ -340,18 +483,18 @@ const setListo=s=>s.req.every(cid=>copias(cid)>0);
 
 // Retos (SBC): entregas cartas, recibes recompensa
 const RETOS=[
-  {id:'r1',n:'Cantera',   d:'Entrega 3 cartas de bronce de divisiones distintas',
-   check:l=>l.length===3&&l.every(c=>c.rareza==='bronce')&&new Set(l.map(c=>c.division)).size===3,
+  {id:'r1',n:'Cantera',   d:'Entrega 3 platas de divisiones distintas',
+   check:l=>l.length===3&&l.every(c=>c.estatus==='plata')&&new Set(l.map(c=>c.division)).size===3,
    premio:{sobre:'plata',divisa:120}},
-  {id:'r2',n:'Base sólida',d:'Entrega 3 platas de divisiones distintas',
-   check:l=>l.length===3&&l.every(c=>c.rareza==='plata')&&new Set(l.map(c=>c.division)).size===3,
+  {id:'r2',n:'Base sólida',d:'Entrega 2 oros sin rankear de divisiones distintas',
+   check:l=>l.length===2&&l.every(c=>c.estatus==='oro')&&new Set(l.map(c=>c.division)).size===2,
    premio:{sobre:'oro',divisa:0}},
   {id:'r3',n:'Cruce de escuelas',d:'Entrega 2 oros de gimnasios distintos',
    check:l=>l.length===2&&l.every(c=>c.rareza==='oro')&&new Set(l.map(c=>c.gimnasio)).size===2,
    premio:{sobre:'oro',divisa:400}},
-  {id:'r4',n:'Mundial',d:'Entrega 4 cartas de 4 nacionalidades distintas (plata o mejor)',
-   check:l=>l.length===4&&new Set(l.map(c=>c.pais)).size===4&&l.every(c=>c.rareza!=='bronce'),
-   premio:{sobre:'elite',divisa:0}},
+  {id:'r4',n:'Mundial',d:'Entrega 4 oros de 4 nacionalidades distintas',
+   check:l=>l.length===4&&new Set(l.map(c=>c.pais)).size===4&&l.every(c=>c.rareza==='oro'),
+   premio:{sobre:'oro',divisa:0}},
 ];
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -436,6 +579,27 @@ function registrarResultado(txt){
    como 'j' y todas las pantallas de partida sirven sin tocarlas.
    ══════════════════════════════════════════════════════════════════════════ */
 let MODO='local', RED=null, SALA=null;
+const CHAT=[];              // historial de la partida en directo
+let CUENTA=null;            // temporizador visual de los 25 segundos
+
+/* El reloj se pinta solo, sin repintar la pantalla entera cada segundo: un render por
+   segundo se comería los toques del jugador justo cuando más prisa tiene. */
+function arrancarCuenta(){
+  if(CUENTA) clearInterval(CUENTA);
+  CUENTA=setInterval(()=>{
+    const el=document.getElementById('reloj');
+    if(!el||!P||!P.limite){ if(!el){clearInterval(CUENTA);CUENTA=null;} return; }
+    const q=Math.max(0,Math.ceil((P.limite-Date.now())/1000));
+    el.textContent=q;
+    el.className='reloj'+(q<=8?' urgente':'');
+  },250);
+}
+function relojHTML(){
+  if(!online()||!P||!P.limite||P.fase==='fin') return '';
+  const q=Math.max(0,Math.ceil((P.limite-Date.now())/1000));
+  return `<div class="reloj-caja"><span class="reloj${q<=8?' urgente':''}" id="reloj">${q}</span>
+    <span class="tiny">segundos para decidir</span></div>`;
+}
 const online=()=>MODO==='online';
 // La dirección viene puesta de fábrica en el APK. Lo que el jugador guarde a mano
 // tiene prioridad, que es lo que permite apuntar a un servidor local al desarrollar.
@@ -497,6 +661,12 @@ function conectar(codigo){
       P=m.P;
       if(vista!=='partida'){ vista='partida'; tmp={}; }
       else { tmp.divSel=null; tmp.statSel=null; tmp.jugada=null; }
+      arrancarCuenta();
+      render(); return;
+    }
+    if(m.t==='chat'){
+      CHAT.push(m); if(CHAT.length>60) CHAT.shift();
+      if(m.lado==='r') CHAT.sinLeer=(CHAT.sinLeer||0)+1;
       render(); return;
     }
     if(m.t==='error'){
@@ -519,11 +689,14 @@ function salirDeSala(){
 /* ══════════════════════════════════════════════════════════════════════════
    7. IA
    ══════════════════════════════════════════════════════════════════════════ */
-function plantillaIA(mediaObjetivo){
+/* Plantilla del rival de la IA, ajustada al nivel del jugador. Se mide con la suma de
+   stats porque es lo único comparable que hay — y como es interna, sirve para esto
+   igual de bien que serviría una media, sin necesidad de inventarse una. */
+function plantillaIA(sumaObjetivo){
   const out={}, personas=new Set();
   for(const d of DIVISIONES){
     const pool=alineables().filter(c=>c.division===d.id&&!personas.has(c.persona));
-    pool.sort((a,b)=>Math.abs(a.media-mediaObjetivo)-Math.abs(b.media-mediaObjetivo));
+    pool.sort((a,b)=>Math.abs(a.suma-sumaObjetivo)-Math.abs(b.suma-sumaObjetivo));
     const c=pool[ri(0,Math.min(4,pool.length-1))];
     out[d.id]=c; personas.add(c.persona);   // un peleador, un slot
   }
@@ -532,7 +705,7 @@ function plantillaIA(mediaObjetivo){
 function iaVeta(P){
   const libres=DIVISIONES.map(d=>d.id).filter(id=>!P.vetados.includes(id));
   // veta donde su carta es peor
-  libres.sort((a,b)=>P.cartas.r[a].media-P.cartas.r[b].media);
+  libres.sort((a,b)=>P.cartas.r[a].suma-P.cartas.r[b].suma);
   return libres[0];
 }
 function iaDeclara(P){
@@ -547,13 +720,8 @@ function iaDeclara(P){
   }
   return mejor;
 }
-function iaJugada(P){
-  // usa el cambio de división si le mejora claramente la casilla más floja
-  if(P.jugada.r||Math.random()<.45) return null;
-  const ops=cambiosPosibles(P,'r');
-  if(!ops.length) return null;
-  return Math.random()<.5?pick(ops):null;
-}
+/* El cambio de división es defensivo, así que la IA lo evalúa al responder, dentro de
+   respuestaIA, y no al declarar. Aquí solo queda la elección a ciegas del Incómodo. */
 function iaEligeIncomodo(P,opciones){ return pick(opciones); }
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -566,7 +734,8 @@ const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',
 function cartaHTML(c,o={}){
   if(!c) return `<div class="carta oculta">?</div>`;
   if(o.oculta) return `<div class="carta oculta">🥊</div>`;
-  const cls=c.rareza==='elite'?'elite':c.rareza==='leyenda'?'leyenda':c.rareza;
+  // El color va por calidad (oro o plata) y la corona marca a campeones y top 5.
+  const cls=c.rareza+(c.estatus==='campeon'?' campeon':c.estatus==='top5'?' top5':'');
   const aj=o.ajuste||{};
   const st=STATS.map(s=>{
     const base=c.stats[s.id], d=aj[s.id]||0, v=base+d;
@@ -576,8 +745,8 @@ function cartaHTML(c,o={}){
   const rg=c.rasgos.map(r=>`<span class="tag ${r.plus?'plus':''}">${RASGOS[r.tipo].ic} ${RASGOS[r.tipo].n}${r.plus?'+':''}</span>`).join('')
     +(c.alineable?'':`<span class="tag nof">colección</span>`);
   const nCop=o.copias&&o.copias>1?`<span class="tag" style="position:absolute;top:6px;right:6px">×${o.copias}</span>`:'';
-  return `<div class="carta ${cls} ${o.sel?'sel':''}" ${o.attr||''}>
-    ${nCop}<div class="hd"><div><div class="med">${c.media}</div>
+  return `<div class="carta ${cls} ${o.compacta?'compacta':''} ${o.sel?'sel':''}" ${o.attr||''}>
+    ${nCop}<div class="hd"><div><div class="est">${EST[c.estatus].c||EST[c.estatus].n}</div>
     <div class="div">${DIV[c.division].n}</div></div>
     <div class="av">${c.alineable?'🥊':'📘'}</div></div>
     <div class="nm">${esc(c.nombre)}</div><div class="ap">${c.apodo?'"'+esc(c.apodo)+'"':''}</div>
@@ -614,7 +783,11 @@ function ir(v){ vista=v; tmp={}; window.scrollTo(0,0); render(); }
 /* ── INICIO ── */
 function vInicio(){
   const ok=plantillaCompleta();
-  const media=ok?Math.round(DIVISIONES.reduce((a,d)=>a+cartaDe(S.plantilla[d.id]).media,0)/11):0;
+  // Ya no hay media de plantilla: lo que dice de qué está hecha es cuántos rankeados
+  // llevas, que además es lo que el jugador persigue.
+  const cartasPl=ok?DIVISIONES.map(d=>cartaDe(S.plantilla[d.id])):[];
+  const nOro=cartasPl.filter(c=>c.rareza==='oro').length;
+  const nRank=cartasPl.filter(c=>['campeon','top5','top10','top15'].includes(c.estatus)).length;
   const listos=nGratisListos();
   // El tutorial va lo primero mientras no se haya hecho: es la puerta de entrada, y no
   // exige plantilla completa porque juega con uno prestada — se puede hacer al instalar.
@@ -626,8 +799,10 @@ function vInicio(){
       <button class="btn sm" data-a="tutorial" style="width:100%;margin-top:9px">Empezar el tutorial</button>
     </div>`;
   return tuto+`<div class="card-panel center" style="padding:20px 14px">
-      <div class="tiny">MEDIA DE TU PLANTILLA</div>
-      <div style="font-size:46px;font-weight:800;letter-spacing:-.04em;line-height:1">${ok?media:'—'}</div>
+      <div class="tiny">TU PLANTILLA</div>
+      <div style="font-size:44px;font-weight:800;letter-spacing:-.04em;line-height:1">
+        ${ok?nRank:'—'}<span style="font-size:19px;color:var(--dim2)"> /11</span></div>
+      <div class="sub">${ok?`rankeados · ${nOro} oros`:'sin completar'}</div>
       <div class="sub">${S.victorias} victorias de ${S.partidas} partidas</div>
     </div>
     ${ok?'':`<div class="card-panel" style="border-color:var(--warn)">
@@ -643,38 +818,34 @@ function vInicio(){
     <div class="card-panel">
       <h3>Cómo se gana</h3>
       <div class="sub">Se juegan 6 duelos. En cada uno se declara <b>división + stat</b>, y la stat
-      se gasta para los dos. Gana el primero que llegue a 4. Si acaba 3-3, desempate en la división
-      del veto aleatorio con stat al azar.</div>
+      se gasta para los dos. Gana el primero que llegue a 4. Si acaba empatado, decide quién tiene
+      <b>más finishes</b>; y solo si también van iguales, un duelo de desempate.</div>
       <div class="divider"></div>
       <table><tr><th>Margen</th><th>Resultado</th></tr>
-      <tr><td>13 o más</td><td>Finish</td></tr>
-      <tr><td>7 a 12</td><td>Decisión</td></tr>
-      <tr><td>1 a 6</td><td>Reñido — 65/35</td></tr>
+      <tr><td>10 o más</td><td>Finish</td></tr>
+      <tr><td>4 a 9</td><td>Decisión</td></tr>
+      <tr><td>1 a 3</td><td>Reñido — 55/45</td></tr>
       <tr><td>0</td><td>Empate — moneda al aire 50/50</td></tr></table>
       <button class="btn gho sm" data-nav="reglas" style="width:100%;margin-top:9px">📖 Reglas completas</button>
     </div>`;
 }
 
 /* ── SOBRES ── */
-// La cifra que de verdad quiere saber quien abre un sobre es la de arriba, así que
-// va aparte y destacada en vez de perdida en la lista.
-const pctTop=t=>{
-  const tot=BANDA_IDS.reduce((a,b)=>a+(t.pesos[b]||0),0);
-  const top=BANDAS_TOP.reduce((a,b)=>a+(t.pesos[b]||0),0);
-  const p=top/tot*100;
-  return p>=10?p.toFixed(0):p.toFixed(p<1?1:1);
+// Lo que de verdad quiere saber quien va a gastarse la divisa es dos cosas: cuántos
+// oros trae y cuánto de improbable es la carta gorda. Las dos se calculan del reparto
+// real, no se escriben a mano, para que no puedan mentir si mañana se retoca la tabla.
+const fichaSobre=t=>`${orosTexto(t)} de 9 · ${pctCorona(t).toFixed(2)}% de campeón o top 5`;
+const desgloseSobre=t=>{
+  const T=TIPOS_SOBRE[t], tot=Object.values(T.nivel).reduce((a,b)=>a+b,0);
+  return NIVELES.map(n=>`${n.n} ${(T.nivel[n.id]/tot*100).toFixed(n.id==='corona'?2:0)}%`).join(' · ');
 };
-const probs=t=>{
-  const tot=BANDA_IDS.reduce((a,b)=>a+(t.pesos[b]||0),0);
-  return BANDAS.filter(b=>(t.pesos[b.id]||0)/tot>=0.02)
-    .map(b=>b.n+' '+((t.pesos[b.id]||0)/tot*100).toFixed(0)+'%').join(' · ');
-};
+
 function vSobres(){
   const pend=S.sobres.reduce((a,s)=>{a[s.tipo]=(a[s.tipo]||0)+1;return a},{});
   const orden=Object.keys(TIPOS_SOBRE);
   return `<h2>Sobres</h2>
-    <div class="sub mb">Los sobres no caducan. Reclámalos, guárdalos y ábrelos cuando quieras
-    — veinte de golpe sienta mejor que uno cada día.</div>
+    <div class="sub mb">Todos traen <b>9 cartas</b> y ninguna se repite dentro del mismo sobre.
+    Lo que cambia de uno a otro es cuántas son de oro y de qué nivel.</div>
 
     <h3>🎁 Gratis</h3>
     ${GRATIS.map(g=>{
@@ -684,14 +855,13 @@ function vSobres(){
           <div style="flex:none;font-size:26px">${T.ic}</div>
           <div style="flex:2"><b>${T.n}</b>
             ${directo?'<span class="chip on" style="margin-left:5px">ILIMITADO</span>':''}
-            <div class="tiny">${T.cartas} cartas · ${T.alineables} alineables garantizadas</div>
-            <div class="tiny">${probs(T)}</div>
-            <div class="tiny" style="color:var(--warn)">Oro alto o mejor: ${pctTop(T)}%</div></div>
+            <div class="tiny">${fichaSobre(g.tipo)}</div>
+            <div class="tiny">${desgloseSobre(g.tipo)}</div></div>
           <button class="btn sm" data-a="${directo?'abrirgratis':'gratis'}" data-g="${g.id}"
             data-reloj="${g.id}" ${ok?'':'disabled'} style="flex:none;min-width:92px">
             ${ok?(directo?'Abrir':'Reclamar'):reloj(restaGratis(g))}</button>
         </div>
-        ${directo?'<div class="tiny" style="margin-top:6px">Se abre al momento, de uno en uno.</div>':''}
+        ${directo?'<div class="tiny" style="margin-top:6px">Se abre al momento, de uno en uno. Es el único sobre gratis.</div>':''}
       </div>`;
     }).join('')}
 
@@ -704,7 +874,7 @@ function vSobres(){
         <button class="btn sm" data-a="abrir" data-t="${t}" style="flex:none">Abrir</button>
         ${(pend[t]>1&&!TIPOS_SOBRE[t].unico)?`<button class="btn sm sec" data-a="abrirtodo" data-t="${t}" style="flex:none">Abrir ${pend[t]}</button>`:''}
       </div>`).join('')
-      :'<div class="sub">No tienes sobres guardados. Reclama los gratis de arriba.</div>'}
+      :'<div class="sub">No tienes sobres guardados. Se ganan comprándolos o en los retos.</div>'}
     </div>
 
     <h3 style="margin-top:14px">🪙 Comprar</h3>
@@ -713,9 +883,8 @@ function vSobres(){
       return `<div class="card-panel"><div class="row" style="align-items:center">
         <div style="flex:none;font-size:26px">${t.ic}</div>
         <div style="flex:2"><b>${t.n}</b>
-          <div class="tiny">${t.cartas} cartas · ${t.alineables} alineables garantizadas</div>
-          <div class="tiny">${probs(t)}</div>
-          <div class="tiny" style="color:var(--warn)">Oro alto o mejor: ${pctTop(t)}%</div></div>
+          <div class="tiny">${fichaSobre(k)}</div>
+          <div class="tiny">${desgloseSobre(k)}</div></div>
         <button class="btn sm" data-a="comprar" data-t="${k}" ${S.divisa<t.coste?'disabled':''}
           style="flex:none;min-width:80px">🪙 ${t.coste}</button>
       </div></div>`;
@@ -784,11 +953,11 @@ function vApertura(){
 
   const it=a.items[a.i], c=PORID[it.cid];
   const nueva=a.nuevas.includes(it.iid);
-  const gorda=c.rareza==='elite'||c.rareza==='leyenda';
+  const gorda=c.estatus==='campeon'||c.estatus==='top5';
   return barra+`
     <div class="center" data-a="revelar" style="cursor:pointer;padding-top:6px">
       ${gorda?`<div class="pop" style="font-size:15px;font-weight:800;letter-spacing:.1em;
-        color:var(--warn);margin-bottom:6px">★ ${RAREZAS[c.rareza].n.toUpperCase()} ★</div>`:''}
+        color:var(--warn);margin-bottom:6px">★ ${EST[c.estatus].n.toUpperCase()} ★</div>`:''}
       <div class="pop" style="max-width:225px;margin:0 auto 12px">${cartaHTML(c)}</div>
       <div class="mb">${nueva?'<span class="chip on">NUEVA</span>':'<span class="chip">repetida</span>'}
         ${c.alineable?'':'<span class="chip">colección</span>'}</div>
@@ -803,17 +972,17 @@ function vColeccion(){
   const f=tmp.filtro||{};
   let l=S.coleccion.map(x=>({x,c:PORID[x.cid]}));
   if(f.div) l=l.filter(o=>o.c.division===f.div);
-  if(f.rar) l=l.filter(o=>o.c.rareza===f.rar);
+  if(f.rar) l=l.filter(o=>o.c.estatus===f.rar);
   if(f.al==='si') l=l.filter(o=>o.c.alineable);
   if(f.al==='no') l=l.filter(o=>!o.c.alineable);
-  l.sort((a,b)=>b.c.media-a.c.media);
+  l.sort((a,b)=>comparar(a.c,b.c));      // siempre de mejor a peor
   const total=ROSTER.length, distintas=new Set(S.coleccion.map(x=>x.cid)).size;
   return `<h2>Colección</h2>
     <div class="sub mb">${distintas} de ${total} cartas distintas · ${S.coleccion.length} en total</div>
     <div class="bar mb"><div style="width:${distintas/total*100}%"></div></div>
     <div class="chips mb">
       <span class="chip ${!f.rar?'on':''}" data-f="rar" data-v="">Todas</span>
-      ${ORDEN_RAREZA.map(r=>`<span class="chip ${f.rar===r?'on':''}" data-f="rar" data-v="${r}">${RAREZAS[r].n}</span>`).join('')}
+      ${ORDEN_ESTATUS.map(r=>`<span class="chip ${f.rar===r?'on':''}" data-f="rar" data-v="${r}">${EST[r].n}</span>`).join('')}
     </div>
     <div class="chips mb">
       <span class="chip ${!f.al?'on':''}" data-f="al" data-v="">Todo</span>
@@ -850,21 +1019,26 @@ function detalleCarta(iid){
 
 /* ── PLANTILLA ── */
 function vPlantilla(){
-  return `<h2>Plantilla</h2><div class="sub mb">Una carta por división. Solo cartas alineables,
-    y no puedes repetir peleador.</div>
-    <div class="grid g3">${DIVISIONES.map(d=>{
+  /* Las once cartas caben a la vez en la pantalla: cuatro columnas y tres filas, con la
+     altura atada al alto de la ventana. Una plantilla que hay que recorrer con el dedo
+     no se puede leer de un vistazo, y leerla de un vistazo es para lo que sirve. */
+  return `<h2>Plantilla</h2><div class="sub mb">Una carta por división, las once a la vista.
+    Solo alineables y sin repetir peleador.</div>
+    <div class="pgrid">${DIVISIONES.map(d=>{
       const iid=S.plantilla[d.id], c=iid?cartaDe(iid):null;
-      return `<div data-slot="${d.id}">${c?cartaHTML(c,{attr:`data-slot="${d.id}"`})
-        :`<div class="carta oculta" data-slot="${d.id}" style="min-height:150px">
-          <div style="font-size:11px;text-align:center">${d.n}<br><span style="font-size:22px">＋</span></div></div>`}
-        <div class="tiny center" style="margin-top:3px">${d.n}</div></div>`;
+      return `<div class="pslot" data-slot="${d.id}">${c?cartaHTML(c,{attr:`data-slot="${d.id}"`,compacta:true})
+        :`<div class="carta oculta compacta" data-slot="${d.id}">
+          <div style="font-size:10px;text-align:center;line-height:1.2">${d.n}<br><span style="font-size:20px">＋</span></div></div>`}
+        <div class="tiny center pnom">${d.n}</div></div>`;
     }).join('')}</div>
     <div class="divider"></div>
-    <button class="btn sec" data-a="autoplantilla">Rellenar con lo mejor</button>`;
+    <button class="btn sec" data-a="autoplantilla">Rellenar con lo mejor</button>
+    <div class="tiny" style="margin-top:6px;color:var(--dim2)">Rehace la alineación entera con tus
+    mejores cartas: campeones primero, luego rankeados, y dentro de cada tramo el más completo.</div>`;
 }
 function elegirParaSlot(divId){
   const cands=S.coleccion.map(x=>({x,c:PORID[x.cid]}))
-    .filter(o=>o.c.alineable&&o.c.division===divId).sort((a,b)=>b.c.media-a.c.media);
+    .filter(o=>o.c.alineable&&o.c.division===divId).sort((a,b)=>comparar(a.c,b.c));
   ov(`<h3>${DIV[divId].n}</h3><div class="sub mb">Elige quién ocupa el slot.</div>
     ${cands.length?`<div class="grid">${cands.map(o=>{
       const rep=personaRepetida(S,o.x,divId);
@@ -896,27 +1070,32 @@ function vMas(){
 /* ── RECICLAJE ── */
 function vReciclaje(){
   const sel=tmp.sel||[];
-  const enPlantilla=new Set(Object.values(S.plantilla));
-  const grupos={};
-  for(const x of S.coleccion){
-    if(enPlantilla.has(x.iid)) continue;
-    (grupos[x.cid]=grupos[x.cid]||[]).push(x);
-  }
-  // solo ofrece repetidas y sobrantes
+  // Solo repetidos: la primera copia de una carta no se recicla jamás.
   const lista=[];
-  for(const [cid,arr] of Object.entries(grupos)) for(const x of arr) lista.push({x,c:PORID[cid]});
-  lista.sort((a,b)=>ORDEN_RAREZA.indexOf(b.c.rareza)-ORDEN_RAREZA.indexOf(a.c.rareza));
-  const fr=sel.reduce((a,iid)=>a+RAREZAS[PORID[inst(iid).cid].rareza].fichas,0);
+  for(const x of S.coleccion) if(reciclable(x.iid)) lista.push({x,c:PORID[x.cid]});
+  lista.sort((a,b)=>comparar(a.c,b.c));
+  const {fichas,detalle}=cuentaReciclaje(sel);
+  const filas=Object.entries(TRAMOS).map(([id,t])=>{
+    const d=detalle[id];
+    return `<tr><td>${t.n}</td><td style="text-align:right">${t.repes} repes</td>
+      <td style="text-align:right">${d?`${d.tengo} → <b>${d.fichas}</b>${d.faltan?` <span style="color:var(--dim2)">(faltan ${d.faltan})</span>`:''}`:'—'}</td></tr>`;
+  }).join('');
   return `<h2>Reciclaje</h2>
-    <div class="sub mb">1 oro = 1 ficha · 5 platas = 1 ficha · 20 bronces = 1 ficha.
-    La escala está separada a propósito.</div>
-    <div class="card-panel"><div class="row" style="align-items:center">
-      <div style="flex:2"><b>${sel.length} seleccionadas</b><div class="sub">≈ ${fr.toFixed(2)} fichas → <b>${Math.floor(fr)}</b> enteras</div></div>
-      <button class="btn sm" data-a="reciclar" ${Math.floor(fr)<1?'disabled':''}>Reciclar</button>
-    </div></div>
+    <div class="sub mb"><b>Solo se reciclan repetidos.</b> La primera copia de un peleador no se
+    puede destruir nunca, por floja que sea. Y cada ficha sale de <b>un solo tramo</b>: no se juntan
+    platas con oros para completarla.</div>
+    <div class="card-panel">
+      <table style="width:100%"><tr><th>Tramo</th><th style="text-align:right">Por ficha</th><th style="text-align:right">Tienes</th></tr>${filas}</table>
+      <div class="divider"></div>
+      <div class="row" style="align-items:center">
+        <div style="flex:2"><b>${sel.length} seleccionadas</b>
+          <div class="sub">${fichas} ficha${fichas===1?'':'s'} enteras</div></div>
+        <button class="btn sm" data-a="reciclar" ${fichas<1?'disabled':''}>Reciclar</button>
+      </div>
+    </div>
     ${lista.length?`<div class="grid">${lista.map(o=>cartaHTML(o.c,{
-      attr:`data-rec="${o.x.iid}"`,sel:sel.includes(o.x.iid)})).join('')}</div>`
-      :'<div class="card-panel sub">Nada que reciclar fuera de tu plantilla.</div>'}`;
+      attr:`data-rec="${o.x.iid}"`,sel:sel.includes(o.x.iid),copias:S.coleccion.filter(y=>y.cid===o.x.cid).length})).join('')}</div>`
+      :'<div class="card-panel sub">No tienes ningún repetido. Solo se reciclan repetidos.</div>'}`;
 }
 
 /* ── SETS ── */
@@ -928,7 +1107,7 @@ function vSets(){
       const hecho=S.sets.includes(s.id), listo=setListo(s);
       const n=s.req.filter(cid=>copias(cid)>0).length;
       return `<div class="card-panel"><div class="row" style="align-items:center;margin-bottom:7px">
-        <div style="flex:2"><b>${esc(s.n)}</b><div class="sub">${n} de ${s.req.length} · premio: carta ${RAREZAS[s.premio].n}</div></div>
+        <div style="flex:2"><b>${esc(s.n)}</b><div class="sub">${n} de ${s.req.length} · premio: carta ${EST[s.premio].n}</div></div>
         ${hecho?'<span class="chip on" style="flex:none">✔ hecho</span>'
           :`<button class="btn sm" data-a="canjearset" data-id="${s.id}" ${listo?'':'disabled'} style="flex:none">Canjear</button>`}
       </div>
@@ -974,8 +1153,8 @@ function vIntercambio(){
       ${S.fichas<1?'Necesitas 1 ficha':'Entrar (1 🎟️)'}</button></div>
     <button class="btn sec" data-nav="mas">Volver</button>`;
   const s=tmp.sala, mias=tmp.ofrezco||[], suyas=tmp.pido||[];
-  const val=l=>l.reduce((a,c)=>a+({bronce:1,plata:4,oro:14,elite:45,leyenda:150})[c.rareza],0);
-  const bandas=l=>l.map(c=>ORDEN_RAREZA.indexOf(c.rareza));
+  const val=l=>l.reduce((a,c)=>a+({plata:1,oro:6,top15:14,top10:22,top5:45,campeon:90})[c.estatus],0);
+  const bandas=l=>l.map(c=>ORDEN_ESTATUS.indexOf(c.estatus));
   const todas=[...mias.map(i=>PORID[inst(i).cid]),...suyas.map(c=>c)];
   const spread=todas.length?Math.max(...bandas(todas))-Math.min(...bandas(todas)):0;
   const legal=spread<=1;
@@ -1148,10 +1327,10 @@ function vAmigos(){
 
     <h3>Tus amigos</h3>
     ${S.amigos.length?S.amigos.map(a=>{
-      const media=Math.round(a.cartas.reduce((s,id)=>s+PORID[id].media,0)/11);
+      const rank=a.cartas.filter(id=>['campeon','top5','top10','top15'].includes(PORID[id].estatus)).length;
       return `<div class="card-panel"><div class="row" style="align-items:center">
         <div style="flex:2"><b>${esc(a.nombre)}</b>
-          <div class="tiny">Plantilla de media ${media} · ${a.g}-${a.p} contra ti</div></div>
+          <div class="tiny">${rank} rankeados en plantilla · ${a.g}-${a.p} contra ti</div></div>
         <button class="btn sm" data-a="retar" data-id="${a.id}" style="flex:none"
           ${plantillaCompleta()?'':'disabled'}>Jugar</button>
         <button class="btn gho sm" data-a="borraramigo" data-id="${a.id}" style="flex:none">✕</button>
@@ -1219,15 +1398,20 @@ function vReglas(){
   <div class="card-panel"><h3>4 · Quién gana el duelo</h3><div class="sub">
     Se restan los dos números y manda el margen:
     <table style="margin-top:7px"><tr><th>Margen</th><th>Resultado</th></tr>
-    <tr><td>13 o más</td><td>Finish — gana el alto</td></tr>
-    <tr><td>7 a 12</td><td>Decisión — gana el alto</td></tr>
-    <tr><td>1 a 6</td><td>Reñido — el alto gana 65 de cada 100</td></tr>
+    <tr><td>10 o más</td><td>Finish — gana el alto</td></tr>
+    <tr><td>4 a 9</td><td>Decisión — gana el alto</td></tr>
+    <tr><td>1 a 3</td><td>Reñido — el alto gana 55 de cada 100</td></tr>
     <tr><td>0</td><td>Empate exacto — moneda al aire, 50/50</td></tr></table>
+    <div class="sub" style="margin-top:7px">Los finishes no son solo estética: son el
+    <b>primer criterio de desempate</b> si la partida acaba igualada.</div>
   </div></div>
 
   <div class="card-panel"><h3>5 · Tu jugada: una por partida</h3><div class="sub">
     <b>Una sola en toda la partida.</b> O es un cambio de división o es un rasgo — nunca las dos,
     y nunca dos veces.<br><br>
+    <b>Casi todo se usa DEFENDIENDO</b>, es decir cuando el rival ha declarado y te toca responder.
+    Declarando solo se puede usar el Incómodo: al declarar ya estás eligiendo el terreno, y mover
+    además tus cartas sería elegir dos veces.<br><br>
     <b>Cambio de división:</b> intercambio obligado entre dos divisiones contiguas que sigan en
     juego. El que <b>sube</b> come <b>-6</b> en golpeo, lucha y dureza; el que <b>baja</b>, <b>-6</b>
     en cardio y dureza.
@@ -1236,22 +1420,26 @@ function vReglas(){
   <div class="card-panel"><h3>6 · Los rasgos</h3><div class="sub">
     Van en algunas cartas y <b>los activas tú</b>: ninguno salta solo. Los <b>+</b> son la versión
     fuerte.<br><br>
-    🦎 <b>Camaleón</b> — manda esa carta a pelear a una división contigua sin penalización; tu carta
-    de allí se descarta y el Camaleón sigue disponible para su propio duelo.
-    <b>+</b>: además no gasta tu jugada.<br><br>
-    🌀 <b>Incómodo</b> — ocultas la división. El rival ve dos cartas suyas y elige a ciegas cuál manda.
-    Si falla, esa carta pelea con <b>-6</b>… y <b>la carta de la división real se descarta sin pelear</b>,
-    acierte o falle. <b>+</b>: la segunda carta puede ser de cualquier división en juego y el fallo
-    cuesta <b>-12</b>.<br><br>
-    🎯 <b>Especialista</b> — si gana su duelo en su stat, <b>esa stat no se gasta</b> y vuelve al pool
-    para los dos. <b>+</b>: no se gasta aunque pierda.<br><br>
-    🧠 <b>Veterano</b> — cuando te declaran, cambias la stat del duelo por otra de las vivas, al azar.
-    <b>+</b>: la eliges tú. Se decide en la pantalla en la que mandas tu carta.
+    🦎 <b>Camaleón</b> <span class="chip">defensa</span> — trae esa carta a pelear el duelo declarado
+    desde una división contigua, sin penalización; tu carta de allí se descarta y el Camaleón sigue
+    disponible para su propio duelo. <b>+</b>: además no gasta tu jugada.<br><br>
+    🌀 <b>Incómodo</b> <span class="chip">ataque</span> — ocultas la división. El rival ve dos cartas
+    suyas y elige a ciegas cuál manda. Si falla, esa carta pelea con <b>-6</b>… y
+    <b>la carta de la división real se descarta sin pelear</b>, acierte o falle. <b>+</b>: la segunda
+    carta puede ser de cualquier división en juego y el fallo cuesta <b>-12</b>.<br><br>
+    🎯 <b>Especialista</b> — va atado a una stat. Al activarlo, <b>el duelo pasa a pelearse con esa
+    stat</b>, sea cual sea la que se había declarado. <b>+</b>: además no gasta tu jugada.<br><br>
+    🧠 <b>Veterano</b> — si gana el duelo, <b>la stat usada no se gasta</b>: vuelve al pool y los dos
+    podéis volver a usarla. <b>+</b>: la salva aunque pierda. En el sexto duelo no sirve —no queda
+    duelo donde gastarla— y el botón sale apagado con el motivo escrito.
   </div></div>
 
-  <div class="card-panel"><h3>7 · Desempate</h3><div class="sub">
-    Si acaba <b>3-3</b>, un duelo más en la división del <b>veto aleatorio</b>, con <b>stat al azar</b>
-    y las dos cartas frescas. Mismo baremo de márgenes.
+  <div class="card-panel"><h3>7 · Cómo se rompe un empate</h3><div class="sub">
+    Si los seis duelos acaban <b>3-3</b>, el primer criterio son los <b>finishes</b>: gana quien haya
+    acabado más peleas por margen de 10 o más. Es el único desempate que premia cómo has ganado y no
+    la suerte.<br><br>
+    Solo si también vais igualados a finishes se juega un duelo más, en la división del
+    <b>veto aleatorio</b>, con <b>stat al azar</b> y las dos cartas frescas.
   </div></div>
 
   <div class="card-panel"><h3>8 · Modos</h3><div class="sub">
@@ -1269,6 +1457,13 @@ function vNotas(){
   const srv=servidorURL();
   return `<h2>Notas del prototipo</h2>
 
+  <div class="card-panel" style="border-color:var(--warn)"><h3>⚠️ Los peleadores son inventados</h3><div class="sub">
+    El catálogo entero está generado: nombres, apodos, gimnasios y stats. <b>Todavía no está la
+    base de datos real de la UFC.</b> Lo que sí está montado es el molde que la espera —estatus
+    deportivo, oro y plata, seis stats y rasgos—, así que cuando lleguen los datos de verdad se
+    sustituyen sin tocar el juego.
+  </div></div>
+
   <div class="card-panel"><h3>🎓 Si es tu primera partida</h3><div class="sub">
     Hay una <b>partida tutorial</b> en el inicio: se juega de verdad, con una plantilla prestada,
     y un entrenador te va explicando cada concepto justo cuando aparece. Las reglas escritas,
@@ -1277,35 +1472,15 @@ function vNotas(){
 
   <div class="card-panel" style="border-color:var(--ok)"><h3>🟢 Partidas en directo</h3><div class="sub">
     <b>Funcionan.</b> Los dos jugáis a la vez, cada uno en su móvil, decidiendo lo vuestro:
-    vetos, declaraciones y jugada. <b>La IA no participa en nada</b> — ni siquiera el Veterano,
-    que es reactivo y se le pregunta al defensor en vez de saltar solo.<br><br>
-    Hay un servidor haciendo de árbitro, y su dirección viene puesta de fábrica: nadie tiene que
-    configurar nada. Solo manda las cartas del rival de las divisiones ya resueltas, así que la
-    plantilla contraria no está en tu móvil ni se puede leer.<br><br>
+    vetos, declaraciones, la carta que mandas al duelo y tu jugada. <b>La IA no participa en nada.</b><br><br>
+    Llevan <b>reloj de 25 segundos</b> por decisión, <b>chat</b>, botón de <b>rendirse</b>, y cerrar
+    la aplicación cuenta como rendición —con un margen corto para volver, porque un cambio de wifi
+    no es abandonar—.<br><br>
+    Hay un servidor haciendo de árbitro y su dirección viene puesta de fábrica: nadie configura nada.
+    Solo manda las cartas del rival de las divisiones ya resueltas, así que su plantilla no está en
+    tu móvil ni se puede leer.<br><br>
     ${srv?`Servidor: <span style="font-family:ui-monospace,monospace;font-size:11px;word-break:break-all">${esc(srv)}</span>`
       :'<b>Aún sin servidor configurado.</b> Es cosa de quien mantiene el juego, no tuya.'}
-  </div></div>
-
-  <div class="card-panel"><h3>Qué está implementado</h3><div class="sub">
-    Elección de rol con dado, vetos alternos visibles, veto aleatorio final, 6 divisiones en juego,
-    declaraciones 3 y 3 con pool de stats compartido, tabla de márgenes con el 65/35, victoria a 4,
-    desempate en la división del veto aleatorio con stat al azar, cambios de división con penalización
-    selectiva, los cuatro rasgos con sus versiones plus, una sola jugada por partida, sobres que no
-    caducan, reciclaje con las tres ratios, sets, retos y sala de intercambio.<br><br>
-    Y tres formas de jugar: <b>contra la IA</b> para entrenar, <b>en directo</b> contra una persona
-    por código de sala, y <b>retar plantillas</b> de amigos sin conexión.
-  </div></div>
-
-  <div class="card-panel"><h3>Decisiones que el GDD no cerraba</h3><div class="sub">
-    <b>Empate a 0 de margen:</b> moneda al aire. El GDD no lo contempla.<br><br>
-    <b>Contigüidad:</b> dos escaleras independientes, sin puente entre géneros.<br><br>
-    <b>Incómodo:</b> la carta que envías pelea en la división declarada; si fallas, come la
-    penalización <b>y sigue disponible para su propio duelo</b>, mientras que la carta de la
-    división declarada se descarta sin pelear. Un fallo, un castigo.<br><br>
-    <b>Veterano:</b> se bloquea cuando quedan menos de 2 stats vivas, no "en el duelo 6" —
-    con un Especialista en juego puede haber dos stats vivas en el sexto.<br><br>
-    <b>Camaleón:</b> pelea dos veces. Es la excepción explícita a "cada peleador pelea una sola vez".<br><br>
-    <b>Cartas no alineables:</b> llevan las 6 stats grandes pero no sub-stats.
   </div></div>
 
   <div class="card-panel"><h3>Retar plantillas (lo asíncrono)</h3><div class="sub">
@@ -1317,10 +1492,10 @@ function vNotas(){
   </div></div>
 
   <div class="card-panel"><h3>Qué NO está</h3><div class="sub">
-    Cuentas y clasificación: la identidad es un identificador del propio móvil, así que vale para
-    jugar con amigos pero no para una liga competitiva. Tampoco hay emparejamiento con
-    desconocidos —solo salas por código—, ni ligas, telemetría, arte, sonido o monetización.
-    La sala de intercambio empareja con un jugador simulado.
+    Los peleadores reales. Cuentas y clasificación: la identidad es un identificador del propio
+    móvil, así que vale para jugar con amigos pero no para una liga competitiva. Tampoco hay
+    emparejamiento con desconocidos —solo salas por código—, ni ligas, telemetría, arte, sonido
+    o monetización. La sala de intercambio empareja con un jugador simulado.
   </div></div>
   <button class="btn sec" data-nav="mas">Volver</button>`;
 }
@@ -1329,13 +1504,14 @@ function vNotas(){
    9. PANTALLA DE PARTIDA
    ══════════════════════════════════════════════════════════════════════════ */
 function empezarPartida(amigo){
-  const pj={},media=Math.round(DIVISIONES.reduce((a,d)=>a+cartaDe(S.plantilla[d.id]).media,0)/11);
-  for(const d of DIVISIONES) pj[d.id]=cartaDe(S.plantilla[d.id]);
+  const pj={};
+  let sumaPl=0;
+  for(const d of DIVISIONES){ pj[d.id]=cartaDe(S.plantilla[d.id]); sumaPl+=pj[d.id].suma; }
   let pr,nombre;
   if(amigo){
     pr={}; for(const id of amigo.cartas){ const c=PORID[id]; pr[c.division]=c; }
     nombre=amigo.nombre;
-  }else{ pr=plantillaIA(media+ri(-2,2)); nombre='El rival'; }
+  }else{ pr=plantillaIA(Math.round(sumaPl/11)+ri(-12,12)); nombre='El rival'; }
   P=nuevaPartida(pj,pr);
   P.rival=nombre; P.amigoId=amigo?amigo.id:null;
   ir('partida');
@@ -1368,7 +1544,7 @@ function plantillaGuiada(rasgosPedidos){
   for(const d of DIVISIONES){
     if(out[d.id]) continue;
     const cand=pool.filter(c=>c.division===d.id&&!usados.has(c.persona))
-      .sort((a,b)=>Math.abs(a.media-78)-Math.abs(b.media-78));  // parejas: que el margen se vea variado
+      .sort((a,b)=>Math.abs(a.suma-468)-Math.abs(b.suma-468)); // parejas: que el margen se vea variado
     out[d.id]=cand[0]; usados.add(cand[0].persona);
   }
   return out;
@@ -1409,8 +1585,9 @@ const TUTOR=[
 
 {id:'carta', cuando:P=>P.fase==='duelos'&&P.turno==='j'&&!tmp.divSel, t:'Te toca declarar',
  x:`Declarar es decir <b>quién pelea y con qué</b>. Primero el peleador: <b>toca su carta</b>.<br><br>
- El número grande de la esquina es su <b>media</b>, y el color es su rareza: bronce, plata, oro,
- élite y leyenda. La media no pelea; peleará solo la stat que elijas.`},
+ Arriba a la izquierda va su <b>estatus</b>: 🏆 campeón, 5 top 5, 10 y 15 los otros tramos del
+ ranking, y en blanco los que no están rankeados. <b>No hay media</b>: lo que pelea es la stat
+ que elijas, así que mira los seis números.`},
 
 {id:'stat', cuando:P=>P.fase==='duelos'&&P.turno==='j'&&!!tmp.divSel&&!tmp.statSel, t:'Las seis stats',
  x:`<b>GOLPEO</b> de pie, <b>LUCHA</b> derribos y clinch, <b>SUELO</b> sumisiones y control,
@@ -1427,26 +1604,29 @@ const TUTOR=[
 {id:'rasgos', cuando:P=>P.fase!=='rol'&&P.log.filter(l=>l.t==='duelo').length>=1, t:'Los cuatro rasgos',
  x:`🦎 <b>Camaleón</b>: manda esa carta a pelear a una división de al lado sin penalización.<br>
  🌀 <b>Incómodo</b>: ocultas la división; el rival ve dos cartas suyas y elige a ciegas.<br>
- 🎯 <b>Especialista</b>: si gana en su stat, esa stat <b>no se gasta</b> y vuelve al pool.<br>
- 🧠 <b>Veterano</b>: cuando te declaran, <b>cambias la stat</b> del duelo.<br><br>
- Los que llevan <b>+</b> son la versión fuerte. Todos gastan la misma única jugada.`},
+ 🎯 <b>Especialista</b>: va atado a una stat, y al activarlo <b>el duelo se pelea con esa</b>.<br>
+ 🧠 <b>Veterano</b>: si gana el duelo, <b>la stat no se gasta</b> y vuelve al pool de los dos.<br><br>
+ Los que llevan <b>+</b> son la versión fuerte, y todos gastan la misma única jugada. Ojo:
+ <b>el Camaleón y el cambio de división solo se usan defendiendo</b>. Atacando solo vale el Incómodo.`},
 
 {id:'confirmar', cuando:P=>P.fase==='confirmar'&&P.pendienteConf&&P.pendienteConf.defensor==='j',
  t:'Te han declarado',
  x:`Ahora defiendes tú, y <b>el duelo no se resuelve hasta que mandes tu carta</b>: nadie aprieta
  el botón por ti.<br><br>
- Antes de enviarla, esta es tu ventana para reaccionar. Si esa carta lleva <b>Veterano</b>
- puedes cambiar la stat, y si lleva <b>Especialista</b> en la stat declarada puedes activarlo.
- Si no quieres nada, envía y ya.`},
+ Y esta es tu <b>única ventana para responder</b>: aquí se usan el Camaleón, el cambio de división,
+ el Especialista y el Veterano. Los cuatro gastan tu jugada de la partida.<br><br>
+ La carta del rival está tapada con una interrogación. Cuando envíes la tuya se destapan
+ las dos a la vez.`},
 
 {id:'margen', cuando:P=>P.log.filter(l=>l.t==='duelo').length>=1&&P.tutorVistos.includes('confirmar'),
  t:'Cómo se gana un duelo',
  x:`Se restan los dos números y manda <b>el margen</b>:<br>
- <b>13 o más</b> → finish, gana el alto seguro.<br>
- <b>7 a 12</b> → decisión, gana el alto seguro.<br>
- <b>1 a 6</b> → reñido: el alto gana <b>65 de cada 100</b>, no siempre.<br>
+ <b>10 o más</b> → finish, gana el alto seguro.<br>
+ <b>4 a 9</b> → decisión, gana el alto seguro.<br>
+ <b>1 a 3</b> → reñido: el alto gana <b>55 de cada 100</b>, no siempre.<br>
  <b>0</b> → empate exacto: <b>moneda al aire, 50/50</b>.<br><br>
- Por eso ganar por poco no es ganar: si quieres seguridad, busca +13.`},
+ Por eso ganar por poco no es ganar del todo. Y los <b>finishes</b> cuentan doble: si la partida
+ acaba empatada, gana quien tenga más.`},
 
 {id:'incomodo', cuando:P=>P.fase==='incomodo', t:'Te han hecho el Incómodo',
  x:`No sabes en qué división se pelea. Te enseña <b>dos cartas tuyas</b> y eliges a ciegas cuál mandas.<br><br>
@@ -1454,10 +1634,10 @@ const TUTOR=[
  <b>la carta de la división real se descarta</b> sin pelear — pase lo que pase, ese peleador ya no
  vuelve. Un fallo, un castigo: no se cobra dos veces.`},
 
-{id:'desempate', cuando:P=>P.fase==='desempate', t:'3-3: desempate',
- x:`Se han jugado los 6 duelos y estáis empatados. Se resuelve en <b>la división del veto aleatorio</b>,
- la que ninguno de los dos quitó, con una <b>stat al azar</b> y las dos cartas frescas.<br><br>
- Aquí ya no se decide nada: por eso conviene no llegar.`},
+{id:'desempate', cuando:P=>P.fase==='desempate', t:'Empate total',
+ x:`Habéis acabado <b>3-3 y con los mismos finishes</b>, así que no hay nada que os separe.<br><br>
+ Se resuelve en <b>la división del veto aleatorio</b>, la que ninguno de los dos quitó, con una
+ <b>stat al azar</b> y las dos cartas frescas. Aquí ya no se decide nada: por eso conviene no llegar.`},
 
 {id:'fin', cuando:P=>P.fase==='fin', t:'Ya sabes jugar',
  x:`Eso es todo: vetos, 6 duelos, división y stat que se gastan para los dos, una jugada y los rasgos.<br><br>
@@ -1483,6 +1663,12 @@ function coachHTML(){
     </div></div>`;
 }
 
+/* Rendirse: explícito, siempre a mano y con confirmación. En directo se avisa al rival
+   por el servidor para que su partida termine también, no se quede colgado. */
+function botonRendirse(){
+  return `<button class="btn gho" data-a="rendirse" style="margin-top:8px">🏳️ Rendirse</button>`;
+}
+
 function marcadorHTML(){
   const vivas=STATS.map(s=>`<span class="chip ${P.statsVivas.includes(s.id)?'':'dead'}">${s.c}</span>`).join('');
   const divs=P.enJuego.map(id=>`<span class="chip ${P.jugadas.includes(id)?'dead':''}">${DIV[id].n}</span>`).join('');
@@ -1503,7 +1689,7 @@ function logHTML(){
     const gan=l.ganador==='j';
     const m=(l.margen!==undefined)?l.margen:Math.abs(l.vj-l.vr);
     const detalle = l.tipo==='empate' ? ' — mismos números, moneda al aire 50/50'
-      : l.tipo==='reñido' ? ` — margen ${m}, azar 65/35`
+      : l.tipo==='reñido' ? ` — margen ${m}, azar 55/45`
       : ` — margen ${m}`;
     return `<div class="log ${gan?'win':'lose'}">
       <b>${DIV[l.div].n} · ${l.stat.toUpperCase()}</b> — ${esc(l.nj)} <b>${l.vj}</b> vs <b>${l.vr}</b> ${esc(l.nr)}<br>
@@ -1511,7 +1697,62 @@ function logHTML(){
   }).join('');
 }
 
-function vPartida(){ return coachHTML()+pantallaPartida(); }
+/* La revelación se cuela por delante de todo: después de cada duelo hay que verlo y
+   tocar para seguir. Se lleva su propia cuenta en vez de en `tmp`, que se vacía al
+   cambiar de pantalla, y se reinicia sola cuando empieza otra partida. */
+let REVEL={vistos:0, pendiente:null};
+function revisarRevelacion(){
+  if(!P||!P.log) return;
+  const duelos=P.log.filter(l=>l.t==='duelo');
+  if(duelos.length<REVEL.vistos){ REVEL.vistos=0; REVEL.pendiente=null; }  // partida nueva
+  if(REVEL.pendiente||duelos.length<=REVEL.vistos) return;
+  const d=duelos[REVEL.vistos];
+  let mj=0,mr=0;
+  for(let i=0;i<=REVEL.vistos;i++) duelos[i].ganador==='j'?mj++:mr++;
+  REVEL.pendiente={...d, marcadorJ:mj, marcadorR:mr};
+}
+/* El chat de la partida. Va plegado y con aviso de mensajes sin leer, porque en una
+   partida por turnos con reloj no puede robarle sitio a lo que hay que decidir. */
+function chatHTML(){
+  if(!online()) return '';
+  const abierto=!!tmp.chat;
+  const sinLeer=CHAT.sinLeer||0;
+  if(!abierto) return `<button class="btn gho sm" data-a="chat" style="width:100%;margin-top:8px">
+    💬 Chat${sinLeer?` <span class="chip on">${sinLeer}</span>`:''}</button>`;
+  return `<div class="card-panel" style="margin-top:8px">
+    <div class="row" style="align-items:center">
+      <b style="flex:2">💬 Chat</b>
+      <button class="btn gho sm" data-a="chat" style="flex:none">Cerrar</button></div>
+    <div class="chatbox">${CHAT.length?CHAT.map(m=>
+      `<div class="chatm ${m.lado==='j'?'mio':''}"><b>${esc(m.lado==='j'?(S.nombre||'Tú'):m.de)}</b> ${esc(m.texto)}</div>`
+      ).join(''):'<div class="sub">Todavía no habéis hablado.</div>'}</div>
+    <div class="row" style="margin-top:7px">
+      <input id="chatin" maxlength="200" placeholder="Escribe…" style="flex:2;padding:9px;border-radius:8px;
+        background:var(--bg3);border:1px solid var(--line);color:var(--txt);font:inherit">
+      <button class="btn sm" data-a="chatenviar" style="flex:none">Enviar</button></div>
+  </div>`;
+}
+
+let PASE=null;
+function programarPaseDeRevelacion(){
+  if(PASE) return;
+  PASE=setTimeout(()=>{ PASE=null;
+    if(REVEL.pendiente){ REVEL.vistos++; REVEL.pendiente=null; revisarRevelacion(); render(); }
+  },4000);
+}
+
+function vPartida(){
+  revisarRevelacion();
+  /* La revelación se pone por delante de todo, pero SIN esconder el reloj y, en directo,
+     sin poder comerse el turno: allí hay 25 segundos corriendo y quedarse mirando el
+     resultado no puede costarte la siguiente decisión, así que a los cuatro segundos
+     sigue sola. Sin reloj —contra la IA— se queda hasta que la toques. */
+  if(REVEL.pendiente){
+    if(online()) programarPaseDeRevelacion();
+    return relojHTML()+pRevelacion();
+  }
+  return coachHTML()+relojHTML()+pantallaPartida()+chatHTML();
+}
 function pantallaPartida(){
   if(P.fase==='esperando') return pEsperando();
   if(P.fase==='confirmar')
@@ -1535,7 +1776,7 @@ function pRol(){
       <div class="d">Quitas la primera división. A cambio, <b>el primer duelo lo declara el rival</b>; tú declaras el 2, el 4 y el 6.</div></div>
     <div class="opt" data-rol="declarar"><div class="t">Empezar declarando</div>
       <div class="d">El primer veto lo tira el rival. Declaras los duelos 1, 3 y 5 — y el 6 no lo declara nadie de verdad, porque solo queda una división y una stat.</div></div>
-    <div class="divider"></div><button class="btn gho" data-a="abandonar">Abandonar</button>`;
+    <div class="divider"></div>${botonRendirse()}`;
 }
 
 function pVetos(){
@@ -1591,14 +1832,13 @@ function pDuelos(){
       <div class="sub mb">Toca al peleador que quieras mandar a este duelo.</div>
       <div class="grid g3">${libres.map(id=>cartaElegible(id,false)).join('')}</div>
     </div>${logHTML()}
-    <button class="btn gho" data-a="abandonar" style="margin-top:8px">Abandonar</button>`;
+    ${botonRendirse()}`;
 
-  // Paso 2: elegir con qué pelea, sobre su propia carta
-  const cambios=cambiosPosibles(P,'j');
-  const cams=camaleonesPosibles(P,'j',d);
+  /* Paso 2: elegir con qué pelea, sobre su propia carta.
+     Atacando, la única jugada disponible es el Incómodo: el cambio de división y el
+     Camaleón son ahora exclusivamente defensivos. Declarar ya es elegir el terreno. */
   const inc=rasgoDe(P.cartas.j[d],'incomodo');
   const puedeInc=!!inc && !P.jugada.j && !!segundaCartaIncomodo(P,'r',d,inc);
-  const esp=st?especialistaDisponible(P,'j',d,st):null;
   const jug=tmp.jugada;
 
   return marcadorHTML()+
@@ -1614,76 +1854,125 @@ function pDuelos(){
     </div>
 
     ${jug?`<div class="card-panel" style="border-color:var(--acc)">
-      <h3>Jugada preparada</h3><div class="sub">${
-        jug.tipo==='cambio'?`Cambio ${DIV[jug.a].n} ⇄ ${DIV[jug.b].n}`
-        :jug.tipo==='camaleon'?`Camaleón desde ${DIV[jug.div].n}`
-        :jug.tipo==='especialista'?`Especialista · ${(jug.stat||'').toUpperCase()}`:'Incómodo'
-      }</div>
+      <h3>Jugada preparada</h3><div class="sub">🌀 Incómodo</div>
       <button class="btn gho sm" data-a="quitarjugada" style="margin-top:7px">Quitar</button></div>`:''}
 
-    ${(!P.jugada.j&&!jug&&(cambios.length||cams.length||puedeInc||esp))?`<div class="card-panel">
+    ${(!P.jugada.j&&!jug&&puedeInc)?`<div class="card-panel">
       <h3>Tu jugada <span class="tiny">(una por partida, tú decides)</span></h3>
-      ${esp?`<div class="sub mb">Especialista en ${st.toUpperCase()}${esp.plus?'+':''} — si gana${esp.plus?' o pierde':''},
-        esa stat no se gasta y vuelve al pool para los dos:</div>
-        <span class="chip" data-especialista="1">🎯 Activar Especialista</span><div class="mb"></div>`:''}
-      ${cambios.length?`<div class="sub mb">Cambio de división — intercambio obligado, con penalización:</div>
-        <div class="chips mb">${cambios.map(([a,b],i)=>
-          `<span class="chip" data-cambio="${i}">${DIV[a].n} ⇄ ${DIV[b].n}</span>`).join('')}</div>`:''}
-      ${cams.length?`<div class="sub mb">Camaleón — manda esa carta aquí sin penalización:</div>
-        <div class="chips mb">${cams.map((c,i)=>
-          `<span class="chip" data-camaleon="${i}">🦎 ${esc(c.carta.nombre)} (${DIV[c.div].n})${c.rasgo.plus?' +':''}</span>`).join('')}</div>`:''}
-      ${puedeInc?`<div class="sub mb">Incómodo — ocultas la división y el rival elige a ciegas:</div>
-        <span class="chip" data-incomodo="1">🌀 Activar Incómodo${inc.plus?'+':''}</span>`:''}
+      <div class="sub mb">Incómodo — ocultas la división y el rival elige a ciegas:</div>
+      <span class="chip" data-incomodo="1">🌀 Activar Incómodo${inc.plus?'+':''}</span>
     </div>`:''}
 
     <button class="btn" data-a="declarar" ${st?'':'disabled'} style="padding:15px;font-size:16px">
       ${st?`Declarar ${DIV[d].n} · ${st.toUpperCase()}`:'Elige una stat'}</button>
     <div class="divider"></div>${logHTML()}
-    <button class="btn gho" data-a="abandonar" style="margin-top:8px">Abandonar</button>`;
+    ${botonRendirse()}`;
 }
 
-/* Cuando el que declara eres tú, la pelota está en el otro lado: no hay nada que tocar. */
+/* Cuando el que declara eres tú, la pelota está en el otro lado. Aun así se enseña el
+   emparejamiento: tu carta destapada y la del rival con la interrogación, para que la
+   espera sea parte del duelo y no una pantalla muerta. */
 function pEsperaRival(){
   const q=P.pendienteConf;
-  return marcadorHTML()+`<div class="card-panel center" style="padding:26px 14px">
-    <div style="font-size:34px">🥊</div>
-    <h3>Has declarado ${DIV[q.divId].n} · ${q.stat.toUpperCase()}</h3>
-    <div class="sub">${esc(P.rival||'El rival')} tiene que mandar a su peleador.</div>
+  return marcadorHTML()+`<div class="card-panel">
+    <div class="tiny center mb">HAS DECLARADO</div>
+    <h3 class="center" style="font-size:20px">${DIV[q.divId].n} · ${q.stat.toUpperCase()}</h3>
+    ${caraACara(q.divId,q.stat,null)}
+    <div class="sub center" style="margin-top:10px">${esc(P.rival||'El rival')} tiene que mandar a su peleador…</div>
   </div>`+logHTML();
 }
 
+/* El emparejamiento del duelo: las dos cartas enfrentadas. Mientras no se resuelva, la
+   del rival va tapada con una interrogación — es la regla de oro del juego, que no ves
+   su plantilla hasta que pelea. `res` es el registro del duelo ya resuelto, y entonces
+   se destapa, se ilumina la ganadora y se apaga la otra. */
+function caraACara(divId,stat,res){
+  const cj=P.cartas.j[divId];
+  const cr=res ? (PORID[res.cartaR]||P.cartas.r[divId]) : null;
+  const ganaJ=res&&res.ganador==='j', ganaR=res&&res.ganador==='r';
+  const marca=(g,p)=>res?(g?'gana':'pierde'):'';
+  return `<div class="duelo">
+    <div class="lado ${marca(ganaJ)}">
+      ${cartaHTML(cj,{ajuste:P.ajustes.j[divId]})}
+      <div class="cifra ${ganaJ?'on':''}">${res?res.vj:valorCarta(P,'j',divId,stat)}</div>
+      <div class="tiny center">TÚ</div>
+    </div>
+    <div class="vsx">
+      <div class="stat-duelo ${res?'on':''}">${(stat||'').toUpperCase()}</div>
+      <div class="vsl">VS</div>
+    </div>
+    <div class="lado ${marca(ganaR)}">
+      ${cr?cartaHTML(cr,{ajuste:P.ajustes.r[divId]}):`<div class="carta tapada">?</div>`}
+      <div class="cifra ${ganaR?'on':''}">${res?res.vr:'?'}</div>
+      <div class="tiny center">${esc(P.rival||'RIVAL').toUpperCase()}</div>
+    </div>
+  </div>`;
+}
+
 /* ── CONFIRMAR: el defensor manda su carta a mano. Nada se resuelve solo. ──
-   Esta pantalla es también donde el defensor reacciona con Veterano o Especialista. */
+   Es también su única ventana para responder: aquí se usan el cambio de división, el
+   Camaleón, el Especialista y el Veterano. Los cuatro gastan la misma jugada. */
 function pConfirmar(){
   const q=P.pendienteConf;
   const c=P.cartas.j[q.divId];
-  const vet=(!P.jugada.j)?rasgoDe(c,'veterano'):null;
-  const otras=P.statsVivas.filter(x=>x!==q.stat);
-  const puedeVet=!!vet && otras.length>0;
   const esp=especialistaDisponible(P,'j',q.divId,q.stat);
+  const vet=veteranoDisponible(P,'j',q.divId);
+  const vetBloqueado=!vet && rasgoDe(c,'veterano') && !P.jugada.j && ultimoDuelo(P);
+  const cambios=cambiosPosibles(P,'j');
+  const cams=camaleonesPosibles(P,'j',q.divId);
+  const hayRespuesta=esp||vet||vetBloqueado||cambios.length||cams.length;
+
   return marcadorHTML()+
     `<div class="card-panel">
       <div class="tiny center mb">${esc(P.rival||'El rival')} DECLARA</div>
       <h3 class="center" style="font-size:20px">${DIV[q.divId].n} · ${q.stat.toUpperCase()}</h3>
-      <div class="sub center mb">Manda a tu peleador al duelo.</div>
-      <div style="max-width:190px;margin:0 auto 10px">${cartaHTML(c,{ajuste:P.ajustes.j[q.divId]})}</div>
-      <div class="center mb">Llevas <b style="font-size:22px">${valorCarta(P,'j',q.divId,q.stat)}</b>
-        en ${q.stat.toUpperCase()}</div>
+      ${caraACara(q.divId,q.stat,null)}
+      <div class="sub center" style="margin:10px 0 8px">Manda a tu peleador y se destapan los dos a la vez.</div>
       <button class="btn" data-a="enviarcarta" style="padding:15px;font-size:16px">Enviar al duelo</button>
     </div>
 
-    ${(puedeVet||esp)?`<div class="card-panel">
-      <h3>Puedes responder <span class="tiny">(gasta tu jugada)</span></h3>
-      ${puedeVet?`<div class="sub mb">🧠 Veterano — cambia la stat del duelo${vet.plus?', y la eliges tú':' por una al azar de las vivas'}:</div>
-        ${vet.plus?`<div class="chips mb">${otras.map(sid=>{
-            const stt=STATS.find(x=>x.id===sid);
-            return `<span class="chip" data-vetstat="${sid}">${stt.n} · ${valorCarta(P,'j',q.divId,sid)}</span>`;
-          }).join('')}</div>`
-        :`<button class="btn sec sm mb" data-a="vetazar" style="width:100%">Cambiar la stat (sale una al azar)</button>`}`:''}
-      ${esp?`<div class="sub mb">🎯 Especialista en ${q.stat.toUpperCase()}${esp.plus?'+':''} — si gana${esp.plus?' o pierde':''}, esa stat vuelve al pool:</div>
-        <button class="btn sec sm" data-a="espdefensor" style="width:100%">Activar Especialista</button>`:''}
+    ${hayRespuesta?`<div class="card-panel">
+      <h3>Puedes responder <span class="tiny">(gasta tu jugada de la partida)</span></h3>
+      ${esp?`<div class="sub mb">🎯 <b>Especialista</b> — este peleador impone la suya: el duelo pasa
+        a jugarse con <b>${esp.stat.toUpperCase()}</b> (llevas ${valorCarta(P,'j',q.divId,esp.stat)}) en vez de ${q.stat.toUpperCase()}${esp.plus?', y no te gasta la jugada':''}:</div>
+        <button class="btn sec sm mb" data-a="espdefensor" style="width:100%">Imponer ${esp.stat.toUpperCase()}</button>`:''}
+      ${vet?`<div class="sub mb">🧠 <b>Veterano</b> — si gana este duelo${vet.plus?' o incluso si lo pierde':''},
+        <b>${q.stat.toUpperCase()} no se gasta</b> y vuelve al pool de los dos:</div>
+        <button class="btn sec sm mb" data-a="vetdefensor" style="width:100%">Activar Veterano${vet.plus?'+':''}</button>`:''}
+      ${vetBloqueado?`<div class="sub mb">🧠 <b>Veterano</b> — no se puede usar en el último duelo:
+        la stat que salvaría ya no la va a usar nadie.</div>
+        <button class="btn sec sm mb" style="width:100%" disabled>Veterano no disponible</button>`:''}
+      ${cams.length?`<div class="sub mb">🦎 <b>Camaleón</b> — manda a otro peleador a este duelo, sin penalización:</div>
+        <div class="chips mb">${cams.map((x,i)=>
+          `<span class="chip" data-camaleon="${i}">${esc(x.carta.nombre)} (${DIV[x.div].n})${x.rasgo.plus?' +':''}</span>`).join('')}</div>`:''}
+      ${cambios.length?`<div class="sub mb">↕️ <b>Cambio de división</b> — intercambio obligado, con penalización para los dos:</div>
+        <div class="chips">${cambios.map(([a,b],i)=>
+          `<span class="chip" data-cambio="${i}">${DIV[a].n} ⇄ ${DIV[b].n}</span>`).join('')}</div>`:''}
     </div>`:''}
     ${logHTML()}`;
+}
+
+/* La revelación. Se enseña después de CADA duelo, con las dos cartas destapadas, la
+   ganadora encendida y la perdedora apagada, y no se pasa sola: hay que tocar. Antes
+   esto era una línea de texto en el registro y había que enterarse leyendo. */
+function pRevelacion(){
+  const res=REVEL.pendiente;
+  const tit={finish:'FINISH',['decisión']:'DECISIÓN',reñido:'REÑIDO',empate:'EMPATE',desempate:'DESEMPATE'}[res.tipo]||res.tipo.toUpperCase();
+  const gano=res.ganador==='j';
+  const explica = res.tipo==='empate' ? 'Mismos números: moneda al aire, 50/50.'
+    : res.tipo==='reñido' ? `Margen ${res.margen}: franja reñida, 55/45 para el más alto.`
+    : res.tipo==='desempate' ? `Duelo de desempate. Margen ${res.margen}.`
+    : `Margen ${res.margen}.`;
+  return `<div class="card-panel center" style="border-color:${gano?'var(--ok)':'var(--acc)'}">
+      <div class="tiny">${DIV[res.div].n.toUpperCase()}</div>
+      <h2 style="color:${gano?'var(--ok)':'var(--acc)'};margin:2px 0 10px">${gano?'GANAS':'PIERDES'} · ${tit}</h2>
+      ${caraACara(res.div,res.stat,res)}
+      <div class="sub" style="margin-top:12px">${explica}</div>
+      <div class="mark" style="margin:10px 0"><span style="color:var(--ok)">${res.marcadorJ}</span>
+        <span class="vs">—</span><span style="color:var(--acc)">${res.marcadorR}</span></div>
+      <button class="btn" data-a="seguir" style="padding:14px;font-size:16px">Continuar</button>
+      ${online()?'<div class="tiny" style="margin-top:5px;color:var(--dim2)">sigue solo en unos segundos</div>':''}
+    </div>`;
 }
 
 function pIncomodo(){
@@ -1798,37 +2087,54 @@ function turnoIAVeto(){
   if(!sigueJ) setTimeout(turnoIAVeto,500);
 }
 
-// El VETERANO del defensor puede cambiar la stat declarada
-function aplicarVeterano(P,defensor,divId,stat){
-  const c=P.cartas[defensor][divId]; const r=rasgoDe(c,'veterano');
-  if(!r || P.jugada[defensor]) return stat;
-  const otras=P.statsVivas.filter(s=>s!==stat);
-  if(otras.length<1) return stat;                    // condición real: ≥2 stats vivas
-  if(defensor==='r'){
-    if(Math.random()<.55) return stat;
-    const nueva=r.plus?otras.sort((a,b)=>valorCarta(P,'r',divId,b)-valorCarta(P,'r',divId,a))[0]:pick(otras);
-    P.jugada.r=true;
-    P.log.push({t:'sys',x:`🧠 Veterano del rival: la stat pasa de ${stat.toUpperCase()} a ${nueva.toUpperCase()}.`});
-    return nueva;
+/* La IA defendiendo. Decide con la misma ventana y las mismas reglas que una persona:
+   nada se le aplica solo, solo que elige rápido. */
+function respuestaIA(q){
+  // Especialista: impone su stat si con ella va mejor de lo que iba.
+  const esp=especialistaDisponible(P,'r',q.divId,q.stat);
+  if(esp && valorCarta(P,'r',q.divId,esp.stat) > valorCarta(P,'r',q.divId,q.stat)+4){
+    if(!esp.plus) P.jugada.r=true;
+    P.log.push({t:'sys',x:`🎯 El rival impone ${esp.stat.toUpperCase()} con su Especialista.`});
+    q.stat=esp.stat; return;
   }
-  return stat;
+  // Camaleón: manda a otro peleador si aquí va mal y allí va mejor.
+  const cams=camaleonesPosibles(P,'r',q.divId);
+  if(cams.length){
+    const actual=valorCarta(P,'r',q.divId,q.stat);
+    const mejor=cams.map(c=>({c,v:c.carta.stats[q.stat]})).sort((a,b)=>b.v-a.v)[0];
+    if(mejor.v>actual+6){
+      P.cartas.r[q.divId]=mejor.c.carta; P.ajustes.r[q.divId]={};
+      if(!mejor.c.rasgo.plus) P.jugada.r=true;
+      P.log.push({t:'sys',x:`🦎 El rival responde con Camaleón: ${mejor.c.carta.nombre} baja desde ${DIV[mejor.c.div].n}.`});
+      q.opts=q.opts||{}; q.opts.dobleR=true; return;
+    }
+  }
+  // Cambio de división: si la carta de al lado defiende mejor este duelo aun comiendo
+  // la penalización, se hace el intercambio.
+  const camb=cambiosPosibles(P,'r');
+  if(camb.length && Math.random()<.5){
+    const actual=valorCarta(P,'r',q.divId,q.stat);
+    for(const [a,b] of camb){
+      if(a!==q.divId && b!==q.divId) continue;
+      const otra=a===q.divId?b:a;
+      if(P.cartas.r[otra].stats[q.stat] > actual+10){ hacerCambio(P,'r',a,b); break; }
+    }
+  }
+
+  // Veterano: salva la stat si cree que va a ganar el duelo.
+  const vet=veteranoDisponible(P,'r',q.divId);
+  if(vet && valorCarta(P,'r',q.divId,q.stat) > valorCarta(P,'j',q.divId,q.stat)){
+    P.jugada.r=true; q.veterano='r';
+    P.log.push({t:'sys',x:`🧠 El rival activa Veterano: si gana, ${q.stat.toUpperCase()} no se gasta.`});
+  }
 }
 
 function declarar(divId,stat,extra={}){
-  let opts={};
-  // Camaleón del jugador
-  if(extra.camaleon){
-    const cam=extra.camaleon;
-    P.cartas.j[divId]=cam.carta;               // pelea aquí, sin penalización
-    P.ajustes.j[divId]={};
-    if(!cam.rasgo.plus) P.jugada.j=true;
-    P.log.push({t:'sys',x:`🦎 Camaleón: ${cam.carta.nombre} sube desde ${DIV[cam.div].n}. Tu carta de ${DIV[divId].n} se descarta sin pelear.`});
-    opts.dobleJ=true;
-  }
-  // Ya no se resuelve aquí: el defensor tiene que mandar su carta a mano.
-  P.pendienteConf={divId,stat,defensor:'r',opts,especialista:extra.especialista||null};
+  // Atacando ya no hay Camaleón ni cambio de división: solo el Incómodo, que se
+  // resuelve antes de llegar aquí. Declarar es elegir el terreno y nada más.
+  P.pendienteConf={divId,stat,defensor:'r',opts:{},veterano:null};
   P.fase='confirmar';
-  tmp.divSel=null; tmp.statSel=null; tmp.camaleon=null; tmp.jugada=null;
+  tmp.divSel=null; tmp.statSel=null; tmp.jugada=null;
   render();
   setTimeout(confirmaIA,650);   // el rival de la IA manda la suya
 }
@@ -1837,7 +2143,7 @@ function declarar(divId,stat,extra={}){
 function resolverPendiente(){
   const q=P.pendienteConf; if(!q) return;
   const opts={...(q.opts||{})};
-  if(q.especialista) opts.especialista=q.especialista;
+  if(q.veterano) opts.veterano=q.veterano;
   P.pendienteConf=null; P.fase='duelos';
   P.log.push({t:'sys',x:`${q.defensor==='j'?'Mandas':'El rival manda'} a ${
     P.cartas[q.defensor][q.divId].nombre} al duelo.`});
@@ -1845,27 +2151,18 @@ function resolverPendiente(){
   render();
 }
 
-/* El defensor de la IA decide: usa Veterano si le mejora mucho, Especialista si su
-   carta lo lleva en esa stat, y manda su peleador. */
 function confirmaIA(){
   const q=P.pendienteConf;
   if(!q||q.defensor!=='r'||P.fase!=='confirmar') return;
-  const nueva=aplicarVeterano(P,'r',q.divId,q.stat);
-  if(nueva!==q.stat) q.stat=nueva;
-  const esp=especialistaDisponible(P,'r',q.divId,q.stat);
-  if(esp&&Math.random()<.7){ P.jugada.r=true; q.especialista='r';
-    P.log.push({t:'sys',x:`🎯 El rival activa Especialista en ${q.stat.toUpperCase()}.`}); }
+  respuestaIA(q);
   resolverPendiente();
 }
 
 function turnoIA(){
   if(P.fase!=='duelos'||P.turno!=='r') return;
-  // jugada del rival: cambio de división
-  const camb=iaJugada(P);
-  if(camb) hacerCambio(P,'r',camb[0],camb[1]);
   const dec=iaDeclara(P);
   let divId=dec.div, stat=dec.stat;
-  // ¿usa Incómodo?
+  // ¿usa Incómodo? Es lo único que puede hacer atacando.
   const rIn=rasgoDe(P.cartas.r[divId],'incomodo');
   const otra=segundaCartaIncomodo(P,'j',divId,rIn);
   if(rIn && !P.jugada.r && otra && Math.random()<.6){
@@ -1875,13 +2172,8 @@ function turnoIA(){
     P.log.push({t:'sys',x:`🌀 El rival activa Incómodo${rIn.plus?'+':''}.`});
     render(); return;
   }
-  // Nada automático: se te pide que mandes tu carta, y ahí decides tus rasgos.
-  const espR=especialistaDisponible(P,'r',divId,stat);
-  let espLado=null;
-  if(espR&&Math.random()<.7){ P.jugada.r=true; espLado='r';
-    P.log.push({t:'sys',x:`🎯 El rival activa Especialista en ${stat.toUpperCase()}.`}); }
   P.log.push({t:'sys',x:`El rival declara ${DIV[divId].n} · ${stat.toUpperCase()}.`});
-  P.pendienteConf={divId,stat,defensor:'j',opts:{},especialista:espLado};
+  P.pendienteConf={divId,stat,defensor:'j',opts:{},veterano:null};
   P.fase='confirmar';
   render();
 }
@@ -1962,30 +2254,27 @@ document.addEventListener('click',e=>{
   }
   if(d.rol){ online()?enviarRed({t:'rol',v:d.rol}):elegirRol(d.rol); return; }
   if(d.veto){ online()?enviarRed({t:'veto',division:d.veto}):vetar(d.veto); return; }
-  if(d.dsel){ if(tmp.divSel!==d.dsel){ tmp.camaleon=null; tmp.statSel=null; tmp.jugada=null; }
+  if(d.dsel){ if(tmp.divSel!==d.dsel){ tmp.statSel=null; tmp.jugada=null; }
     tmp.divSel=d.dsel; render(); return; }
-  if(d.vetstat){
-    if(online()){ enviarRed({t:'veterano',usar:true,stat:d.vetstat}); return; }
-    P.jugada.j=true; P.pendienteConf.stat=d.vetstat;
-    P.log.push({t:'sys',x:`🧠 Tu Veterano cambia la stat a ${d.vetstat.toUpperCase()}.`});
-    render(); return; }
   if(d.ssel){ tmp.statSel=d.ssel; render(); return; }
+  /* Cambio de división y Camaleón son respuestas: se usan defendiendo y se aplican en
+     el momento, sobre el duelo que el rival acaba de declarar. */
   if(d.cambio!==undefined&&d.cambio!==''){
-    const c=cambiosPosibles(P,'j')[+d.cambio];
-    if(online()) tmp.jugada={tipo:'cambio',a:c[0],b:c[1]};
-    else hacerCambio(P,'j',c[0],c[1]);
-    render(); return;
+    const c=cambiosPosibles(P,'j')[+d.cambio]; if(!c) return;
+    if(online()){ enviarRed({t:'cambio',a:c[0],b:c[1]}); return; }
+    hacerCambio(P,'j',c[0],c[1]); render(); return;
   }
   if(d.camaleon!==undefined&&d.camaleon!==''){
-    const cam=camaleonesPosibles(P,'j',tmp.divSel)[+d.camaleon];
-    if(online()) tmp.jugada={tipo:'camaleon',div:cam.div};
-    else { tmp.camaleon=cam; P.log.push({t:'sys',x:'Camaleón preparado — se aplica al declarar.'}); }
+    const q=P.pendienteConf; if(!q) return;
+    const cam=camaleonesPosibles(P,'j',q.divId)[+d.camaleon]; if(!cam) return;
+    if(online()){ enviarRed({t:'camaleon',div:cam.div}); return; }
+    P.cartas.j[q.divId]=cam.carta; P.ajustes.j[q.divId]={};
+    if(!cam.rasgo.plus) P.jugada.j=true;
+    q.opts=q.opts||{}; q.opts.dobleJ=true;
+    P.log.push({t:'sys',x:`🦎 Camaleón: ${cam.carta.nombre} viene desde ${DIV[cam.div].n} a pelear este duelo. Tu carta de ${DIV[q.divId].n} se descarta sin pelear.`});
     render(); return;
   }
-  if(d.incomodo){
-    if(online()) tmp.jugada={tipo:'incomodo'};
-    else { tmp.incomodo=true; P.jugada.j=true;
-      P.log.push({t:'sys',x:'🌀 Activas Incómodo. El rival elegirá a ciegas.'}); }
+  if(d.incomodo){ tmp.jugada={tipo:'incomodo'};   // se aplica al declarar
     render(); return; }
   if(d.eleccion!==undefined&&d.eleccion!==''){
     online()?enviarRed({t:'incomodo',idx:+d.eleccion}):resolverIncomodo(+d.eleccion); return; }
@@ -2096,30 +2385,52 @@ document.addEventListener('click',e=>{
       render(); break; }
     case 'tutorsaltar': S.tutorCortado=true; guardar(); render(); break;
     case 'reactivartutor': S.tutorCortado=false; guardar(); render(); break;
-    case 'quitarjugada': tmp.jugada=null; tmp.camaleon=null; tmp.incomodo=false; render(); break;
-    case 'otracarta': tmp.divSel=null; tmp.statSel=null; tmp.camaleon=null; tmp.jugada=null; render(); break;
-    case 'especialista':
-      if(online()) tmp.jugada={tipo:'especialista',stat:tmp.statSel};
-      else { tmp.jugada={tipo:'especialista',stat:tmp.statSel}; tmp.especialista=true; }
-      render(); break;
-
+    case 'quitarjugada': tmp.jugada=null; render(); break;
+    case 'otracarta': tmp.divSel=null; tmp.statSel=null; tmp.jugada=null; render(); break;
     /* ── el defensor manda su carta: nada se resuelve sin este toque ── */
     case 'enviarcarta':
       if(online()){ enviarRed({t:'confirmar'}); break; }
       resolverPendiente(); break;
-    case 'vetazar':{
-      if(online()){ enviarRed({t:'veterano',usar:true}); break; }
-      const q=P.pendienteConf; const otras=P.statsVivas.filter(x=>x!==q.stat);
-      if(!otras.length) break;
-      P.jugada.j=true;
-      q.stat=otras[Math.floor(Math.random()*otras.length)];
-      P.log.push({t:'sys',x:`🧠 Tu Veterano cambia la stat a ${q.stat.toUpperCase()}.`});
-      render(); break; }
+    /* ESPECIALISTA: impone la stat de su carta en este duelo. */
     case 'espdefensor':{
       if(online()){ enviarRed({t:'especialista'}); break; }
-      P.jugada.j=true; P.pendienteConf.especialista='j';
-      P.log.push({t:'sys',x:`🎯 Activas Especialista en ${P.pendienteConf.stat.toUpperCase()}.`});
+      const q=P.pendienteConf;
+      const esp=especialistaDisponible(P,'j',q.divId,q.stat); if(!esp) break;
+      if(!esp.plus) P.jugada.j=true;
+      q.stat=esp.stat;
+      P.log.push({t:'sys',x:`🎯 Especialista: impones ${esp.stat.toUpperCase()}. El duelo se pelea con esa.`});
       render(); break; }
+    /* VETERANO: si gana el duelo (o siempre, con el plus), la stat no se gasta. */
+    case 'vetdefensor':{
+      if(online()){ enviarRed({t:'veterano'}); break; }
+      const q=P.pendienteConf;
+      const vet=veteranoDisponible(P,'j',q.divId); if(!vet) break;
+      P.jugada.j=true; q.veterano='j';
+      P.log.push({t:'sys',x:`🧠 Veterano activado: si ganas${vet.plus?' o pierdes':''}, ${q.stat.toUpperCase()} vuelve al pool.`});
+      render(); break; }
+    /* La revelación del duelo no se pasa sola. */
+    case 'chat':
+      tmp.chat=!tmp.chat; if(tmp.chat) CHAT.sinLeer=0; render(); break;
+    case 'chatenviar':{
+      const el=$('#chatin'); const v=(el&&el.value||'').trim();
+      if(v) enviarRed({t:'chat',texto:v});
+      if(el) el.value='';
+      break; }
+    case 'seguir':
+      if(PASE){ clearTimeout(PASE); PASE=null; }
+      REVEL.vistos++; REVEL.pendiente=null; revisarRevelacion(); render(); break;
+    case 'rendirse':
+      ov(`<div class="center"><div style="font-size:34px">🏳️</div><h3>¿Rendirte?</h3>
+        <div class="sub mb">Cuenta como derrota y la partida termina ahí.</div>
+        <button class="btn" data-a="rendirseya">Sí, me rindo</button>
+        <button class="btn sec" data-a="cerrarov" style="margin-top:7px">Seguir peleando</button></div>`);
+      break;
+    case 'rendirseya':
+      cerrarOv();
+      if(online()){ enviarRed({t:'abandonar'}); break; }
+      P.fase='fin'; P.fin='r';
+      P.log.push({t:'sys',x:'Te rindes: cuenta como derrota.'});
+      render(); break;
     case 'gratis':{
       const g=GRATIS.find(x=>x.id===d.g); if(!g||!listoGratis(g)) break;
       if(g.espera>0) S.gratis[g.id]=Date.now();
@@ -2148,7 +2459,7 @@ document.addEventListener('click',e=>{
       if(tmp.ap) tmp.ap.resumen=true;
       render(); break;
     case 'salirapertura': ir('sobres'); break;
-    case 'autoplantilla': autoPlantilla(S); guardar(); render(); break;
+    case 'autoplantilla': autoPlantilla(S,true); guardar(); render(); break;
     case 'reciclar':{
       const g=reciclar(tmp.sel||[]); tmp.sel=[];
       ov(`<div class="center"><div style="font-size:38px">🎟️</div><h3>+${g} ficha(s)</h3>
@@ -2157,7 +2468,7 @@ document.addEventListener('click',e=>{
       const s=SETS.find(x=>x.id===d.id); if(!s||!setListo(s)) break;
       for(const cid of s.req){ const it=S.coleccion.find(x=>x.cid===cid&&!Object.values(S.plantilla).includes(x.iid));
         if(it) S.coleccion=S.coleccion.filter(x=>x.iid!==it.iid); }
-      const pool=alineables().filter(c=>c.rareza===s.premio);
+      const pool=alineables().filter(c=>c.estatus===s.premio);
       const c=pick(pool);
       S.coleccion.push({iid:'i'+Math.random().toString(36).slice(2,9),cid:c.id,notraspasable:true});
       S.sets.push(s.id); guardar();
@@ -2179,10 +2490,10 @@ document.addEventListener('click',e=>{
       if(S.fichas<1) break;
       S.fichas--; guardar();
       const pool=shuffle(ROSTER).slice(0,6);
-      tmp.sala={oferta:pool,deseos:shuffle(ROSTER.filter(c=>c.rareza==='oro'||c.rareza==='elite')).slice(0,3).map(c=>c.nombre)};
+      tmp.sala={oferta:pool,deseos:shuffle(ROSTER.filter(c=>c.rareza==='oro')).slice(0,3).map(c=>c.nombre)};
       tmp.ofrezco=[]; tmp.pido=[]; render(); break; }
     case 'proponer':{
-      const val=l=>l.reduce((a,c)=>a+({bronce:1,plata:4,oro:14,elite:45,leyenda:150})[c.rareza],0);
+      const val=l=>l.reduce((a,c)=>a+({plata:1,oro:6,top15:14,top10:22,top5:45,campeon:90})[c.estatus],0);
       const mias=(tmp.ofrezco||[]).map(i=>PORID[inst(i).cid]);
       const suyas=tmp.pido||[];
       if(val(suyas)<=val(mias)*1.15){
@@ -2205,27 +2516,23 @@ document.addEventListener('click',e=>{
         enviarRed({t:'declarar',division:tmp.divSel,stat:tmp.statSel,jugada:tmp.jugada||null});
         break;
       }
-      const extra={};
-      if(tmp.camaleon) extra.camaleon=tmp.camaleon;
-      if(tmp.incomodo){
-        // El rival elige a ciegas: si falla, su carta come la penalización
-        const inc=rasgoDe(P.cartas.j[tmp.divSel],'incomodo');
-        const otra=segundaCartaIncomodo(P,'r',tmp.divSel,inc);
-        if(otra){
-          const elegida=iaEligeIncomodo(P,shuffle([tmp.divSel,otra]));
-          if(elegida!==tmp.divSel){
-            enviarAlDuelo(P,'r',elegida,tmp.divSel,inc.plus?-12:-6);
-            P.log.push({t:'sys',x:`El rival falla la elección: come ${inc.plus?-12:-6} y descarta su carta de ${DIV[tmp.divSel].n}.`});
-          }else P.log.push({t:'sys',x:'El rival acierta la división: duelo limpio.'});
-        }
-        tmp.incomodo=false;
-      }
       const dv=tmp.divSel, st=tmp.statSel;
-      if(tmp.especialista){ P.jugada.j=true; extra.especialista='j';
-        P.log.push({t:'sys',x:`🎯 Activas Especialista en ${st.toUpperCase()}.`}); tmp.especialista=false; }
-      tmp.camaleon=null;
+      // Incómodo: la única jugada que se puede usar atacando. El rival elige a ciegas
+      // y, acierte o falle, su carta de la división real queda fuera.
+      if(tmp.jugada&&tmp.jugada.tipo==='incomodo'){
+        const inc=rasgoDe(P.cartas.j[dv],'incomodo');
+        const otra=segundaCartaIncomodo(P,'r',dv,inc);
+        if(otra){
+          P.jugada.j=true;
+          const elegida=iaEligeIncomodo(P,shuffle([dv,otra]));
+          if(elegida!==dv){
+            enviarAlDuelo(P,'r',elegida,dv,inc.plus?-12:-6);
+            P.log.push({t:'sys',x:`🌀 El rival falla la elección: come ${inc.plus?-12:-6} y descarta su carta de ${DIV[dv].n}.`});
+          }else P.log.push({t:'sys',x:'🌀 El rival acierta la división: duelo limpio.'});
+        }
+      }
       P.log.push({t:'sys',x:`Declaras ${DIV[dv].n} · ${st.toUpperCase()}.`});
-      declarar(dv,st,extra); break; }
+      declarar(dv,st); break; }
     case 'desempate':
       if(online()){ enviarRed({t:'desempate'}); break; }
       resolverDesempate(P); render(); break;

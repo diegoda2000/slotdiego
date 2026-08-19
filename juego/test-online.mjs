@@ -123,9 +123,13 @@ while (vueltas++ < 160) {
         : librePara(P, 'j'),
       stats: P.statsVivas, pend: !!P.pendiente,
       confMia: P.fase === 'confirmar' && P.pendienteConf && P.pendienteConf.defensor === 'j',
+      rev: !!REVEL.pendiente,
     }));
     if (est.fase === 'vetos' && est.vetoMio)
       await pg.evaluate(d => enviarRed({ t: 'veto', division: d }), est.libres[0]);
+    else if (est.rev) {
+      await pg.evaluate(() => { if (REVEL.pendiente) { REVEL.vistos++; REVEL.pendiente = null; revisarRevelacion(); render(); } });
+    }
     else if (est.confMia) {
       vetPreguntados++;
       await pg.evaluate(() => enviarRed({ t: 'confirmar' }));
@@ -255,14 +259,19 @@ while (v2++ < 220) {
         ? DIVISIONES.map(x => x.id).filter(x => !P.vetados.includes(x)) : librePara(P, 'j'),
       stats: P.statsVivas, pend: !!P.pendiente,
       conf: P.fase === 'confirmar' ? P.pendienteConf : null,
+      rev: !!REVEL.pendiente,
     }));
     if (e.fase === 'vetos' && e.vetoMio)
       await pg.evaluate(d => enviarRed({ t: 'veto', division: d }), e.libres[0]);
+    else if (e.rev) {                       // la revelación del duelo anterior
+      await pg.evaluate(() => { if (REVEL.pendiente) { REVEL.vistos++; REVEL.pendiente = null; revisarRevelacion(); render(); } });
+    }
     else if (e.conf && e.conf.defensor === 'j') {
       confVistas++;
       const pantalla = await pg.evaluate(() => ({
         enviar: document.querySelectorAll('[data-a="enviarcarta"]').length,
-        vet: document.querySelectorAll('[data-a="vetazar"],[data-vetstat]').length,
+        vet: document.querySelectorAll('[data-a="vetdefensor"]').length,
+        resp: document.querySelectorAll('[data-a="vetdefensor"],[data-a="espdefensor"],[data-camaleon],[data-cambio]').length,
       }));
       if (!pantalla.enviar) { console.log('  ✗ el defensor no tiene botón para mandar su carta'); fallos++; }
 
@@ -278,7 +287,7 @@ while (v2++ < 220) {
         vetOfrecidos++;
         if (vetOfrecidos === 1) {   // la primera vez sí, para ver el efecto
           vetUsados++;
-          await pg.evaluate(() => enviarRed({ t: 'veterano', usar: true }));
+          await pg.evaluate(() => enviarRed({ t: 'veterano' }));
           await new Promise(r => setTimeout(r, 160));
         }
       }
@@ -297,10 +306,47 @@ comprobar(confVistas > 0, `a cada duelo se le pide la carta al defensor (${confV
 comprobar(esperasSostenidas === confVistas,
   `y ninguno se resolvió antes de mandarla (${esperasSostenidas} de ${confVistas})`);
 comprobar(vetOfrecidos > 0, `con plantillas llenas de Veteranos, el rasgo se ofrece (${vetOfrecidos} veces)`);
-const registro = await F.evaluate(() => P.log.filter(l => l.t === 'sys' && /Veterano/.test(l.x || '')).length);
+// El Veterano deja dos líneas cuando funciona: la activación y el efecto sobre el pool.
+// Lo que se comprueba es que no haya NINGUNA activación que nadie pidió.
+const registro = await F.evaluate(() => P.log.filter(l => l.t === 'sys' && /activa Veterano/.test(l.x || '')).length);
 comprobar(registro === vetUsados,
-  `solo queda registrado el Veterano que se usó a propósito (${registro} de ${vetOfrecidos} ofertas)`);
+  `solo se activó el Veterano que se pidió a mano (${registro} de ${vetOfrecidos} ofertas)`);
 comprobar(await F.evaluate(() => P.fase) === 'fin', 'la partida con Veteranos también termina');
+
+/* ── 8. Chat, reloj y rendirse ────────────────────────────────────────── */
+console.log('\n8. Chat, reloj y rendición');
+const H = await abrirJugador('Hugo');
+const I = await abrirJugador('Iris');
+await H.locator('[data-a="crearsala"]').click();
+await esperar(async () => !!(await H.evaluate(() => SALA && SALA.codigo)));
+await I.evaluate(c => conectar(c), await H.evaluate(() => SALA.codigo));
+comprobar(await esperar(async () => (await I.evaluate(() => P && P.fase)) === 'rol'),
+  'sala 4: los dos dentro');
+
+// El reloj: el servidor manda un límite y el cliente lo pinta.
+const rel = await H.evaluate(() => ({ limite: P.limite, queda: P.limite ? Math.round((P.limite - Date.now()) / 1000) : null }));
+comprobar(!!rel.limite, 'el servidor manda el límite del turno');
+comprobar(rel.queda > 15 && rel.queda <= 26, `y son 25 segundos (quedan ${rel.queda})`);
+comprobar(await H.evaluate(() => { vista = 'partida'; render(); return !!document.getElementById('reloj'); }),
+  'el reloj se ve en la pantalla de partida');
+
+// El chat va y vuelve, y cada uno lo ve desde su lado.
+await H.evaluate(() => enviarRed({ t: 'chat', texto: 'hola desde Hugo' }));
+comprobar(await esperar(async () => (await I.evaluate(() => CHAT.length)) > 0, 6000),
+  'el mensaje de chat llega al otro');
+const visto = await I.evaluate(() => CHAT[CHAT.length - 1]);
+comprobar(visto && visto.texto === 'hola desde Hugo', `y llega entero ("${visto && visto.texto}")`);
+comprobar(visto && visto.lado === 'r', 'y marcado como del rival, no como propio');
+const propio = await H.evaluate(() => CHAT[CHAT.length - 1]);
+comprobar(propio && propio.lado === 'j', 'mientras el que lo escribió lo ve como suyo');
+
+// Rendirse: el rival gana y su partida termina, no se queda esperando.
+await H.evaluate(() => enviarRed({ t: 'abandonar' }));
+comprobar(await esperar(async () => (await I.evaluate(() => P.fase)) === 'fin', 6000),
+  'rendirse termina la partida también en el móvil del rival');
+comprobar(await I.evaluate(() => P.fin) === 'j', 'y el que se queda, gana');
+comprobar(await H.evaluate(() => P.fin) === 'r', 'y el que se rinde, pierde');
+comprobar(await I.evaluate(() => P.limite) === null, 'al acabar, el reloj se para');
 
 /* ── resultado ────────────────────────────────────────────────────────── */
 comprobar(errores.length === 0, 'ningún error de JavaScript en ninguno de los clientes');

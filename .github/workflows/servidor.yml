@@ -33,6 +33,10 @@ permissions:
 jobs:
   desplegar:
     runs-on: ubuntu-latest
+    outputs:
+      listo:  ${{ steps.comp.outputs.listo }}
+      url:    ${{ steps.deploy.outputs.url }}
+      commit: ${{ steps.fijar.outputs.commit }}
     steps:
       - uses: actions/checkout@v4
 
@@ -121,6 +125,7 @@ jobs:
           ARCHIVO
           if git diff --quiet -- juego/servidor.js; then
             echo "cambio=no" >> "$GITHUB_OUTPUT"
+            echo "commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
           else
             echo "cambio=si" >> "$GITHUB_OUTPUT"
             git config user.name  "github-actions[bot]"
@@ -128,6 +133,7 @@ jobs:
             git add juego/servidor.js
             git commit -m "Point the game at the deployed live-match server"
             git push origin HEAD:${{ github.ref_name }}
+            echo "commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Preparar Java
@@ -148,31 +154,113 @@ jobs:
         working-directory: android
         run: gradle assembleDebug --no-daemon --stacktrace
 
-      - name: Publicar la descarga
+      - name: Guardar el APK para la publicación
         if: steps.comp.outputs.listo == 'si'
+        uses: actions/upload-artifact@v4
+        with:
+          name: android
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+
+  # ── iPhone ──────────────────────────────────────────────────────────────────
+  # En un runner de macOS, que es el único sitio donde existe Xcode. Sale SIN FIRMAR:
+  # firmar exige un certificado de una cuenta de desarrollador de Apple, que es del
+  # dueño y no puede vivir en el repositorio. Se instala con Sideloadly o AltStore.
+  # Los detalles están en ios/COMO-FUNCIONA.md.
+  iphone:
+    needs: desplegar
+    if: needs.desplegar.outputs.listo == 'si'
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.desplegar.outputs.commit }}
+
+      - name: Instalar XcodeGen
+        run: brew install xcodegen
+
+      - name: Meter el juego dentro de la aplicación
+        run: |
+          mkdir -p ios/juego-assets
+          cp juego/juego.html juego/motor.js juego/servidor.js ios/juego-assets/
+          test -s ios/juego-assets/servidor.js
+
+      - name: Generar el proyecto de Xcode
+        working-directory: ios
+        run: xcodegen generate
+
+      - name: Construir el .ipa
+        working-directory: ios
+        run: |
+          set -o pipefail
+          xcodebuild -project JaulaAbierta.xcodeproj -scheme JaulaAbierta \
+            -configuration Release -sdk iphoneos -derivedDataPath build \
+            CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO \
+            build | xcpretty || xcodebuild -project JaulaAbierta.xcodeproj -scheme JaulaAbierta \
+            -configuration Release -sdk iphoneos -derivedDataPath build \
+            CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO build
+          mkdir -p Payload
+          cp -R build/Build/Products/Release-iphoneos/JaulaAbierta.app Payload/
+          zip -qry jaula-abierta.ipa Payload
+          ls -l jaula-abierta.ipa
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ios
+          path: ios/jaula-abierta.ipa
+
+  # ── La descarga, con las dos ────────────────────────────────────────────────
+  publicar:
+    needs: [desplegar, iphone]
+    if: always() && needs.desplegar.outputs.listo == 'si'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: descargas
+      - name: Publicar
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          URL: ${{ needs.desplegar.outputs.url }}
         run: |
           mkdir -p salida
-          cp android/app/build/outputs/apk/debug/app-debug.apk salida/jaula-abierta.apk
+          cp descargas/android/app-debug.apk salida/jaula-abierta.apk
+          # Si la de iPhone ha fallado no se cancela la publicación: el APK sigue
+          # sirviendo, y quedarse sin descarga por eso sería peor.
+          if [ -f descargas/ios/jaula-abierta.ipa ]; then
+            cp descargas/ios/jaula-abierta.ipa salida/
+            IPA="listo"
+          else
+            IPA="no ha salido en esta vuelta"
+          fi
+          {
+            echo "Prototipo jugable, Android e iPhone."
+            echo ""
+            echo "**Android** — descarga \`jaula-abierta.apk\` y ábrelo. Nada que configurar."
+            echo ""
+            echo "**iPhone** — \`jaula-abierta.ipa\` ($IPA) va **sin firmar**: Apple no deja"
+            echo "instalarlo tocándolo. Se instala desde un ordenador con Sideloadly o AltStore,"
+            echo "firmándolo con tu propio Apple ID. Con cuenta gratuita caduca a los 7 días."
+            echo "Está explicado en \`ios/COMO-FUNCIONA.md\`."
+            echo ""
+            echo "Las partidas en directo vienen ya configuradas en las dos."
+            echo "Servidor: $URL"
+          } > notas.md
           gh release delete apk-latest --yes --cleanup-tag || true
-          gh release create apk-latest salida/jaula-abierta.apk \
-            --title "Jaula Abierta — APK de prueba" \
-            --notes "Prototipo jugable. Las partidas en directo vienen ya configuradas: se instala y se juega, sin ajustes. Servidor: ${{ steps.deploy.outputs.url }}" \
+          gh release create apk-latest salida/* \
+            --title "Jaula Abierta — versión de prueba" \
+            --notes-file notas.md \
             --prerelease
 
       - name: Resumen
-        if: steps.comp.outputs.listo == 'si'
+        env:
+          URL: ${{ needs.desplegar.outputs.url }}
         run: |
           {
             echo "# Listo"
             echo ""
-            echo "Servidor publicado en \`${{ steps.deploy.outputs.url }}\`"
+            echo "Servidor publicado en \`$URL\` y comprobado con dos clientes jugando una partida entera."
             echo ""
-            echo "Comprobado con dos clientes jugando una partida completa contra él."
-            echo ""
-            echo "El APK ya lleva esa dirección dentro. **Nadie tiene que configurar nada:**"
-            echo "se instala, se monta la plantilla y se crea una sala."
-            echo ""
-            echo "Descarga: la publicación **apk-latest** del repositorio."
+            echo "Descargas en la publicación **apk-latest**: APK de Android e .ipa de iPhone,"
+            echo "las dos con la dirección del servidor ya dentro."
           } >> "$GITHUB_STEP_SUMMARY"

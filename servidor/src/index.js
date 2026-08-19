@@ -15,6 +15,9 @@ import '../../juego/motor.js';   // define globalThis.MOTOR y sus nombres suelto
 
 generarRoster();   // mismo catálogo que los clientes, de la misma semilla fija
 
+const TURNO_MS  = 25000;   // 25 segundos por decisión
+const GRACIA_MS = 20000;   // margen para volver antes de dar la partida por perdida
+
 // Sin O/0 ni I/1: los códigos se dictan por teléfono.
 const ALFABETO = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const codigoNuevo = () => Array.from({ length: 6 },
@@ -56,6 +59,93 @@ export class Sala {
     this.jugadores = new Map();   // jugadorId -> {nombre, cartas, lado}
     this.P = null;
     this.rolElegido = {};         // lado -> 'vetar' | 'declarar'
+    this.chatlog = [];            // últimos mensajes, para quien reconecta
+    this.caido = {};              // lado -> instante en que se cayó
+  }
+
+  /* ── EL RELOJ ──────────────────────────────────────────────────────────────
+     25 segundos por decisión. Sin reloj, una partida por turnos con dos personas
+     se queda colgada en cuanto una deja el móvil en la mesa, y la otra no puede
+     ni rendirse a gusto porque no sabe si el rival volverá.
+
+     Cuando se acaba el tiempo NO se pierde la partida: el servidor juega por ti la
+     opción más simple y legal, y sigue. Perder por no llegar a tiempo a un duelo
+     sería castigar la conexión, no el juego. */
+  arrancarReloj() {
+    const P = this.P;
+    if (!P || P.fase === 'fin') return;
+    P.limite = Date.now() + TURNO_MS;
+    this.programarAlarma(P.limite + 400);
+  }
+  programarAlarma(cuando) {
+    try { this.ctx.storage.setAlarm(cuando); } catch (e) {}
+  }
+
+  async alarm() {
+    // Primero lo urgente: alguien que se fue y no ha vuelto pierde por abandono.
+    for (const [lado, desde] of Object.entries(this.caido)) {
+      if (Date.now() - desde >= GRACIA_MS && !this.conectado(lado)) {
+        delete this.caido[lado];
+        return this.abandonar(lado, 'se ha desconectado y no ha vuelto');
+      }
+    }
+    const P = this.P;
+    if (!P || P.fase === 'fin' || !P.limite) return;
+    if (Date.now() < P.limite) { this.programarAlarma(P.limite + 400); return; }
+    this.jugarPorElQueNoLlega();
+  }
+
+  conectado(lado) {
+    for (const [id, j] of this.jugadores) if (j.lado === lado && this.conex.has(id)) return true;
+    return false;
+  }
+
+  // La jugada más simple y legal que existe en cada fase. Nunca la mejor: el reloj
+  // no está para jugar bien por nadie, está para que la partida no se pare.
+  jugarPorElQueNoLlega() {
+    const P = this.P;
+    try {
+      if (P.fase === 'rol') {
+        for (const l of ['j', 'r']) if (!this.rolElegido[l]) {
+          P.log.push({ t: 'sys', x: `Se acaba el tiempo: ${this.nombreDeLado(l)} empieza declarando.` });
+          return this.elegirRol(l, 'declarar');
+        }
+      } else if (P.fase === 'vetos') {
+        const l = this.turnoVeto(P);
+        const libres = DIVISIONES.map(d => d.id).filter(x => !P.vetados.includes(x));
+        P.log.push({ t: 'sys', x: `Se acaba el tiempo para ${this.nombreDeLado(l)}: veto automático.` });
+        return this.veto(l, libres[0]);
+      } else if (P.fase === 'duelos') {
+        const l = P.turno;
+        P.log.push({ t: 'sys', x: `Se acaba el tiempo para ${this.nombreDeLado(l)}: declaración automática.` });
+        return this.declarar(l, { division: librePara(P, l)[0], stat: P.statsVivas[0] });
+      } else if (P.fase === 'confirmar') {
+        const l = P.pendienteConf.defensor;
+        P.log.push({ t: 'sys', x: `Se acaba el tiempo: la carta de ${this.nombreDeLado(l)} sale sola al duelo.` });
+        return this.confirmar(l);
+      } else if (P.fase === 'incomodo') {
+        const l = P.pendiente.defensor;
+        P.log.push({ t: 'sys', x: `Se acaba el tiempo: ${this.nombreDeLado(l)} elige a ciegas por reloj.` });
+        return this.eleccionIncomodo(l, 0);
+      } else if (P.fase === 'desempate') {
+        return this.desempate('j');
+      }
+    } catch (e) {
+      // Si la jugada automática no cuela, se reintenta en el siguiente ciclo antes
+      // que dejar la sala muerta.
+      this.arrancarReloj();
+    }
+  }
+
+  chat(lado, texto) {
+    const t = String(texto || '').replace(/\s+/g, ' ').trim().slice(0, 200);
+    if (!t) return;
+    const m = { t: 'chat', lado, de: this.nombreDeLado(lado), texto: t, ts: Date.now() };
+    this.chatlog.push(m);
+    if (this.chatlog.length > 40) this.chatlog.shift();
+    // Cada uno lo ve desde su lado, igual que el resto del estado.
+    for (const [id, j] of this.jugadores)
+      this.enviar(id, { ...m, lado: lado === j.lado ? 'j' : 'r' });
   }
 
   async fetch(req) {
@@ -84,9 +174,23 @@ export class Sala {
     servidor.addEventListener('close', () => {
       if (this.conex.get(jugadorId) === servidor) this.conex.delete(jugadorId);
       this.difundirPresencia();
+      /* Cerrar la aplicación o irse de la partida cuenta como rendirse. Se da un
+         margen corto para volver, porque un túnel o un cambio de wifi no es
+         abandonar; pasado ese margen, el rival gana y no se queda esperando. */
+      const l = this.ladoDe(jugadorId);
+      if (l && this.P && this.P.fase !== 'fin' && !this.conectado(l)) {
+        this.caido[l] = Date.now();
+        this.programarAlarma(Date.now() + GRACIA_MS + 400);
+      }
     });
 
-    if (this.jugadores.has(jugadorId)) this.mandarEstado();   // reconexión en curso
+    const lado0 = this.ladoDe(jugadorId);
+    if (lado0) delete this.caido[lado0];              // ha vuelto: se cancela la cuenta
+    if (this.jugadores.has(jugadorId)) {
+      for (const m of this.chatlog)
+        this.enviar(jugadorId, { ...m, lado: m.lado === lado0 ? 'j' : 'r' });
+      this.mandarEstado();   // reconexión en curso
+    }
 
     return new Response(null, { status: 101, webSocket: cliente });
   }
@@ -118,6 +222,11 @@ export class Sala {
   }
 
   mandarEstado() {
+    // Cada vez que el estado cambia empieza un turno nuevo, así que el reloj se
+    // reinicia aquí y en un solo sitio: si se repartiera por los métodos, tarde o
+    // temprano alguno se olvidaría y la sala se quedaría sin reloj.
+    if (this.P && this.P.fase !== 'fin') this.arrancarReloj();
+    else if (this.P) this.P.limite = null;
     for (const [id, j] of this.jugadores) {
       if (!this.P) continue;
       this.enviar(id, { t: 'estado', P: this.vistaDe(j.lado) });
@@ -152,6 +261,7 @@ export class Sala {
       rival: this.nombreDeLado(otro),
       pendiente: null,
       pendienteConf: null,
+      limite: P.limite || null,        // instante en el que se acaba el turno
       online: true,
     };
 
@@ -184,7 +294,8 @@ export class Sala {
 
     const lado = this.ladoDe(id);
     if (!lado) throw new Error('todavía no te has unido a la sala');
-    if (msg.t === 'abandonar') return this.abandonar(lado);
+    if (msg.t === 'abandonar') return this.abandonar(lado, 'se rinde');
+    if (msg.t === 'chat') return this.chat(lado, msg.texto);
     if (msg.t === 'rol') return this.elegirRol(lado, msg.v);
 
     if (!this.P) throw new Error('la partida no ha empezado');
@@ -193,7 +304,9 @@ export class Sala {
     if (msg.t === 'incomodo') return this.eleccionIncomodo(lado, msg.idx);
     if (msg.t === 'confirmar') return this.confirmar(lado);
     if (msg.t === 'especialista') return this.especialistaDefensor(lado);
-    if (msg.t === 'veterano') return this.decidirVeterano(lado, msg);
+    if (msg.t === 'veterano') return this.veteranoDefensor(lado);
+    if (msg.t === 'camaleon') return this.camaleonDefensor(lado, msg.div);
+    if (msg.t === 'cambio') return this.cambioDefensor(lado, msg.a, msg.b);
     if (msg.t === 'desempate') return this.desempate(lado);
     throw new Error('mensaje desconocido');
   }
@@ -284,34 +397,8 @@ export class Sala {
     const jugada = msg.jugada || null;
     let opts = {};
 
-    if (jugada && jugada.tipo === 'cambio') {
-      const legal = cambiosPosibles(P, lado).some(([a, b]) =>
-        (a === jugada.a && b === jugada.b) || (a === jugada.b && b === jugada.a));
-      if (!legal) throw new Error('ese cambio de división no es legal');
-      hacerCambio(P, lado, jugada.a, jugada.b);
-      P.log.push({ t: 'sys', x: `${this.nombreDeLado(lado)} usa su jugada: cambio de división.` });
-    }
-
-    if (jugada && jugada.tipo === 'camaleon') {
-      const cam = camaleonesPosibles(P, lado, division).find(c => c.div === jugada.div);
-      if (!cam) throw new Error('ese Camaleón no se puede usar aquí');
-      P.cartas[lado][division] = cam.carta;
-      P.ajustes[lado][division] = {};
-      if (!cam.rasgo.plus) P.jugada[lado] = true;
-      P.log.push({ t: 'sys', x: `🦎 ${this.nombreDeLado(lado)} activa Camaleón desde ${DIV[cam.div].n}.` });
-      opts.dobleJ = true;
-    }
-
-    // El Especialista del que declara: lo activa él, y solo si la stat es la suya.
-    // Como todos los rasgos, gasta la única jugada de la partida.
-    if (jugada && jugada.tipo === 'especialista') {
-      if (!especialistaDisponible(P, lado, division, stat))
-        throw new Error('ese Especialista no se puede usar aquí');
-      P.jugada[lado] = true;
-      opts.especialista = lado;
-      P.log.push({ t: 'sys', x: `🎯 ${this.nombreDeLado(lado)} activa Especialista en ${stat.toUpperCase()}.` });
-    }
-
+    /* Atacando ya no hay ni cambio de división ni Camaleón: son respuestas, y se usan
+       en la ventana del defensor. Declarar es elegir el terreno y nada más. */
     if (jugada && jugada.tipo === 'incomodo') {
       const rasgo = rasgoDe(P.cartas[lado][division], 'incomodo');
       if (!rasgo) throw new Error('esa carta no tiene Incómodo');
@@ -338,7 +425,7 @@ export class Sala {
   resolver(division, stat, opts) {
     const P = this.P;
     P.pendienteConf = { divId: division, stat, defensor: this.otroLado(P.turno),
-      opts: opts || {}, especialista: (opts && opts.especialista) || null };
+      opts: opts || {}, veterano: null };
     P.fase = 'confirmar';
     this.mandarEstado();
   }
@@ -357,24 +444,69 @@ export class Sala {
     if (q.defensor !== lado) throw new Error('la carta la manda el otro');
 
     const opts = { ...(q.opts || {}) };
-    if (q.especialista) opts.especialista = q.especialista;
+    if (q.veterano) opts.veterano = q.veterano;
     P.pendienteConf = null; P.fase = 'duelos';
     P.log.push({ t: 'sys', x: `${this.nombreDeLado(lado)} manda a ${P.cartas[lado][q.divId].nombre} al duelo.` });
     resolverDuelo(P, q.divId, q.stat, opts);
     this.mandarEstado();
   }
 
+  /* ESPECIALISTA: la carta impone su stat. El duelo deja de jugarse con la declarada
+     y pasa a jugarse con la suya. */
   especialistaDefensor(lado) {
     const P = this.P;
     if (P.fase !== 'confirmar') throw new Error('no hay ningún duelo esperando');
     const q = P.pendienteConf;
     if (q.defensor !== lado) throw new Error('esa decisión no es tuya');
-    if (q.especialista) throw new Error('el Especialista de este duelo ya está activado');
-    if (!especialistaDisponible(P, lado, q.divId, q.stat))
-      throw new Error('ese Especialista no se puede usar aquí');
+    const r = especialistaDisponible(P, lado, q.divId, q.stat);
+    if (!r) throw new Error('ese Especialista no se puede usar aquí');
+    if (!r.plus) P.jugada[lado] = true;
+    P.log.push({ t: 'sys', x: `🎯 ${this.nombreDeLado(lado)} impone ${r.stat.toUpperCase()} con su Especialista.` });
+    q.stat = r.stat;
+    this.mandarEstado();
+  }
+
+  /* VETERANO: si gana el duelo —o siempre, con el plus— la stat no se gasta y vuelve
+     al pool de los dos. */
+  veteranoDefensor(lado) {
+    const P = this.P;
+    if (P.fase !== 'confirmar') throw new Error('no hay ningún duelo esperando');
+    const q = P.pendienteConf;
+    if (q.defensor !== lado) throw new Error('esa decisión no es tuya');
+    const r = veteranoDisponible(P, lado, q.divId);
+    if (!r) throw new Error('ese Veterano no se puede usar aquí');
     P.jugada[lado] = true;
-    q.especialista = lado;
-    P.log.push({ t: 'sys', x: `🎯 ${this.nombreDeLado(lado)} activa Especialista en ${q.stat.toUpperCase()}.` });
+    q.veterano = lado;
+    P.log.push({ t: 'sys', x: `🧠 ${this.nombreDeLado(lado)} activa Veterano${r.plus ? '+' : ''}: si gana${r.plus ? ' o pierde' : ''}, ${q.stat.toUpperCase()} vuelve al pool.` });
+    this.mandarEstado();
+  }
+
+  /* CAMALEÓN, defensivo: trae otra carta a pelear este duelo sin penalización. */
+  camaleonDefensor(lado, div) {
+    const P = this.P;
+    if (P.fase !== 'confirmar') throw new Error('no hay ningún duelo esperando');
+    const q = P.pendienteConf;
+    if (q.defensor !== lado) throw new Error('esa decisión no es tuya');
+    const cam = camaleonesPosibles(P, lado, q.divId).find(c => c.div === div);
+    if (!cam) throw new Error('ese Camaleón no se puede usar aquí');
+    P.cartas[lado][q.divId] = cam.carta;
+    P.ajustes[lado][q.divId] = {};
+    if (!cam.rasgo.plus) P.jugada[lado] = true;
+    q.opts = q.opts || {};
+    q.opts[lado === 'j' ? 'dobleJ' : 'dobleR'] = true;
+    P.log.push({ t: 'sys', x: `🦎 ${this.nombreDeLado(lado)} responde con Camaleón desde ${DIV[cam.div].n}.` });
+    this.mandarEstado();
+  }
+
+  /* CAMBIO DE DIVISIÓN, defensivo: intercambio obligado entre contiguas. */
+  cambioDefensor(lado, a, b) {
+    const P = this.P;
+    if (P.fase !== 'confirmar') throw new Error('no hay ningún duelo esperando');
+    const q = P.pendienteConf;
+    if (q.defensor !== lado) throw new Error('esa decisión no es tuya');
+    const legal = cambiosPosibles(P, lado).some(([x, y]) => (x === a && y === b) || (x === b && y === a));
+    if (!legal) throw new Error('ese cambio de división no es legal');
+    hacerCambio(P, lado, a, b);
     this.mandarEstado();
   }
 
@@ -435,11 +567,12 @@ export class Sala {
     this.mandarEstado();
   }
 
-  abandonar(lado) {
+  abandonar(lado, motivo) {
     if (!this.P || this.P.fase === 'fin') return;
     this.P.fase = 'fin';
     this.P.fin = this.otroLado(lado);
-    this.P.log.push({ t: 'sys', x: `${this.nombreDeLado(lado)} abandona: cuenta como derrota.` });
+    this.P.limite = null;
+    this.P.log.push({ t: 'sys', x: `${this.nombreDeLado(lado)} ${motivo || 'abandona'}: cuenta como derrota.` });
     this.mandarEstado();
   }
 }

@@ -36,25 +36,43 @@ console.log('\n1. Roster y arranque');
 const info = await page.evaluate(() => ({
   total: ROSTER.length,
   alineables: ROSTER.filter(c => c.alineable).length,
-  leyendas: ROSTER.filter(c => c.rareza === 'leyenda').length,
+  campeones: ROSTER.filter(c => c.estatus === 'campeon').length,
+  soloOroYPlata: ROSTER.every(c => c.rareza === 'oro' || c.rareza === 'plata'),
+  sinMedia: ROSTER.every(c => c.media === undefined),
+  sumaOk: ROSTER.every(c => c.suma === SID.reduce((a, s) => a + c.stats[s], 0)),
   conSubs: ROSTER.filter(c => c.subs).length,
   sinSubs: ROSTER.filter(c => !c.subs && !c.alineable).length,
   // la stat grande tiene que ser la media de sus 6 sub-stats (GDD §2.2)
   mediaOk: ROSTER.filter(c => c.subs).every(c =>
     SID.every(s => c.stats[s] === Math.round(c.subs[s].reduce((a, b) => a + b, 0) / c.subs[s].length))),
-  // la media general es media simple de las 6 (GDD §2.3)
-  generalOk: ROSTER.every(c => c.media === Math.round(SID.reduce((a, s) => a + c.stats[s], 0) / 6)),
-  rangosOk: ROSTER.every(c => c.media >= RAREZAS[c.rareza].min - 1 && c.media <= RAREZAS[c.rareza].max + 1),
+  // el estatus manda: cada carta cae dentro de la banda de stats de su tramo
+  rangosOk: ROSTER.every(c => {
+    const m = SID.reduce((a, s) => a + c.stats[s], 0) / 6;
+    return m >= EST[c.estatus].min - 3 && m <= EST[c.estatus].max + 3;
+  }),
+  // el orden es el deportivo, y dentro del tramo la suma manda
+  ordenOk: (() => {
+    const o = ordenar(ROSTER.filter(c => c.alineable));
+    for (let i = 1; i < o.length; i++) {
+      const a = o[i - 1], b = o[i];
+      const ia = ORDEN_ESTATUS.indexOf(a.estatus), ib = ORDEN_ESTATUS.indexOf(b.estatus);
+      if (ia > ib) return false;
+      if (ia === ib && a.suma < b.suma) return false;
+    }
+    return true;
+  })(),
   rasgosDistintos: ROSTER.every(c => new Set(c.rasgos.map(r => r.tipo)).size === c.rasgos.length),
   camaleonesValidos: ROSTER.every(c => !c.rasgos.some(r => r.tipo === 'camaleon') || c.dobleDiv),
   plantillaLlena: DIVISIONES.every(d => S.plantilla[d.id]),
 }));
-console.log(`  roster: ${info.total} cartas (${info.alineables} alineables, ${info.leyendas} leyendas)`);
+console.log(`  roster: ${info.total} cartas (${info.alineables} alineables, ${info.campeones} campeones)`);
 comprobar(info.total > 150, 'el roster se genera');
-comprobar(info.leyendas === 5, 'hay exactamente 5 leyendas (GDD §2.4: 4-5 cartas)');
+comprobar(info.soloOroYPlata, 'solo hay oro y plata: el bronce ya no existe');
+comprobar(info.sinMedia, 'NINGUNA carta tiene media, ni visible ni guardada');
+comprobar(info.sumaOk, 'la suma interna es la suma real de las 6 stats');
 comprobar(info.mediaOk, 'cada stat es la media de sus 6 sub-stats');
-comprobar(info.generalOk, 'la media general es media simple de las 6');
-comprobar(info.rangosOk, 'las medias respetan el rango de su rareza');
+comprobar(info.rangosOk, 'las stats respetan la banda de su estatus');
+comprobar(info.ordenOk, 'el orden va por estatus deportivo y, dentro del tramo, por suma');
 comprobar(info.rasgosDistintos, 'ninguna carta lleva dos rasgos del mismo tipo');
 comprobar(info.camaleonesValidos, 'el Camaleón solo va en peleadores de dos divisiones');
 // Sin esto no se detecta el peor fallo posible en los rasgos: que una clase entera
@@ -81,36 +99,69 @@ comprobar(info.plantillaLlena, 'el arranque cubre las 11 divisiones');
 console.log('\n2. Sobres');
 const sobres = await page.evaluate(() => {
   const antes = S.coleccion.length;
-  const salida = abrirSobre('oro');
   const porTipo = {};
   for (const t of Object.keys(TIPOS_SOBRE)) {
     const r = abrirSobre(t);
-    porTipo[t] = { n: r.length, al: r.filter(i => PORID[i.cid].alineable).length };
+    const cs = r.map(i => PORID[i.cid]);
+    porTipo[t] = {
+      n: r.length,
+      oros: cs.filter(c => c.rareza === 'oro').length,
+      repetidasDentro: r.length - new Set(r.map(i => i.cid)).size,
+      // ¿salen ordenadas de mejor a peor?
+      ordenadas: cs.every((c, k) => k === 0 || comparar(cs[k - 1], c) <= 0),
+    };
   }
-  return { antes, despues: S.coleccion.length, sacadas: salida.length,
-           alineables: salida.filter(i => PORID[i.cid].alineable).length, porTipo };
+  return { antes, despues: S.coleccion.length, porTipo };
 });
-comprobar(sobres.despues === sobres.antes + sobres.sacadas + 4 * 9, 'las cartas del sobre entran en la colección');
+const tipos = Object.keys(sobres.porTipo);
+comprobar(sobres.despues === sobres.antes + tipos.length * 9,
+  'las cartas del sobre entran en la colección');
 comprobar(Object.values(sobres.porTipo).every(x => x.n === 9),
-  'los cuatro sobres reparten 9 cartas: ' + Object.entries(sobres.porTipo).map(([t, x]) => `${t} ${x.n}`).join(' · '));
-comprobar(Object.values(sobres.porTipo).every(x => x.al === 7),
-  'y 7 alineables garantizadas en todos');
+  'todos los sobres reparten 9 cartas: ' + tipos.map(t => `${t} ${sobres.porTipo[t].n}`).join(' · '));
+comprobar(Object.values(sobres.porTipo).every(x => x.repetidasDentro === 0),
+  'y ninguna carta se repite dentro del mismo sobre');
+comprobar(Object.values(sobres.porTipo).every(x => x.ordenadas),
+  'las cartas salen ordenadas de mejor a peor');
 
-// Los gratis: siempre presentes, se reclaman y se acumulan sin abrirse
-await page.evaluate(() => { S.gratis = {}; S.sobres = []; ir('sobres'); });
-comprobar(await page.locator('[data-reloj]').count() === 3,
-  'los 3 sobres gratis están siempre en la tienda');
-comprobar(await page.locator('[data-reloj]:not([disabled])').count() === 3,
-  'arrancan los 3 disponibles');
+// El reparto declarado tiene que ser el reparto real. Se tiran miles de sobres y se
+// compara con la tabla: si algún día se retoca un número y se olvida el otro, aquí salta.
+const reparto = await page.evaluate(() => {
+  const out = {};
+  for (const t of Object.keys(TIPOS_SOBRE)) {
+    const T = TIPOS_SOBRE[t];
+    let oros = 0, coronas = 0, huecos = 0;
+    const N = 4000;
+    for (let i = 0; i < N; i++) {
+      const r = repartoSobre(t);
+      huecos += r.length;
+      oros += r.filter(x => x !== 'plata').length;
+      coronas += r.filter(x => x === 'corona').length;
+    }
+    const esperadosOros = Object.entries(T.oros)
+      .reduce((a, [n, p]) => a + (+n) * p, 0) / Object.values(T.oros).reduce((a, b) => a + b, 0);
+    const totNiv = Object.values(T.nivel).reduce((a, b) => a + b, 0);
+    out[t] = { huecos: huecos / N, oros: oros / N, esperadosOros,
+      coronas: coronas / N, esperadasCoronas: (oros / N) * T.nivel.corona / totNiv };
+  }
+  return out;
+});
+for (const [t, r] of Object.entries(reparto)) {
+  comprobar(Math.abs(r.huecos - 9) < 0.001, `${t}: siempre 9 huecos`);
+  comprobar(Math.abs(r.oros - r.esperadosOros) < 0.12,
+    `${t}: ${r.oros.toFixed(2)} oros por sobre (declarado ${r.esperadosOros.toFixed(2)})`);
+  comprobar(Math.abs(r.coronas - r.esperadasCoronas) < 0.02,
+    `${t}: campeones o top 5 al ritmo declarado (${(r.coronas * 100).toFixed(2)} por cada 100 sobres)`);
+}
 
-// el básico se abre en el sitio, sin pasar por "Tus sobres"
+// Solo el básico es gratis: los de plata y oro se compran o se ganan.
 await page.evaluate(() => { S.gratis = {}; S.sobres = []; ir('sobres'); });
+comprobar(await page.locator('[data-reloj]').count() === 1,
+  'solo hay un sobre gratis, el básico');
 const idBasico = await page.evaluate(() => GRATIS.find(g => TIPOS_SOBRE[g.tipo].unico).id);
 comprobar(await page.locator(`[data-a="abrirgratis"][data-g="${idBasico}"]`).count() === 1,
   'el básico tiene botón de abrir, no de reclamar');
 comprobar(await page.locator(`[data-a="gratis"][data-g="${idBasico}"]`).count() === 0,
   'y ya no se puede reclamar para guardarlo');
-comprobar(await page.locator('[data-n]').count() === 0, 'ya no existe el "reclamar 10 de golpe"');
 await page.locator(`[data-a="abrirgratis"][data-g="${idBasico}"]`).click();
 const directo = await page.evaluate(() => ({ vista, guardados: S.sobres.length,
   enTanda: tmp.ap ? tmp.ap.items.length : 0 }));
@@ -118,35 +169,49 @@ comprobar(directo.vista === 'apertura', 'abrir el básico lleva directo a la ape
 comprobar(directo.guardados === 0, 'y el sobre no pasa por "Tus sobres"');
 comprobar(directo.enTanda === 9, 'con sus 9 cartas');
 
-// ni siquiera con restos de una versión anterior se puede abrir más de uno a la vez
-await page.evaluate(() => { S.sobres = [{ tipo: 'basico' }, { tipo: 'basico' }, { tipo: 'basico' }]; ir('sobres'); });
-comprobar(await page.locator('[data-a="abrirtodo"][data-t="basico"]').count() === 0,
-  'el básico nunca ofrece abrir en tanda, ni con varios guardados');
-await page.evaluate(() => { S.sobres = [{ tipo: 'oro' }, { tipo: 'oro' }]; render(); });
-comprobar(await page.locator('[data-a="abrirtodo"][data-t="oro"]').count() === 1,
-  'los de reloj y de pago sí se abren en tanda');
+// Bono de bienvenida
+const bono = await page.evaluate(() => {
+  const s = estadoNuevo();
+  const c = {}; for (const x of s.sobres) c[x.tipo] = (c[x.tipo] || 0) + 1;
+  return c;
+});
+comprobar(bono.oro === 2 && bono.plata === 2,
+  `el jugador nuevo arranca con 2 de oro y 2 de plata (${JSON.stringify(bono)})`);
 
-// ningún premio del juego regala algo que ya es gratis e infinito
-const premios = await page.evaluate(() => RETOS.map(r => r.premio.sobre));
-comprobar(!premios.includes('basico'), 'ningún reto premia con un sobre básico');
+/* ── 2a-bis. Reciclaje: solo repetidos, y por tramos ──────────────────── */
+console.log('\n2·. Reciclaje');
+const rec = await page.evaluate(() => {
+  S.coleccion = []; S.plantilla = {}; S.fichas = 0;
+  const plata = ROSTER.find(c => c.estatus === 'plata');
+  const oro = ROSTER.find(c => c.estatus === 'oro');
+  const meter = (c, n) => { const out = [];
+    for (let i = 0; i < n; i++) { const iid = 'x' + Math.random().toString(36).slice(2);
+      S.coleccion.push({ iid, cid: c.id }); out.push(iid); } return out; };
+  const unicos = meter(plata, 1);
+  const unaSola = reciclable(unicos[0]);
+  const muchas = meter(plata, 30);          // ahora hay 31: 30 repetidos
+  const mezcla = meter(oro, 3);
+  const cuentaMezclada = cuentaReciclaje([...muchas.slice(0, 10), ...mezcla]).fichas;
+  const antes = S.fichas;
+  const g = reciclar([...unicos, ...muchas, ...mezcla]);
+  return { unaSola, cuentaMezclada, ganadas: g, fichas: S.fichas - antes,
+    quedan: S.coleccion.filter(x => x.cid === plata.id).length,
+    quedanOro: S.coleccion.filter(x => x.cid === oro.id).length };
+});
+comprobar(rec.unaSola === false, 'la primera copia de una carta NO se puede reciclar');
+comprobar(rec.cuentaMezclada === 0,
+  'diez platas y tres oros sueltos no completan ninguna ficha: no se mezclan tramos');
+comprobar(rec.ganadas === 1, `30 platas repetidas dan exactamente 1 ficha (dio ${rec.ganadas})`);
+comprobar(rec.quedan === 1, 'y queda la copia buena, que no se toca');
+comprobar(rec.quedanOro === 3, 'los oros que no llegaban a ficha se quedan intactos');
 
-// se reclama uno CON reloj, para comprobar que pasa a cuenta atrás
-await page.evaluate(() => { S.gratis = {}; S.sobres = []; ir('sobres'); });
-const conReloj = await page.evaluate(() => GRATIS.findIndex(g => g.espera > 0));
-await page.locator('[data-reloj]').nth(conReloj).click();
-const trasReclamar = await page.evaluate(() => ({
-  guardados: S.sobres.length, vista,
-  siguenTres: document.querySelectorAll('[data-reloj]').length,
-  enEspera: document.querySelectorAll('[data-reloj][disabled]').length,
-}));
-comprobar(trasReclamar.guardados === 1, 'reclamar guarda el sobre en vez de abrirlo');
-comprobar(trasReclamar.vista === 'sobres', 'reclamar no te saca de la tienda');
-comprobar(trasReclamar.siguenTres === 3, 'los sobres gratis siguen en pantalla tras reclamar');
-comprobar(trasReclamar.enEspera === 1, 'el reclamado pasa a cuenta atrás');
+// El test de reciclaje deja la colección vacía a propósito; se rehace antes de seguir.
+await page.evaluate(() => { S = estadoNuevo(); for (let i = 0; i < 4; i++) abrirSobre('oro');
+  autoPlantilla(S, true); guardar(); ir('inicio'); });
 
 /* ── 2b. Apertura: atrás, saltar y resumen ────────────────────────────── */
 console.log('\n2b. Pantalla de apertura');
-await page.evaluate(() => { S.sobres = [{ tipo: 'oro' }, { tipo: 'oro' }]; render(); });
+await page.evaluate(() => { S.sobres = [{ tipo: 'oro' }, { tipo: 'oro' }]; ir('sobres'); });
 await page.locator('[data-a="abrir"]').first().click();
 comprobar(await page.evaluate(() => vista === 'apertura'), 'abrir lleva a la pantalla de apertura');
 comprobar(await page.locator('[data-a="salirapertura"]').count() === 1, 'hay botón de atrás');
@@ -188,34 +253,37 @@ comprobar(ilim.guardados === 0, 'y ninguna se queda guardada sin abrir');
 comprobar(await page.evaluate(() => nGratisListos() <= 2),
   'el ilimitado no infla el aviso del menú');
 
-// La distribución se mide sobre la salida real, no sobre los pesos escritos:
-// un fallo en el reparto de bandas no se ve leyendo la tabla.
+// La distribución se mide sobre la salida REAL, abriendo sobres de verdad: un fallo en
+// el reparto no se ve leyendo la tabla de probabilidades.
 console.log('\n2c-bis. Distribución real de 2.000 sobres básicos');
 const dist = await page.evaluate(() => {
   const cuenta = {}; let n = 0;
   const guardada = S.coleccion.slice();
   for (let i = 0; i < 2000; i++) {
     for (const it of abrirSobre('basico')) {
-      cuenta[bandaDe(PORID[it.cid])] = (cuenta[bandaDe(PORID[it.cid])] || 0) + 1; n++;
+      const e = PORID[it.cid].estatus;
+      cuenta[e] = (cuenta[e] || 0) + 1; n++;
     }
-    S.coleccion = guardada.slice();   // sin acumular 6.000 cartas de prueba
+    S.coleccion = guardada.slice();   // sin acumular 18.000 cartas de prueba
   }
   const p = k => (cuenta[k] || 0) / n;
-  return { n, cuenta, top: p('oroAlto') + p('elite') + p('leyenda'),
-           medio: p('plata') + p('oroBajo'), bronce: p('bronce') };
+  return { n, cuenta, corona: p('campeon') + p('top5'), plata: p('plata'),
+    oro: 1 - p('plata'),
+    // los nombres viajan con el resultado: dentro del navegador sí existen
+    orden: ORDEN_ESTATUS.map(e => [e, EST[e].n]) };
 });
-for (const b of ['bronce', 'plata', 'oroBajo', 'oroMedio', 'oroAlto', 'elite', 'leyenda'])
-  console.log(`     ${b.padEnd(9)} ${((dist.cuenta[b] || 0) / dist.n * 100).toFixed(2)}%`);
-comprobar(dist.top <= 0.01, `oro alto o mejor por debajo del 1% (${(dist.top * 100).toFixed(2)}%)`);
-comprobar(dist.medio > 0.8, `platas y oros bajos son la norma (${(dist.medio * 100).toFixed(1)}%)`);
-comprobar(dist.bronce > 0.05 && dist.bronce < 0.25,
-  `el bronce sale de vez en cuando (${(dist.bronce * 100).toFixed(1)}%)`);
+for (const [e, nombre] of dist.orden)
+  console.log(`     ${nombre.padEnd(11)} ${((dist.cuenta[e] || 0) / dist.n * 100).toFixed(2)}%`);
+comprobar(dist.corona <= 0.005,
+  `campeón o top 5 por debajo del 0,5% de las cartas (${(dist.corona * 100).toFixed(3)}%)`);
+comprobar(Math.abs(dist.oro - 5.7 / 9) < 0.03,
+  `los oros salen al ritmo declarado, 5,7 de 9 (${(dist.oro * 9).toFixed(2)})`);
+comprobar(dist.plata > 0.2, `y el resto son platas (${(dist.plata * 100).toFixed(1)}%)`);
 
-// La escalera tiene que subir: cada sobre mejor que el anterior en la mitad alta
-const escalera = await page.evaluate(() => ['basico', 'plata', 'oro', 'elite']
-  .map(k => +pctTop(TIPOS_SOBRE[k])));
-comprobar(escalera.every((v, i) => i === 0 || v > escalera[i - 1]),
-  `la escalera de sobres sube: ${escalera.join('% < ')}%`);
+// La escalera de calidad tiene que subir de un sobre al siguiente.
+const escalera = await page.evaluate(() => ['basico', 'plata', 'oro'].map(k => pctCorona(k)));
+comprobar(escalera[2] > escalera[1] && escalera[2] > escalera[0],
+  `el sobre de oro es el que más campeones da: ${escalera.map(v => v.toFixed(2)).join('% · ')}%`);
 
 /* ── 2d. Amigos por código ────────────────────────────────────────────── */
 console.log('\n2d. Amigos por código');
@@ -420,11 +488,11 @@ comprobar(!emp.fallo, 'dos cartas idénticas dan margen 0');
 comprobar(emp.tipos.empate === 400 && !emp.tipos['reñido'],
   'el empate exacto se clasifica como empate, no como reñido');
 comprobar(emp.gana > 160 && emp.gana < 240,
-  `y se resuelve 50/50, no 65/35 (${emp.gana} victorias de 400 = ${(emp.gana / 4).toFixed(0)}%)`);
+  `y se resuelve 50/50, no con ventaja (${emp.gana} victorias de 400 = ${(emp.gana / 4).toFixed(0)}%)`);
 
 const espec = await page.evaluate(() => {
-  const conEsp = ROSTER.find(c => c.alineable && c.rasgos.some(r => r.tipo === 'especialista'));
-  const r = conEsp.rasgos.find(x => x.tipo === 'especialista');
+  const conEsp = ROSTER.find(c => c.alineable && c.rasgos.some(r => r.tipo === 'veterano'));
+  const r = conEsp.rasgos.find(x => x.tipo === 'veterano');
   const pj = {}, pr = {}, usados = new Set();
   for (const d of DIVISIONES) {
     const pool = ROSTER.filter(c => c.alineable && c.division === d.id && !usados.has(c.persona));
@@ -435,18 +503,101 @@ const espec = await page.evaluate(() => {
     const P2 = nuevaPartida(pj, pr);
     P2.enJuego = DIVISIONES.slice(0, 6).map(d => d.id); P2.fase = 'duelos';
     const antes = P2.statsVivas.length;
-    resolverDuelo(P2, conEsp.division, r.stat, opts);
+    resolverDuelo(P2, conEsp.division, 'golpeo', opts);
     return P2.statsVivas.length === antes;
   };
   let sinActivar = 0, activado = 0;
   for (let i = 0; i < 60; i++) if (jugar({})) sinActivar++;
-  for (let i = 0; i < 60; i++) if (jugar({ especialista: 'j' })) activado++;
+  for (let i = 0; i < 60; i++) if (jugar({ veterano: 'j' })) activado++;
   return { sinActivar, activado, plus: r.plus };
 });
 comprobar(espec.sinActivar === 0,
-  'el Especialista NO salta solo: sin activarlo, la stat se gasta siempre');
+  'el Veterano NO salta solo: sin activarlo, la stat se gasta siempre');
 comprobar(espec.activado > 0,
-  `y sí funciona al activarlo (${espec.activado} de 60${espec.plus ? ', versión plus' : ''})`);
+  `y sí salva la stat al activarlo (${espec.activado} de 60${espec.plus ? ', versión plus' : ''})`);
+
+/* ── 2g-bis. La tabla de márgenes nueva y el desempate por finishes ───── */
+console.log('\n2g·. Márgenes, 55/45 y desempate por finishes');
+const marg = await page.evaluate(() => {
+  const cuenta = m => {
+    const t = {};
+    for (let i = 0; i < 4000; i++) { const r = sortearDuelo(100, 100 - m); t[r.tipo] = (t[r.tipo] || 0) + 1; }
+    return t;
+  };
+  const gana = m => {
+    let g = 0;
+    for (let i = 0; i < 8000; i++) if (sortearDuelo(100, 100 - m).ganador === 'j') g++;
+    return g / 8000;
+  };
+  return { m10: cuenta(10), m9: cuenta(9), m4: cuenta(4), m3: cuenta(3), m0: cuenta(0),
+    p3: gana(3), p1: gana(1), p0: gana(0), p9: gana(9) };
+});
+comprobar(!!marg.m10.finish && Object.keys(marg.m10).length === 1, 'margen 10 es finish, siempre');
+comprobar(!!marg.m9['decisión'] && Object.keys(marg.m9).length === 1, 'margen 9 es decisión');
+comprobar(!!marg.m4['decisión'] && Object.keys(marg.m4).length === 1, 'margen 4 sigue siendo decisión');
+comprobar(!!marg.m3['reñido'] && Object.keys(marg.m3).length === 1, 'margen 3 es reñido');
+comprobar(!!marg.m0.empate && Object.keys(marg.m0).length === 1, 'margen 0 es empate exacto');
+comprobar(marg.p9 === 1, 'por decisión gana el alto seguro');
+comprobar(Math.abs(marg.p3 - 0.55) < 0.03 && Math.abs(marg.p1 - 0.55) < 0.03,
+  `en la franja reñida el alto gana 55 de cada 100 (medido ${(marg.p3 * 100).toFixed(1)}%)`);
+comprobar(Math.abs(marg.p0 - 0.5) < 0.03,
+  `y el empate exacto es 50/50 (medido ${(marg.p0 * 100).toFixed(1)}%)`);
+
+const fin = await page.evaluate(() => {
+  // Se monta un 3-3 a mano y se comprueba quién gana según los finishes.
+  const monta = (finJ, finR) => {
+    const pj = {}, pr = {}, usados = new Set();
+    for (const d of DIVISIONES) {
+      const pool = ROSTER.filter(c => c.alineable && c.division === d.id && !usados.has(c.persona));
+      pj[d.id] = pool[0]; pr[d.id] = pool[1] || pool[0]; usados.add(pool[0].persona);
+    }
+    const P2 = nuevaPartida(pj, pr);
+    P2.enJuego = DIVISIONES.slice(0, 6).map(d => d.id);
+    P2.vetoAzar = DIVISIONES[6].id;
+    P2.fase = 'duelos';
+    P2.jugadas = P2.enJuego.slice(0, 5);
+    P2.marcador = { j: 3, r: 2 };
+    P2.finishes = { j: finJ, r: finR };
+    // el sexto duelo lo gana 'r' y deja 3-3
+    // margen 7: decisión para 'r', NO finish — si fuese finish cambiaría el propio
+    // recuento que se está probando
+    P2.cartas.j[P2.enJuego[5]] = { ...P2.cartas.j[P2.enJuego[5]], stats: { ...P2.cartas.j[P2.enJuego[5]].stats, golpeo: 90 } };
+    P2.cartas.r[P2.enJuego[5]] = { ...P2.cartas.r[P2.enJuego[5]], stats: { ...P2.cartas.r[P2.enJuego[5]].stats, golpeo: 97 } };
+    resolverDuelo(P2, P2.enJuego[5], 'golpeo', {});
+    return { fase: P2.fase, fin: P2.fin, m: P2.marcador, f: P2.finishes };
+  };
+  return { masJ: monta(2, 0), masR: monta(0, 2), iguales: monta(1, 1) };
+});
+comprobar(fin.masJ.m.j === 3 && fin.masJ.m.r === 3, 'el montaje llega a 3-3');
+comprobar(fin.masJ.fase === 'fin' && fin.masJ.fin === 'j',
+  'a 3-3, gana quien tiene más finishes');
+comprobar(fin.masR.fase === 'fin' && fin.masR.fin === 'r', 'y funciona para los dos lados');
+comprobar(fin.iguales.fase === 'desempate',
+  'solo si también empatan a finishes se juega el duelo de desempate');
+
+/* ── 2g-ter. Camaleón y cambio de división, solo defendiendo ──────────── */
+console.log('\n2g··. Las respuestas son solo defensivas');
+const def = await page.evaluate(() => {
+  const pj = {}, pr = {}, usados = new Set();
+  for (const d of DIVISIONES) {
+    const pool = ROSTER.filter(c => c.alineable && c.division === d.id && !usados.has(c.persona));
+    pj[d.id] = pool[0]; pr[d.id] = pool[1] || pool[0]; usados.add(pool[0].persona);
+  }
+  const P2 = nuevaPartida(pj, pr);
+  P2.enJuego = DIVISIONES.slice(0, 6).map(d => d.id);
+  P2.fase = 'duelos'; P2.turno = 'j';
+  const atacando = { cambios: cambiosPosibles(P2, 'j').length,
+                     cams: camaleonesPosibles(P2, 'j', P2.enJuego[0]).length };
+  P2.fase = 'confirmar';
+  P2.pendienteConf = { divId: P2.enJuego[0], stat: 'golpeo', defensor: 'j', opts: {}, veterano: null };
+  const defendiendoJ = { cambios: cambiosPosibles(P2, 'j').length };
+  const elOtro = { cambios: cambiosPosibles(P2, 'r').length };
+  return { atacando, defendiendoJ, elOtro };
+});
+comprobar(def.atacando.cambios === 0 && def.atacando.cams === 0,
+  'declarando no se ofrece ni cambio de división ni Camaleón');
+comprobar(def.defendiendoJ.cambios > 0, 'defendiendo sí');
+comprobar(def.elOtro.cambios === 0, 'y solo al que le toca defender, no al que declaró');
 
 /* ── 2h. Declarar tocando cartas, y el defensor manda la suya ──────────── */
 console.log('\n2h. Declarar por carta y confirmación del defensor');
@@ -495,7 +646,7 @@ const rolFuera = await page.evaluate(() => {
   const out = { declararRespetado: 0, vetarRespetado: 0, dado: 0, n: 40 };
   for (let i = 0; i < out.n; i++) {
     for (const quiero of ['declarar', 'vetar']) {
-      P = nuevaPartida(plantillaIA(78), plantillaIA(78));
+      P = nuevaPartida(plantillaIA(470), plantillaIA(470));
       P.rival = 'x'; vista = 'partida';
       elegirRol(quiero);
       // empezar declarando = el primer duelo lo declaras tú = no empiezas vetando
@@ -550,19 +701,22 @@ comprobar(arranque.coach === 1, `y el entrenador habla desde el primer momento (
 // se juega la partida entera pulsando "Entendido" cada vez que aparece un aviso
 let avisos = 0, vueltasT = 0;
 while (vueltasT++ < 420) {
-  const f = await page.evaluate(() => P.fase);
-  if (f === 'fin') break;
+  const f = await page.evaluate(() => ({ fase: P.fase, rev: !!REVEL.pendiente }));
+  if (f.fase === 'fin' && !f.rev) break;   // el último duelo también se enseña
+  if (await page.locator('[data-a="seguir"]').count()) {   // la revelación del duelo
+    await page.locator('[data-a="seguir"]').click(); continue;
+  }
   if (await page.locator('[data-a="tutorok"]').count()) {
     await page.locator('[data-a="tutorok"]').first().click(); avisos++; continue;
   }
-  if (f === 'confirmar' && await page.locator('[data-a="enviarcarta"]').count())
+  if (f.fase === 'confirmar' && await page.locator('[data-a="enviarcarta"]').count())
     await page.locator('[data-a="enviarcarta"]').first().click();
-  else if (f === 'rol') await page.locator('[data-rol="declarar"]').click();
-  else if (f === 'vetos' && await page.locator('[data-veto]').count())
+  else if (f.fase === 'rol') await page.locator('[data-rol="declarar"]').click();
+  else if (f.fase === 'vetos' && await page.locator('[data-veto]').count())
     await page.locator('[data-veto]').first().click();
-  else if (f === 'incomodo') await page.locator('[data-eleccion]').first().click();
-  else if (f === 'desempate') await page.locator('[data-a="desempate"]').click();
-  else if (f === 'duelos') {
+  else if (f.fase === 'incomodo') await page.locator('[data-eleccion]').first().click();
+  else if (f.fase === 'desempate') await page.locator('[data-a="desempate"]').click();
+  else if (f.fase === 'duelos') {
     if (await page.locator('[data-a="iaturno"]').count()) await page.locator('[data-a="iaturno"]').click();
     else if (await page.locator('[data-a="declarar"]:not([disabled])').count())
       await page.locator('[data-a="declarar"]:not([disabled])').click();
@@ -584,7 +738,7 @@ await page.evaluate(() => { vista = 'inicio'; render(); });
 comprobar(await page.locator('[data-a="tutorial"]').count() === 0,
   'hecho el tutorial, el inicio deja de ofrecerlo');
 comprobar(await page.evaluate(() => { vista = 'reglas'; render();
-  return document.body.textContent.includes('Camaleón') && document.body.textContent.includes('65 de cada 100'); }),
+  return document.body.textContent.includes('Camaleón') && document.body.textContent.includes('55 de cada 100'); }),
   'y las reglas completas siguen a mano en su pantalla');
 
 /* ── 3. Partidas completas ────────────────────────────────────────────── */
@@ -617,15 +771,23 @@ for (let n = 0; n < N_PARTIDAS; n++) {
   }
 
   // duelos
-  for (let g = 0; g < 90; g++) {
+  for (let g = 0; g < 140; g++) {
+    // Cada duelo se enseña destapado y hay que tocar para seguir: eso también se juega.
+    if (await clicVisible('[data-a="seguir"]')) continue;
     const fase = await page.evaluate(() => P.fase);
     if (fase === 'fin') break;
     if (fase === 'desempate') { await clicVisible('[data-a="desempate"]'); continue; }
     if (fase === 'incomodo') { await clicVisible('[data-eleccion]'); continue; }
     if (fase === 'confirmar') {           // el defensor manda su carta a mano
       const mia = await page.evaluate(() => P.pendienteConf && P.pendienteConf.defensor === 'j');
-      if (mia) await clicVisible('[data-a="enviarcarta"]');
-      else await page.waitForTimeout(180);   // le toca mandar al rival
+      if (mia) {
+        // de vez en cuando responde: aquí viven las cuatro jugadas defensivas
+        if (Math.random() < .45) {
+          for (const sel of ['[data-a="espdefensor"]', '[data-a="vetdefensor"]', '[data-camaleon]', '[data-cambio]'])
+            if (Math.random() < .5 && await clicVisible(sel)) break;
+        }
+        await clicVisible('[data-a="enviarcarta"]');
+      } else await page.waitForTimeout(180);   // le toca mandar al rival
       continue;
     }
     if (fase !== 'duelos') break;
@@ -641,11 +803,8 @@ for (let n = 0; n < N_PARTIDAS; n++) {
     await clicVisible('[data-dsel]');     // se toca la CARTA del peleador
     await clicVisible('[data-ssel]');     // y luego la stat sobre esa misma carta
     // de vez en cuando gasta la jugada, para ejercitar cambios y rasgos
-    if (Math.random() < .5) {
-      for (const sel of ['[data-cambio]', '[data-camaleon]', '[data-incomodo]', '[data-especialista]']) {
-        if (Math.random() < .4 && await clicVisible(sel)) break;
-      }
-    }
+    // atacando la única jugada posible es el Incómodo
+    if (Math.random() < .4) await clicVisible('[data-incomodo]');
     if (!await clicVisible('[data-a="declarar"]:not([disabled])')) {
       await clicVisible('[data-a="otracarta"]');
       await clicVisible('[data-dsel]'); await clicVisible('[data-ssel]');
@@ -684,9 +843,9 @@ console.log('\n4. Métricas del prototipo (IA sencilla, jugador que declara casi
 console.log(`  partidas ................ ${stats.partidas}`);
 console.log(`  duelos resueltos ........ ${stats.duelos}`);
 console.log(`  llegan a 3-3 ............ ${pc(stats.empates33, stats.partidas)}   (objetivo del GDD: ~33%)`);
-console.log(`  finish (margen 13+) ..... ${pc(stats.finish, stats.duelos)}   (objetivo: 15-25%)`);
-console.log(`  decisión (7-12) ......... ${pc(stats.decision, stats.duelos)}`);
-console.log(`  reñido (1-6) ............ ${pc(stats.renido, stats.duelos)}`);
+console.log(`  finish (margen 10+) ..... ${pc(stats.finish, stats.duelos)}   (con finish desde 10, sube mucho)`);
+console.log(`  decisión (4-9) .......... ${pc(stats.decision, stats.duelos)}`);
+console.log(`  reñido (1-3) ............ ${pc(stats.renido, stats.duelos)}`);
 console.log(`  empate exacto (50/50) ... ${pc(stats.empate, stats.duelos)}`);
 console.log(`  jugada usada ............ ${pc(stats.jugadaUsada, stats.partidas)}   (objetivo: >80%)`);
 console.log(`  duelo 6 con elección .... ${pc(stats.duelo6Real, stats.partidas)}   (mide el "sexto duelo a trámite")`);

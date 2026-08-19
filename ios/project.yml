@@ -1,0 +1,42 @@
+# Proyecto de Xcode generado con XcodeGen.
+#
+# Se describe el proyecto en este YAML en vez de guardar un .xcodeproj en el repositorio
+# porque un .pbxproj es un formato binario-en-texto imposible de revisar en un diff: se
+# corrompe al fusionar y nadie sabe leer qué cambió. Con esto, el proyecto se genera en
+# el momento de compilar y lo que se versiona es algo legible.
+name: JaulaAbierta
+options:
+  bundleIdPrefix: com.jaulaabierta
+  deploymentTarget:
+    iOS: "14.0"
+  createIntermediateGroups: true
+
+targets:
+  JaulaAbierta:
+    type: application
+    platform: iOS
+    sources:
+      - path: JaulaAbierta
+      - path: juego-assets
+        type: folder        # el juego entra como carpeta tal cual, sin tocar los nombres
+    info:
+      path: JaulaAbierta/Info.plist
+      properties:
+        CFBundleDisplayName: Jaula Abierta
+        CFBundleShortVersionString: "1.0"
+        CFBundleVersion: "1"
+        UILaunchStoryboardName: ""
+        UIRequiresFullScreen: true
+        UIStatusBarStyle: UIStatusBarStyleLightContent
+        UIViewControllerBasedStatusBarAppearance: false
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+        # El juego habla con el servidor de partidas por HTTPS y WSS. No hace falta
+        # abrir excepciones de transporte: todo va cifrado.
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.jaulaabierta.juego
+        TARGETED_DEVICE_FAMILY: "1,2"
+        SWIFT_VERSION: "5.0"
+        GENERATE_INFOPLIST_FILE: NO
+        ENABLE_USER_SCRIPT_SANDBOXING: NO

@@ -48,14 +48,56 @@ const SUBSTATS = {
   iq    :['lectura del rival','gestión de distancia','adaptación','control del octógono','defensa','gestión de asaltos'],
 };
 
+/* CALIDAD Y ESTATUS.
+
+   Solo hay dos calidades, oro y plata: el bronce desaparece del juego. Y lo que de
+   verdad ordena y valora una carta ya no es ningún número medio, es el ESTATUS
+   DEPORTIVO del peleador — si es campeón, si está rankeado y en qué tramo.
+
+   NO EXISTE LA MEDIA. Ni visible ni guardada: se ha quitado del modelo entero, no
+   escondido. Lo único parecido es `suma`, la suma de las seis stats, que sirve para
+   desempatar el orden dentro de un mismo estatus y no se enseña jamás ni interviene
+   en ningún duelo. */
 const RAREZAS = {
-  bronce  :{n:'Bronce',   min:55,max:68,fichas:1/20},
-  plata   :{n:'Plata',    min:65,max:78,fichas:1/5},
-  oro     :{n:'Oro',      min:75,max:88,fichas:1},
-  elite   :{n:'Élite',    min:85,max:95,fichas:3},
-  leyenda :{n:'Leyenda',  min:96,max:99,fichas:8},
+  plata:{n:'Plata', c:'#9aa4ad'},
+  oro  :{n:'Oro',   c:'#d8a943'},
 };
-const ORDEN_RAREZA = ['bronce','plata','oro','elite','leyenda'];
+const ORDEN_RAREZA = ['plata','oro'];
+
+/* De mejor a peor. Este orden es EL orden: sobres, colección, plantilla, todo. */
+const ESTATUS = [
+  {id:'campeon',n:'Campeón',   c:'🏆', rareza:'oro',  min:88,max:96, tramo:'corona'},
+  {id:'top5',   n:'Top 5',     c:'5',  rareza:'oro',  min:85,max:93, tramo:'corona'},
+  {id:'top10',  n:'Top 6-10',  c:'10', rareza:'oro',  min:82,max:90, tramo:'rankeado'},
+  {id:'top15',  n:'Top 11-15', c:'15', rareza:'oro',  min:79,max:87, tramo:'rankeado'},
+  {id:'oro',    n:'Oro',       c:'',   rareza:'oro',  min:74,max:83, tramo:'oro'},
+  {id:'plata',  n:'Plata',     c:'',   rareza:'plata',min:60,max:78, tramo:'plata'},
+];
+const EST = Object.fromEntries(ESTATUS.map(e=>[e.id,e]));
+const ORDEN_ESTATUS = ESTATUS.map(e=>e.id);
+
+/* Cuántos REPETIDOS del mismo tramo hay que reciclar para sacar una ficha. Una ficha
+   sale siempre de un solo tramo: no se mezclan cartas de tramos distintos. */
+const TRAMOS = {
+  corona  :{n:'Campeón o Top 5', repes:1},
+  rankeado:{n:'Top 6 al 15',     repes:4},
+  oro     :{n:'Oro sin rankear', repes:10},
+  plata   :{n:'Plata',           repes:30},
+};
+const tramoDe = c => EST[c.estatus].tramo;
+
+/* EL ORDEN, en un solo sitio: estatus primero, y dentro del mismo estatus la suma de
+   las seis stats de mayor a menor. Si también empatan, alfabético. La suma es interna:
+   solo decide quién va antes, nunca se enseña. */
+function ordenar(cartas){
+  return cartas.slice().sort(comparar);
+}
+function comparar(a,b){
+  const d = ORDEN_ESTATUS.indexOf(a.estatus) - ORDEN_ESTATUS.indexOf(b.estatus);
+  if(d) return d;
+  if(b.suma !== a.suma) return b.suma - a.suma;
+  return a.nombre.localeCompare(b.nombre,'es');
+}
 
 // Arquetipos: sesgos por stat. Base de la autoría — el resto es ruido.
 const ARQUETIPOS = [
@@ -71,11 +113,27 @@ const ARQUETIPOS = [
   {n:'Wrestleboxer',         o:{golpeo:+5,lucha:+7,suelo:0, cardio:+1,dureza:+1,iq:+2}},
 ];
 
+/* LOS CUATRO RASGOS.
+
+   Camaleón y cambio de división son AHORA SOLO DEFENSIVOS: se responden a una
+   declaración, no se usan al declarar. El Incómodo es al revés, solo ofensivo, porque
+   consiste en ocultar la división que declaras.
+
+   Especialista y Veterano han intercambiado sus papeles respecto al diseño anterior:
+   el que impone la stat es el Especialista, y el que la salva del pool es el Veterano. */
 const RASGOS = {
-  camaleon   :{n:'Camaleón',   ic:'🦎', d:'Al declarar, manda esta carta a pelear a una división contigua sin penalización. Tu carta de esa división se descarta sin pelear y el Camaleón sigue disponible para su propio duelo.', dplus:'Igual, pero no consume tu jugada.'},
-  incomodo   :{n:'Incómodo',   ic:'🌀', d:'Ocultas la división. El rival ve dos cartas suyas (la real y una contigua) y elige a ciegas. Si falla, su carta come -6.', dplus:'La segunda carta es de cualquier división en juego y el fallo cuesta -12. Usable siempre.'},
-  especialista:{n:'Especialista',ic:'🎯',d:'Si gana su duelo en su stat, esa stat no se gasta del pool.', dplus:'La stat no se gasta aunque pierda.'},
-  veterano   :{n:'Veterano',   ic:'🧠', d:'Cuando el rival declara la stat, la cambias por una aleatoria de entre las vivas.', dplus:'La eliges tú.'},
+  camaleon   :{n:'Camaleón',   ic:'🦎', lado:'defensa',
+    d:'Al defender, manda esta carta a pelear al duelo declarado en una división contigua, sin penalización. Tu carta de esa división se descarta sin pelear y el Camaleón sigue disponible para su propio duelo.',
+    dplus:'Igual, pero no consume tu jugada.'},
+  incomodo   :{n:'Incómodo',   ic:'🌀', lado:'ataque',
+    d:'Al declarar, ocultas la división. El rival ve dos cartas suyas (la real y una contigua) y elige a ciegas. Si falla, su carta come -6.',
+    dplus:'La segunda carta es de cualquier división en juego y el fallo cuesta -12. Usable siempre.'},
+  especialista:{n:'Especialista',ic:'🎯', lado:'ambos',
+    d:'Va atado a una stat. Al activarlo, el duelo pasa a pelearse con esa stat, sea cual sea la declarada.',
+    dplus:'Igual, pero no consume tu jugada.'},
+  veterano   :{n:'Veterano',   ic:'🧠', lado:'ambos',
+    d:'Si gana el duelo, la stat usada no se gasta: revive del pool y los dos pueden volver a usarla. En el sexto duelo no sirve, porque ya no queda duelo donde gastarla.',
+    dplus:'La stat revive aunque pierda el duelo.'},
 };
 
 const PROMOTORAS = [
@@ -121,11 +179,13 @@ const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
    ══════════════════════════════════════════════════════════════════════════ */
 let ROSTER=[], PORID={};
 
-function generarCarta(id,divId,rareza,promo,opts={}){
+/* Genera una carta a partir de su ESTATUS. El estatus manda: fija la calidad (oro o
+   plata) y la banda en la que se mueven sus stats. No se calcula ninguna media. */
+function generarCarta(id,divId,estatus,promo,opts={}){
   const d=DIV[divId], fem=d.g==='F';
   const arq=pick(ARQUETIPOS);
-  const R=RAREZAS[rareza];
-  const objetivo=ri(R.min,R.max);
+  const E=EST[estatus];
+  const objetivo=ri(E.min,E.max);
   const persona=opts.persona||{
     nombre:(fem?pick(NOM_F):pick(NOM_M))+' '+pick(APE),
     apodo: RNG()<.55?pick(APODOS):'',
@@ -140,15 +200,16 @@ function generarCarta(id,divId,rareza,promo,opts={}){
       const v=SUBSTATS[s].map(()=>clamp(t+ri(-7,7),35,99));
       subs[s]=v; stats[s]=Math.round(v.reduce((a,b)=>a+b,0)/v.length);
     }else{
-      // Las de colección no son alineables: solo las 6 grandes (propuesta del plan)
+      // Las de colección no son alineables: solo las 6 grandes
       stats[s]=t;
     }
   }
-  // El sesgo del arquetipo desplaza la media fuera de su banda de rareza. Se corrige
-  // desplazando todo el bloque hasta el objetivo: mantiene la forma del arquetipo y
-  // deja la media dentro del rango, que es lo que hace funcionar la tabla de márgenes.
-  let media=Math.round(SID.reduce((a,s)=>a+stats[s],0)/6);
-  const delta=objetivo-media;
+  /* El sesgo del arquetipo desplaza el bloque entero fuera de su banda. Se recentra
+     hasta el objetivo: mantiene la forma del arquetipo y deja las stats donde toca,
+     que es lo que hace funcionar la tabla de márgenes. Esto no es una media del
+     jugador: es un ajuste interno de generación. */
+  const centro=()=>SID.reduce((a,s)=>a+stats[s],0)/6;
+  const delta=Math.round(objetivo-centro());
   if(delta){
     for(const s of SID){
       if(subs[s]){
@@ -156,11 +217,12 @@ function generarCarta(id,divId,rareza,promo,opts={}){
         stats[s]=Math.round(subs[s].reduce((a,b)=>a+b,0)/subs[s].length);
       }else stats[s]=clamp(stats[s]+delta,35,99);
     }
-    media=Math.round(SID.reduce((a,s)=>a+stats[s],0)/6);
   }
   return {id,persona:opts.personaId||id,nombre:persona.nombre,apodo:persona.apodo,
     pais:persona.pais,gimnasio:persona.gimnasio,esVeterano:persona.veterano,
-    division:divId,rareza,media,stats,subs:promo.alineable?subs:null,
+    division:divId,estatus,rareza:E.rareza,
+    suma:SID.reduce((a,s)=>a+stats[s],0),   // interna: solo ordena, nunca se enseña
+    stats,subs:promo.alineable?subs:null,
     promotora:promo.id,alineable:promo.alineable,arquetipo:arq.n,
     dobleDiv:!!opts.dobleDiv,rasgos:[],notraspasable:false};
 }
@@ -169,7 +231,8 @@ function asignarRasgos(c){
   // Las cartas de colección no se alinean nunca, así que un rasgo en ellas sería una
   // promesa que no se puede cumplir. Además descuadraba la cuenta del equilibrado.
   if(!c.alineable) return;
-  const p={bronce:.02,plata:.08,oro:.26,elite:.62,leyenda:.9}[c.rareza];
+  // Cuanto más arriba en el ranking, más probable que la carta traiga herramienta.
+  const p={campeon:.90,top5:.62,top10:.40,top15:.26,oro:.12,plata:.04}[c.estatus];
   if(RNG()>p) return;
   const posibles=['incomodo','especialista'];
   if(c.dobleDiv) posibles.push('camaleon');
@@ -178,17 +241,15 @@ function asignarRasgos(c){
   const elegidos=shuffle(posibles).slice(0,n);    // siempre distintos entre sí
   for(const t of elegidos){
     const r={tipo:t,plus:RNG()<.2};
-    if(t==='especialista'){
-      // asociado a su mejor stat
-      r.stat=SID.slice().sort((a,b)=>c.stats[b]-c.stats[a])[0];
-    }
+    // El Especialista va atado a una stat: es la que impone en el duelo al activarlo.
+    if(t==='especialista') r.stat=SID.slice().sort((a,b)=>c.stats[b]-c.stats[a])[0];
     c.rasgos.push(r);
   }
 }
 
-/* Los rasgos se sortean por rareza, y con esa lotería es fácil que una clase entera se
-   quede fuera: la primera versión de este roster no tenía NI UN Veterano en las 215 cartas,
-   así que uno de los cuatro rasgos del diseño no existía en el juego. Esta pasada garantiza
+/* Los rasgos se sortean, y con esa lotería es fácil que una clase entera se quede
+   fuera: la primera versión de este roster no tenía NI UN Veterano en 215 cartas, así
+   que uno de los cuatro rasgos del diseño no existía en el juego. Esta pasada garantiza
    un mínimo de cada uno, respetando quién puede llevarlos. */
 const MIN_POR_RASGO=8;
 function equilibrarRasgos(cartas){
@@ -203,9 +264,8 @@ function equilibrarRasgos(cartas){
   for(const t of Object.keys(RASGOS)){
     let n=cartas.filter(c=>c.rasgos.some(r=>r.tipo===t)).length;
     if(n>=MIN_POR_RASGO) continue;
-    // de mejor a peor: el GDD dice que los rasgos van en versiones especiales,
-    // no repartidos entre los bronces
-    const cand=shuffle(cartas.filter(c=>elegible(c,t))).sort((a,b)=>b.media-a.media);
+    // primero a los de más arriba: los rasgos van en las cartas que importan
+    const cand=shuffle(cartas.filter(c=>elegible(c,t))).sort(comparar);
     for(const c of cand){
       if(n>=MIN_POR_RASGO) break;
       const r={tipo:t,plus:RNG()<.2};
@@ -215,36 +275,39 @@ function equilibrarRasgos(cartas){
   }
 }
 
+/* Reparto por división, calcado de cómo es una división de verdad: un campeón y quince
+   rankeados, y por debajo el resto del roster sin ranking. */
+const REPARTO_DIVISION = {campeon:1, top5:5, top10:5, top15:5, oro:8, plata:18};
+
 function generarRoster(){
   RNG=mulberry32(20260816);
   const out=[]; let n=0;
   const liga=PROMOTORAS[0];
-  for(const d of DIVISIONES){
-    const reparto=[...Array(6).fill('bronce'),...Array(4).fill('plata'),...Array(3).fill('oro'),'elite'];
-    for(const rar of reparto) out.push(generarCarta('c'+(n++),d.id,rar,liga));
-  }
-  // 5 leyendas en todo el juego (GDD §2.4: "por encima de 95, 4-5 cartas")
-  for(const dId of shuffle(DIVISIONES.map(d=>d.id)).slice(0,5))
-    out.push(generarCarta('c'+(n++),dId,'leyenda',liga));
+  for(const d of DIVISIONES)
+    for(const [est,cuantas] of Object.entries(REPARTO_DIVISION))
+      for(let i=0;i<cuantas;i++) out.push(generarCarta('c'+(n++),d.id,est,liga));
 
   // Peleadores con historial en dos divisiones → candidatos a Camaleón.
   // Comparten persona: no puedes alinear las dos versiones a la vez.
   const gemelas=[];
   for(const c of out){
-    if(c.rareza==='bronce'||RNG()>.14) continue;
+    // Ni platas ni campeones: el campeón de una división es uno y solo uno, y verlo
+    // dos veces en el catálogo confunde más de lo que aporta.
+    if(c.estatus==='plata'||c.estatus==='campeon'||RNG()>.14) continue;
     const v=vecinas(c.division); if(!v.length) continue;
-    const g=generarCarta('c'+(n++),pick(v),c.rareza,liga,{
+    const g=generarCarta('c'+(n++),pick(v),c.estatus,liga,{
       persona:{nombre:c.nombre,apodo:c.apodo,pais:c.pais,gimnasio:c.gimnasio,veterano:c.esVeterano},
       personaId:c.persona,dobleDiv:true});
     c.dobleDiv=true; gemelas.push(g);
   }
   out.push(...gemelas);
 
-  // Cartas de colección de otras promotoras: no alineables
+  // Cartas de colección de otras promotoras: no alineables, y sin ranking de la liga
+  // grande, así que solo pueden ser oro sin rankear o plata.
   for(const p of PROMOTORAS.slice(1)){
     for(let i=0;i<11;i++){
-      const rar=['bronce','bronce','bronce','plata','plata','oro','oro','elite'][ri(0,7)];
-      out.push(generarCarta('c'+(n++),pick(DIVISIONES).id,rar,p));
+      const est=RNG()<.35?'oro':'plata';
+      out.push(generarCarta('c'+(n++),pick(DIVISIONES).id,est,p));
     }
   }
   for(const c of out) asignarRasgos(c);
@@ -253,27 +316,45 @@ function generarRoster(){
   raiz.ROSTER=ROSTER; raiz.PORID=PORID; MOTOR.ROSTER=ROSTER; MOTOR.PORID=PORID;
   RNG=Math.random;
 }
-
 const alineables=()=>ROSTER.filter(c=>c.alineable);
 const rasgoTxt=r=>RASGOS[r.tipo].n+(r.plus?'+':'')+(r.stat?' · '+r.stat.toUpperCase():'');
 
 /* ══════════════════════════════════════════════════════════════════════════
    6. MOTOR DE REGLAS  (puro: no toca el DOM — extraíble a packages/rules)
    ══════════════════════════════════════════════════════════════════════════ */
-const MARGENES={finish:13,decision:7};
+/* Tabla de márgenes. Más apretada que la anterior: con 10 para el finish y solo 1-3
+   de franja reñida, la mayoría de los duelos se deciden por los números y el azar
+   queda arrinconado en un margen muy estrecho. */
+const MARGENES={finish:10,decision:4};
+const REÑIDO=0.55;   // en la franja reñida gana el alto 55 de cada 100
 
 /* ¿Puede este lado activar el Especialista en este duelo? Necesita la carta con el
-   rasgo, que la stat declarada sea la suya, y no haber gastado la jugada. */
+   rasgo en la división que se pelea, que su stat siga viva, que no sea ya la stat
+   declarada —cambiarla por ella misma no hace nada— y no haber gastado la jugada. */
 function especialistaDisponible(P,lado,divId,stat){
-  if(P.jugada[lado]) return null;
   const r=rasgoDe(P.cartas[lado][divId],'especialista');
-  return (r && r.stat===stat) ? r : null;
+  if(!r) return null;
+  if(P.jugada[lado] && !r.plus) return null;
+  if(r.stat===stat) return null;
+  if(!P.statsVivas.includes(r.stat)) return null;
+  return r;
 }
+
+/* ¿Y el Veterano? Necesita la carta, la jugada sin gastar y que quede partida por
+   delante: en el sexto duelo la stat que salvaría ya no la usaría nadie. */
+function veteranoDisponible(P,lado,divId){
+  if(P.jugada[lado]) return null;
+  const r=rasgoDe(P.cartas[lado][divId],'veterano');
+  if(!r) return null;
+  return ultimoDuelo(P) ? null : r;
+}
+// Último duelo: ya no quedan divisiones por jugar después de esta.
+const ultimoDuelo = P => P.jugadas.length >= P.enJuego.length-1;
 
 function nuevaPartida(plantillaJ,plantillaR){
   return {fase:'rol', rolJ:null, vetoPrimero:null, vetados:[], vetoAzar:null,
     enJuego:[], jugadas:[], statsVivas:SID.slice(), duelo:0, turno:null,
-    marcador:{j:0,r:0}, jugada:{j:false,r:false}, pendienteConf:null,
+    marcador:{j:0,r:0}, finishes:{j:0,r:0}, jugada:{j:false,r:false}, pendienteConf:null,
     cartas:{j:{...plantillaJ},r:{...plantillaR}}, // divId -> carta
     ajustes:{j:{},r:{}},  // divId -> {stat:delta}
     log:[], pendiente:null, fin:null};
@@ -321,9 +402,19 @@ function enviarAlDuelo(P,l,desde,divDeclarada,penalizacion){
   penaliza(P,l,divDeclarada,SID,penalizacion);
 }
 
-// Cambio de división: contiguas, ambas en juego, ninguna jugada, intercambio obligado
+/* ¿Está este lado defendiendo ahora mismo? Lo está cuando hay un duelo declarado
+   esperando su carta y esa carta es la suya. Es la única ventana en la que se pueden
+   usar el cambio de división y el Camaleón. */
+function defendiendo(P,l){
+  return !!(P.pendienteConf && P.pendienteConf.defensor===l);
+}
+
+/* Cambio de división: contiguas, ambas en juego, ninguna jugada, intercambio obligado.
+   SOLO EN DEFENSA: se responde con él a una declaración del rival. Al declarar tú ya
+   estás eligiendo el terreno, así que mover además tus cartas era elegir dos veces. */
 function cambiosPosibles(P,l){
   if(P.jugada[l]) return [];
+  if(!defendiendo(P,l)) return [];
   const libres=librePara(P,l), out=[];
   for(const a of libres) for(const b of libres)
     if(a<b && contiguas(a,b)) out.push([a,b]);
@@ -343,9 +434,11 @@ function hacerCambio(P,l,a,b){
 
 function rasgoDe(c,tipo){ return c?c.rasgos.find(r=>r.tipo===tipo):null; }
 
-// Camaleón: manda la carta a una contigua sin penalización; la de allí se descarta.
+/* Camaleón: manda la carta a una contigua sin penalización; la de allí se descarta.
+   SOLO EN DEFENSA, por lo mismo que el cambio de división. */
 function camaleonesPosibles(P,l,divDeclarada){
   const out=[];
+  if(!defendiendo(P,l)) return out;
   for(const dId of librePara(P,l)){
     if(dId===divDeclarada) continue;
     const c=P.cartas[l][dId]; const r=rasgoDe(c,'camaleon');
@@ -354,42 +447,59 @@ function camaleonesPosibles(P,l,divDeclarada){
   return out;
 }
 
+/* Sorteo de un duelo, en un solo sitio para que el desempate use exactamente el mismo
+   baremo que los seis duelos normales. */
+function sortearDuelo(vj,vr){
+  const m=Math.abs(vj-vr);
+  // Empate exacto: moneda al aire de verdad, 50/50, y con tipo propio — no es un
+  // reñido, porque no hay "el alto" al que darle la ventaja.
+  if(m===0) return {m, ganador:Math.random()<.5?'j':'r', tipo:'empate'};
+  const alto=vj>vr?'j':'r', bajo=alto==='j'?'r':'j';
+  if(m>=MARGENES.finish)   return {m, ganador:alto, tipo:'finish'};
+  if(m>=MARGENES.decision) return {m, ganador:alto, tipo:'decisión'};
+  return {m, ganador:Math.random()<REÑIDO?alto:bajo, tipo:'reñido'};
+}
+
 function resolverDuelo(P,divId,stat,opts={}){
   const vj=valorCarta(P,'j',divId,stat), vr=valorCarta(P,'r',divId,stat);
-  const m=Math.abs(vj-vr);
-  let ganador, tipo;
-  // Empate exacto: moneda al aire de verdad, 50/50, y con tipo propio. La tirada ya
-  // era correcta, pero al clasificarlo como "reñido" el registro imprimía "65/35",
-  // que era mentira.
-  if(m===0){ ganador=Math.random()<.5?'j':'r'; tipo='empate'; }
-  else{
-    const alto=vj>vr?'j':'r';
-    if(m>=MARGENES.finish){ ganador=alto; tipo='finish'; }
-    else if(m>=MARGENES.decision){ ganador=alto; tipo='decisión'; }
-    else { ganador=Math.random()<.65?alto:(alto==='j'?'r':'j'); tipo='reñido'; }
-  }
+  const {m,ganador,tipo}=sortearDuelo(vj,vr);
   P.marcador[ganador]++;
+  if(tipo==='finish') P.finishes[ganador]++;   // primer criterio de desempate
   const cj=P.cartas.j[divId], cr=P.cartas.r[divId];
   P.log.push({t:'duelo',div:divId,stat,vj,vr,margen:m,ganador,tipo,
     nj:cj?cj.nombre:'—',nr:cr?cr.nombre:'—',
+    cartaJ:cj?cj.id:null,cartaR:cr?cr.id:null,
     dobleJ:!!opts.dobleJ,dobleR:!!opts.dobleR});
 
-  // ESPECIALISTA: solo si su dueño lo ha activado. Antes saltaba solo y además gratis;
-  // el GDD §7 dice que TODOS los rasgos comparten la única activación de la partida.
+  /* VETERANO: si su dueño lo activó, la stat de este duelo no se gasta y vuelve al
+     pool para los dos. El normal solo la salva si además gana el duelo; el plus la
+     salva aunque pierda. Como todo rasgo, hay que haberlo activado a mano. */
   let revive=false;
-  if(opts.especialista){
-    const l=opts.especialista;
-    const r=rasgoDe(P.cartas[l][divId],'especialista');
-    if(r && r.stat===stat && (r.plus || ganador===l)) revive=true;
+  if(opts.veterano){
+    const l=opts.veterano;
+    const r=rasgoDe(P.cartas[l][divId],'veterano');
+    if(r && (r.plus || ganador===l)) revive=true;
   }
   if(!revive) P.statsVivas=P.statsVivas.filter(s=>s!==stat);
-  else P.log.push({t:'sys',x:`Especialista: ${stat.toUpperCase()} no se gasta y vuelve al pool.`});
+  else P.log.push({t:'sys',x:`🧠 Veterano: ${stat.toUpperCase()} no se gasta y vuelve al pool de los dos.`});
 
   P.jugadas.push(divId);
   if(P.marcador.j>=4||P.marcador.r>=4){ P.fase='fin'; P.fin=P.marcador.j>=4?'j':'r'; return; }
   if(P.jugadas.length>=P.enJuego.length){
-    if(P.marcador.j===P.marcador.r){ P.fase='desempate'; }
-    else { P.fase='fin'; P.fin=P.marcador.j>P.marcador.r?'j':'r'; }
+    if(P.marcador.j!==P.marcador.r){
+      P.fase='fin'; P.fin=P.marcador.j>P.marcador.r?'j':'r'; return;
+    }
+    /* Empate a duelos. El primer criterio son los FINISHES: gana quien haya acabado
+       más peleas antes de tiempo. Solo si también van igualados se juega el duelo de
+       desempate, que es el único sitio donde el azar decide algo. */
+    if(P.finishes.j!==P.finishes.r){
+      const g=P.finishes.j>P.finishes.r?'j':'r';
+      P.fase='fin'; P.fin=g;
+      P.log.push({t:'sys',x:`Empate a ${P.marcador.j}. Desempata por finishes: ${P.finishes.j} a ${P.finishes.r}.`});
+      return;
+    }
+    P.fase='desempate';
+    P.log.push({t:'sys',x:`Empate a ${P.marcador.j} y a finishes (${P.finishes.j}). Se decide en la jaula.`});
     return;
   }
   P.duelo++;
@@ -399,17 +509,16 @@ function resolverDuelo(P,divId,stat,opts={}){
 function resolverDesempate(P){
   const divId=P.vetoAzar, stat=pick(SID);   // azar solo donde ya no quedan decisiones
   const vj=valorCarta(P,'j',divId,stat), vr=valorCarta(P,'r',divId,stat);
-  let ganador;
-  const m=Math.abs(vj-vr);
-  if(m===0) ganador=Math.random()<.5?'j':'r';
-  else{ const alto=vj>vr?'j':'r'; ganador=(m>=MARGENES.decision)?alto:(Math.random()<.65?alto:(alto==='j'?'r':'j')); }
+  const {m,ganador,tipo}=sortearDuelo(vj,vr);
   P.marcador[ganador]++;
-  P.log.push({t:'duelo',div:divId,stat,vj,vr,margen:m,ganador,tipo:'desempate',
-    nj:P.cartas.j[divId].nombre,nr:P.cartas.r[divId].nombre});
+  if(tipo==='finish') P.finishes[ganador]++;
+  P.log.push({t:'duelo',div:divId,stat,vj,vr,margen:m,ganador,tipo:'desempate',subtipo:tipo,
+    nj:P.cartas.j[divId].nombre,nr:P.cartas.r[divId].nombre,
+    cartaJ:P.cartas.j[divId].id,cartaR:P.cartas.r[divId].id});
   P.fase='fin'; P.fin=ganador;
 }
 
-const MOTOR={especialistaDisponible, DIVISIONES, DIV, contiguas, vecinas, STATS, SID, SUBSTATS, RAREZAS, ORDEN_RAREZA, ARQUETIPOS, RASGOS, PROMOTORAS, GIMNASIOS, PAISES, NOM_M, NOM_F, APE, APODOS, mulberry32, RNG, ri, pick, shuffle, clamp, ROSTER, generarCarta, asignarRasgos, generarRoster, alineables, rasgoTxt, MARGENES, nuevaPartida, terminarVetos, librePara, valorCarta, aplicarPenalizacion, penaliza, enviarAlDuelo, cambiosPosibles, hacerCambio, rasgoDe, camaleonesPosibles, resolverDuelo, resolverDesempate};
+const MOTOR={especialistaDisponible, veteranoDisponible, ultimoDuelo, defendiendo, ESTATUS, EST, ORDEN_ESTATUS, TRAMOS, tramoDe, ordenar, comparar, sortearDuelo, REÑIDO, DIVISIONES, DIV, contiguas, vecinas, STATS, SID, SUBSTATS, RAREZAS, ORDEN_RAREZA, ARQUETIPOS, RASGOS, PROMOTORAS, GIMNASIOS, PAISES, NOM_M, NOM_F, APE, APODOS, mulberry32, RNG, ri, pick, shuffle, clamp, ROSTER, generarCarta, asignarRasgos, generarRoster, alineables, rasgoTxt, MARGENES, nuevaPartida, terminarVetos, librePara, valorCarta, aplicarPenalizacion, penaliza, enviarAlDuelo, cambiosPosibles, hacerCambio, rasgoDe, camaleonesPosibles, resolverDuelo, resolverDesempate};
 raiz.MOTOR=MOTOR;
 // También sueltas en el global: el juego las usa por su nombre, sin prefijo.
 for(const k of Object.keys(MOTOR)) if(!(k in raiz)) raiz[k]=MOTOR[k];
