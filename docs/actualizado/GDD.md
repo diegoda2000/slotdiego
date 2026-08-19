@@ -169,12 +169,62 @@ pierde nada, y **el número más alto de cada una de las seis stats pasa a tener
 La corrección **no se hizo a mano**: vive en `herramientas/corregir-stats.mjs`, se puede volver a
 pasar y se puede auditar.
 
-> **Lo que esto todavía no hace.** Un techo por puesto es un sustituto mecánico del anclaje a
-> criterio, no el anclaje en sí. Que un #10 con un striking espectacular tenga 86 de golpeo está
-> bien; lo que no arregla una fórmula es que un peleador infle sus números contra oposición floja.
-> **La corrección 1 sigue sin poder aplicarse**: la base de datos guarda el récord, no contra quién.
-> Sin datos de rival por combate, "la calidad de la oposición pesa" no se puede calcular, solo
-> juzgar. Es la tarea abierta más importante del bloque de datos.
+#### 2.3.1.1 [R4] LUCHA estaba midiendo otra cosa
+
+El techo fue el primer hallazgo. Mirando el suelo apareció uno peor.
+
+LUCHA es, según este documento, **"imponer dónde se pelea: derribos y defensa de derribo"**, y se
+calcula con "derribos por 15 min × precisión **+ defensa de derribo**". Los datos solo recogieron la
+primera mitad. Se notaba en tres sitios:
+
+1. **El suelo era un vertedero.** 97 de 244 cartas de oro en 74-75, el suelo de la banda: un 40%.
+   El techo, ya corregido, lo tocaba menos del 2%.
+2. **LUCHA no correlacionaba con SUELO.** Media de LUCHA para SUELO 74-77: 77,8. Para SUELO 85-89:
+   79,8. Dos puntos de diferencia. Un sumisionista y un pegador puro puntuaban igual en la stat que
+   mide llevar la pelea al suelo, lo cual es imposible.
+3. **Los casos eran absurdos.** Mackenzie Dern —campeona y cinturón negro mundial de BJJ— tenía 74.
+   Aljamain Sterling, luchador de cadena, 74. Reinier de Ridder, doble campeón de ONE por sumisión,
+   74. Y Justin Gaethje, que fue All-American de lucha en la NCAA, 74.
+
+**Es exactamente el mismo error que este documento ya había cazado en DUREZA:** *"el primer cálculo
+penalizaba recibir golpes y dejaba a Gaethje en el suelo de la banda. Es al revés."* La defensa
+cuenta, y no se estaba contando.
+
+La reconstrucción va en tres capas, de más objetiva a más opinable, y en ese orden:
+
+- **A. Coherencia interna**, con los datos que ya hay: quien domina el suelo tiene que llegar a él,
+  así que LUCHA no puede quedar más de 7 puntos por debajo de SUELO. Sale de la propia base
+- **B. Anclajes de criterio.** Es lo que este documento pide —*"los datos ordenan, el criterio
+  ancla"*— y lo único que arregla la defensa de derribo, porque ese dato no está en la base. La
+  lista es **explícita y auditable** en `herramientas/anclar-lucha.mjs`: 60 peleadores, cada número
+  un juicio que se puede discutir uno a uno
+- **C. Suelo para los que no se juzgan.** Un clasificado entre los quince mejores del mundo no tiene
+  **cero** defensa de derribo. A los rankeados sin anclaje se les sube a 77 —"no es su terreno" en
+  vez de "es indefenso"— y el 74-75 queda para quien de verdad lo merece, como Michael Page
+
+**Resultado: el suelo pasa del 40% al 6% de las cartas**, y LUCHA ya crece con SUELO.
+
+#### 2.3.1.2 [R4] La técnica no cambia con la báscula
+
+§2.6 lo dice desde [R3]: *"lo que no cambia entre versiones es lo que no depende del peso: el golpeo
+de Pereira es 88 en medio, semipesado y pesado"*. **Los datos no lo cumplían.** De los 41 peleadores
+con varias cartas de oro, el GOLPEO variaba en 38, la LUCHA en 29 y el SUELO en 36. Khamzat Chimaev
+pegaba **74 en medio y 80 en welter**: el mismo puñetazo valiendo seis puntos distinto según la
+báscula.
+
+GOLPEO, LUCHA y SUELO son técnica y se igualan entre las cartas de un mismo peleador, tomando el
+valor más alto —que es lo que hace el ejemplo de Pereira—. **CARDIO, DUREZA e IQ no se tocan:** son
+justo las tres que el documento dice que sí cambian al cruzar de peso.
+
+Ahora la incoherencia es **cero** en las tres.
+
+> **Lo que todo esto todavía no hace.** Un techo por puesto es un sustituto mecánico del anclaje a
+> criterio, y los anclajes de LUCHA cubren sesenta peleadores, no cuatrocientos. Que un #10 con un
+> striking espectacular tenga 86 de golpeo está bien; lo que no arregla ninguna fórmula es que un
+> peleador infle sus números contra oposición floja. **La corrección 1 sigue sin poder aplicarse**:
+> la base guarda el récord, no contra quién. Sin datos de rival por combate, "la calidad de la
+> oposición pesa" no se puede calcular, solo juzgar. Es la tarea abierta más importante del bloque
+> de datos, y la vía práctica es seguir ampliando la lista de anclajes.
 
 > **Sigue abierto: las platas.** Su banda declarada es 64-82 y los datos solo usan de 68 a 82, con
 > **121 de 158 cartas empatadas en 82 de DUREZA**. Es el mismo vicio que tenía el oro, más agudo.
@@ -917,13 +967,22 @@ pantalla suele ser justo la del número.
 
 **Medido en el prototipo, pendiente de ajustar**
 
-| Métrica | Medido | Objetivo del GDD |
-|---|---|---|
-| Partidas que llegan a 3-3 | ~17-33% | ~33% |
-| Finish (margen 10+) | ~3-6% | *decidido: se acepta que sea raro* |
-| Empate exacto | ~9-16% | — |
-| Jugada usada | ~50-67% | >80% |
-| Duelo 6 con elección real | 0% | — |
+| Métrica | Antes de [R4] | Después de [R4] | Objetivo del GDD |
+|---|---|---|---|
+| Partidas que llegan a 3-3 | ~17% | **33,3%** | ~33% |
+| Finish (margen 10+) | ~3% | **8,8%** | *se acepta que sea raro* |
+| Decisión (4-9) | ~23% | 32,4% | — |
+| Reñido (1-3) | ~58% | 47,1% | — |
+| Empate exacto | ~16% | 11,8% | — |
+| Jugada usada | ~50% | 66,7% | >80% |
+| Duelo 6 con elección real | 0% | **16,7%** | — |
+
+**Y esto no se buscó.** Las tres métricas se acercaron a su objetivo como efecto secundario de
+arreglar LUCHA: al recuperar la stat su recorrido real —el suelo pasó del 40% de las cartas al 6%—
+las diferencias entre cartas dejaron de ser todas de uno o dos puntos. Es la prueba de que el
+problema no era la tabla de márgenes sino los datos que entraban en ella. Se descartó estirar las
+stats de la élite para forzar finishes (ver §2.4) y no hizo falta: bastó con que una stat midiera lo
+que decía medir.
 
 Las dos que hay que mirar:
 
@@ -997,7 +1056,9 @@ Cierra el bloque de presentación y corrige los datos.
 
 | # | Punto | Qué cambia |
 |---|---|---|
-| 1 | §2.3.1 | **Las tres correcciones de puntuación, aplicadas por fin.** Techo por puesto y regresión de muestras cortas: **113 cartas cambian**. El número más alto de cada stat pasa a tenerlo un campeón o un top 5 |
+| 1 | §2.3.1 | **Las tres correcciones de puntuación, aplicadas por fin.** Techo por puesto y regresión de muestras cortas. El número más alto de cada stat pasa a tenerlo un campeón o un top 5 |
+| 1b | §2.3.1.1 | **LUCHA estaba midiendo otra cosa**: solo contaba derribos hechos, no la defensa. Dern, Sterling, De Ridder y Gaethje estaban en el suelo de la stat de lucha. Reconstruida con coherencia interna y 60 anclajes de criterio: el suelo pasa del 40% al 6% |
+| 1c | §2.3.1.2 | **La técnica no cambia con la báscula.** GOLPEO, LUCHA y SUELO se igualan entre las cartas de un mismo peleador. La incoherencia pasa de 38/29/36 peleadores a cero |
 | 2 | §2.3.2 | El orden va por **puesto real** —campeón, #1, #2… #15—, no por tramos de cinco. Un #11 iba detrás de un #15 si el #15 sumaba más |
 | 3 | §2.3.3 | **El diseño de la carta**: marco de imagen, qué va en cada hueco, y todas las medidas sacadas de medir la propia imagen |
 | 4 | §2.4 | **El finish raro, aceptado.** No se estiran las stats de la élite para forzarlo |

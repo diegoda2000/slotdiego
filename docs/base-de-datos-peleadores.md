@@ -33,12 +33,11 @@ Seis stats sobre 100. **Sin media de ningún tipo**: la carta se lee por sus nú
 | DUREZA | No ser finalizado + defensa + castigo absorbido sin caer |
 | IQ | Defensa de golpeo + defensa de derribo + fiabilidad + experiencia |
 
-**Revisión del 19 de agosto: las dos reglas de abajo no se estaban cumpliendo y se han hecho
+**Revisión del 19 de agosto: las reglas de puntuación no se estaban cumpliendo y se han hecho
 cumplir.** El techo de cada stat lo da el puesto —campeón 89, Top 1-5 88, Top 6-10 87, Top 11-15 86,
-oro sin rankear 85— y por debajo de doce peleas el valor tira hacia la media de su banda. Antes,
-Brando Pericic (#15, 7-1-0) tenía 88 de GOLPEO, el mismo número que Alex Pereira. **113 cartas
-cambian, 169 valores se mueven**, y el número más alto de cada stat pasa a tenerlo un campeón o un
-top 5. La corrección está en `herramientas/corregir-stats.mjs` y se puede volver a pasar.
+oro sin rankear 85— tomando el **mejor puesto del peleador entre todas sus cartas**, para no romper
+la regla de que lo que no depende del peso no cambia entre versiones. Y por debajo de doce peleas el
+valor tira hacia la media de su banda. La corrección está en `herramientas/corregir-stats.mjs`.
 
 Datos de UFCStats sobre el historial completo de cada peleador. **Cada pelea se pondera por el ranking del rival**: noquear a un campeón no vale lo que noquear a un debutante. Las muestras cortas tiran hacia la media hasta acumular unas doce peleas. Los valores de la élite están anclados a criterio y la fórmula coloca al resto alrededor.
 
@@ -275,26 +274,26 @@ Con esto **las 11 divisiones tienen sus 15 puestos y su campeón completos**, si
 | Peleador | País | Rk | GOL | LUC | SUE | CAR | DUR | IQ | Atributo | Récord |
 |---|---|---|---|---|---|---|---|---|---|---|
 | **Tom Aspinall** | Inglaterra | C | 87 | 88 | 85 | 78 | 85 | 87 | — | 15-3-0 (1 NC) |
-| **Ciryl Gane** | Francia | 1 | 87 | 74 | 81 | 85 | 88 | 86 | Especialista IQ | 14-2-0 (1 NC) |
+| **Ciryl Gane** | Francia | 1 | 87 | 76 | 81 | 85 | 88 | 86 | Especialista IQ | 14-2-0 (1 NC) |
 | **Valter Walker** | Brasil | 11 | 81 | 86 | 86 | 75 | 84 | 84 | — | 16-1-0 |
 | **Martin Buday** | Eslovaquia | — | 81 | 80 | 77 | 85 | 85 | 85 | — | 16-2-0 |
-| **Waldo Cortes-Acosta** | Rep. Dominicana | 5 | 88 | 75 | 77 | 83 | 88 | 85 | — | 17-3-0 |
+| **Waldo Cortes-Acosta** | Rep. Dominicana | 5 | 88 | 78 | 77 | 83 | 88 | 85 | — | 17-3-0 |
 | **Rizvan Kuniev** | Rusia | 8 | 82 | 85 | 75 | 82 | 87 | 85 | — | 14-3-1 (1 NC) |
 | **Josh Hokit** | Estados Unidos | 4 | 87 | 81 | 77 | 78 | 87 | 85 | — | 10-0-0 |
 | **Mario Pinto** | Portugal | — | 82 | 85 | 78 | 78 | 85 | 85 | — | 12-0-0 |
-| **Alexander Volkov** | Rusia | 2 | 87 | 74 | 75 | 85 | 87 | 85 | Veterano | 40-11-0 |
+| **Alexander Volkov** | Rusia | 2 | 87 | 78 | 75 | 85 | 87 | 85 | Veterano | 40-11-0 |
 | **Vitor Petrino** ◆ | Brasil | — | 81 | 81 | 82 | 81 | 84 | 84 | — | 14-2-0 |
 | **Tyrell Fortune** | Estados Unidos | 12 | 82 | 83 | 76 | 85 | 80 | 86 | — | 18-4-0 (2 NC) |
-| **Brando Pericic** | Croacia ? | 15 | 85 | 76 | 77 | 79 | 86 | 84 | — | 7-1-0 |
+| **Brando Pericic** | Croacia ? | 15 | 85 | 77 | 77 | 79 | 86 | 84 | — | 7-1-0 |
 | **Serghei Spivac** | Moldavia | 6 | 82 | 84 | 83 | 77 | 78 | 80 | — | 18-6-0 |
 | **Curtis Blaydes** | Estados Unidos | 7 | 87 | 86 | 78 | 78 | 74 | 80 | Especialista LUCHA | 19-6-0 (1 NC) |
-| **Sergei Pavlovich** | Rusia | 3 | 87 | 74 | 79 | 74 | 83 | 86 | Especialista GOLPEO | 21-3-0 |
-| **Marcin Tybura** | Polonia | 14 | 81 | 76 | 78 | 85 | 78 | 84 | Veterano | 27-12-0 |
-| **Aleksandar Rakic** ◆ | Austria | 10 | 78 | 77 | 74 | 83 | 74 | 82 | — | 15-6-0 |
-| **Derrick Lewis** | Estados Unidos | 13 | 86 | 74 | 78 | 75 | 74 | 79 | Veterano | 29-14-0 (1 NC) |
-| **Ante Delija** | Croacia | 9 | 80 | 75 | 76 | 78 | 80 | 78 | Veterano | 26-8-0 |
-| **Alex Pereira** ◆ | Brasil | — | 85 | 74 | 74 | 76 | 74 | 76 | Camaleón | 13-4-0 |
-| **Johnny Walker** ◆ | Brasil | — | 80 | 74 | 77 | 74 | 74 | 78 | Veterano | 22-10-0 (1 NC) |
+| **Sergei Pavlovich** | Rusia | 3 | 87 | 77 | 79 | 74 | 83 | 86 | Especialista GOLPEO | 21-3-0 |
+| **Marcin Tybura** | Polonia | 14 | 81 | 77 | 78 | 85 | 78 | 84 | Veterano | 27-12-0 |
+| **Aleksandar Rakic** ◆ | Austria | 10 | 80 | 79 | 75 | 83 | 74 | 82 | — | 15-6-0 |
+| **Derrick Lewis** | Estados Unidos | 13 | 86 | 78 | 78 | 75 | 74 | 79 | Veterano | 29-14-0 (1 NC) |
+| **Ante Delija** | Croacia | 9 | 80 | 77 | 76 | 78 | 80 | 78 | Veterano | 26-8-0 |
+| **Alex Pereira** ◆ | Brasil | — | 88 | 79 | 74 | 76 | 74 | 76 | Camaleón | 13-4-0 |
+| **Johnny Walker** ◆ | Brasil | — | 83 | 76 | 80 | 74 | 74 | 78 | Veterano | 22-10-0 (1 NC) |
 
 ### Plata
 
@@ -312,8 +311,8 @@ Con esto **las 11 divisiones tienen sus 15 puestos y su campeón completos**, si
 | **Chris Barnett** | Estados Unidos | — | 81 | 71 | 78 | 77 | 82 | 79 | — | 23-10-0 |
 | **Justin Tafa** | Nueva Zelanda | — | 81 | 72 | 75 | 74 | 82 | 79 | — | 7-5-0 (1 NC) |
 | **Lukasz Brzeski** | Polonia | — | 81 | 71 | 78 | 80 | 73 | 79 | — | 9-7-1 (1 NC) |
-| **Kennedy Nzechukwu** ◆ | Nigeria | — | 78 | 76 | 72 | 72 | 80 | 80 | — | 14-6-1 |
-| **Ryan Spann** ◆ | Estados Unidos | — | 77 | 70 | 79 | 74 | 74 | 76 | — | 24-11-0 |
+| **Kennedy Nzechukwu** ◆ | Nigeria | — | 82 | 78 | 74 | 72 | 80 | 80 | — | 14-6-1 |
+| **Ryan Spann** ◆ | Estados Unidos | — | 81 | 73 | 82 | 74 | 74 | 76 | — | 24-11-0 |
 
 ---
 
@@ -326,24 +325,24 @@ Con esto **las 11 divisiones tienen sus 15 puestos y su campeón completos**, si
 | **Magomed Ankalaev** | Rusia | 1 | 85 | 81 | 79 | 85 | 85 | 87 | — | 22-2-1 (1 NC) |
 | **Carlos Ulberg** | Nueva Zelanda | C | 88 | 82 | 77 | 76 | 88 | 87 | — | 15-1-0 |
 | **Jan Blachowicz** | Polonia | 9 | 83 | 77 | 78 | 84 | 85 | 85 | Veterano | 29-12-2 |
-| **Robert Whittaker** ◆ | Australia | 12 | 85 | 78 | 76 | 85 | 83 | 84 | Especialista IQ | 28-9-0 |
-| **Navajo Stirling** | Nueva Zelanda | 5 | 85 | 75 | 74 | 82 | 88 | 85 | — | 11-0-0 |
+| **Robert Whittaker** ◆ | Australia | 12 | 86 | 79 | 78 | 85 | 83 | 84 | Especialista IQ | 28-9-0 |
+| **Navajo Stirling** | Nueva Zelanda | 5 | 85 | 77 | 74 | 82 | 88 | 85 | — | 11-0-0 |
 | **Azamat Murzakanov** | Rusia | 8 | 84 | 80 | 75 | 77 | 85 | 87 | — | 16-1-0 |
-| **Israel Adesanya** ◆ | Nigeria | — | 84 | 74 | 77 | 85 | 82 | 85 | Veterano | 24-6-0 |
-| **Paulo Costa** ◆ | Brasil | 6 | 82 | 74 | 76 | 87 | 80 | 82 | Especialista DUREZA | 16-4-0 |
-| **Alex Pereira** ◆ | Brasil | 3 | 88 | 75 | 74 | 78 | 83 | 84 | Camaleón | 13-4-0 |
-| **Jared Cannonier** ◆ | Estados Unidos | — | 82 | 74 | 76 | 84 | 84 | 81 | Veterano | 18-10-0 |
-| **Jamahal Hill** | Estados Unidos | 7 | 87 | 74 | 78 | 81 | 77 | 82 | — | 12-4-0 (1 NC) |
-| **Jiri Prochazka** | Chequia | 2 | 88 | 75 | 78 | 77 | 86 | 74 | Especialista DUREZA | 32-6-1 |
-| **Nikita Krylov** | Ucrania | 15 | 83 | 75 | 85 | 79 | 75 | 81 | Veterano | 31-12-0 |
-| **Bogdan Guskov** | Uzbekistán | 11 | 82 | 74 | 80 | 77 | 84 | 81 | — | 18-4-1 |
+| **Israel Adesanya** ◆ | Nigeria | — | 87 | 82 | 79 | 85 | 82 | 85 | Veterano | 24-6-0 |
+| **Paulo Costa** ◆ | Brasil | 6 | 87 | 80 | 79 | 87 | 80 | 82 | Especialista DUREZA | 16-4-0 |
+| **Alex Pereira** ◆ | Brasil | 3 | 88 | 79 | 74 | 78 | 83 | 84 | Camaleón | 13-4-0 |
+| **Jared Cannonier** ◆ | Estados Unidos | — | 84 | 81 | 78 | 84 | 84 | 81 | Veterano | 18-10-0 |
+| **Jamahal Hill** | Estados Unidos | 7 | 87 | 77 | 78 | 81 | 77 | 82 | — | 12-4-0 (1 NC) |
+| **Jiri Prochazka** | Chequia | 2 | 88 | 77 | 78 | 77 | 86 | 74 | Especialista DUREZA | 32-6-1 |
+| **Nikita Krylov** | Ucrania | 15 | 83 | 80 | 85 | 79 | 75 | 81 | Veterano | 31-12-0 |
+| **Bogdan Guskov** | Uzbekistán | 11 | 82 | 76 | 80 | 77 | 84 | 81 | — | 18-4-1 |
 | **Ovince Saint Preux** | Estados Unidos | — | 82 | 74 | 80 | 77 | 83 | 81 | Veterano | 27-18-0 |
 | **Aleksandar Rakic** ◆ | Austria | — | 80 | 79 | 75 | 85 | 74 | 84 | — | 15-6-0 |
-| **Dominick Reyes** | Estados Unidos | 10 | 87 | 76 | 76 | 76 | 74 | 84 | — | 16-5-0 |
-| **Khalil Rountree Jr.** | Estados Unidos | 4 | 82 | 74 | 79 | 77 | 80 | 81 | Especialista GOLPEO | 15-7-0 (1 NC) |
-| **Alonzo Menifield** | Estados Unidos | 14 | 81 | 75 | 77 | 75 | 79 | 86 | — | 18-6-1 |
-| **Vitor Petrino** ◆ | Brasil | — | 77 | 76 | 78 | 76 | 80 | 79 | — | 14-2-0 |
-| **Johnny Walker** ◆ | Brasil | 13 | 83 | 74 | 80 | 75 | 74 | 80 | Veterano | 22-10-0 (1 NC) |
+| **Dominick Reyes** | Estados Unidos | 10 | 87 | 77 | 76 | 76 | 74 | 84 | — | 16-5-0 |
+| **Khalil Rountree Jr.** | Estados Unidos | 4 | 82 | 76 | 79 | 77 | 80 | 81 | Especialista GOLPEO | 15-7-0 (1 NC) |
+| **Alonzo Menifield** | Estados Unidos | 14 | 81 | 79 | 77 | 75 | 79 | 86 | — | 18-6-1 |
+| **Vitor Petrino** ◆ | Brasil | — | 81 | 81 | 82 | 76 | 80 | 79 | — | 14-2-0 |
+| **Johnny Walker** ◆ | Brasil | 13 | 83 | 76 | 80 | 75 | 74 | 80 | Veterano | 22-10-0 (1 NC) |
 
 ### Plata
 
@@ -376,34 +375,34 @@ Con esto **las 11 divisiones tienen sus 15 puestos y su campeón completos**, si
 | **Nassourdine Imavov** ◆ | Francia | 3 | 88 | 79 | 80 | 87 | 88 | 86 | — | 17-4-0 (1 NC) |
 | **Anthony Hernandez** | Estados Unidos | 6 | 82 | 87 | 86 | 80 | 85 | 86 | Especialista CARDIO | 15-3-0 (1 NC) |
 | **Caio Borralho** | Brasil | 5 | 81 | 83 | 78 | 87 | 88 | 87 | — | 18-2-0 (1 NC) |
-| **Robert Whittaker** ◆ | Australia | — | 85 | 79 | 78 | 85 | 85 | 85 | Especialista IQ | 28-9-0 |
-| **Sean Strickland** ◆ | Estados Unidos | C | 88 | 75 | 75 | 86 | 89 | 87 | Especialista DUREZA | 31-7-0 |
-| **Israel Adesanya** ◆ | Nigeria | 8 | 87 | 74 | 79 | 87 | 84 | 87 | Veterano | 24-6-0 |
+| **Robert Whittaker** ◆ | Australia | — | 86 | 79 | 78 | 86 | 85 | 86 | Especialista IQ | 28-9-0 |
+| **Sean Strickland** ◆ | Estados Unidos | C | 88 | 81 | 75 | 86 | 89 | 87 | Especialista DUREZA | 31-7-0 |
+| **Israel Adesanya** ◆ | Nigeria | 8 | 87 | 82 | 79 | 87 | 84 | 87 | Veterano | 24-6-0 |
 | **Bo Nickal** | Estados Unidos | 14 | 81 | 84 | 84 | 76 | 84 | 86 | Especialista LUCHA | 9-1-0 |
 | **Ikram Aliskerov** | Rusia | 13 | 82 | 86 | 81 | 77 | 83 | 85 | — | 18-2-0 |
-| **Paulo Costa** ◆ | Brasil | — | 85 | 75 | 79 | 84 | 85 | 85 | Especialista DUREZA | 16-4-0 |
-| **Khamzat Chimaev** ◆ | Emiratos Árabes Unidos | 1 | 74 | 86 | 84 | 74 | 86 | 88 | Camaleón | 15-1-0 |
-| **Jared Cannonier** ◆ | Estados Unidos | 12 | 84 | 74 | 78 | 86 | 86 | 85 | Veterano | 18-10-0 |
-| **Dricus du Plessis** ◆ | Sudáfrica | 2 | 85 | 76 | 82 | 86 | 86 | 77 | Camaleón | 24-3-0 |
-| **Kamaru Usman** ◆ | Nigeria | — | 80 | 81 | 74 | 85 | 84 | 85 | — | 21-5-0 |
-| **Michael Page** ◆ | Inglaterra | — | 82 | 74 | 75 | 85 | 85 | 85 | Incómodo | 25-3-0 |
-| **Reinier de Ridder** | Países Bajos | 9 | 82 | 74 | 84 | 84 | 85 | 80 | Especialista SUELO | 21-4-0 |
-| **Brendan Allen** | Estados Unidos | 4 | 82 | 74 | 85 | 82 | 86 | 79 | Veterano | 27-7-0 |
+| **Paulo Costa** ◆ | Brasil | — | 87 | 80 | 79 | 84 | 86 | 85 | Especialista DUREZA | 16-4-0 |
+| **Khamzat Chimaev** ◆ | Emiratos Árabes Unidos | 1 | 80 | 88 | 86 | 74 | 86 | 88 | Camaleón | 15-1-0 |
+| **Jared Cannonier** ◆ | Estados Unidos | 12 | 84 | 81 | 78 | 86 | 86 | 85 | Veterano | 18-10-0 |
+| **Dricus du Plessis** ◆ | Sudáfrica | 2 | 85 | 77 | 82 | 86 | 86 | 77 | Camaleón | 24-3-0 |
+| **Kamaru Usman** ◆ | Nigeria | — | 83 | 85 | 74 | 85 | 84 | 87 | — | 21-5-0 |
+| **Michael Page** ◆ | Inglaterra | — | 85 | 75 | 75 | 86 | 86 | 85 | Incómodo | 25-3-0 |
+| **Reinier de Ridder** | Países Bajos | 9 | 82 | 86 | 84 | 84 | 85 | 80 | Especialista SUELO | 21-4-0 |
+| **Brendan Allen** | Estados Unidos | 4 | 82 | 82 | 85 | 82 | 86 | 79 | Veterano | 27-7-0 |
 | **Gregory Rodrigues** | Brasil | 11 | 83 | 83 | 75 | 77 | 83 | 85 | — | 19-6-0 |
-| **Christian Leroy Duncan** | Inglaterra | 10 | 83 | 74 | 77 | 81 | 87 | 82 | — | 15-2-0 |
-| **Roman Dolidze** | Georgia | 15 | 81 | 74 | 77 | 85 | 86 | 79 | — | 15-5-0 |
+| **Christian Leroy Duncan** | Inglaterra | 10 | 83 | 77 | 77 | 81 | 87 | 82 | — | 15-2-0 |
+| **Roman Dolidze** | Georgia | 15 | 81 | 82 | 77 | 85 | 86 | 79 | — | 15-5-0 |
 | **Punahele Soriano** | Estados Unidos | — | 81 | 76 | 79 | 82 | 85 | 80 | — | 13-4-0 |
-| **Joe Pyfer** | Estados Unidos | 7 | 82 | 74 | 84 | 76 | 85 | 80 | — | 16-3-0 |
-| **Kevin Holland** ◆ | Estados Unidos | — | 83 | 74 | 83 | 75 | 85 | 78 | Incómodo | 29-15-0 (1 NC) |
-| **Joaquin Buckley** ◆ | Estados Unidos | — | 80 | 78 | 76 | 78 | 82 | 84 | Veterano | 21-8-0 |
-| **Bryan Battle** ◆ | Estados Unidos | — | 78 | 74 | 81 | 74 | 85 | 80 | — | 13-2-0 (1 NC) |
-| **Alex Pereira** ◆ | Brasil | — | 85 | 74 | 74 | 74 | 79 | 83 | Camaleón | 13-4-0 |
+| **Joe Pyfer** | Estados Unidos | 7 | 82 | 80 | 84 | 76 | 85 | 80 | — | 16-3-0 |
+| **Kevin Holland** ◆ | Estados Unidos | — | 85 | 78 | 84 | 75 | 85 | 78 | Incómodo | 29-15-0 (1 NC) |
+| **Joaquin Buckley** ◆ | Estados Unidos | — | 80 | 81 | 79 | 78 | 82 | 84 | Veterano | 21-8-0 |
+| **Bryan Battle** ◆ | Estados Unidos | — | 82 | 75 | 82 | 74 | 85 | 80 | — | 13-2-0 (1 NC) |
+| **Alex Pereira** ◆ | Brasil | — | 88 | 79 | 74 | 74 | 79 | 83 | Camaleón | 13-4-0 |
 
 ### Plata
 
 | Peleador | País | Rk | GOL | LUC | SUE | CAR | DUR | IQ | Atributo | Récord |
 |---|---|---|---|---|---|---|---|---|---|---|
-| **Michel Pereira** ◆ | Brasil | — | 81 | 82 | 82 | 82 | 82 | 82 | — | 32-15-0 (2 NC) |
+| **Michel Pereira** ◆ | Brasil | — | 82 | 82 | 82 | 82 | 82 | 82 | — | 32-15-0 (2 NC) |
 | **Abus Magomedov** | Alemania | — | 82 | 82 | 82 | 80 | 82 | 82 | — | 29-7-1 |
 | **Marvin Vettori** | Italia | — | 82 | 79 | 80 | 82 | 82 | 82 | — | 19-10-1 |
 | **Torrez Finney** | Estados Unidos | — | 81 | 82 | 82 | 82 | 82 | 76 | — | 11-1-0 |
@@ -428,7 +427,7 @@ Con esto **las 11 divisiones tienen sus 15 puestos y su campeón completos**, si
 
 | Peleador | País | Rk | GOL | LUC | SUE | CAR | DUR | IQ | Atributo | Récord |
 |---|---|---|---|---|---|---|---|---|---|---|
-| **Khamzat Chimaev** ◆ | Emiratos Árabes Unidos | — | 80 | 85 | 85 | 79 | 85 | 85 | Camaleón | 15-1-0 |
+| **Khamzat Chimaev** ◆ | Emiratos Árabes Unidos | — | 80 | 88 | 86 | 79 | 88 | 87 | Camaleón | 15-1-0 |
 | **Sean Brady** | Estados Unidos | 6 | 80 | 84 | 85 | 86 | 85 | 87 | — | 19-2-0 |
 | **Kamaru Usman** ◆ | Nigeria | 9 | 83 | 85 | 74 | 87 | 87 | 87 | — | 21-5-0 |
 | **Gabriel Bonfim** | Brasil | 5 | 81 | 81 | 86 | 80 | 87 | 88 | — | 20-1-0 |
@@ -436,24 +435,24 @@ Con esto **las 11 divisiones tienen sus 15 puestos y su campeón completos**, si
 | **Rinat Fakhretdinov** | Rusia | — | 82 | 81 | 79 | 84 | 85 | 85 | — | 24-1-1 |
 | **Shavkat Rakhmonov** | Kazajistán | — | 82 | 81 | 85 | 79 | 85 | 85 | — | 19-0-0 |
 | **Michael Morales** | Ecuador | 3 | 84 | 84 | 75 | 79 | 88 | 87 | — | 19-0-0 |
-| **Michael Page** ◆ | Inglaterra | 14 | 85 | 74 | 75 | 86 | 86 | 86 | Incómodo | 25-3-0 |
-| **Islam Makhachev** ◆ | Rusia | C | 81 | 84 | 82 | 80 | 80 | 87 | Camaleón+ | 29-1-0 |
+| **Michael Page** ◆ | Inglaterra | 14 | 85 | 75 | 75 | 86 | 86 | 86 | Incómodo | 25-3-0 |
+| **Islam Makhachev** ◆ | Rusia | C | 83 | 88 | 86 | 80 | 80 | 87 | Camaleón+ | 29-1-0 |
 | **Yaroslav Amosov** | Ucrania | 11 | 82 | 83 | 86 | 78 | 84 | 81 | Veterano | 30-1-0 |
-| **Ian Machado Garry** | Irlanda | 1 | 83 | 75 | 75 | 88 | 88 | 84 | — | 17-2-0 |
+| **Ian Machado Garry** | Irlanda | 1 | 83 | 78 | 75 | 88 | 88 | 84 | — | 17-2-0 |
 | **Joaquin Buckley** ◆ | Estados Unidos | 10 | 80 | 81 | 79 | 82 | 85 | 85 | Veterano | 21-8-0 |
-| **Kevin Holland** ◆ | Estados Unidos | — | 85 | 74 | 84 | 81 | 85 | 81 | Incómodo | 29-15-0 (1 NC) |
-| **Daniel Rodriguez** | Estados Unidos | 15 | 86 | 74 | 74 | 85 | 86 | 84 | — | 20-6-0 |
-| **Nassourdine Imavov** ◆ | Francia | — | 85 | 76 | 78 | 84 | 85 | 83 | — | 17-4-0 (1 NC) |
-| **Jack Della Maddalena** | Australia | 4 | 83 | 74 | 76 | 84 | 88 | 84 | — | 18-4-0 |
-| **Leon Edwards** | Inglaterra | 8 | 82 | 74 | 76 | 87 | 85 | 85 | Veterano | 22-6-0 (1 NC) |
+| **Kevin Holland** ◆ | Estados Unidos | — | 85 | 78 | 84 | 81 | 85 | 81 | Incómodo | 29-15-0 (1 NC) |
+| **Daniel Rodriguez** | Estados Unidos | 15 | 86 | 77 | 74 | 85 | 86 | 84 | — | 20-6-0 |
+| **Nassourdine Imavov** ◆ | Francia | — | 88 | 79 | 80 | 84 | 85 | 83 | — | 17-4-0 (1 NC) |
+| **Jack Della Maddalena** | Australia | 4 | 83 | 78 | 76 | 84 | 88 | 84 | — | 18-4-0 |
+| **Leon Edwards** | Inglaterra | 8 | 82 | 82 | 76 | 87 | 85 | 85 | Veterano | 22-6-0 (1 NC) |
 | **Mike Malott** | Canadá | 13 | 82 | 77 | 84 | 77 | 85 | 82 | — | 14-2-1 |
 | **Randy Brown** | Jamaica | — | 81 | 75 | 80 | 83 | 83 | 85 | Veterano | 20-8-0 |
 | **Neil Magny** | Estados Unidos | — | 83 | 76 | 74 | 85 | 85 | 81 | Veterano | 32-15-0 |
-| **Bryan Battle** ◆ | Estados Unidos | — | 82 | 74 | 82 | 78 | 85 | 81 | — | 13-2-0 (1 NC) |
-| **Sean Strickland** ◆ | Estados Unidos | — | 85 | 74 | 75 | 83 | 84 | 83 | Especialista DUREZA | 31-7-0 |
-| **Uros Medic** ◆ | Serbia | 12 | 86 | 74 | 78 | 78 | 84 | 81 | — | 14-3-0 |
-| **Dricus du Plessis** ◆ | Sudáfrica | — | 82 | 75 | 80 | 83 | 85 | 74 | Camaleón | 24-3-0 |
-| **Carlos Prates** | Brasil | 2 | 84 | 76 | 75 | 76 | 88 | 79 | Especialista GOLPEO | 24-7-0 |
+| **Bryan Battle** ◆ | Estados Unidos | — | 82 | 75 | 82 | 78 | 85 | 81 | — | 13-2-0 (1 NC) |
+| **Sean Strickland** ◆ | Estados Unidos | — | 88 | 81 | 75 | 83 | 84 | 83 | Especialista DUREZA | 31-7-0 |
+| **Uros Medic** ◆ | Serbia | 12 | 86 | 77 | 78 | 78 | 84 | 81 | — | 14-3-0 |
+| **Dricus du Plessis** ◆ | Sudáfrica | — | 85 | 77 | 82 | 83 | 85 | 74 | Camaleón | 24-3-0 |
+| **Carlos Prates** | Brasil | 2 | 84 | 77 | 75 | 76 | 88 | 79 | Especialista GOLPEO | 24-7-0 |
 
 ### Plata
 
@@ -468,10 +467,10 @@ Con esto **las 11 divisiones tienen sus 15 puestos y su campeón completos**, si
 | **Carlos Leal** | Brasil | — | 80 | 78 | 75 | 81 | 82 | 82 | — | 23-7-0 |
 | **Trevin Giles** | Estados Unidos | — | 80 | 80 | 79 | 82 | 75 | 82 | — | 16-7-0 |
 | **Charles Radtke** | Estados Unidos | — | 82 | 80 | 80 | 79 | 75 | 82 | — | 12-5-0 |
-| **Michel Pereira** ◆ | Brasil | — | 82 | 78 | 79 | 82 | 79 | 77 | — | 32-15-0 (2 NC) |
+| **Michel Pereira** ◆ | Brasil | — | 82 | 82 | 82 | 82 | 79 | 77 | — | 32-15-0 (2 NC) |
 | **Alex Morono** | Estados Unidos | — | 81 | 70 | 78 | 82 | 82 | 81 | — | 24-13-0 (1 NC) |
 | **Matthew Semelsberger** | Estados Unidos | — | 81 | 73 | 76 | 82 | 82 | 79 | — | 11-8-0 |
-| **Joel Alvarez** ◆ | España | — | 81 | 71 | 82 | 76 | 82 | 80 | — | 23-5-0 |
+| **Joel Alvarez** ◆ | España | — | 82 | 71 | 82 | 76 | 82 | 80 | — | 23-5-0 |
 | **Sam Patterson** | Inglaterra | — | 82 | 73 | 82 | 74 | 82 | 76 | — | 15-3-1 |
 
 ---
@@ -490,22 +489,22 @@ Con esto **las 11 divisiones tienen sus 15 puestos y su campeón completos**, si
 | **Benoit Saint Denis** | Francia | 6 | 87 | 85 | 86 | 80 | 83 | 75 | — | 17-4-0 (1 NC) |
 | **Quillan Salkilld** | Australia | 8 | 82 | 84 | 84 | 76 | 86 | 85 | — | 13-1-0 |
 | **Rafael Fiziev** | Azerbaiyán | 12 | 83 | 82 | 79 | 84 | 84 | 85 | — | 14-5-0 |
-| **Justin Gaethje** | Estados Unidos | C | 87 | 74 | 78 | 84 | 88 | 85 | Especialista DUREZA | 28-5-0 |
-| **Ilia Topuria** ◆ | España | 1 | 86 | 83 | 79 | 76 | 85 | 85 | Camaleón | 17-1-0 |
-| **Charles Oliveira** ◆ | Brasil | 3 | 82 | 77 | 88 | 80 | 80 | 82 | Especialista SUELO | 37-11-0 (1 NC) |
-| **Renato Moicano** ◆ | Brasil | 11 | 80 | 78 | 85 | 77 | 84 | 86 | Veterano | 21-7-1 |
+| **Justin Gaethje** | Estados Unidos | C | 87 | 84 | 78 | 84 | 88 | 85 | Especialista DUREZA | 28-5-0 |
+| **Ilia Topuria** ◆ | España | 1 | 88 | 86 | 82 | 76 | 85 | 85 | Camaleón | 17-1-0 |
+| **Charles Oliveira** ◆ | Brasil | 3 | 82 | 82 | 88 | 80 | 80 | 82 | Especialista SUELO | 37-11-0 (1 NC) |
+| **Renato Moicano** ◆ | Brasil | 11 | 80 | 81 | 85 | 77 | 84 | 86 | Veterano | 21-7-1 |
 | **Grant Dawson** | Estados Unidos | — | 81 | 80 | 85 | 81 | 78 | 85 | — | 24-3-1 |
 | **Mauricio Ruffy** | Brasil | 7 | 82 | 77 | 79 | 77 | 87 | 86 | — | 14-2-0 |
-| **Max Holloway** ◆ | Estados Unidos | 4 | 86 | 74 | 74 | 85 | 82 | 87 | Camaleón | 28-9-0 |
-| **Paddy Pimblett** | Inglaterra | 5 | 81 | 74 | 86 | 78 | 88 | 80 | Veterano | 24-4-0 |
-| **Dan Hooker** ◆ | Nueva Zelanda | 10 | 82 | 76 | 79 | 78 | 86 | 86 | Veterano | 24-14-0 |
+| **Max Holloway** ◆ | Estados Unidos | 4 | 86 | 82 | 76 | 85 | 82 | 87 | Camaleón | 28-9-0 |
+| **Paddy Pimblett** | Inglaterra | 5 | 81 | 80 | 86 | 78 | 88 | 80 | Veterano | 24-4-0 |
+| **Dan Hooker** ◆ | Nueva Zelanda | 10 | 82 | 77 | 79 | 78 | 86 | 86 | Veterano | 24-14-0 |
 | **Manuel Torres** | México | 15 | 84 | 85 | 81 | 79 | 75 | 83 | — | 17-4-0 |
 | **Beneil Dariush** | Estados Unidos | 14 | 81 | 81 | 84 | 77 | 74 | 86 | Veterano | 23-8-1 |
-| **Patricio Pitbull** ◆ | Brasil | — | 78 | 76 | 76 | 84 | 85 | 78 | Veterano | 37-9-0 |
-| **Tom Nolan** | Australia | 13 | 82 | 74 | 84 | 79 | 84 | 74 | — | 11-1-0 |
+| **Patricio Pitbull** ◆ | Brasil | — | 82 | 78 | 77 | 84 | 86 | 78 | Veterano | 37-9-0 |
+| **Tom Nolan** | Australia | 13 | 82 | 77 | 84 | 79 | 84 | 74 | — | 11-1-0 |
 | **Drew Dober** | Estados Unidos | — | 84 | 74 | 78 | 74 | 85 | 74 | Veterano | 29-15-0 (1 NC) |
-| **Uros Medic** ◆ | Serbia | — | 85 | 74 | 77 | 74 | 81 | 79 | — | 14-3-0 |
-| **Conor McGregor** ◆ | Irlanda | — | 80 | 74 | 78 | 74 | 82 | 80 | Camaleón | 22-7-0 |
+| **Uros Medic** ◆ | Serbia | — | 86 | 77 | 78 | 74 | 81 | 79 | — | 14-3-0 |
+| **Conor McGregor** ◆ | Irlanda | — | 83 | 74 | 78 | 74 | 82 | 80 | Camaleón | 22-7-0 |
 
 ### Plata
 
@@ -526,7 +525,7 @@ Con esto **las 11 divisiones tienen sus 15 puestos y su campeón completos**, si
 | **Nazim Sadykhov** | Azerbaiyán | — | 82 | 78 | 78 | 76 | 82 | 76 | — | 11-3-1 |
 | **Elves Brener** | Brasil | — | 81 | 76 | 74 | 82 | 82 | 75 | — | 16-6-0 |
 | **Michael Chandler** | Estados Unidos | — | 80 | 77 | 78 | 76 | 77 | 80 | — | 23-11-0 |
-| **Joel Alvarez** ◆ | España | — | 82 | 70 | 82 | 68 | 76 | 78 | — | 23-5-0 |
+| **Joel Alvarez** ◆ | España | — | 82 | 71 | 82 | 68 | 76 | 78 | — | 23-5-0 |
 | **Mitch Ramirez** | Estados Unidos ? | — | 81 | 72 | 75 | 77 | 69 | 79 | — | 8-4-0 |
 
 ---
@@ -537,31 +536,31 @@ Con esto **las 11 divisiones tienen sus 15 puestos y su campeón completos**, si
 
 | Peleador | País | Rk | GOL | LUC | SUE | CAR | DUR | IQ | Atributo | Récord |
 |---|---|---|---|---|---|---|---|---|---|---|
-| **Ilia Topuria** ◆ | España | — | 85 | 85 | 82 | 79 | 85 | 85 | Camaleón | 17-1-0 |
+| **Ilia Topuria** ◆ | España | — | 88 | 86 | 82 | 79 | 88 | 87 | Camaleón | 17-1-0 |
 | **Arnold Allen** | Inglaterra | 7 | 81 | 84 | 79 | 87 | 87 | 87 | — | 21-4-0 |
-| **Nathaniel Wood** ◆ | Inglaterra | — | 82 | 82 | 83 | 85 | 85 | 84 | Veterano | 23-6-0 |
+| **Nathaniel Wood** ◆ | Inglaterra | — | 82 | 84 | 84 | 85 | 85 | 84 | Veterano | 23-6-0 |
 | **Movsar Evloev** | Rusia | 1 | 81 | 85 | 74 | 87 | 88 | 86 | — | 20-0-0 |
-| **Youssef Zalal** | Marruecos | 8 | 82 | 74 | 86 | 85 | 87 | 86 | — | 18-6-1 |
-| **Alexander Volkanovski** | Australia | C | 87 | 78 | 75 | 87 | 85 | 88 | Especialista IQ | 28-4-0 |
-| **Max Holloway** ◆ | Estados Unidos | — | 85 | 76 | 76 | 85 | 85 | 85 | Especialista CARDIO | 28-9-0 |
+| **Youssef Zalal** | Marruecos | 8 | 82 | 80 | 86 | 85 | 87 | 86 | — | 18-6-1 |
+| **Alexander Volkanovski** | Australia | C | 87 | 84 | 75 | 87 | 85 | 88 | Especialista IQ | 28-4-0 |
+| **Max Holloway** ◆ | Estados Unidos | — | 86 | 82 | 76 | 88 | 86 | 88 | Especialista CARDIO | 28-9-0 |
 | **Jean Silva** | Brasil | 6 | 81 | 84 | 80 | 78 | 87 | 85 | Incómodo | 17-3-0 |
-| **Brian Ortega** | Estados Unidos | 11 | 81 | 74 | 85 | 85 | 86 | 81 | — | 16-5-0 (1 NC) |
-| **Lerone Murphy** | Inglaterra | 3 | 83 | 74 | 76 | 87 | 88 | 84 | — | 17-1-1 |
+| **Brian Ortega** | Estados Unidos | 11 | 81 | 81 | 85 | 85 | 86 | 81 | — | 16-5-0 (1 NC) |
+| **Lerone Murphy** | Inglaterra | 3 | 83 | 80 | 76 | 87 | 88 | 84 | — | 17-1-1 |
 | **Patricio Pitbull** ◆ | Brasil | 15 | 82 | 78 | 77 | 86 | 86 | 81 | Veterano | 37-9-0 |
-| **Diego Lopes** | Brasil | 2 | 81 | 75 | 84 | 82 | 86 | 82 | Veterano | 28-8-0 |
+| **Diego Lopes** | Brasil | 2 | 81 | 80 | 84 | 82 | 86 | 82 | Veterano | 28-8-0 |
 | **Pat Sabatini** | Estados Unidos | — | 81 | 84 | 85 | 84 | 74 | 82 | — | 22-5-0 |
 | **Steve Garcia** | Estados Unidos | 10 | 87 | 84 | 76 | 74 | 80 | 87 | — | 19-6-0 |
-| **Charles Jourdain** ◆ | Canadá | — | 80 | 74 | 84 | 82 | 85 | 81 | — | 18-8-1 |
-| **David Onama** | Uganda | 14 | 82 | 74 | 79 | 84 | 86 | 81 | — | 14-3-0 |
-| **Aljamain Sterling** ◆ | Estados Unidos | 4 | 82 | 74 | 80 | 86 | 82 | 82 | Camaleón | 26-5-0 |
+| **Charles Jourdain** ◆ | Canadá | — | 80 | 77 | 84 | 82 | 85 | 81 | — | 18-8-1 |
+| **David Onama** | Uganda | 14 | 82 | 77 | 79 | 84 | 86 | 81 | — | 14-3-0 |
+| **Aljamain Sterling** ◆ | Estados Unidos | 4 | 83 | 86 | 84 | 86 | 82 | 82 | Camaleón | 26-5-0 |
 | **Kevin Vallejos** | Argentina | 9 | 83 | 79 | 74 | 77 | 87 | 85 | — | 18-1-0 |
-| **Melquizael Costa** | Brasil | 13 | 82 | 74 | 83 | 82 | 85 | 80 | Veterano | 26-8-0 |
-| **Yair Rodriguez** | México | 5 | 83 | 74 | 78 | 86 | 85 | 79 | Incómodo | 21-6-0 (1 NC) |
+| **Melquizael Costa** | Brasil | 13 | 82 | 77 | 83 | 82 | 85 | 80 | Veterano | 26-8-0 |
+| **Yair Rodriguez** | México | 5 | 83 | 78 | 78 | 86 | 85 | 79 | Incómodo | 21-6-0 (1 NC) |
 | **Aaron Pico** | Estados Unidos | 12 | 82 | 82 | 76 | 84 | 77 | 80 | — | 14-5-0 |
 | **Conor McGregor** ◆ | Irlanda | — | 83 | 74 | 78 | 75 | 84 | 85 | Camaleón | 22-7-0 |
-| **Renato Moicano** ◆ | Brasil | — | 77 | 76 | 84 | 74 | 82 | 85 | Veterano | 21-7-1 |
-| **Dan Hooker** ◆ | Nueva Zelanda | — | 79 | 75 | 78 | 75 | 83 | 84 | Veterano | 24-14-0 |
-| **Charles Oliveira** ◆ | Brasil | — | 79 | 76 | 85 | 76 | 77 | 78 | Especialista SUELO | 37-11-0 (1 NC) |
+| **Renato Moicano** ◆ | Brasil | — | 80 | 81 | 85 | 74 | 82 | 85 | Veterano | 21-7-1 |
+| **Dan Hooker** ◆ | Nueva Zelanda | — | 82 | 77 | 79 | 75 | 83 | 84 | Veterano | 24-14-0 |
+| **Charles Oliveira** ◆ | Brasil | — | 82 | 82 | 88 | 76 | 77 | 78 | Especialista SUELO | 37-11-0 (1 NC) |
 
 ### Plata
 
@@ -598,21 +597,21 @@ Con esto **las 11 divisiones tienen sus 15 puestos y su campeón completos**, si
 | **Mario Bautista** | Estados Unidos | 4 | 81 | 80 | 85 | 84 | 88 | 85 | — | 18-3-0 |
 | **Farid Basharat** | Afganistán | 14 | 82 | 83 | 79 | 86 | 86 | 84 | — | 16-0-0 |
 | **Raul Rosas Jr.** | México | 12 | 81 | 86 | 84 | 84 | 85 | 80 | — | 12-1-0 |
-| **Sean O'Malley** | Estados Unidos | 2 | 87 | 74 | 79 | 83 | 88 | 86 | Especialista GOLPEO | 20-3-0 (1 NC) |
-| **Marlon Vera** | Ecuador | 10 | 81 | 74 | 84 | 85 | 87 | 86 | Especialista DUREZA | 23-12-1 |
+| **Sean O'Malley** | Estados Unidos | 2 | 87 | 77 | 79 | 83 | 88 | 86 | Especialista GOLPEO | 20-3-0 (1 NC) |
+| **Marlon Vera** | Ecuador | 10 | 81 | 78 | 84 | 85 | 87 | 86 | Especialista DUREZA | 23-12-1 |
 | **Payton Talbott** | Estados Unidos | 11 | 83 | 78 | 78 | 84 | 86 | 86 | — | 11-1-0 |
-| **Aljamain Sterling** ◆ | Estados Unidos | — | 83 | 74 | 84 | 85 | 83 | 85 | Camaleón | 26-5-0 |
-| **David Martinez** | México | 8 | 86 | 76 | 78 | 85 | 87 | 85 | — | 14-1-0 |
-| **Aiemann Zahabi** | Canadá | 7 | 81 | 76 | 78 | 86 | 85 | 87 | — | 14-3-0 |
+| **Aljamain Sterling** ◆ | Estados Unidos | — | 83 | 86 | 84 | 88 | 83 | 85 | Camaleón | 26-5-0 |
+| **David Martinez** | México | 8 | 86 | 77 | 78 | 85 | 87 | 85 | — | 14-1-0 |
+| **Aiemann Zahabi** | Canadá | 7 | 81 | 77 | 78 | 86 | 85 | 87 | — | 14-3-0 |
 | **Marcus McGhee** | Estados Unidos | 15 | 80 | 79 | 79 | 82 | 86 | 85 | — | 11-2-0 |
-| **Song Yadong** | China | 6 | 81 | 76 | 78 | 85 | 87 | 84 | Veterano | 23-9-1 (1 NC) |
-| **Deiveson Figueiredo** ◆ | Brasil | 9 | 82 | 74 | 85 | 84 | 85 | 81 | Camaleón | 25-7-1 |
-| **Nathaniel Wood** ◆ | Inglaterra | — | 79 | 84 | 84 | 80 | 83 | 80 | Veterano | 23-6-0 |
-| **Cory Sandhagen** | Estados Unidos | 5 | 88 | 74 | 75 | 86 | 86 | 79 | Especialista IQ | 18-7-0 |
-| **Henry Cejudo** ◆ | Estados Unidos | — | 80 | 76 | 78 | 83 | 85 | 84 | Camaleón | 16-6-0 |
+| **Song Yadong** | China | 6 | 81 | 77 | 78 | 85 | 87 | 84 | Veterano | 23-9-1 (1 NC) |
+| **Deiveson Figueiredo** ◆ | Brasil | 9 | 85 | 82 | 86 | 84 | 85 | 81 | Camaleón | 25-7-1 |
+| **Nathaniel Wood** ◆ | Inglaterra | — | 82 | 84 | 84 | 80 | 83 | 80 | Veterano | 23-6-0 |
+| **Cory Sandhagen** | Estados Unidos | 5 | 88 | 80 | 75 | 86 | 86 | 79 | Especialista IQ | 18-7-0 |
+| **Henry Cejudo** ◆ | Estados Unidos | — | 82 | 79 | 79 | 83 | 85 | 84 | Camaleón | 16-6-0 |
 | **Cody Garbrandt** | Estados Unidos | — | 81 | 78 | 78 | 79 | 74 | 85 | — | 15-8-0 |
-| **Charles Jourdain** ◆ | Canadá | — | 76 | 74 | 82 | 78 | 85 | 80 | — | 18-8-1 |
-| **Kyoji Horiguchi** ◆ | Japón | — | 77 | 75 | 74 | 83 | 82 | 83 | Veterano | 36-6-0 (1 NC) |
+| **Charles Jourdain** ◆ | Canadá | — | 80 | 77 | 84 | 78 | 85 | 80 | — | 18-8-1 |
+| **Kyoji Horiguchi** ◆ | Japón | — | 80 | 77 | 75 | 83 | 82 | 83 | Veterano | 36-6-0 (1 NC) |
 
 ### Plata
 
@@ -644,24 +643,24 @@ Con esto **las 11 divisiones tienen sus 15 puestos y su campeón completos**, si
 | Peleador | País | Rk | GOL | LUC | SUE | CAR | DUR | IQ | Atributo | Récord |
 |---|---|---|---|---|---|---|---|---|---|---|
 | **Alexandre Pantoja** | Brasil | 1 | 80 | 82 | 86 | 84 | 88 | 84 | Veterano | 30-6-0 |
-| **Brandon Moreno** | México | 8 | 84 | 76 | 81 | 87 | 87 | 84 | Veterano | 23-10-2 |
+| **Brandon Moreno** | México | 8 | 84 | 77 | 81 | 87 | 87 | 84 | Veterano | 23-10-2 |
 | **Asu Almabayev** | Kazajistán | 7 | 81 | 83 | 87 | 85 | 84 | 81 | — | 24-3-0 |
 | **Tim Elliott** | Estados Unidos | 13 | 81 | 86 | 84 | 86 | 86 | 76 | Veterano | 22-14-1 |
 | **Joshua Van** | Birmania | C | 87 | 80 | 74 | 86 | 86 | 86 | Especialista CARDIO | 17-2-0 |
 | **Henry Cejudo** ◆ | Estados Unidos | — | 82 | 79 | 79 | 85 | 85 | 85 | Camaleón | 16-6-0 |
 | **Tagir Ulanbekov** | Rusia | 14 | 81 | 83 | 85 | 85 | 86 | 76 | — | 17-3-0 |
 | **Tatsuro Taira** | Japón | 4 | 81 | 84 | 85 | 82 | 84 | 80 | — | 18-2-0 |
-| **Amir Albazi** | Irak | 9 | 81 | 74 | 83 | 85 | 87 | 85 | — | 17-3-0 |
+| **Amir Albazi** | Irak | 9 | 81 | 80 | 83 | 85 | 87 | 85 | — | 17-3-0 |
 | **Alex Perez** | Estados Unidos | 11 | 81 | 86 | 83 | 75 | 84 | 85 | Veterano | 26-10-0 (1 NC) |
 | **Su Mudaerji** | China | — | 80 | 76 | 77 | 85 | 85 | 84 | — | 19-7-0 (1 NC) |
-| **Manel Kape** | Angola | 2 | 87 | 75 | 74 | 81 | 88 | 84 | Incómodo | 23-7-0 |
-| **Brandon Royval** | Estados Unidos | 3 | 82 | 74 | 85 | 84 | 84 | 79 | Incómodo | 18-9-0 |
-| **Edgar Chairez** | México | 15 | 81 | 74 | 86 | 79 | 86 | 80 | — | 14-6-0 (1 NC) |
+| **Manel Kape** | Angola | 2 | 87 | 77 | 74 | 81 | 88 | 84 | Incómodo | 23-7-0 |
+| **Brandon Royval** | Estados Unidos | 3 | 82 | 80 | 85 | 84 | 84 | 79 | Incómodo | 18-9-0 |
+| **Edgar Chairez** | México | 15 | 81 | 80 | 86 | 79 | 86 | 80 | — | 14-6-0 (1 NC) |
 | **Kyoji Horiguchi** ◆ | Japón | 5 | 80 | 77 | 75 | 86 | 84 | 85 | Veterano | 36-6-0 (1 NC) |
 | **Ramazan Temirov** | Uzbekistán | 10 | 85 | 81 | 75 | 80 | 86 | 80 | — | 20-3-0 |
 | **Lone'er Kavanagh** | Inglaterra | 6 | 82 | 82 | 75 | 82 | 82 | 82 | — | 10-2-0 |
-| **Steve Erceg** | Australia | 12 | 81 | 74 | 76 | 86 | 84 | 78 | — | 14-5-0 |
-| **Deiveson Figueiredo** ◆ | Brasil | — | 85 | 74 | 85 | 74 | 83 | 77 | Camaleón | 25-7-1 |
+| **Steve Erceg** | Australia | 12 | 81 | 78 | 76 | 86 | 84 | 78 | — | 14-5-0 |
+| **Deiveson Figueiredo** ◆ | Brasil | — | 85 | 82 | 86 | 74 | 83 | 77 | Camaleón | 25-7-1 |
 
 ### Plata
 
@@ -697,19 +696,19 @@ Con esto **las 11 divisiones tienen sus 15 puestos y su campeón completos**, si
 | **Amanda Nunes** | Brasil | — | 85 | 84 | 83 | 80 | 83 | 85 | Veterano | 23-5-0 |
 | **Norma Dumont** | Brasil | 4 | 81 | 83 | 79 | 88 | 85 | 86 | — | 13-3-0 |
 | **Ailin Perez** | Argentina | 5 | 82 | 85 | 77 | 86 | 86 | 85 | — | 13-2-0 |
-| **Raquel Pennington** | Estados Unidos | 2 | 82 | 74 | 83 | 87 | 88 | 86 | — | 16-10-0 |
-| **Valentina Shevchenko** ◆ | Kirguistán | — | 80 | 83 | 75 | 85 | 85 | 85 | Especialista IQ | 26-4-1 |
-| **Miesha Tate** | Estados Unidos | 14 | 80 | 74 | 85 | 86 | 86 | 82 | Veterano | 20-10-0 |
-| **Joselyne Edwards** | Panamá | 3 | 81 | 74 | 82 | 85 | 88 | 82 | — | 18-6-0 |
+| **Raquel Pennington** | Estados Unidos | 2 | 82 | 78 | 83 | 87 | 88 | 86 | — | 16-10-0 |
+| **Valentina Shevchenko** ◆ | Kirguistán | — | 83 | 85 | 78 | 86 | 85 | 86 | Especialista IQ | 26-4-1 |
+| **Miesha Tate** | Estados Unidos | 14 | 80 | 82 | 85 | 86 | 86 | 82 | Veterano | 20-10-0 |
+| **Joselyne Edwards** | Panamá | 3 | 81 | 77 | 82 | 85 | 88 | 82 | — | 18-6-0 |
 | **Jacqueline Cavalcanti** | Brasil | 9 | 80 | 77 | 74 | 87 | 87 | 86 | — | 10-2-0 |
-| **Julianna Pena** | Estados Unidos | 1 | 82 | 74 | 81 | 85 | 88 | 79 | Especialista DUREZA | 13-6-0 |
+| **Julianna Pena** | Estados Unidos | 1 | 82 | 80 | 81 | 85 | 88 | 79 | Especialista DUREZA | 13-6-0 |
 | **Karol Rosa** | Brasil | 10 | 83 | 79 | 76 | 87 | 86 | 76 | — | 19-8-0 |
 | **Bia Mesquita** | Brasil | 11 | 81 | 79 | 83 | 79 | 84 | 82 | — | 8-0-0 |
 | **Melissa Croden** | Canadá ? | 15 | 81 | 80 | 77 | 85 | 86 | 78 | — | 8-3-0 |
-| **Michelle Montague** | Nueva Zelanda ? | 12 | 82 | 76 | 77 | 84 | 85 | 82 | — | 8-0-0 |
+| **Michelle Montague** | Nueva Zelanda ? | 12 | 82 | 77 | 77 | 84 | 85 | 82 | — | 8-0-0 |
 | **Macy Chiasson** | Estados Unidos | 8 | 81 | 77 | 79 | 82 | 84 | 80 | — | 11-6-0 |
-| **Nora Cornolle** | Francia | 13 | 81 | 74 | 77 | 83 | 86 | 81 | — | 9-4-0 |
-| **Yana Santos** | Rusia | 6 | 81 | 74 | 75 | 87 | 75 | 80 | — | 17-8-0 (1 NC) |
+| **Nora Cornolle** | Francia | 13 | 81 | 77 | 77 | 83 | 86 | 81 | — | 9-4-0 |
+| **Yana Santos** | Rusia | 6 | 81 | 77 | 75 | 87 | 75 | 80 | — | 17-8-0 (1 NC) |
 
 ### Plata
 
@@ -744,20 +743,20 @@ Con esto **las 11 divisiones tienen sus 15 puestos y su campeón completos**, si
 | **Natalia Silva** | Brasil | 1 | 83 | 80 | 75 | 86 | 88 | 87 | — | 20-5-1 |
 | **Casey O'Neill** | Australia | 12 | 86 | 78 | 80 | 81 | 86 | 85 | — | 11-2-0 |
 | **Talita Alencar** | Brasil | — | 81 | 80 | 81 | 85 | 85 | 81 | — | 8-1-1 |
-| **Miranda Maverick** | Estados Unidos | 10 | 82 | 74 | 81 | 86 | 87 | 82 | — | 17-6-0 |
-| **JJ Aldrich** | Estados Unidos | 14 | 81 | 74 | 78 | 86 | 86 | 84 | — | 15-7-0 |
+| **Miranda Maverick** | Estados Unidos | 10 | 82 | 81 | 81 | 86 | 87 | 82 | — | 17-6-0 |
+| **JJ Aldrich** | Estados Unidos | 14 | 81 | 77 | 78 | 86 | 86 | 84 | — | 15-7-0 |
 | **Tracy Cortez** | Estados Unidos | 9 | 82 | 78 | 74 | 87 | 87 | 82 | — | 12-4-0 |
-| **Alexa Grasso** ◆ | México | 3 | 80 | 74 | 82 | 87 | 87 | 81 | — | 17-5-1 |
-| **Zhang Weili** ◆ | China | — | 83 | 79 | 78 | 84 | 82 | 83 | Veterano | 26-4-0 |
-| **Maycee Barber** | Estados Unidos | 6 | 87 | 74 | 77 | 85 | 86 | 79 | — | 15-3-0 |
-| **Karine Silva** | Brasil | 11 | 81 | 74 | 86 | 80 | 86 | 79 | — | 19-7-0 |
-| **Jessica Andrade** ◆ | Brasil | — | 84 | 84 | 74 | 75 | 85 | 83 | Veterano | 26-15-0 |
-| **Rose Namajunas** ◆ | Estados Unidos | 5 | 78 | 76 | 77 | 87 | 85 | 81 | — | 15-8-0 |
-| **Gabriella Fernandes** | Brasil | 15 | 81 | 74 | 79 | 85 | 86 | 78 | — | 11-4-0 |
-| **Loopy Godinez** ◆ | México | — | 77 | 81 | 78 | 82 | 82 | 82 | — | 14-6-0 |
-| **Tatiana Suarez** ◆ | Estados Unidos | — | 80 | 79 | 81 | 79 | 82 | 79 | Especialista LUCHA | 13-1-0 |
-| **Tabatha Ricci** ◆ | Brasil | — | 80 | 74 | 74 | 83 | 85 | 79 | — | 12-5-0 |
-| **Gillian Robertson** ◆ | Canadá | — | 79 | 74 | 82 | 77 | 85 | 78 | — | 17-9-0 |
+| **Alexa Grasso** ◆ | México | 3 | 80 | 78 | 82 | 87 | 87 | 81 | — | 17-5-1 |
+| **Zhang Weili** ◆ | China | — | 86 | 81 | 81 | 84 | 82 | 83 | Veterano | 26-4-0 |
+| **Maycee Barber** | Estados Unidos | 6 | 87 | 80 | 77 | 85 | 86 | 79 | — | 15-3-0 |
+| **Karine Silva** | Brasil | 11 | 81 | 81 | 86 | 80 | 86 | 79 | — | 19-7-0 |
+| **Jessica Andrade** ◆ | Brasil | — | 87 | 86 | 75 | 75 | 86 | 83 | Veterano | 26-15-0 |
+| **Rose Namajunas** ◆ | Estados Unidos | 5 | 82 | 78 | 80 | 87 | 85 | 81 | — | 15-8-0 |
+| **Gabriella Fernandes** | Brasil | 15 | 81 | 77 | 79 | 85 | 86 | 78 | — | 11-4-0 |
+| **Loopy Godinez** ◆ | México | — | 81 | 85 | 82 | 82 | 82 | 82 | — | 14-6-0 |
+| **Tatiana Suarez** ◆ | Estados Unidos | — | 82 | 86 | 86 | 79 | 82 | 79 | Especialista LUCHA | 13-1-0 |
+| **Tabatha Ricci** ◆ | Brasil | — | 82 | 77 | 76 | 83 | 86 | 79 | — | 12-5-0 |
+| **Gillian Robertson** ◆ | Canadá | — | 81 | 82 | 86 | 77 | 85 | 78 | — | 17-9-0 |
 
 ### Plata
 
@@ -773,7 +772,7 @@ Con esto **las 11 divisiones tienen sus 15 puestos y su campeón completos**, si
 | **Molly McCann** | Inglaterra | — | 81 | 72 | 75 | 82 | 82 | 80 | — | 14-8-0 |
 | **Vanessa Demopoulos** | Estados Unidos | — | 80 | 70 | 77 | 82 | 82 | 77 | — | 11-8-0 |
 | **Montserrat Ruiz** | México | — | 80 | 75 | 77 | 82 | 72 | 80 | — | 10-5-0 |
-| **Mayra Bueno Silva** ◆ | Brasil | — | 78 | 70 | 79 | 74 | 79 | 77 | — | 10-7-1 (1 NC) |
+| **Mayra Bueno Silva** ◆ | Brasil | — | 81 | 73 | 82 | 74 | 79 | 77 | — | 10-7-1 (1 NC) |
 
 ---
 
@@ -789,19 +788,19 @@ Con esto **las 11 divisiones tienen sus 15 puestos y su campeón completos**, si
 | **Zhang Weili** ◆ | China | 1 | 86 | 81 | 81 | 87 | 85 | 85 | Veterano | 26-4-0 |
 | **Piera Rodriguez** | Venezuela | — | 82 | 85 | 79 | 85 | 85 | 84 | — | 12-2-0 |
 | **Tatiana Suarez** ◆ | Estados Unidos | 2 | 82 | 86 | 86 | 82 | 85 | 82 | Especialista LUCHA | 13-1-0 |
-| **Rose Namajunas** ◆ | Estados Unidos | — | 82 | 78 | 80 | 85 | 85 | 84 | — | 15-8-0 |
-| **Mackenzie Dern** | Estados Unidos | C | 81 | 74 | 88 | 87 | 88 | 81 | Especialista SUELO | 17-5-0 |
+| **Rose Namajunas** ◆ | Estados Unidos | — | 82 | 78 | 80 | 88 | 88 | 84 | — | 15-8-0 |
+| **Mackenzie Dern** | Estados Unidos | C | 81 | 80 | 88 | 87 | 88 | 81 | Especialista SUELO | 17-5-0 |
 | **Alice Ardelean** | Rumanía | — | 80 | 82 | 79 | 85 | 85 | 85 | — | 12-7-0 |
 | **Jessica Andrade** ◆ | Brasil | 9 | 87 | 86 | 75 | 78 | 87 | 84 | Veterano | 26-15-0 |
 | **Fatima Kline** | Estados Unidos ? | 6 | 83 | 81 | 76 | 85 | 87 | 85 | — | 10-1-0 |
 | **Yan Xiaonan** | China | 4 | 85 | 78 | 76 | 87 | 86 | 85 | Veterano | 19-5-0 (1 NC) |
-| **Angela Hill** | Estados Unidos | 13 | 83 | 74 | 78 | 86 | 86 | 84 | Especialista CARDIO | 19-16-0 |
+| **Angela Hill** | Estados Unidos | 13 | 83 | 76 | 78 | 86 | 86 | 84 | Especialista CARDIO | 19-16-0 |
 | **Amanda Ribas** | Brasil | 12 | 81 | 84 | 84 | 83 | 79 | 82 | Veterano | 13-7-0 |
-| **Tabatha Ricci** ◆ | Brasil | 10 | 82 | 76 | 76 | 86 | 87 | 82 | — | 12-5-0 |
-| **Amanda Lemos** | Brasil | 11 | 82 | 75 | 81 | 83 | 86 | 81 | — | 15-7-1 |
-| **Gillian Robertson** ◆ | Canadá | 5 | 81 | 74 | 86 | 79 | 87 | 80 | — | 17-9-0 |
-| **Denise Gomes** | Brasil | 14 | 81 | 76 | 78 | 85 | 86 | 77 | — | 12-3-0 |
-| **Alexa Grasso** ◆ | México | — | 75 | 75 | 80 | 85 | 85 | 76 | — | 17-5-1 |
+| **Tabatha Ricci** ◆ | Brasil | 10 | 82 | 77 | 76 | 86 | 87 | 82 | — | 12-5-0 |
+| **Amanda Lemos** | Brasil | 11 | 82 | 78 | 81 | 83 | 86 | 81 | — | 15-7-1 |
+| **Gillian Robertson** ◆ | Canadá | 5 | 81 | 82 | 86 | 79 | 87 | 80 | — | 17-9-0 |
+| **Denise Gomes** | Brasil | 14 | 81 | 77 | 78 | 85 | 86 | 77 | — | 12-3-0 |
+| **Alexa Grasso** ◆ | México | — | 80 | 78 | 82 | 85 | 86 | 76 | — | 17-5-1 |
 | **Mizuki Inoue** | Japón | 15 | 82 | 78 | 75 | 82 | 82 | 76 | — | 16-6-0 |
 
 ### Plata

@@ -55,6 +55,20 @@ const techoPorPuesto = rk => {
   return n <= 5 ? 88 : n <= 10 ? 87 : 86;
 };
 
+/* El techo lo da el MEJOR puesto que tenga ese peleador en todas sus cartas, no el de
+   cada carta por separado. El GDD §2.6 lo dice con nombre y apellidos: "lo que no cambia
+   entre versiones es lo que no depende del peso: el golpeo de Pereira es 88 en medio,
+   semipesado y pesado". Aplicando el techo carta a carta, la de medio —donde no está
+   rankeado— bajaba a 85 y la de semipesado se quedaba en 88: el mismo puñetazo valiendo
+   distinto según la báscula. Lo que sí baja al cambiar de división es el aguante, el
+   cardio y la lectura, y eso ya está en los datos de cada carta. */
+const mejorTecho = new Map();
+for (const f of filas) {
+  if (f.banda !== 'oro') continue;
+  const t = techoPorPuesto(f.rk);
+  mejorTecho.set(f.nombre, Math.max(mejorTecho.get(f.nombre) || 0, t));
+}
+
 // La media de cada stat, por banda: es hacia donde tira una muestra corta.
 const media = {};
 for (const banda of ['oro', 'plata']) {
@@ -70,7 +84,7 @@ const ejemplos = [];
 for (const f of filas) {
   const [min, max] = LIMITE[f.banda];
   // El techo por puesto solo tiene sentido en oro: la plata no lleva ranking.
-  const techo = f.banda === 'oro' ? techoPorPuesto(f.rk) : max;
+  const techo = f.banda === 'oro' ? (mejorTecho.get(f.nombre) || techoPorPuesto(f.rk)) : max;
   const peso = Math.min(1, f.peleas / MUESTRA_COMPLETA);
   const nuevas = f.stats.map((v, k) => {
     const conTecho = Math.min(v, techo);
