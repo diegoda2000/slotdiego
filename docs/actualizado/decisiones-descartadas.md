@@ -181,3 +181,56 @@ Descartado. Con requisitos encima (Camaleón solo en dobles divisiones, Veterano
 
 **Rasgos en cartas de colección.**
 Descartado. No son alineables, así que el rasgo es una promesa que no se puede cumplir nunca.
+
+---
+
+## 9. Descartado en R3
+
+**La media general de la carta, en cualquier forma.**
+Descartado del todo: ni visible ni guardada en el código. Se probó primero quitarla de la vista y
+dejarla dentro para ordenar, y no vale — en cuanto el número existe, algo del juego acaba
+ordenando por él y el especialista vuelve a salir malparado. La carta se lee por sus seis stats, y
+lo que ordena es el **estatus deportivo**. El desempate dentro de un tramo usa la suma interna,
+que **no se enseña nunca**.
+
+**El bronce.**
+Descartado por ahora. Existía como rareza para peleadores de otras promotoras que todavía no están
+en el juego, así que eran cero cartas ocupando un tercio de las tablas de probabilidad. La banda
+queda reservada por si entran Cage Warriors, KSW y compañía.
+
+**Comparar los tres sobres por cuántos oros dan.**
+Descartado como forma de razonar, no solo como número. Lleva a la conclusión falsa de que el
+básico gratis es "mejor" que el de plata de pago, cuando **hacen cosas distintas**: el básico está
+para que cualquiera monte un once desde el día uno, y el de plata para cerrar la colección de
+platas, que es lo que desbloquea las especiales. Lo que sí tiene que crecer con el precio es la
+**carta alta**, y es lo que se mide ahora.
+
+**Ofrecer "abrir otro sobre básico" al final de cada apertura.**
+Descartado. Convierte la pantalla de apertura en una palanca de la que no se sale: abres, te ofrece
+otro, abres. El gratis se reclama en la pantalla de sobres y en ningún otro sitio. Lo que sí se
+encadena es lo que ya tienes guardado, que es finito.
+
+**Ir pasando las nueve cartas del sobre de una en una.**
+Descartado. Son ocho toques de puro trámite, y diluyen justo el momento que engancha. Ahora la
+mejor carta ocupa la pantalla, se toca una vez, y sale el sobre entero.
+
+**El cambio de división y el Camaleón en manos del que declara.**
+Descartado. El que declara ya elige división y stat; dejarle además mover cartas es darle dos
+jugadas en la misma mano. Los dos son **respuestas**, y viven en la pantalla del defensor.
+
+**Que el Especialista salvara su stat del pool.**
+Descartado, pero no tirado: ese oficio pasa al **Veterano**, donde encaja mejor. Un veterano
+administra; un especialista arrastra la pelea a lo suyo, que es lo que hace ahora — **impone su
+stat al duelo**.
+
+**Las franjas de margen anchas (finish desde 13, reñido 1-6 a 65/35).**
+Descartadas al pasar al roster real. Estaban calibradas para cartas inventadas, que se separaban
+mucho más entre sí; con peleadores de verdad casi no saltaba un finish. Ahora el finish empieza en
+10, la decisión va de 4 a 9 y el reñido, que son solo tres puntos de diferencia, se reparte 55/45.
+
+**Escalar el texto de la carta con consultas de contenedor (`cqw`).**
+Descartado. Es lo elegante y lo resuelve el navegador solo, pero **no existe en los WebView
+antiguos**, y allí el texto se quedaba en un tamaño fijo: en la rejilla de sobres y colección, con
+cartas de 124 píxeles, los números se salían de los rombos y los nombres del recuadro. Ahora cada
+carta se mide a sí misma y publica su ancho, y todo el texto sale de ahí. Funciona en cualquier
+motor.

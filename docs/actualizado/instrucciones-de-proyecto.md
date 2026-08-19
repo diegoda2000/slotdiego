@@ -11,9 +11,11 @@ Responde siempre en español.
 
 ## Estado del proyecto
 
-**Ya no es solo diseño: hay un prototipo jugable construido.** Existe una aplicación con roster inventado, sobres, colección, plantilla, partidas contra la IA, partidas **en vivo entre dos personas** por código de sala, y un APK de Android. La mecánica de cartas y de PvP está cerrada y probada jugando; la economía, los modos fuera del PvP y el tema de las licencias siguen abiertos.
+**Ya no es solo diseño: hay una aplicación que se instala y se juega.** Sobres, colección, plantilla, partida tutorial, partidas contra la IA y partidas **en vivo entre dos personas** por código de sala, con un solo servidor ya metido dentro. Sale en **Android (.apk)** y en **iPhone (.ipa, sin firmar)**, las dos construidas solas al subir cambios.
 
-Los peleadores del prototipo son **inventados**. El roster real, con nombres y stats de personas de verdad, sigue sin hacerse.
+**El roster es real.** 402 cartas de 355 peleadores de UFC, 57 países, 177 rankeadas, con las once divisiones completas de campeón a #15. Se genera desde la base de datos de peleadores, que es el documento maestro: si un dato de un peleador cambia, se cambia ahí y el juego se regenera.
+
+La mecánica de cartas y de PvP está cerrada y probada jugando. Siguen abiertos: la **economía** fuera de los sobres, los **modos** que no son PvP, las **licencias**, y si con el roster real hay que retocar las stats de la élite para que el finish deje de ser tan raro (§2.4 del GDD).
 
 ## Cómo trabajar aquí
 
@@ -37,5 +39,6 @@ Los peleadores del prototipo son **inventados**. El roster real, con nombres y s
 
 ## Documentos del proyecto
 
-- **GDD (revisión 2)** — todas las reglas cerradas, con el porqué de cada decisión. Los cambios que salieron de construir el prototipo van marcados **[R2]** y resumidos en el anexo A
+- **GDD (revisión 3)** — todas las reglas cerradas, con el porqué de cada decisión. Los cambios que salieron de construir van marcados **[R2]** y **[R3]**, y resumidos en las dos tablas del final. Donde una sección [R3] contradice lo que decía antes, manda la [R3]
 - **Decisiones descartadas y criterios de diseño** — qué se tumbó, por qué, y los principios que guían el diseño
+- **Base de datos de peleadores** — las 402 cartas con sus seis stats, país, ranking, atributo y récord, y el criterio con el que sale cada número. Es de donde se genera el roster del juego

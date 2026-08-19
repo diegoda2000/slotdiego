@@ -1,7 +1,12 @@
 # Juego de cartas de MMA — Documento de diseño
 
-**Estado:** bloque de cartas y PvP cerrado **y construido**. Economía, modos y licencias pendientes.
-**Última actualización:** 16 de agosto de 2026 — revisión 2
+**Estado:** bloque de cartas y PvP cerrado **y construido**, con roster real de UFC y aplicación en
+Android e iPhone. Economía fuera de los sobres, modos y licencias pendientes.
+**Última actualización:** 19 de agosto de 2026 — **revisión 3**
+
+> **Cómo leer este documento.** Las secciones marcadas **[R2]** y **[R3]** son cambios que salieron
+> de construir el juego. Donde una sección [R3] contradice lo que el documento decía antes, **manda
+> la [R3]**: las dos revisiones están resumidas en las tablas del final.
 
 > **Qué ha cambiado en esta revisión.** El juego ha dejado de estar solo sobre el papel: hay un
 > prototipo jugable, un APK y partidas en vivo entre dos personas reales. Construirlo ha obligado a
@@ -69,25 +74,76 @@ Cada stat visible sale de la media de sus sub-stats internas. La carta enseña l
 > usa nadie. Llevan solo las 6 grandes. Es la respuesta a la pregunta abierta de §11 y ahorra el 80%
 > del trabajo de puntuación fuera del pool alineable.
 
-### 2.3 Media general
+### 2.3 [R3] No hay media general. Ninguna
 
-**Media simple de las 6 stats.** Nada de ponderaciones ocultas: la gente hace cuentas y si el número no cuadra, piensa que hay trampa.
+Esta sección decía lo contrario y se sustituye entera. **La carta no tiene media, ni visible ni
+guardada en el código.** No existe el número.
 
-Problema conocido: el especialista sale malparado. Un 92 de golpeo y 60 en el resto da media 65 y parece basura, cuando es una carta buenísima para declarar golpeo.
+El motivo es el de siempre, llevado hasta el final: una media castiga al especialista. Un 92 de
+golpeo con 60 en lo demás da media 65 y parece basura, cuando es una carta buenísima para declarar
+golpeo. La solución de antes —enseñar la media *y* las stats altas— no arregla eso, solo añade un
+número que el jugador va a usar igual para comparar. Se quita el número.
 
-Solución: la carta enseña **la media y, destacadas, sus stats por encima de 85**. Dos datos para valorar, igual que en el FIFA ves la media y las stats en verde.
+**La carta se lee por sus seis stats.** Eso es todo lo que hay.
 
-### 2.4 Rangos por rareza
+#### Cómo se ordena entonces
 
-| Rareza | Rango |
-|---|---|
-| Bronce | 55-68 |
-| Plata | 65-78 |
-| Oro | 75-88 |
-| Élite y especiales | 85-95 |
-| Por encima de 95 | 4-5 cartas en todo el juego |
+Por **estatus deportivo**, que es lo que el jugador persigue de verdad:
 
-Este reparto es lo que hace funcionar la tabla de márgenes: oro contra bronce da finish, dos oros dan decisión, dos élites dan combate reñido. Si todas las cartas vivieran entre 78 y 92, no habría un solo finish en el juego.
+1. Campeones
+2. Top 5
+3. Top 6-10
+4. Top 11-15
+5. Oro sin rankear
+6. Plata
+
+Dentro de un mismo tramo se desempata por la **suma interna de las seis stats**, que **no se enseña
+nunca**, y si aún hay empate, por orden alfabético. Ese orden manda en todas partes: la colección,
+el resumen de un sobre, y "Rellenar con lo mejor".
+
+### 2.3.1 [R3] El diseño de la carta
+
+La carta es un **marco de imagen** —uno de oro y uno de plata— con el texto colocado encima en
+porcentajes medidos sobre la propia imagen. No hay una versión por tamaño: hay una sola que escala.
+
+De arriba abajo:
+
+- **Pestaña de ranking**: `#C` para un campeón, `#3` para un clasificado, vacía para el resto
+- **Icono y nombre del atributo**, y el récord
+- **Placa del nombre**, centrada en los dos ejes, con el tamaño de letra ajustado por nombre para
+  llenar la placa sin salirse
+- **Las seis stats**: el número dentro del rombo dorado o plateado, el nombre completo de la stat
+  centrado sobre su línea
+- **Al pie del panel blanco**: bandera del país, como imagen, y la sigla del peso (HW, LHW, MW…)
+
+Nombre y pestaña de ranking llevan relieve y un reflejo cruzado, para que se lean como parte del
+metal y no como una pegatina encima.
+
+**El texto se mide contra el ancho de la propia carta**, no contra la pantalla. Se probó con
+consultas de contenedor y hubo que cambiarlo: no existen en los WebView antiguos, y allí el texto
+se quedaba en un tamaño fijo y se salía de los huecos en cuanto la carta era pequeña.
+
+### 2.4 [R3] Rangos por rareza — solo oro y plata
+
+El bronce **no existe**. Queda reservado por si algún día entran Cage Warriors, KSW, LFA y demás
+promotoras, pero hoy son cero cartas.
+
+| Rareza | Quién entra | Rango | Cartas |
+|---|---|---|---|
+| **Oro** | Rankeado, racha de 3+, 2+ peleas de título, o 12+ victorias UFC con +4 | 74-89 | 244 |
+| **Plata** | Resto del roster UFC | 64-82 | 158 |
+| Bronce | Otras promotoras (pendiente) | 55-74 | 0 |
+| Especiales | Capa aparte | hasta 92 | — |
+
+**Y esto tiene una consecuencia que hay que mirar de frente.** El reparto de antes —bronce 55-68
+contra oro 75-88— era lo que hacía saltar la tabla de márgenes: oro contra bronce daba finish. Con
+el roster real de UFC los números están **mucho más juntos**, porque los peleadores de verdad se
+parecen más entre sí que las cartas inventadas. Medido sobre partidas completas, los finish caen al
+**6-14%** de los duelos, frente al 52% que daba el roster inventado.
+
+No es un fallo, es lo que pasa al usar datos reales, y hay que decidirlo a conciencia: o se acepta
+que el finish sea raro y valioso —que es defendible, en MMA real también lo es—, o se estiran las
+stats de la élite para volver a abrir el hueco. **Está sin decidir.**
 
 ### 2.5 Escala de habilidad, no de peso
 
@@ -189,10 +245,15 @@ Gana la stat más alta. El margen decide el tipo de victoria:
 
 | Margen | Resultado |
 |---|---|
-| 13 o más | Finish (KO o sumisión) |
-| 7-12 | Decisión |
-| 1-6 | Combate reñido: azar ponderado 65/35 |
+| **10 o más [R3]** | Finish (KO o sumisión) |
+| **4-9 [R3]** | Decisión |
+| **1-3 [R3]** | Combate reñido: azar ponderado **55/45** |
 | **0 [R2]** | **Empate exacto: moneda al aire, 50/50** |
+
+**[R3] Las franjas se estrecharon y el reñido se aplanó.** El finish baja de 13 a 10 y la decisión
+de 7-12 a 4-9, porque con el roster real de UFC los números están mucho más juntos y con las franjas
+anteriores casi no saltaba ningún finish. Y el reñido pasa de 65/35 a **55/45**: si la franja es de
+solo tres puntos, dar al alto dos de cada tres es demasiado premio para una diferencia mínima.
 
 **[R2] El empate exacto es su propio caso.** Con margen 0 no hay "el alto" al que dar el 65%: los dos
 números son el mismo. Meterlo en el cajón de "reñido" no cambiaba el resultado del sorteo, pero sí
@@ -200,16 +261,25 @@ lo que el juego le contaba al jugador — decía 65/35 sobre un duelo que era 50
 97 en la misma stat eso se nota y parece trampa. Es un caso frecuente, no una rareza: en las
 mediciones del prototipo sale en torno al 8-11% de los duelos.
 
-### 5.4 Victoria
+### 5.4 [R3] Victoria
 
 - **A 4 victorias**
-- Si acaba **3-3**: desempate en la división del veto aleatorio, **stat al azar** entre las 6, cartas frescas (esa división no se ha jugado)
+- Si acaba **3-3**, el primer criterio son los **finishes**: gana quien haya acabado más peleas antes
+  de tiempo. Es lo justo — dos peleadores con el mismo marcador no han hecho lo mismo si uno ha
+  ganado noqueando y el otro por decisión ajustada
+- **Solo si también van igualados a finishes** se juega el duelo de desempate: división del veto
+  aleatorio, **stat al azar** entre las 6, cartas frescas (esa división no se ha jugado)
 - En el desempate no hay cambios de división ni jugadas: no hay divisiones contiguas en juego
+
+Así el azar decide lo último de lo último, y solo cuando de verdad no hay nada que separe a los dos.
 
 ---
 
-## 6. Cambios de división
+## 6. [R3] Cambios de división — solo defendiendo
 
+- **Solo lo puede hacer quien defiende.** El que declara elige división y stat: ya tiene toda la
+  iniciativa del duelo, y darle además mover cartas es darle dos jugadas en la misma mano. El cambio
+  es una **respuesta**, y por eso vive en la pantalla del defensor
 - Solo entre **divisiones contiguas** y ambas en juego
 - **Salto máximo de una** división
 - **Intercambio obligado:** si subes tu ligero al welter, tu welter baja al ligero
@@ -252,7 +322,13 @@ convenía. En las partidas en vivo esto cuesta una ida y vuelta más por duelo, 
 ### CAMALEÓN
 *Solo peleadores con historial real en dos divisiones (McGregor, Cejudo, Adesanya, Jones, Cormier, Nunes, Shevchenko, Penn...)*
 
-- **Normal:** al declarar, mandas la carta a pelear en una división contigua **sin penalización**. La carta que tenías en esa división **se descarta sin pelear**, y el Camaleón **sigue disponible para su propio duelo**.
+**[R3] Solo defendiendo**, por lo mismo que el cambio de división: el que declara ya elige división
+y stat, y darle además mover cartas es darle dos jugadas en la misma mano. El Camaleón es una
+respuesta a lo que te han declarado.
+
+- **Normal:** cuando te declaran, mandas tu Camaleón a pelear ese duelo desde una división contigua
+  **sin penalización**. La carta que tenías en la división declarada **se descarta sin pelear**, y el
+  Camaleón **sigue disponible para su propio duelo**.
 - **Plus:** lo mismo, pero **no consume tu jugada de la partida**.
 
 ### INCÓMODO
@@ -277,27 +353,37 @@ Esto estaba sin especificar y se resolvió mal en la primera implementación. La
 
 Un fallo, un castigo. El Incómodo ya es fuerte con eso.
 
-### ESPECIALISTA
+### [R3] ESPECIALISTA — impone su stat
 *Va asociado a una stat concreta*
 
-- **Normal:** si gana su duelo en su stat, **esa stat no se gasta** del pool compartido.
-- **Plus:** la stat no se gasta **aunque pierda**.
+Esta sección cambia entera. El Especialista ya no salva stats: **impone la suya al duelo**.
 
-La stat revive **para los dos jugadores**. El pool es compartido: si reviviera solo para uno, habría dos listas distintas y el sistema se rompe. Es un rasgo generoso y ahí está su gracia — le devuelves una opción al rival, así que tienes que estar seguro de que en esa stat mandas tú.
+- **Normal:** el duelo se pelea **en su stat**, en lugar de la que se había declarado.
+- **Plus:** lo mismo, y además se puede usar **aunque ya hayas gastado tu jugada**.
 
-**[R2] Cuesta la jugada y hay que activarlo.** Es un rasgo como los demás: no revive la stat por su
-cuenta ni sale gratis. Lo puede activar tanto quien declara (al elegir la stat) como quien defiende
-(en la pantalla de mandar su carta).
+Es la respuesta natural de un especialista: te han declarado donde a él no le conviene, y él arrastra
+la pelea a lo suyo. Solo tiene sentido si su stat **sigue viva** en el pool y **no es ya** la
+declarada; si no, el botón no aparece.
 
-### VETERANO
+Lo puede activar tanto quien declara —eligiendo la stat— como quien defiende, en la pantalla de
+mandar su carta.
+
+### [R3] VETERANO — su stat no se gasta
 *Solo peleadores con carrera larga de verdad*
 
-- **Normal:** cuando el rival declara la stat, la cambias por **una aleatoria** de entre las vivas.
-- **Plus:** **la eliges tú**.
+Y esta también. El Veterano se queda con lo que antes hacía el Especialista, que es donde encaja
+mejor: un veterano sabe administrar, no sabe cambiar de pelea a mitad.
 
-En el duelo 6 no se puede activar: solo queda una stat viva y no hay a dónde cambiar. **El botón sale apagado con el motivo escrito** ("no quedan stats a las que cambiar"). Se pierde el recurso por mala gestión, pero no parece un bug.
+- **Normal:** si **gana** su duelo, la stat de ese duelo **no se gasta** del pool compartido.
+- **Plus:** la stat no se gasta **aunque pierda**.
 
-Que el normal sea aleatorio significa que a veces te sale por la culata: puede caer en una stat donde el rival esté aún mejor. Es lo que le da carácter de jugada de emergencia y lo que justifica el valor del plus.
+La stat revive **para los dos jugadores**. El pool es compartido: si reviviera solo para uno, habría
+dos listas distintas y el sistema se rompe. Es un rasgo generoso y ahí está su gracia — le devuelves
+una opción al rival, así que tienes que estar seguro de que en esa stat mandas tú.
+
+**En el duelo 6 no se puede activar**: es el último, y una stat que vuelve al pool ya no la va a usar
+nadie. **El botón sale apagado con el motivo escrito**. Se pierde el recurso por mala gestión, pero
+no parece un bug.
 
 **[R2] Se decide en la pantalla en la que mandas tu carta**, no en una pantalla aparte. Es la misma
 ventana en la que el defensor toma todas sus decisiones, y así el rasgo no interrumpe el ritmo del
@@ -312,7 +398,13 @@ duelo ni se convierte en un aviso que aparece y desaparece.
 ## 8. Producto y PvP
 
 - **Partidas en vivo, online.** Por turnos, así que la latencia da igual y el servidor es barato
-- **Abandono = rendición.** Gana el otro
+- **[R3] Reloj de 25 segundos por decisión.** Lo lleva el servidor, no el móvil: si el reloj se agota
+  juega por ti y la partida sigue. Un rival que se queda mirando no puede congelar la partida
+- **Abandono = rendición.** Gana el otro. Y **cerrar la aplicación es abandonar**: el servidor da un
+  margen corto por si es un túnel o un cambio de red, y pasado ese margen da la partida por perdida
+- **[R3] Botón de rendirse**, explícito. Si vas 0-4 y quieres empezar otra, poder decirlo es mejor
+  que obligarte a jugar tres duelos de trámite o a cerrar la aplicación
+- **[R3] Chat dentro de la partida.** Se juega contra una persona; que no se pueda ni saludar es raro
 - **Dos modos de emparejamiento:**
   - **Normales:** cualquier emparejamiento, para probar plantillas y estrategias
   - **Competitivas:** partidas de posicionamiento → liga → ascensos
@@ -371,10 +463,24 @@ Es la pieza que sostiene el bucle diario, y tiene reglas propias:
 - **De uno en uno.** No se pueden abrir varios a la vez. Lo que hace especial abrir veinte de golpe es
   precisamente que no puedes hacerlo con el básico.
 - **Tasa muy baja.** Que salga un especial o un oro alto tiene que ser **casi imposible: 1% o menos**.
-  Lo que sale de verdad son **oros bajos y platas**, y de vez en cuando un bronce.
+  Lo que sale de verdad son **oros bajos y platas**.
 
 **Todos los sobres del juego entregan 9 cartas**, sea cual sea su tipo. Lo que cambia entre ellos son
 las probabilidades, no la cantidad: así el jugador compara sobres por una sola variable.
+
+#### [R3] Cómo se abre un sobre
+
+Dos pasos, y ya:
+
+1. La **mejor carta de las nueve** ocupa casi toda la pantalla, centrada.
+2. **Un toque encima** y sale el sobre entero.
+
+No hay botón de continuar ni se van pasando una a una. Nueve cartas de una en una son ocho toques de
+puro trámite, y el momento que engancha —ver qué te ha tocado— es justo el que se diluye repitiéndolo.
+
+Y **desde ahí no se encadena un básico**. El gratis se reclama en la pantalla de sobres y en ningún
+otro sitio: ofrecer "abrir otro" al final de cada apertura convierte esa pantalla en una palanca de
+la que no sales. Lo que sí se encadena es lo que ya tienes guardado en la mochila.
 
 #### [R3] Los tres sobres no son el mismo sobre a tres precios
 
@@ -398,17 +504,26 @@ plata**. Cada uno hace una cosa distinta, y por eso no se comparan por cuántos 
 
 Lo que sí tiene que crecer con el precio es **la carta alta**, y crece: 0,97% → 4,07% → 26,39%.
 
-### 9.2 Fichas de intercambio
+### 9.2 [R3] Fichas de intercambio
 
-Se consiguen reciclando repetidos:
+Se consiguen reciclando **repetidos**, y aquí hay dos reglas duras antes de la tabla:
 
-| Reciclas | Obtienes |
+- **La primera copia de una carta no se recicla nunca.** Da igual lo que sea: si solo tienes una, no
+  se toca. Reciclar no puede vaciarte la colección, que es lo que da las cartas especiales.
+- **Cada ficha sale de un solo tramo.** No se mezclan: diez platas y tres oros sueltos no completan
+  nada.
+
+| Reciclas (repetidos del mismo tramo) | Obtienes |
 |---|---|
-| 1 oro | 1 ficha |
-| 5 platas | 1 ficha |
-| 20 bronces | 1 ficha |
+| 1 campeón o Top 5 | 1 ficha |
+| 4 del Top 6-15 | 1 ficha |
+| 10 oros sin rankear | 1 ficha |
+| 30 platas | 1 ficha |
 
-La escala está muy separada a propósito: de bronces sobran cientos y de oros casi ninguno. Si un oro valiera poco más de tres bronces, la gente trituraría oros para farmear rápido y luego los echaría de menos en los sets.
+La escala va por **estatus deportivo**, no por rareza, igual que todo lo demás desde [R3]. Y está
+muy separada a propósito: de platas sobran cientos y de coronas casi ninguna. Si una corona valiera
+poco más de tres platas, la gente trituraría coronas para farmear rápido y luego las echaría de
+menos en los sets.
 
 **La ficha no es el precio de una carta: es la entrada a la sala de intercambio.** No mide valor, no se usa para pagar diferencias. Solo abre la puerta.
 
@@ -490,7 +605,7 @@ ser justo la del número.
 - **Cuántas cartas tendrá el juego en total.** Sin casa de subastas, ese número decide si un set de gimnasio es alcanzable o imposible
 - **Profundidad de las divisiones femeninas.** Con PvP solo UFC, las 3 femeninas salen de un roster corto (paja, mosca y gallo). Son el 27% de cada plantilla, así que hay que comprobar que hay peleadoras suficientes contando versiones especiales y retiradas
 - **El sobre que decepciona.** Sacar un peleador buenísimo de KSW y no poder alinearlo puede sentirse como un mal tirón. Hay que decidir si se separan los pools de sobres o si basta con que los sets recompensen bien
-- **El 3 por 1 y las cuentas secundarias.** Si se pueden dar tres bronces por un oro, dos cuentas del mismo dueño se vacían la una en la otra. Se tapa limitando la diferencia de rareza dentro de un mismo trueque
+- **El 3 por 1 y las cuentas secundarias.** Si se pueden dar tres platas por un oro, dos cuentas del mismo dueño se vacían la una en la otra. Se tapa limitando la diferencia de estatus dentro de un mismo trueque
 - **¿Entran al trueque las cartas de set y las de rasgo?** Si son intercambiables, quien tenga stock consigue las recompensas de los desafíos sin jugarlos. En FUT van marcadas como no traspasables por este motivo exacto
 - Ritmo de sobres y recompensas: es la columna vertebral del juego
 - Diseño concreto de los SBC
@@ -527,7 +642,8 @@ Las dos que hay que mirar:
 - Qué pasa con las desconexiones (distinto del abandono voluntario)
 - Arranque el día 1: sin jugadores conectados, el emparejamiento en vivo no funciona. **Las salas por
   código lo esquivan** mientras no haya masa crítica, pero no lo resuelven
-- Reloj de 20-30 segundos por decisión: está en el diseño, no en el prototipo
+- ~~Reloj de 20-30 segundos por decisión: está en el diseño, no en el prototipo~~ — **[R3] hecho**:
+  son 25 segundos, los lleva el servidor y si se agotan juega por ti
 - Identidad: hoy es un identificador del propio móvil. Vale para jugar con amigos, no para una liga
   competitiva
 
@@ -545,7 +661,24 @@ Las dos que hay que mirar:
 | 6 | §4.1 | **El que empieza una no empieza la otra**; contra la IA **no hay dado**; y qué significa cada opción, con su tabla |
 | 7 | §8.1 / §9.1 | PvP en vivo **por código de sala, sin cuentas, un solo servidor**; una pulsación que sobra se ignora, no se rechaza; sobre básico **ilimitado, directo, de uno en uno, 1% o menos** de cartas altas; **9 cartas** en todos los sobres |
 | 8 | §11 | **Partida tutorial** de trece avisos y **pantalla de reglas** |
-| 9 | §9.1 [R3] | Los **tres sobres no son comparables por oros**: cada uno hace una cosa. El básico da oros de sobra pero un oro alto **solo en el 0,97%** de los sobres, cumpliendo por fin el «1% o menos». Y el básico **no se encadena desde la apertura**: se reclama en la pantalla de sobres y en ningún otro sitio |
+
+## [R3] Lo que cambia en esta revisión
+
+| # | Punto | Qué cambia |
+|---|---|---|
+| 9 | §2.3 | **La media general desaparece**, ni visible ni guardada. La carta se lee por sus seis stats, y el orden lo da el **estatus deportivo**: campeones, top 5, top 6-10, top 11-15, oro sin rankear, plata. Desempate por suma interna, que no se enseña nunca |
+| 10 | §2.3.1 | **El diseño de la carta**: marco de imagen, qué va en cada hueco, y por qué el texto se mide contra el ancho de la carta y no con consultas de contenedor |
+| 11 | §2.4 | **Solo oro y plata**, con sus rangos reales. Y el aviso de que con el roster real los **finish caen al 6-14%**, decisión pendiente |
+| 12 | §9.1 | **Cómo se abre un sobre**: carta grande, un toque, sobre entero. Y el básico **no se encadena desde la apertura** |
+| 13 | §9.1 | Los **tres sobres no son comparables por oros**: cada uno hace una cosa. El básico da oros de sobra pero un oro alto **solo en el 0,97%** de los sobres, cumpliendo por fin el «1% o menos» |
+| 14 | §9.2 | **Reciclaje por estatus**, no por rareza: 1 corona · 4 del top 6-15 · 10 oros · 30 platas. La **primera copia nunca se recicla** y **no se mezclan tramos** |
+| 15 | §5.3 | **Franjas nuevas**: finish desde 10, decisión 4-9, reñido 1-3 y a **55/45** en vez de 65/35 |
+| 16 | §5.4 | A 3-3 desempatan primero los **finishes**; el duelo de desempate solo si también van iguales ahí |
+| 17 | §6 y §7 CAMALEÓN | El **cambio de división y el Camaleón son solo del que defiende**. El que declara ya elige división y stat |
+| 18 | §7 ESPECIALISTA | Deja de salvar stats: ahora **impone su stat al duelo** |
+| 19 | §7 VETERANO | Se queda con lo que hacía el Especialista: **su stat no se gasta** del pool — al ganar en el normal, gane o pierda en el plus. **Inusable en el duelo 6**, con el botón apagado y el motivo escrito |
+| 20 | §8 | En vivo: **reloj de 25 s** llevado por el servidor, **cerrar la aplicación es rendirse**, **botón de rendición** explícito y **chat** en la partida |
+| 21 | §2 / §9 | El roster es la **base de datos real de UFC**: 402 cartas, 355 peleadores, 57 países, 177 rankeadas, con las once divisiones completas de campeón a #15 |
 
 Cambios menores que no alteran ninguna regla de partida: §2.2 y §2.6 (las cartas de colección no
 llevan sub-stats ni rasgos), §2.7 (mínimo de rasgos por clase en el roster), §9.4 (la carta de rasgo
