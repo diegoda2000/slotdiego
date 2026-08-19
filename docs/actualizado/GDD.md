@@ -78,6 +78,42 @@ Cada stat visible sale de la media de sus sub-stats internas. La carta enseña l
 > usa nadie. Llevan solo las 6 grandes. Es la respuesta a la pregunta abierta de §11 y ahorra el 80%
 > del trabajo de puntuación fuera del pool alineable.
 
+### 2.2.1 [R3] El techo de una stat se gana con el puesto
+
+La base de datos ya declaraba dos reglas para puntuar, y **no se estaban cumpliendo**. Brando
+Pericic, #15 de pesado con 7-1-0, tenía **88 de GOLPEO**: el mismo número que Alex Pereira y por
+encima de Tom Aspinall. Josh Hokit, con diez peleas, llevaba dos ochentaiochos. Un 88 que comparten
+veintidós cartas no distingue a nadie.
+
+**Regla 1 — la élite ancla la escala**, así que el techo va con el puesto:
+
+| Puesto | Techo de cada stat |
+|---|---|
+| Campeón | 89 |
+| Top 1-5 | 88 |
+| Top 6-10 | 87 |
+| Top 11-15 | 86 |
+| Oro sin rankear | 85 |
+
+Aplica a las **seis** stats, no solo a la más alta: la carta refleja dónde estás hoy. Un ex campeón
+que hoy no está clasificado tiene carta de no clasificado.
+
+**Regla 2 — las muestras cortas tiran hacia la media.** Por debajo de doce peleas el valor se acerca
+a la media de su banda en proporción a lo corta que sea la muestra, y tira **de los dos lados**: una
+muestra corta tampoco puede ser extrema por abajo.
+
+Corregidas así, **113 cartas cambian y 169 valores se mueven**. Pericic pasa de `88-75-76-77-87-85`
+a `85-76-77-79-86-84`. Y el número más alto de cada una de las seis stats pasa a estar en manos de
+un campeón o un top 5, que es como tenía que haber sido desde el principio.
+
+La corrección **no se hizo a mano**: vive en `herramientas/corregir-stats.mjs`, se puede volver a
+pasar y se puede auditar.
+
+> **Sigue abierto: las platas.** Su banda declarada es 64-82 y los datos solo usan de 68 a 82, con
+> **121 de 158 cartas empatadas en 82 de DUREZA**. Es el mismo vicio que tenía el oro, más agudo.
+> Arreglarlo es reescalar la stat entera, no ponerle techo, y se dejó fuera de esta revisión a
+> propósito: cambiaría el carácter de todo el fondo de la colección.
+
 ### 2.3 [R3] No hay media general. Ninguna
 
 Esta sección decía lo contrario y se sustituye entera. **La carta no tiene media, ni visible ni
@@ -90,20 +126,21 @@ número que el jugador va a usar igual para comparar. Se quita el número.
 
 **La carta se lee por sus seis stats.** Eso es todo lo que hay.
 
-#### Cómo se ordena entonces
+#### [R3] Cómo se ordena entonces: por puesto real
 
-Por **estatus deportivo**, que es lo que el jugador persigue de verdad:
+1. **Rankeado antes que sin rankear. Siempre**, y sin mirar los números: un #15 va delante del oro
+   sin rankear más completo del roster. El ranking es lo que el jugador persigue y lo que la carta
+   enseña.
+2. Entre rankeados, **por puesto**: campeón, #1, #2… hasta #15.
+3. Entre los que no tienen ranking, primero el oro y luego la plata, y dentro de cada uno por la
+   **suma interna de las seis stats**, que **no se enseña nunca**.
+4. Y si aún hay empate, alfabético.
 
-1. Campeones
-2. Top 5
-3. Top 6-10
-4. Top 11-15
-5. Oro sin rankear
-6. Plata
+Antes se agrupaba por tramos de cinco puestos y dentro del tramo mandaba la suma, y eso ponía a un
+**#15 por delante de un #11** cuando el #15 sumaba más. Manda el puesto.
 
-Dentro de un mismo tramo se desempata por la **suma interna de las seis stats**, que **no se enseña
-nunca**, y si aún hay empate, por orden alfabético. Ese orden manda en todas partes: la colección,
-el resumen de un sobre, y "Rellenar con lo mejor".
+Ese orden manda en todas partes: la colección, el resumen de un sobre, la carta que enseña un sobre
+al abrirlo, y "Rellenar con lo mejor".
 
 ### 2.3.1 [R3] El diseño de la carta
 
@@ -788,6 +825,9 @@ Las dos que hay que mirar:
 | 27 | §9.1 | **El básico, reajustado**: mitad oros y mitad platas, un rankeado cada seis sobres y, cuando cae, el 97% de las veces es del **12-15**. Del 11 para arriba, simbólico |
 | 28 | §9.1 | Los **niveles de sobre** dejan de coincidir con los tramos de estatus: se cortan en corona · 6-11 · 12-15 · oro, que es donde manda el reparto |
 | 29 | §9.1 | Las **platas se parten en alta y baja** por su suma interna, y el sobre de plata reparte **92% bajas**, que es lo que le da recorrido |
+| 30 | §2.2.1 | **Las stats, corregidas**: el techo de cada una se gana con el puesto, y las muestras cortas tiran hacia la media. Eran dos reglas ya escritas que no se cumplían; 113 cartas cambian |
+| 31 | §2.3 | El orden pasa a ir por **puesto real** —campeón, #1, #2… #15— en vez de por tramos de cinco. Un #11 iba detrás de un #15 si el #15 sumaba más |
+| 32 | §9.1 | La apertura **no repinta nada**: la carta está en pantalla de principio a fin y sus partes solo aparecen. Antes, pasar de aviso a carta la destruía y la recreaba, y eso era el parpadeo |
 
 Cambios menores que no alteran ninguna regla de partida: §2.2 y §2.6 (las cartas de colección no
 llevan sub-stats ni rasgos), §2.7 (mínimo de rasgos por clase en el roster), §9.4 (la carta de rasgo
