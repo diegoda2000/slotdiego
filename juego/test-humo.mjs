@@ -180,6 +180,35 @@ for (const [t, r] of Object.entries(reparto)) {
     `${t}: campeones o top 5 al ritmo declarado (${(r.coronas * 100).toFixed(2)} por cada 100 sobres)`);
 }
 
+/* Cada sobre hace UNA cosa, y esto lo fija para que no se deshaga sin querer:
+   el básico da oros para montarse un equipo pero casi nunca uno alto, el de plata
+   está para cerrar la colección de platas, y el de oro es el que reparte arriba. */
+const oficio = await page.evaluate(() => {
+  const N = 60000, out = {};
+  for (const tipo of Object.keys(TIPOS_SOBRE)) {
+    let oros = 0, platas = 0, conAlto = 0;
+    for (let i = 0; i < N; i++) {
+      const s = repartoSobre(tipo);
+      let alto = 0;
+      for (const n of s) {
+        if (n === 'plata') platas++; else oros++;
+        if (n === 'corona' || n === 'top10') alto++;
+      }
+      if (alto) conAlto++;
+    }
+    out[tipo] = { oros: oros / N, platas: platas / N, pctAlto: conAlto / N * 100 };
+  }
+  return out;
+});
+comprobar(oficio.basico.oros >= 4,
+  `el básico da oros de sobra para montarse un equipo (${oficio.basico.oros.toFixed(2)} por sobre)`);
+comprobar(oficio.basico.pctAlto <= 1,
+  `pero un oro alto es casi imposible, el 1% o menos que manda el GDD (${oficio.basico.pctAlto.toFixed(2)}% de los sobres)`);
+comprobar(oficio.plata.platas >= 6,
+  `el de plata es sobre todo platas, que es para lo que se compra (${oficio.plata.platas.toFixed(2)} por sobre)`);
+comprobar(oficio.basico.pctAlto < oficio.plata.pctAlto && oficio.plata.pctAlto < oficio.oro.pctAlto,
+  `y la carta alta sube con el sobre (${oficio.basico.pctAlto.toFixed(2)}% · ${oficio.plata.pctAlto.toFixed(2)}% · ${oficio.oro.pctAlto.toFixed(2)}%)`);
+
 // Solo el básico es gratis: los de plata y oro se compran o se ganan.
 await page.evaluate(() => { S.gratis = {}; S.sobres = []; ir('sobres'); });
 comprobar(await page.locator('[data-reloj]').count() === 1,
@@ -282,6 +311,21 @@ const resumen = await page.evaluate(() => ({
 comprobar(resumen.enResumen, 'un toque en la carta lleva al sobre entero');
 comprobar(resumen.mostradas === resumen.total && resumen.total > 0,
   'el resumen enseña todas las cartas del sobre');
+
+/* Desde la apertura solo se encadena lo que ya tienes guardado. El básico se reclama
+   en la pantalla de sobres y en ningún otro sitio. */
+const encadena = await page.evaluate(() => {
+  // con uno guardado del mismo tipo, sí se puede encadenar
+  S.sobres = [{ tipo: 'oro' }]; abrirTanda(abrirSobre('oro'), 'oro'); tmp.ap.resumen = true; render();
+  const propios = document.querySelectorAll('[data-a="abrir"]').length;
+  // tras un básico, con la mochila vacía, no se ofrece nada
+  S.sobres = []; abrirTanda(abrirSobre('basico'), 'basico'); tmp.ap.resumen = true; render();
+  const trasBasico = document.querySelectorAll('[data-a="abrirgratis"],[data-a="abrir"]').length;
+  return { propios, trasBasico };
+});
+comprobar(encadena.propios >= 1, 'con sobres guardados sí ofrece abrir otro de los tuyos');
+comprobar(encadena.trasBasico === 0,
+  'pero tras un básico no ofrece encadenar otro: el gratis solo se reclama en Sobres');
 
 /* El texto de la carta se mide contra su propio ancho, así que tiene que caer en su
    sitio a cualquier tamaño. Esto es lo que se rompía en la rejilla del resumen. */

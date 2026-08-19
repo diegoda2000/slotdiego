@@ -376,6 +376,28 @@ Es la pieza que sostiene el bucle diario, y tiene reglas propias:
 **Todos los sobres del juego entregan 9 cartas**, sea cual sea su tipo. Lo que cambia entre ellos son
 las probabilidades, no la cantidad: así el jugador compara sobres por una sola variable.
 
+#### [R3] Los tres sobres no son el mismo sobre a tres precios
+
+Es el error de lectura fácil, y hay que dejarlo escrito: **el básico no es una versión peor del de
+plata**. Cada uno hace una cosa distinta, y por eso no se comparan por cuántos oros dan.
+
+| | Coste | Oros | Platas | Rankeadas | ≥1 corona | ≥1 oro alto |
+|---|---|---|---|---|---|---|
+| **Básico** | gratis, ilimitado | 5,48 | 3,52 | 1,00 | 0,10% | **0,97%** |
+| **Plata** | 250 | 1,80 | 7,20 | 0,76 | 0,54% | 4,07% |
+| **Oro** | 600 | 7,95 | 1,05 | 3,98 | 4,65% | 26,39% |
+
+- El **básico** da muchos oros **a propósito**: es lo que permite que cualquiera se monte un once
+  desde el primer día sin gastar nada. Lo que casi no da es un oro **alto** — una corona cada mil
+  sobres, y un oro alto en el 0,97% de ellos, que es el «1% o menos» de arriba. Se hace un equipo,
+  no se hace un equipo de campeones.
+- El **de plata** se compra para **cerrar la colección de platas**, que es lo que desbloquea las
+  cartas especiales. Por eso trae 7,20 platas y solo 1,80 oros. No compite con el básico: hace otra
+  cosa.
+- El **de oro** es el único que reparte cartas de arriba de verdad, y es el caro.
+
+Lo que sí tiene que crecer con el precio es **la carta alta**, y crece: 0,97% → 4,07% → 26,39%.
+
 ### 9.2 Fichas de intercambio
 
 Se consiguen reciclando repetidos:
@@ -523,6 +545,7 @@ Las dos que hay que mirar:
 | 6 | §4.1 | **El que empieza una no empieza la otra**; contra la IA **no hay dado**; y qué significa cada opción, con su tabla |
 | 7 | §8.1 / §9.1 | PvP en vivo **por código de sala, sin cuentas, un solo servidor**; una pulsación que sobra se ignora, no se rechaza; sobre básico **ilimitado, directo, de uno en uno, 1% o menos** de cartas altas; **9 cartas** en todos los sobres |
 | 8 | §11 | **Partida tutorial** de trece avisos y **pantalla de reglas** |
+| 9 | §9.1 [R3] | Los **tres sobres no son comparables por oros**: cada uno hace una cosa. El básico da oros de sobra pero un oro alto **solo en el 0,97%** de los sobres, cumpliendo por fin el «1% o menos». Y el básico **no se encadena desde la apertura**: se reclama en la pantalla de sobres y en ningún otro sitio |
 
 Cambios menores que no alteran ninguna regla de partida: §2.2 y §2.6 (las cartas de colección no
 llevan sub-stats ni rasgos), §2.7 (mínimo de rasgos por clase en el roster), §9.4 (la carta de rasgo

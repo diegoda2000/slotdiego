@@ -381,11 +381,23 @@ const NIVELES=[
 ];
 const NIVEL_IDS=NIVELES.map(n=>n.id);
 
+/* Los tres sobres NO son el mismo sobre a distintos precios: cada uno hace una cosa.
+
+   El BÁSICO es gratis e ilimitado, y está para que cualquiera pueda montarse un equipo
+   desde el primer día. Por eso da muchos oros. Lo que casi no da es un oro ALTO: la
+   corona y el top 10 son casi imposibles, y lo que llena el sobre son oros sin rankear
+   y algún 11-15. Se hace un once entero, sí, pero no un once de campeones.
+
+   El de PLATA se compra para cerrar la colección de platas, que es lo que da las cartas
+   especiales. Por eso trae 1-3 oros y el resto platas: no compite con el básico, hace
+   otra cosa. Comparar los dos por cuántos oros dan es comparar mal.
+
+   El de ORO es el caro y el único que reparte cartas de arriba de verdad. */
 const TIPOS_SOBRE={
   // Gratis y sin límite: se abre en el sitio y de uno en uno.
   basico:{n:'Sobre básico', ic:'📦', coste:0, unico:true, gratis:true,
-    oros :{4:15, 5:25, 6:35, 7:25},
-    nivel:{corona:0.15, top10:1.35, top15:38.5, oro:60}},
+    oros :{4:20, 5:30, 6:32, 7:18},
+    nivel:{corona:0.02, top10:0.16, top15:18, oro:81.82}},
   plata :{n:'Sobre de plata', ic:'🎁', coste:250,
     oros :{1:40, 2:40, 3:20},
     nivel:{corona:0.30, top10:2, top15:40, oro:57.7}},
@@ -1093,10 +1105,11 @@ function vApertura(){
         return `<div>${cartaHTML(c,{attr:`data-carta="${it.iid}"`})}
           <div class="tiny center" style="margin-top:3px">${a.nuevas.includes(it.iid)?'<span class="chip on">nueva</span>':'repetida'}</div></div>`;
       }).join('')}</div>
-      ${TIPOS_SOBRE[a.tipo].unico
-        ? `<button class="btn mb" data-a="abrirgratis" data-g="${(GRATIS.find(g=>g.tipo===a.tipo)||{}).id||''}">Abrir otro ${TIPOS_SOBRE[a.tipo].n}</button>`
-        : S.sobres.some(s=>s.tipo===a.tipo)
-        ? `<button class="btn mb" data-a="abrir" data-t="${a.tipo}">Abrir otro ${TIPOS_SOBRE[a.tipo].n}</button>` : ''}
+      ${/* Solo se encadena lo que ya tienes guardado. El básico se reclama en la
+             pantalla de sobres y en ningún otro sitio: encadenarlo aquí convierte
+             la apertura en una máquina de tirar de la palanca sin salir nunca. */
+        S.sobres.some(s=>s.tipo===a.tipo)
+        ? `<button class="btn mb" data-a="abrir" data-t="${a.tipo}">Abrir otro ${TIPOS_SOBRE[a.tipo].n} de los tuyos</button>` : ''}
       <button class="btn sec mb" data-nav="sobres">Volver a los sobres</button>
       <button class="btn gho" data-nav="coleccion">Ver la colección</button>`;
   }
