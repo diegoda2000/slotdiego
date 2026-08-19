@@ -15,7 +15,7 @@ Responde siempre en español.
 
 **El roster es real.** 402 cartas de 355 peleadores de UFC, 57 países, 177 rankeadas, con las once divisiones completas de campeón a #15. Se genera desde la base de datos de peleadores, que es el documento maestro: si un dato de un peleador cambia, se cambia ahí y el juego se regenera.
 
-La mecánica de cartas y de PvP está cerrada y probada jugando. Siguen abiertos: la **economía** fuera de los sobres, los **modos** que no son PvP, las **licencias**, y si con el roster real hay que retocar las stats de la élite para que el finish deje de ser tan raro (§2.4 del GDD).
+La mecánica de cartas y de PvP está cerrada y probada jugando. Siguen abiertos: la **economía** fuera de los sobres, los **modos** que no son PvP, las **licencias**, y sobre todo **la calidad de la oposición** — las stats hoy salen de los números de cada peleador, pero no de contra quién los hizo, y eso es lo que separa "buenas estadísticas" de "buen peleador" (§12 del GDD).
 
 ## Cómo trabajar aquí
 
@@ -39,6 +39,6 @@ La mecánica de cartas y de PvP está cerrada y probada jugando. Siguen abiertos
 
 ## Documentos del proyecto
 
-- **GDD (revisión 3)** — todas las reglas cerradas, con el porqué de cada decisión. Los cambios que salieron de construir van marcados **[R2]** y **[R3]**, y resumidos en las dos tablas del final. Donde una sección [R3] contradice lo que decía antes, manda la [R3]
-- **Decisiones descartadas y criterios de diseño** — qué se tumbó, por qué, y los principios que guían el diseño
-- **Base de datos de peleadores** — las 402 cartas con sus seis stats, país, ranking, atributo y récord, y el criterio con el que sale cada número. Es de donde se genera el roster del juego
+- **GDD (revisión 4)** — todas las reglas cerradas, con el porqué de cada decisión. Los cambios que salieron de construir van marcados **[R2]**, **[R3]** y **[R4]**, y resumidos en los anexos A, B y C. Donde una sección [R4] contradice lo que decía antes, **manda la [R4]**
+- **Decisiones descartadas y criterios de diseño (revisión 4)** — qué se tumbó, por qué, y los principios que guían el diseño. Antes de proponer algo, mirar aquí
+- **Base de datos de peleadores** — las 402 cartas con sus seis stats, país, ranking, atributo y récord, y el criterio con el que sale cada número. Es de donde se genera el roster del juego: si un dato cambia, se cambia ahí y el juego se regenera
