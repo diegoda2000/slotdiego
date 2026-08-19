@@ -105,7 +105,7 @@ El recuento de abajo es por peleador único, que es lo que hay que mirar para di
 
 Con un solo peleador: Afganistán, Angola, Armenia, Austria, Baréin, Birmania, Bélgica, Chequia, Emiratos Árabes Unidos, Eslovaquia, Irak, Italia, Lituania, Marruecos, Panamá, Países Bajos, Perú, Portugal, Rep. Dominicana, Rumanía, Serbia, Suecia, Tailandia, Turquía, Uganda, Uzbekistán, Venezuela, Zimbabue.
 
-**57 países** sobre 351 peleadores. Dos lecturas para el diseño de sets:
+**57 países** sobre 355 peleadores. Dos lecturas para el diseño de sets:
 
 - **Estados Unidos (133) y Brasil (71) suman el 58% del roster.** Un set "Estados Unidos" completo es
   inviable como colección; esos dos países piden sets por subconjunto (por división, por rareza) o

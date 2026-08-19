@@ -8,10 +8,14 @@ Android e iPhone. Economía fuera de los sobres, modos y licencias pendientes.
 > de construir el juego. Donde una sección [R3] contradice lo que el documento decía antes, **manda
 > la [R3]**: las dos revisiones están resumidas en las tablas del final.
 
-> **Qué ha cambiado en esta revisión.** El juego ha dejado de estar solo sobre el papel: hay un
-> prototipo jugable, un APK y partidas en vivo entre dos personas reales. Construirlo ha obligado a
-> cerrar ocho puntos que el documento anterior dejaba abiertos o mal resueltos. Todos los cambios
-> están marcados con **[R2]** en el punto donde aplican, y resumidos al final en el anexo A.
+> **Qué ha cambiado, en dos revisiones.**
+> **[R2]** — el juego dejó de estar solo sobre el papel: prototipo jugable, APK y partidas en vivo
+> entre dos personas reales. Construirlo obligó a cerrar ocho puntos que el documento dejaba
+> abiertos o mal resueltos.
+> **[R3]** — entró el **roster real de UFC** y la aplicación salió también en iPhone, y con eso
+> cayeron trece cosas más: desaparece la media de la carta, desaparece el bronce, cambian las
+> franjas de margen, el Especialista y el Veterano intercambian oficio, y el reciclaje pasa a ir por
+> estatus deportivo.
 
 ---
 
