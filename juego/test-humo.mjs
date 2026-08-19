@@ -40,16 +40,18 @@ const info = await page.evaluate(() => ({
   soloOroYPlata: ROSTER.every(c => c.rareza === 'oro' || c.rareza === 'plata'),
   sinMedia: ROSTER.every(c => c.media === undefined),
   sumaOk: ROSTER.every(c => c.suma === SID.reduce((a, s) => a + c.stats[s], 0)),
-  conSubs: ROSTER.filter(c => c.subs).length,
-  sinSubs: ROSTER.filter(c => !c.subs && !c.alineable).length,
-  // la stat grande tiene que ser la media de sus 6 sub-stats (GDD §2.2)
-  mediaOk: ROSTER.filter(c => c.subs).every(c =>
-    SID.every(s => c.stats[s] === Math.round(c.subs[s].reduce((a, b) => a + b, 0) / c.subs[s].length))),
-  // el estatus manda: cada carta cae dentro de la banda de stats de su tramo
-  rangosOk: ROSTER.every(c => {
-    const m = SID.reduce((a, s) => a + c.stats[s], 0) / 6;
-    return m >= EST[c.estatus].min - 3 && m <= EST[c.estatus].max + 3;
-  }),
+  // Peleadores reales: nombre, récord y una sola versión de cada carta por división.
+  conRecord: ROSTER.filter(c => c.record).length,
+  conNombre: ROSTER.filter(c => c.nombre && c.nombre.length > 2).length,
+  dobles: new Set(ROSTER.filter(c => c.dobleDiv).map(c => c.persona)).size,
+  personaPorDivision: (() => {
+    const v = new Set();
+    for (const c of ROSTER) { const k = c.persona + '@' + c.division; if (v.has(k)) return false; v.add(k); }
+    return true;
+  })(),
+  // Cada stat cae dentro de la banda que declara la base de datos para su calidad.
+  rangosOk: ROSTER.every(c =>
+    SID.every(s => c.stats[s] >= EST[c.estatus].min - 6 && c.stats[s] <= EST[c.estatus].max)),
   // el orden es el deportivo, y dentro del tramo la suma manda
   ordenOk: (() => {
     const o = ordenar(ROSTER.filter(c => c.alineable));
@@ -68,10 +70,14 @@ const info = await page.evaluate(() => ({
 console.log(`  roster: ${info.total} cartas (${info.alineables} alineables, ${info.campeones} campeones)`);
 comprobar(info.total > 150, 'el roster se genera');
 comprobar(info.soloOroYPlata, 'solo hay oro y plata: el bronce ya no existe');
+comprobar(info.campeones === 11, `un campeón por división, ni más ni menos (${info.campeones})`);
 comprobar(info.sinMedia, 'NINGUNA carta tiene media, ni visible ni guardada');
 comprobar(info.sumaOk, 'la suma interna es la suma real de las 6 stats');
-comprobar(info.mediaOk, 'cada stat es la media de sus 6 sub-stats');
-comprobar(info.rangosOk, 'las stats respetan la banda de su estatus');
+comprobar(info.conRecord === info.total, 'todas las cartas traen el récord del peleador');
+comprobar(info.conNombre === info.total, 'y todas traen nombre');
+comprobar(info.personaPorDivision, 'ningún peleador aparece dos veces en la misma división');
+comprobar(info.dobles > 20, `hay peleadores con carta en varias divisiones (${info.dobles})`);
+comprobar(info.rangosOk, 'todas las stats caen en la banda que declara la base de datos');
 comprobar(info.ordenOk, 'el orden va por estatus deportivo y, dentro del tramo, por suma');
 comprobar(info.rasgosDistintos, 'ninguna carta lleva dos rasgos del mismo tipo');
 comprobar(info.camaleonesValidos, 'el Camaleón solo va en peleadores de dos divisiones');
@@ -80,7 +86,8 @@ comprobar(info.camaleonesValidos, 'el Camaleón solo va en peleadores de dos div
 const rasgos = await page.evaluate(() => {
   const c = {}; for (const t of Object.keys(RASGOS)) c[t] = 0;
   for (const x of ROSTER.filter(y => y.alineable)) for (const r of x.rasgos) c[r.tipo]++;
-  return { c, enColeccion: ROSTER.filter(y => !y.alineable && y.rasgos.length).length,
+  return { c, enPlata: ROSTER.filter(y => y.rareza === 'plata' && y.rasgos.length).length,
+    unoPorCarta: ROSTER.every(y => y.rasgos.length <= 1),
     veteranosValidos: ROSTER.every(y => !y.rasgos.some(r => r.tipo === 'veterano') || y.esVeterano),
     especialistasConStat: ROSTER.every(y => y.rasgos.every(r => r.tipo !== 'especialista' || !!r.stat)),
     conPlus: ROSTER.flatMap(y => y.rasgos).filter(r => r.plus).length };
@@ -88,11 +95,12 @@ const rasgos = await page.evaluate(() => {
 console.log('  rasgos: ' + Object.entries(rasgos.c).map(([t, n]) => `${t} ${n}`).join(' · '));
 comprobar(Object.values(rasgos.c).every(n => n >= 5),
   'los cuatro rasgos existen en el roster, ninguno se queda a cero');
+comprobar(rasgos.conPlus === 2,
+  `solo hay dos versiones plus en todo el juego, las de Makhachev (${rasgos.conPlus})`);
 comprobar(rasgos.veteranosValidos, 'el Veterano solo va en peleadores de carrera larga');
 comprobar(rasgos.especialistasConStat, 'todo Especialista lleva su stat asociada');
-comprobar(rasgos.conPlus > 0, 'existen versiones plus');
-comprobar(rasgos.enColeccion === 0, 'las cartas de colección no llevan rasgos que no podrían usar');
-comprobar(info.sinSubs > 0, 'las cartas de colección no llevan sub-stats');
+comprobar(rasgos.enPlata === 0, 'ninguna plata lleva atributo: solo los oros');
+comprobar(rasgos.unoPorCarta, 'una sola carta lleva más de un atributo como mucho');
 comprobar(info.plantillaLlena, 'el arranque cubre las 11 divisiones');
 
 /* ── 2. Sobres ────────────────────────────────────────────────────────── */

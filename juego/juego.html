@@ -206,6 +206,7 @@ th{color:var(--dim2);font-size:11px;text-transform:uppercase;letter-spacing:.04e
 <div id="app"></div>
 <div id="nav"></div>
 
+<script src="roster.js"></script>
 <script src="motor.js"></script>
 <script src="servidor.js"></script>
 <script>
@@ -461,20 +462,21 @@ function reciclar(iids){
 }
 function copias(cid){ return S.coleccion.filter(x=>x.cid===cid).length; }
 
-// Sets de colección: gimnasio, promotora y nacionalidad
+/* Sets de colección.
+
+   La base de datos real no trae gimnasio ni nacionalidad, así que los sets se arman con
+   lo que sí hay: la división y el atributo de la carta. Son agrupaciones que el jugador
+   entiende sin explicación —"los cinco mejores pesados", "cuatro Veteranos"— y que se
+   pueden perseguir mirando la colección. */
 function construirSets(){
   const out=[];
-  for(const g of GIMNASIOS.slice(0,6)){
-    const req=ROSTER.filter(c=>c.gimnasio===g).slice(0,4).map(c=>c.id);
-    if(req.length===4) out.push({id:'gim-'+g,n:'Gimnasio · '+g,req,premio:'top5'});
+  for(const d of DIVISIONES){
+    const req=ordenar(ROSTER.filter(c=>c.division===d.id&&c.rareza==='oro')).slice(0,4).map(c=>c.id);
+    if(req.length===4) out.push({id:'div-'+d.id,n:'Élite de '+d.n,req,premio:'top5'});
   }
-  for(const p of PROMOTORAS.slice(1)){
-    const req=ROSTER.filter(c=>c.promotora===p.id).slice(0,5).map(c=>c.id);
-    out.push({id:'pro-'+p.id,n:'Promotora · '+p.n,req,premio:'oro'});
-  }
-  for(const pa of PAISES.slice(0,4)){
-    const req=ROSTER.filter(c=>c.pais===pa).slice(0,4).map(c=>c.id);
-    if(req.length===4) out.push({id:'pai-'+pa,n:'Nacionalidad · '+pa,req,premio:'oro'});
+  for(const t of Object.keys(RASGOS)){
+    const req=ordenar(ROSTER.filter(c=>c.rasgos.some(r=>r.tipo===t))).slice(-4).map(c=>c.id);
+    if(req.length===4) out.push({id:'ras-'+t,n:RASGOS[t].ic+' Escuela '+RASGOS[t].n,req,premio:'oro'});
   }
   return out;
 }
@@ -489,11 +491,12 @@ const RETOS=[
   {id:'r2',n:'Base sólida',d:'Entrega 2 oros sin rankear de divisiones distintas',
    check:l=>l.length===2&&l.every(c=>c.estatus==='oro')&&new Set(l.map(c=>c.division)).size===2,
    premio:{sobre:'oro',divisa:0}},
-  {id:'r3',n:'Cruce de escuelas',d:'Entrega 2 oros de gimnasios distintos',
-   check:l=>l.length===2&&l.every(c=>c.rareza==='oro')&&new Set(l.map(c=>c.gimnasio)).size===2,
+  {id:'r3',n:'Cartel completo',d:'Entrega 4 oros de 4 divisiones distintas',
+   check:l=>l.length===4&&l.every(c=>c.rareza==='oro')&&new Set(l.map(c=>c.division)).size===4,
    premio:{sobre:'oro',divisa:400}},
-  {id:'r4',n:'Mundial',d:'Entrega 4 oros de 4 nacionalidades distintas',
-   check:l=>l.length===4&&new Set(l.map(c=>c.pais)).size===4&&l.every(c=>c.rareza==='oro'),
+  {id:'r4',n:'Caja de herramientas',d:'Entrega 3 cartas con atributo, los tres distintos',
+   check:l=>l.length===3&&l.every(c=>c.rasgos.length)&&
+     new Set(l.map(c=>c.rasgos[0].tipo)).size===3,
    premio:{sobre:'oro',divisa:0}},
 ];
 
@@ -961,7 +964,7 @@ function vApertura(){
       <div class="pop" style="max-width:225px;margin:0 auto 12px">${cartaHTML(c)}</div>
       <div class="mb">${nueva?'<span class="chip on">NUEVA</span>':'<span class="chip">repetida</span>'}
         ${c.alineable?'':'<span class="chip">colección</span>'}</div>
-      <div class="sub mb">${esc(c.arquetipo)} · ${esc(c.gimnasio)} · ${esc(c.pais)}</div>
+      <div class="sub mb">${DIV[c.division].n} · ${esc(c.record||'')}</div>
       <button class="btn" data-a="revelar">${a.i+1<a.items.length?'Siguiente':'Ver el resumen'}</button>
       <div class="tiny" style="margin-top:8px">Toca en cualquier sitio para continuar</div>
     </div>`;
@@ -1000,14 +1003,17 @@ function vColeccion(){
 function detalleCarta(iid){
   const it=inst(iid); if(!it) return; const c=PORID[it.cid];
   const enPlantilla=Object.values(S.plantilla).includes(iid);
-  const subs=c.subs?STATS.map(s=>`<div style="margin-bottom:7px">
+  // Cada stat, con lo que mide debajo. Los números de la base de datos son las seis
+  // grandes; el desglose explica de dónde sale cada una.
+  const subs=STATS.map(s=>`<div style="margin-bottom:7px">
       <div style="display:flex;justify-content:space-between"><b>${s.n}</b><b>${c.stats[s.id]}</b></div>
-      ${SUBSTATS[s.id].map((n,i)=>`<div style="display:flex;justify-content:space-between;font-size:11.5px;color:var(--dim)">
-        <span>${n}</span><span>${c.subs[s.id][i]}</span></div>`).join('')}</div>`).join('')
-    :'<div class="sub">Carta de colección: solo lleva las 6 stats grandes, sin sub-stats.</div>';
+      <div style="font-size:11.5px;color:var(--dim)">${SUBSTATS[s.id].join(' · ')}</div></div>`).join('');
+  const otras=ROSTER.filter(o=>o.persona===c.persona&&o.id!==c.id);
   ov(`<div style="max-width:200px;margin:0 auto 12px">${cartaHTML(c)}</div>
-    <div class="center mb"><b>${esc(c.nombre)}</b><div class="sub">${esc(c.arquetipo)}</div>
-    <div class="tiny">${esc(c.gimnasio)} · ${esc(c.pais)} · ${PROMOTORAS.find(p=>p.id===c.promotora).n}</div>
+    <div class="center mb"><b>${esc(c.nombre)}</b>
+    <div class="sub">${EST[c.estatus].n} de ${DIV[c.division].n}</div>
+    <div class="tiny">Récord ${esc(c.record||'—')}</div>
+    ${otras.length?`<div class="tiny">También pelea en ${otras.map(o=>DIV[o.division].n).join(' y ')} — pero no puedes alinear las dos</div>`:''}
     <div class="tiny">Tienes ${copias(c.id)} copia(s)${it.notraspasable?' · no traspasable':''}</div></div>
     ${c.rasgos.length?`<div class="card-panel">${c.rasgos.map(r=>`<div style="margin-bottom:8px">
       <b>${RASGOS[r.tipo].ic} ${RASGOS[r.tipo].n}${r.plus?'+':''}${r.stat?' · '+r.stat.toUpperCase():''}</b>
@@ -1457,11 +1463,15 @@ function vNotas(){
   const srv=servidorURL();
   return `<h2>Notas del prototipo</h2>
 
-  <div class="card-panel" style="border-color:var(--warn)"><h3>⚠️ Los peleadores son inventados</h3><div class="sub">
-    El catálogo entero está generado: nombres, apodos, gimnasios y stats. <b>Todavía no está la
-    base de datos real de la UFC.</b> Lo que sí está montado es el molde que la espera —estatus
-    deportivo, oro y plata, seis stats y rasgos—, así que cuando lleguen los datos de verdad se
-    sustituyen sin tocar el juego.
+  <div class="card-panel"><h3>🥊 Los peleadores son reales</h3><div class="sub">
+    396 cartas de 351 peleadores de la UFC, con sus seis stats y su récord, sacadas de la base
+    de datos del proyecto. Cuarenta y cuatro tienen carta en más de una división: puedes
+    coleccionarlas todas, pero <b>solo alinear una a la vez</b>.<br><br>
+    Lo que la base de datos <b>no</b> trae todavía es el puesto en el ranking. El juego lo
+    necesita para ordenar la colección y para los niveles de los sobres, así que de momento se
+    deduce de las propias stats: dentro de cada división, el mejor oro es el campeón, los cuatro
+    siguientes el top 5, y así. <b>No es el ranking real de la UFC</b> — en cuanto la base de
+    datos traiga esa columna, se sustituye por el dato de verdad.
   </div></div>
 
   <div class="card-panel"><h3>🎓 Si es tu primera partida</h3><div class="sub">
@@ -1544,7 +1554,7 @@ function plantillaGuiada(rasgosPedidos){
   for(const d of DIVISIONES){
     if(out[d.id]) continue;
     const cand=pool.filter(c=>c.division===d.id&&!usados.has(c.persona))
-      .sort((a,b)=>Math.abs(a.suma-468)-Math.abs(b.suma-468)); // parejas: que el margen se vea variado
+      .sort((a,b)=>Math.abs(a.suma-496)-Math.abs(b.suma-496)); // parejas: que el margen se vea variado
     out[d.id]=cand[0]; usados.add(cand[0].persona);
   }
   return out;

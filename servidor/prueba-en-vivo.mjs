@@ -11,6 +11,7 @@
 
    Uso:  node servidor/prueba-en-vivo.mjs https://…workers.dev
 */
+import '../juego/roster.js';
 import '../juego/motor.js';
 
 const BASE = (process.argv[2] || '').replace(/\/+$/, '');

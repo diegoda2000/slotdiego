@@ -11,6 +11,7 @@
    al que la gente cree estar jugando.
    ═══════════════════════════════════════════════════════════════════════════ */
 
+import '../../juego/roster.js';   // el catálogo de peleadores, generado de la base de datos
 import '../../juego/motor.js';   // define globalThis.MOTOR y sus nombres sueltos
 
 generarRoster();   // mismo catálogo que los clientes, de la misma semilla fija

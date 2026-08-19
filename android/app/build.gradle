@@ -11,6 +11,7 @@ def copiarJuego = tasks.register('copiarJuego', Copy) {
     from(rootProject.file('../juego')) {
         include 'juego.html'
         include 'motor.js'
+        include 'roster.js'   // el catálogo de peleadores
         include 'servidor.js'   // lleva dentro la dirección del servidor de directo
     }
     into assetsJuego
