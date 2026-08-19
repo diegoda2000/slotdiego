@@ -44,6 +44,17 @@ const info = await page.evaluate(() => ({
   conRecord: ROSTER.filter(c => c.record).length,
   conNombre: ROSTER.filter(c => c.nombre && c.nombre.length > 2).length,
   dobles: new Set(ROSTER.filter(c => c.dobleDiv).map(c => c.persona)).size,
+  conPais: ROSTER.filter(c => c.pais).length,
+  paises: new Set(ROSTER.map(c => c.pais)).size,
+  rankeadas: ROSTER.filter(c => c.rk !== null).length,
+  // un campeón por división y ni un puesto repetido dentro de la misma
+  rankingLimpio: DIVISIONES.every(d => {
+    const l = ROSTER.filter(c => c.division === d.id && c.rk !== null);
+    const p = l.map(c => c.rk);
+    return l.filter(c => c.rk === 0).length === 1 && new Set(p).size === p.length;
+  }),
+  // la plata nunca lleva puesto: la rareza manda en el orden
+  plataSinRanking: ROSTER.every(c => c.rareza !== 'plata' || c.rk === null),
   personaPorDivision: (() => {
     const v = new Set();
     for (const c of ROSTER) { const k = c.persona + '@' + c.division; if (v.has(k)) return false; v.add(k); }
@@ -77,6 +88,10 @@ comprobar(info.conRecord === info.total, 'todas las cartas traen el récord del 
 comprobar(info.conNombre === info.total, 'y todas traen nombre');
 comprobar(info.personaPorDivision, 'ningún peleador aparece dos veces en la misma división');
 comprobar(info.dobles > 20, `hay peleadores con carta en varias divisiones (${info.dobles})`);
+comprobar(info.conPais === info.total, `todas las cartas traen país (${info.paises} distintos)`);
+comprobar(info.rankeadas > 150, `el ranking real viene en las cartas (${info.rankeadas} rankeadas)`);
+comprobar(info.rankingLimpio, 'un campeón por división y ningún puesto repetido');
+comprobar(info.plataSinRanking, 'ninguna plata lleva puesto de ranking: la rareza manda en el orden');
 comprobar(info.rangosOk, 'todas las stats caen en la banda que declara la base de datos');
 comprobar(info.ordenOk, 'el orden va por estatus deportivo y, dentro del tramo, por suma');
 comprobar(info.rasgosDistintos, 'ninguna carta lleva dos rasgos del mismo tipo');

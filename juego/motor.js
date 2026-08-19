@@ -69,11 +69,9 @@ const ORDEN_RAREZA = ['plata','oro'];
    Las bandas son las que trae la base de datos y sirven para comprobar que los datos
    importados cuadran, no para generar nada: las cartas ya no se inventan.
 
-   AVISO SOBRE LOS TRAMOS DE RANKING. La base de datos trae oro y plata, pero todavía no
-   trae el puesto en el ranking de cada peleador, y el juego lo necesita para ordenar la
-   colección, para los niveles de los sobres y para el coste del reciclaje. Mientras no
-   esté, el importador lo deduce de las propias stats: dentro de cada división, el mejor
-   oro es el campeón, los cuatro siguientes el top 5, y así. NO es el ranking real. */
+   El tramo sale del RANKING REAL que trae la base de datos, congelado en la fecha de
+   impresión de cada carta. Una plata nunca lleva tramo de ranking aunque el peleador
+   esté clasificado: la rareza manda en el orden, y la plata va última. */
 const ESTATUS = [
   {id:'campeon',n:'Campeón',   c:'🏆', rareza:'oro',  min:74,max:89, tramo:'corona'},
   {id:'top5',   n:'Top 5',     c:'5',  rareza:'oro',  min:74,max:89, tramo:'corona'},
@@ -83,6 +81,14 @@ const ESTATUS = [
   {id:'plata',  n:'Plata',     c:'',   rareza:'plata',min:64,max:82, tramo:'plata'},
 ];
 const EST = Object.fromEntries(ESTATUS.map(e=>[e.id,e]));
+
+/* Lo que se pinta arriba a la izquierda de la carta. Con el ranking real en la mano se
+   enseña el puesto exacto —#6 dice mucho más que "top 6-10"— y la corona para el campeón. */
+function etiquetaEstatus(c){
+  if(c.rk===0) return '🏆';
+  if(c.rk) return '#'+c.rk;
+  return '';
+}
 const ORDEN_ESTATUS = ESTATUS.map(e=>e.id);
 
 /* Cuántos REPETIDOS del mismo tramo hay que reciclar para sacar una ficha. Una ficha
@@ -162,7 +168,8 @@ function generarRoster(){
   ROSTER = datos.map(d=>({
     id:d.id, persona:d.persona, nombre:d.nombre, apodo:'',
     division:d.division, rareza:d.rareza, estatus:d.estatus,
-    suma:d.suma, stats:d.stats, record:d.record,
+    rk:d.rk===undefined?null:d.rk,   // 0 = campeón, 1-15 clasificado, null sin rankear
+    pais:d.pais||'', suma:d.suma, stats:d.stats, record:d.record,
     // Todas las cartas del catálogo son de la liga grande, así que todas se alinean.
     // El bronce de otras promotoras está reservado y todavía vacío.
     alineable:true, dobleDiv:!!d.dobleDiv,
@@ -376,7 +383,7 @@ function resolverDesempate(P){
   P.fase='fin'; P.fin=ganador;
 }
 
-const MOTOR={especialistaDisponible, veteranoDisponible, ultimoDuelo, defendiendo, ESTATUS, EST, ORDEN_ESTATUS, TRAMOS, tramoDe, ordenar, comparar, sortearDuelo, REÑIDO, DIVISIONES, DIV, contiguas, vecinas, STATS, SID, SUBSTATS, RAREZAS, ORDEN_RAREZA, RASGOS, mulberry32, RNG, ri, pick, shuffle, clamp, ROSTER, generarRoster, alineables, rasgoTxt, MARGENES, nuevaPartida, terminarVetos, librePara, valorCarta, aplicarPenalizacion, penaliza, enviarAlDuelo, cambiosPosibles, hacerCambio, rasgoDe, camaleonesPosibles, resolverDuelo, resolverDesempate};
+const MOTOR={especialistaDisponible, etiquetaEstatus, veteranoDisponible, ultimoDuelo, defendiendo, ESTATUS, EST, ORDEN_ESTATUS, TRAMOS, tramoDe, ordenar, comparar, sortearDuelo, REÑIDO, DIVISIONES, DIV, contiguas, vecinas, STATS, SID, SUBSTATS, RAREZAS, ORDEN_RAREZA, RASGOS, mulberry32, RNG, ri, pick, shuffle, clamp, ROSTER, generarRoster, alineables, rasgoTxt, MARGENES, nuevaPartida, terminarVetos, librePara, valorCarta, aplicarPenalizacion, penaliza, enviarAlDuelo, cambiosPosibles, hacerCambio, rasgoDe, camaleonesPosibles, resolverDuelo, resolverDesempate};
 raiz.MOTOR=MOTOR;
 // También sueltas en el global: el juego las usa por su nombre, sin prefijo.
 for(const k of Object.keys(MOTOR)) if(!(k in raiz)) raiz[k]=MOTOR[k];

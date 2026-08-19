@@ -1,7 +1,7 @@
 # Base de datos de peleadores
 
-**396 cartas · 351 peleadores**
-**18 de agosto de 2026**
+**396 cartas · 351 peleadores · 57 países · 170 cartas rankeadas**
+**18 de agosto de 2026 · rev. 19 de agosto: columnas País y Rk**
 
 Seis stats sobre 100. **Sin media de ningún tipo**: la carta se lee por sus números.
 
@@ -10,6 +10,8 @@ Seis stats sobre 100. **Sin media de ningún tipo**: la carta se lee por sus nú
 - **Un solo atributo por carta**, y siempre en versión normal. La única excepción de todo el juego es el **Camaleón+ de Islam Makhachev**, por ser campeón con defensas de título en dos divisiones.
 - **Solo las cartas de oro llevan atributo.** La plata no se alinea en la práctica, pero sí entra en los sets de colección, en los SBC y en el reciclaje. Completar una colección entera —platas incluidas— desbloquea cartas especiales.
 - **Bronce vacío**, reservado a Cage Warriors, KSW, LFA y demás promotoras.
+- **Cada carta lleva un ranking congelado** en la fecha de impresión: C para campeón, 1-15 para clasificados, — para el resto. Solo en la división donde el peleador está rankeado
+- **Cada carta lleva un país**, el de la bandera con la que compite. Una sola nacionalidad por carta, y las versiones de doble división cuentan una vez en los sets
 - Un peleador puede tener carta en varias divisiones, con stats distintas según lo que hizo en cada una. **Un peleador, un slot**: no puedes alinear dos versiones a la vez.
 
 | Rareza | Quién entra | Banda | Cartas |
@@ -50,52 +52,238 @@ Datos de UFCStats sobre el historial completo de cada peleador. **Cada pelea se 
 
 ---
 
+## Nacionalidad
+
+**Criterio: la bandera con la que compite**, no el país de nacimiento. Es lo que aparece en el gráfico
+del evento y lo que el jugador espera leer en la carta. **Un país por carta**: nada de dobles
+nacionalidades, porque una carta que contara en dos sets de nacionalidad abarataría completarlos y
+obligaría a escribir una regla aparte para el caso.
+
+**Daguestán no es país** a efectos de la carta: va como Rusia. Abrir subestados obliga a Chechenia,
+Ingusetia y Osetia, y por coherencia a discutir Inglaterra, Escocia y Gales. El bloque daguestaní
+puede existir igual como **set curado** —definido por lista, no por nacionalidad— cuando se diseñen
+los sets.
+
+**Las cartas de doble división comparten país**, obviamente, pero **cuentan una sola vez** en un set
+de nacionalidad. Si contaran dos, tener a Pereira daría dos casillas brasileñas por un solo peleador.
+El recuento de abajo es por peleador único, que es lo que hay que mirar para dimensionar un set.
+
+### Reparto por país
+
+| País | Peleadores |
+|---|---|
+| Estados Unidos | 133 |
+| Brasil | 71 |
+| Rusia | 13 |
+| Inglaterra | 12 |
+| México | 11 |
+| Polonia | 10 |
+| Francia | 7 |
+| China | 7 |
+| Australia | 7 |
+| Canadá | 7 |
+| Nueva Zelanda | 5 |
+| Japón | 4 |
+| Croacia | 3 |
+| Nigeria | 3 |
+| Moldavia | 2 |
+| Escocia | 2 |
+| Ucrania | 2 |
+| Kirguistán | 2 |
+| Suiza | 2 |
+| Sudáfrica | 2 |
+| Georgia | 2 |
+| Alemania | 2 |
+| Kazajistán | 2 |
+| Ecuador | 2 |
+| Irlanda | 2 |
+| Jamaica | 2 |
+| España | 2 |
+| Azerbaiyán | 2 |
+| Argentina | 2 |
+
+Con un solo peleador: Afganistán, Angola, Armenia, Austria, Baréin, Birmania, Bélgica, Chequia, Emiratos Árabes Unidos, Eslovaquia, Irak, Italia, Lituania, Marruecos, Panamá, Países Bajos, Perú, Portugal, Rep. Dominicana, Rumanía, Serbia, Suecia, Tailandia, Turquía, Uganda, Uzbekistán, Venezuela, Zimbabue.
+
+**57 países** sobre 351 peleadores. Dos lecturas para el diseño de sets:
+
+- **Estados Unidos (133) y Brasil (71) suman el 58% del roster.** Un set "Estados Unidos" completo es
+  inviable como colección; esos dos países piden sets por subconjunto (por división, por rareza) o
+  no piden set en absoluto.
+- **Hay 28 países con un solo peleador.** Ahí el set de nacionalidad no existe: o se agrupan por
+  región —Latinoamérica, Balcanes, Cáucaso, África— o esas cartas quedan fuera del eje de
+  nacionalidad y tiran de gimnasio o promotora. Es una decisión pendiente, y no es menor: son
+  peleadores de plata y sin set no tienen destino más allá del reciclaje.
+
+### Pendientes de verificar
+
+17 peleadores con el país puesto por deducción y confianza baja. Están escritos en la tabla
+para no dejar huecos, pero **hay que cruzarlos contra el listado oficial antes de construir ningún set
+de nacionalidad**.
+
+| Peleador | País puesto |
+|---|---|
+| Antonio Trocoli | Brasil |
+| Brando Pericic | Croacia |
+| Fatima Kline | Estados Unidos |
+| John Yannis | Estados Unidos |
+| Jose Delgado | Estados Unidos |
+| Jose Medina | Estados Unidos |
+| Julius Walker | Estados Unidos |
+| Kaue Fernandes | Brasil |
+| Louie Sutherland | Escocia |
+| Melissa Croden | Canadá |
+| Melissa Mullins | Estados Unidos |
+| Michelle Montague | Nueva Zelanda |
+| Mitch Ramirez | Estados Unidos |
+| Steven Asplund | Estados Unidos |
+| Thomas Petersen | Estados Unidos |
+| Tuco Tokkos | Estados Unidos |
+| Uran Satybaldiev | Kirguistán |
+
+### Casos discutibles
+
+No son errores: son decisiones de criterio que pueden revocarse.
+
+| Peleador | Puesto | Alternativa |
+|---|---|---|
+| Ilia Topuria | España | Georgia — nacido en Alemania, criado en Georgia, sale con las dos banderas |
+| Israel Adesanya | Nigeria | Nueva Zelanda — nacido en Nigeria, formado y afincado en Auckland |
+| Khamzat Chimaev | Emiratos Árabes Unidos | Rusia o Suecia — compitió con bandera sueca antes del cambio |
+| Leon Edwards | Inglaterra | Jamaica — nacido en Kingston, criado en Birmingham |
+| Diego Lopes | Brasil | México — brasileño de nacimiento, promocionado y afincado como mexicano |
+| Beneil Dariush | Estados Unidos | Irán — nacido en Urmía, emigrado a los 8 años |
+| Abus Magomedov | Alemania | Rusia — daguestaní criado en Alemania |
+| Jack Hermansson | Suecia | Noruega — sueco de nacimiento, entrena y se anuncia desde Oslo |
+| Rafael Fiziev | Azerbaiyán | Kirguistán — nacido en Bishkek |
+| Joshua Van | Birmania | Estados Unidos — nacido en Birmania, criado en Houston |
+
+El patrón es siempre el mismo —emigrante de primera generación— y el criterio elegido prioriza la
+bandera del evento. Si prefieres el país de nacimiento, cambian estas diez y ninguna más.
+
+---
+
+## Ranking
+
+Posición exacta en el top 15 de la división. **C** es campeón, **—** es sin rankear.
+Snapshot del **17-18 de agosto de 2026**, tomado de la clasificación oficial por división.
+
+**El ranking se congela en la fecha de la carta**, igual que las stats. La carta dice qué era ese
+peleador cuando se imprimió, no lo que es hoy. Sin esta regla habría que reimprimir cartas cada
+semana, y las plantillas ya montadas cambiarían solas.
+
+Esto importa más que antes: desde junio de 2026 la UFC usa un modelo matemático que **recalcula el
+ranking automáticamente después de cada evento**, en vez de la votación de periodistas. Se mueve más
+y más rápido. La foto de agosto envejece antes de lo que habría envejecido hace un año.
+
+**Un peleador solo lleva ranking en la división donde está rankeado.** Nadie está en dos top 15 a la
+vez, así que la carta secundaria de un doble-división va siempre a **—**. Alex Pereira es #3 de
+semipesado, y sus cartas de pesado y de medio salen sin ranking. No es un hueco: es que ahí no está
+clasificado.
+
+### Reparto
+
+| | Cartas |
+|---|---|
+| Con ranking (C + 1-15) | 170 |
+| Sin rankear | 226 |
+| **Total** | **396** |
+
+Once campeones y 159 clasificados. Los 226 restantes son el fondo de la colección: platas, cartas
+secundarias de doble-división y oros que llegaron por racha, peleas de título o recorrido en la
+compañía, que son las otras tres vías a oro.
+
+### Lo que el cruce ha destapado
+
+Cruzar la base contra el ranking real ha sacado cuatro cosas, en orden de importancia.
+
+**1. Makhachev es campeón de welter.** El GDD lo tenía como decisión pendiente: la carta principal
+era la de ligero por las cuatro defensas, con welter como secundaria. El cinturón está hoy en welter
+y el ligero lo tiene Gaethje. Esa decisión ya se puede cerrar, y probablemente hay que darle la
+vuelta.
+
+**2. Dos rankeados están puestos como plata**, lo que contradice la regla de rareza —estar rankeado
+es una de las cuatro vías a oro—:
+
+| División | Rk | Peleador |
+|---|---|---|
+| Mosca (M) | #6 | Lone'er Kavanagh |
+| Paja (F) | #15 | Mizuki Inoue |
+
+Kavanagh es el caso serio: un #6 de la división en una carta que, por diseño, no lleva atributo y no
+se alinea nunca.
+
+**3. Dos peleadores están rankeados en una división en la que no tienen carta.** Ambos tienen ficha,
+pero solo en peso medio:
+
+| División del ranking | Rk | Peleador | Dónde está su carta |
+|---|---|---|---|
+| Semipesado (M) | #12 | Robert Whittaker | Peso medio |
+| Welter (M) | #14 | Michael Page | Peso medio |
+
+Son candidatos naturales a carta de doble división, con el criterio ya establecido: stats propias
+según lo que hizo en cada peso, no una copia penalizada.
+
+**4. Cuatro rankeados no están en la base de datos:**
+
+| División | Rk | Peleador |
+|---|---|---|
+| Gallo (M) | #8 | David Martinez |
+| Mosca (M) | #10 | Ramazan Temirov |
+| Paja (F) | #4 | Yan Xiaonan |
+| Paja (F) | #12 | Amanda Ribas |
+
+Los cuatro son oro por la vía del ranking. Yan Xiaonan siendo #4 de paja es el hueco más llamativo,
+y cae justo en una de las tres divisiones femeninas, que ya estaban señaladas como el punto flaco
+del roster.
+
+---
+
 ## Peso pesado (M)
 
 ### Oro
 
-| Peleador | GOL | LUC | SUE | CAR | DUR | IQ | Atributo | Récord |
-|---|---|---|---|---|---|---|---|---|
-| **Tom Aspinall** | 87 | 88 | 85 | 78 | 85 | 87 | — | 15-3-0 (1 NC) |
-| **Ciryl Gane** | 87 | 74 | 81 | 85 | 88 | 86 | Especialista IQ | 14-2-0 (1 NC) |
-| **Valter Walker** | 81 | 88 | 87 | 75 | 84 | 84 | — | 16-1-0 |
-| **Martin Buday** | 81 | 80 | 77 | 85 | 88 | 87 | — | 16-2-0 |
-| **Waldo Cortes-Acosta** | 88 | 75 | 77 | 83 | 88 | 85 | — | 17-3-0 |
-| **Rizvan Kuniev** | 82 | 85 | 75 | 82 | 87 | 85 | — | 14-3-1 (1 NC) |
-| **Josh Hokit** | 88 | 81 | 76 | 77 | 88 | 85 | — | 10-0-0 |
-| **Mario Pinto** | 82 | 86 | 78 | 78 | 85 | 86 | — | 12-0-0 |
-| **Alexander Volkov** | 87 | 74 | 75 | 85 | 87 | 85 | Veterano | 40-11-0 |
-| **Vitor Petrino** ◆ | 81 | 81 | 82 | 81 | 84 | 84 | — | 14-2-0 |
-| **Tyrell Fortune** | 82 | 83 | 76 | 85 | 80 | 86 | — | 18-4-0 (2 NC) |
-| **Brando Pericic** | 88 | 75 | 76 | 77 | 87 | 85 | — | 7-1-0 |
-| **Serghei Spivac** | 82 | 84 | 83 | 77 | 78 | 80 | — | 18-6-0 |
-| **Curtis Blaydes** | 87 | 86 | 78 | 78 | 74 | 80 | Especialista LUCHA | 19-6-0 (1 NC) |
-| **Sergei Pavlovich** | 87 | 74 | 79 | 74 | 83 | 86 | Especialista GOLPEO | 21-3-0 |
-| **Marcin Tybura** | 81 | 76 | 78 | 85 | 78 | 84 | Veterano | 27-12-0 |
-| **Aleksandar Rakic** ◆ | 78 | 77 | 74 | 83 | 74 | 82 | — | 15-6-0 |
-| **Derrick Lewis** | 87 | 74 | 78 | 75 | 74 | 79 | Veterano | 29-14-0 (1 NC) |
-| **Ante Delija** | 80 | 75 | 76 | 78 | 80 | 78 | Veterano | 26-8-0 |
-| **Alex Pereira** ◆ | 88 | 74 | 74 | 76 | 74 | 76 | Camaleón | 13-4-0 |
-| **Johnny Walker** ◆ | 80 | 74 | 77 | 74 | 74 | 78 | Veterano | 22-10-0 (1 NC) |
+| Peleador | País | Rk | GOL | LUC | SUE | CAR | DUR | IQ | Atributo | Récord |
+|---|---|---|---|---|---|---|---|---|---|---|
+| **Tom Aspinall** | Inglaterra | C | 87 | 88 | 85 | 78 | 85 | 87 | — | 15-3-0 (1 NC) |
+| **Ciryl Gane** | Francia | 1 | 87 | 74 | 81 | 85 | 88 | 86 | Especialista IQ | 14-2-0 (1 NC) |
+| **Valter Walker** | Brasil | 11 | 81 | 88 | 87 | 75 | 84 | 84 | — | 16-1-0 |
+| **Martin Buday** | Eslovaquia | — | 81 | 80 | 77 | 85 | 88 | 87 | — | 16-2-0 |
+| **Waldo Cortes-Acosta** | Rep. Dominicana | 5 | 88 | 75 | 77 | 83 | 88 | 85 | — | 17-3-0 |
+| **Rizvan Kuniev** | Rusia | 8 | 82 | 85 | 75 | 82 | 87 | 85 | — | 14-3-1 (1 NC) |
+| **Josh Hokit** | Estados Unidos | 4 | 88 | 81 | 76 | 77 | 88 | 85 | — | 10-0-0 |
+| **Mario Pinto** | Portugal | — | 82 | 86 | 78 | 78 | 85 | 86 | — | 12-0-0 |
+| **Alexander Volkov** | Rusia | 2 | 87 | 74 | 75 | 85 | 87 | 85 | Veterano | 40-11-0 |
+| **Vitor Petrino** ◆ | Brasil | — | 81 | 81 | 82 | 81 | 84 | 84 | — | 14-2-0 |
+| **Tyrell Fortune** | Estados Unidos | 12 | 82 | 83 | 76 | 85 | 80 | 86 | — | 18-4-0 (2 NC) |
+| **Brando Pericic** | Croacia ? | 15 | 88 | 75 | 76 | 77 | 87 | 85 | — | 7-1-0 |
+| **Serghei Spivac** | Moldavia | 6 | 82 | 84 | 83 | 77 | 78 | 80 | — | 18-6-0 |
+| **Curtis Blaydes** | Estados Unidos | 7 | 87 | 86 | 78 | 78 | 74 | 80 | Especialista LUCHA | 19-6-0 (1 NC) |
+| **Sergei Pavlovich** | Rusia | 3 | 87 | 74 | 79 | 74 | 83 | 86 | Especialista GOLPEO | 21-3-0 |
+| **Marcin Tybura** | Polonia | 14 | 81 | 76 | 78 | 85 | 78 | 84 | Veterano | 27-12-0 |
+| **Aleksandar Rakic** ◆ | Austria | 10 | 78 | 77 | 74 | 83 | 74 | 82 | — | 15-6-0 |
+| **Derrick Lewis** | Estados Unidos | 13 | 87 | 74 | 78 | 75 | 74 | 79 | Veterano | 29-14-0 (1 NC) |
+| **Ante Delija** | Croacia | 9 | 80 | 75 | 76 | 78 | 80 | 78 | Veterano | 26-8-0 |
+| **Alex Pereira** ◆ | Brasil | — | 88 | 74 | 74 | 76 | 74 | 76 | Camaleón | 13-4-0 |
+| **Johnny Walker** ◆ | Brasil | — | 80 | 74 | 77 | 74 | 74 | 78 | Veterano | 22-10-0 (1 NC) |
 
 ### Plata
 
-| Peleador | GOL | LUC | SUE | CAR | DUR | IQ | Atributo | Récord |
-|---|---|---|---|---|---|---|---|---|
-| **Karl Williams** | 81 | 82 | 76 | 82 | 82 | 82 | — | 10-2-0 |
-| **Steven Asplund** | 82 | 80 | 77 | 81 | 82 | 82 | — | 8-2-0 |
-| **Jailton Almeida** | 81 | 82 | 82 | 76 | 80 | 81 | — | 22-5-0 |
-| **Thomas Petersen** | 81 | 82 | 78 | 82 | 77 | 82 | — | 11-5-0 |
-| **Mick Parkin** | 82 | 74 | 79 | 82 | 82 | 78 | — | 10-1-0 |
-| **Louie Sutherland** | 81 | 80 | 79 | 81 | 74 | 79 | — | 11-6-0 |
-| **Shamil Gaziev** | 81 | 80 | 79 | 77 | 73 | 82 | — | 14-3-0 |
-| **Don'Tale Mayes** | 81 | 71 | 78 | 82 | 82 | 78 | — | 11-9-0 (1 NC) |
-| **Jhonata Diniz** | 82 | 74 | 74 | 82 | 78 | 82 | — | 9-2-0 |
-| **Chris Barnett** | 81 | 71 | 78 | 77 | 82 | 79 | — | 23-10-0 |
-| **Justin Tafa** | 81 | 72 | 75 | 74 | 82 | 79 | — | 7-5-0 (1 NC) |
-| **Lukasz Brzeski** | 81 | 71 | 78 | 80 | 73 | 79 | — | 9-7-1 (1 NC) |
-| **Kennedy Nzechukwu** ◆ | 78 | 76 | 72 | 72 | 80 | 80 | — | 14-6-1 |
-| **Ryan Spann** ◆ | 77 | 70 | 79 | 74 | 74 | 76 | — | 24-11-0 |
+| Peleador | País | Rk | GOL | LUC | SUE | CAR | DUR | IQ | Atributo | Récord |
+|---|---|---|---|---|---|---|---|---|---|---|
+| **Karl Williams** | Estados Unidos | — | 81 | 82 | 76 | 82 | 82 | 82 | — | 10-2-0 |
+| **Steven Asplund** | Estados Unidos ? | — | 82 | 80 | 77 | 81 | 82 | 82 | — | 8-2-0 |
+| **Jailton Almeida** | Brasil | — | 81 | 82 | 82 | 76 | 80 | 81 | — | 22-5-0 |
+| **Thomas Petersen** | Estados Unidos ? | — | 81 | 82 | 78 | 82 | 77 | 82 | — | 11-5-0 |
+| **Mick Parkin** | Inglaterra | — | 82 | 74 | 79 | 82 | 82 | 78 | — | 10-1-0 |
+| **Louie Sutherland** | Escocia ? | — | 81 | 80 | 79 | 81 | 74 | 79 | — | 11-6-0 |
+| **Shamil Gaziev** | Baréin | — | 81 | 80 | 79 | 77 | 73 | 82 | — | 14-3-0 |
+| **Don'Tale Mayes** | Estados Unidos | — | 81 | 71 | 78 | 82 | 82 | 78 | — | 11-9-0 (1 NC) |
+| **Jhonata Diniz** | Brasil | — | 82 | 74 | 74 | 82 | 78 | 82 | — | 9-2-0 |
+| **Chris Barnett** | Estados Unidos | — | 81 | 71 | 78 | 77 | 82 | 79 | — | 23-10-0 |
+| **Justin Tafa** | Nueva Zelanda | — | 81 | 72 | 75 | 74 | 82 | 79 | — | 7-5-0 (1 NC) |
+| **Lukasz Brzeski** | Polonia | — | 81 | 71 | 78 | 80 | 73 | 79 | — | 9-7-1 (1 NC) |
+| **Kennedy Nzechukwu** ◆ | Nigeria | — | 78 | 76 | 72 | 72 | 80 | 80 | — | 14-6-1 |
+| **Ryan Spann** ◆ | Estados Unidos | — | 77 | 70 | 79 | 74 | 74 | 76 | — | 24-11-0 |
 
 ---
 
@@ -103,48 +291,48 @@ Datos de UFCStats sobre el historial completo de cada peleador. **Cada pelea se 
 
 ### Oro
 
-| Peleador | GOL | LUC | SUE | CAR | DUR | IQ | Atributo | Récord |
-|---|---|---|---|---|---|---|---|---|
-| **Magomed Ankalaev** | 85 | 81 | 79 | 85 | 85 | 87 | — | 22-2-1 (1 NC) |
-| **Carlos Ulberg** | 88 | 82 | 77 | 76 | 88 | 87 | — | 15-1-0 |
-| **Jan Blachowicz** | 83 | 77 | 78 | 84 | 85 | 85 | Veterano | 29-12-2 |
-| **Navajo Stirling** | 85 | 75 | 74 | 82 | 88 | 85 | — | 11-0-0 |
-| **Azamat Murzakanov** | 84 | 80 | 75 | 77 | 85 | 87 | — | 16-1-0 |
-| **Israel Adesanya** ◆ | 84 | 74 | 77 | 85 | 82 | 85 | Veterano | 24-6-0 |
-| **Paulo Costa** ◆ | 82 | 74 | 76 | 89 | 80 | 82 | Especialista DUREZA | 16-4-0 |
-| **Alex Pereira** ◆ | 88 | 75 | 74 | 78 | 83 | 84 | Camaleón | 13-4-0 |
-| **Jared Cannonier** ◆ | 82 | 74 | 76 | 84 | 84 | 81 | Veterano | 18-10-0 |
-| **Jamahal Hill** | 88 | 74 | 78 | 81 | 77 | 82 | — | 12-4-0 (1 NC) |
-| **Jiri Prochazka** | 88 | 75 | 78 | 77 | 86 | 74 | Especialista DUREZA | 32-6-1 |
-| **Nikita Krylov** | 83 | 75 | 85 | 79 | 75 | 81 | Veterano | 31-12-0 |
-| **Bogdan Guskov** | 82 | 74 | 80 | 77 | 84 | 81 | — | 18-4-1 |
-| **Ovince Saint Preux** | 82 | 74 | 80 | 77 | 83 | 81 | Veterano | 27-18-0 |
-| **Aleksandar Rakic** ◆ | 80 | 79 | 75 | 85 | 74 | 84 | — | 15-6-0 |
-| **Dominick Reyes** | 88 | 76 | 76 | 76 | 74 | 84 | — | 16-5-0 |
-| **Khalil Rountree Jr.** | 82 | 74 | 79 | 77 | 80 | 81 | Especialista GOLPEO | 15-7-0 (1 NC) |
-| **Alonzo Menifield** | 81 | 75 | 77 | 75 | 79 | 86 | — | 18-6-1 |
-| **Vitor Petrino** ◆ | 77 | 76 | 78 | 76 | 80 | 79 | — | 14-2-0 |
-| **Johnny Walker** ◆ | 83 | 74 | 80 | 75 | 74 | 80 | Veterano | 22-10-0 (1 NC) |
+| Peleador | País | Rk | GOL | LUC | SUE | CAR | DUR | IQ | Atributo | Récord |
+|---|---|---|---|---|---|---|---|---|---|---|
+| **Magomed Ankalaev** | Rusia | 1 | 85 | 81 | 79 | 85 | 85 | 87 | — | 22-2-1 (1 NC) |
+| **Carlos Ulberg** | Nueva Zelanda | C | 88 | 82 | 77 | 76 | 88 | 87 | — | 15-1-0 |
+| **Jan Blachowicz** | Polonia | 9 | 83 | 77 | 78 | 84 | 85 | 85 | Veterano | 29-12-2 |
+| **Navajo Stirling** | Nueva Zelanda | 5 | 85 | 75 | 74 | 82 | 88 | 85 | — | 11-0-0 |
+| **Azamat Murzakanov** | Rusia | 8 | 84 | 80 | 75 | 77 | 85 | 87 | — | 16-1-0 |
+| **Israel Adesanya** ◆ | Nigeria | — | 84 | 74 | 77 | 85 | 82 | 85 | Veterano | 24-6-0 |
+| **Paulo Costa** ◆ | Brasil | 6 | 82 | 74 | 76 | 89 | 80 | 82 | Especialista DUREZA | 16-4-0 |
+| **Alex Pereira** ◆ | Brasil | 3 | 88 | 75 | 74 | 78 | 83 | 84 | Camaleón | 13-4-0 |
+| **Jared Cannonier** ◆ | Estados Unidos | — | 82 | 74 | 76 | 84 | 84 | 81 | Veterano | 18-10-0 |
+| **Jamahal Hill** | Estados Unidos | 7 | 88 | 74 | 78 | 81 | 77 | 82 | — | 12-4-0 (1 NC) |
+| **Jiri Prochazka** | Chequia | 2 | 88 | 75 | 78 | 77 | 86 | 74 | Especialista DUREZA | 32-6-1 |
+| **Nikita Krylov** | Ucrania | 15 | 83 | 75 | 85 | 79 | 75 | 81 | Veterano | 31-12-0 |
+| **Bogdan Guskov** | Uzbekistán | 11 | 82 | 74 | 80 | 77 | 84 | 81 | — | 18-4-1 |
+| **Ovince Saint Preux** | Estados Unidos | — | 82 | 74 | 80 | 77 | 83 | 81 | Veterano | 27-18-0 |
+| **Aleksandar Rakic** ◆ | Austria | — | 80 | 79 | 75 | 85 | 74 | 84 | — | 15-6-0 |
+| **Dominick Reyes** | Estados Unidos | 10 | 88 | 76 | 76 | 76 | 74 | 84 | — | 16-5-0 |
+| **Khalil Rountree Jr.** | Estados Unidos | 4 | 82 | 74 | 79 | 77 | 80 | 81 | Especialista GOLPEO | 15-7-0 (1 NC) |
+| **Alonzo Menifield** | Estados Unidos | 14 | 81 | 75 | 77 | 75 | 79 | 86 | — | 18-6-1 |
+| **Vitor Petrino** ◆ | Brasil | — | 77 | 76 | 78 | 76 | 80 | 79 | — | 14-2-0 |
+| **Johnny Walker** ◆ | Brasil | 13 | 83 | 74 | 80 | 75 | 74 | 80 | Veterano | 22-10-0 (1 NC) |
 
 ### Plata
 
-| Peleador | GOL | LUC | SUE | CAR | DUR | IQ | Atributo | Récord |
-|---|---|---|---|---|---|---|---|---|
-| **Uran Satybaldiev** | 81 | 74 | 82 | 80 | 82 | 82 | — | 9-1-0 |
-| **Rodolfo Bellato** | 81 | 82 | 76 | 77 | 82 | 82 | — | 13-3-1 (1 NC) |
-| **Volkan Oezdemir** | 82 | 76 | 74 | 78 | 82 | 82 | — | 21-8-0 |
-| **Dustin Jacoby** | 82 | 72 | 78 | 78 | 82 | 82 | — | 22-10-1 |
-| **Ibo Aslan** | 80 | 77 | 78 | 75 | 82 | 82 | — | 14-4-0 |
-| **Tuco Tokkos** | 81 | 74 | 80 | 78 | 82 | 79 | — | 11-6-0 |
-| **Kennedy Nzechukwu** ◆ | 82 | 78 | 74 | 76 | 82 | 82 | — | 14-6-1 |
-| **Modestas Bukauskas** | 81 | 78 | 76 | 82 | 73 | 82 | — | 20-7-0 |
-| **Julius Walker** | 81 | 81 | 75 | 82 | 73 | 80 | — | 7-3-0 |
-| **Ryan Spann** ◆ | 81 | 73 | 82 | 79 | 77 | 80 | — | 24-11-0 |
-| **Ion Cutelaba** | 81 | 82 | 75 | 76 | 77 | 80 | — | 20-12-1 (1 NC) |
-| **Marcin Prachnio** | 82 | 71 | 78 | 82 | 75 | 80 | — | 17-9-0 |
-| **Antonio Trocoli** | 80 | 72 | 75 | 77 | 82 | 79 | — | 12-7-0 (1 NC) |
-| **Zhang Mingyang** | 82 | 74 | 74 | 75 | 76 | 81 | — | 19-8-0 |
-| **Jose Medina** | 80 | 71 | 76 | 77 | 76 | 79 | — | 11-7-0 |
+| Peleador | País | Rk | GOL | LUC | SUE | CAR | DUR | IQ | Atributo | Récord |
+|---|---|---|---|---|---|---|---|---|---|---|
+| **Uran Satybaldiev** | Kirguistán ? | — | 81 | 74 | 82 | 80 | 82 | 82 | — | 9-1-0 |
+| **Rodolfo Bellato** | Brasil | — | 81 | 82 | 76 | 77 | 82 | 82 | — | 13-3-1 (1 NC) |
+| **Volkan Oezdemir** | Suiza | — | 82 | 76 | 74 | 78 | 82 | 82 | — | 21-8-0 |
+| **Dustin Jacoby** | Estados Unidos | — | 82 | 72 | 78 | 78 | 82 | 82 | — | 22-10-1 |
+| **Ibo Aslan** | Turquía | — | 80 | 77 | 78 | 75 | 82 | 82 | — | 14-4-0 |
+| **Tuco Tokkos** | Estados Unidos ? | — | 81 | 74 | 80 | 78 | 82 | 79 | — | 11-6-0 |
+| **Kennedy Nzechukwu** ◆ | Nigeria | — | 82 | 78 | 74 | 76 | 82 | 82 | — | 14-6-1 |
+| **Modestas Bukauskas** | Lituania | — | 81 | 78 | 76 | 82 | 73 | 82 | — | 20-7-0 |
+| **Julius Walker** | Estados Unidos ? | — | 81 | 81 | 75 | 82 | 73 | 80 | — | 7-3-0 |
+| **Ryan Spann** ◆ | Estados Unidos | — | 81 | 73 | 82 | 79 | 77 | 80 | — | 24-11-0 |
+| **Ion Cutelaba** | Moldavia | — | 81 | 82 | 75 | 76 | 77 | 80 | — | 20-12-1 (1 NC) |
+| **Marcin Prachnio** | Polonia | — | 82 | 71 | 78 | 82 | 75 | 80 | — | 17-9-0 |
+| **Antonio Trocoli** | Brasil ? | — | 80 | 72 | 75 | 77 | 82 | 79 | — | 12-7-0 (1 NC) |
+| **Zhang Mingyang** | China | — | 82 | 74 | 74 | 75 | 76 | 81 | — | 19-8-0 |
+| **Jose Medina** | Estados Unidos ? | — | 80 | 71 | 76 | 77 | 76 | 79 | — | 11-7-0 |
 
 ---
 
@@ -152,54 +340,54 @@ Datos de UFCStats sobre el historial completo de cada peleador. **Cada pelea se 
 
 ### Oro
 
-| Peleador | GOL | LUC | SUE | CAR | DUR | IQ | Atributo | Récord |
-|---|---|---|---|---|---|---|---|---|
-| **Nassourdine Imavov** ◆ | 88 | 79 | 80 | 87 | 88 | 86 | — | 17-4-0 (1 NC) |
-| **Anthony Hernandez** | 82 | 88 | 86 | 80 | 85 | 86 | Especialista CARDIO | 15-3-0 (1 NC) |
-| **Caio Borralho** | 81 | 83 | 78 | 87 | 88 | 87 | — | 18-2-0 (1 NC) |
-| **Robert Whittaker** | 88 | 79 | 78 | 87 | 85 | 87 | Especialista IQ | 28-9-0 |
-| **Sean Strickland** ◆ | 88 | 75 | 75 | 86 | 89 | 87 | Especialista DUREZA | 31-7-0 |
-| **Israel Adesanya** ◆ | 87 | 74 | 79 | 87 | 84 | 88 | Veterano | 24-6-0 |
-| **Bo Nickal** | 81 | 85 | 85 | 75 | 84 | 86 | Especialista LUCHA | 9-1-0 |
-| **Ikram Aliskerov** | 82 | 88 | 81 | 77 | 83 | 85 | — | 18-2-0 |
-| **Paulo Costa** ◆ | 87 | 75 | 79 | 84 | 86 | 85 | Especialista DUREZA | 16-4-0 |
-| **Khamzat Chimaev** ◆ | 74 | 86 | 84 | 74 | 86 | 89 | Camaleón | 15-1-0 |
-| **Jared Cannonier** ◆ | 84 | 74 | 78 | 86 | 86 | 85 | Veterano | 18-10-0 |
-| **Dricus du Plessis** ◆ | 85 | 76 | 82 | 86 | 86 | 77 | Camaleón | 24-3-0 |
-| **Kamaru Usman** ◆ | 80 | 81 | 74 | 85 | 84 | 88 | — | 21-5-0 |
-| **Michael Page** | 82 | 74 | 75 | 87 | 87 | 85 | Incómodo | 25-3-0 |
-| **Reinier de Ridder** | 82 | 74 | 84 | 84 | 85 | 80 | Especialista SUELO | 21-4-0 |
-| **Brendan Allen** | 82 | 74 | 85 | 82 | 86 | 79 | Veterano | 27-7-0 |
-| **Gregory Rodrigues** | 83 | 83 | 75 | 77 | 83 | 85 | — | 19-6-0 |
-| **Christian Leroy Duncan** | 83 | 74 | 77 | 81 | 88 | 82 | — | 15-2-0 |
-| **Roman Dolidze** | 81 | 74 | 77 | 85 | 88 | 79 | — | 15-5-0 |
-| **Punahele Soriano** | 81 | 76 | 79 | 82 | 86 | 80 | — | 13-4-0 |
-| **Joe Pyfer** | 82 | 74 | 84 | 76 | 85 | 80 | — | 16-3-0 |
-| **Kevin Holland** ◆ | 83 | 74 | 83 | 75 | 88 | 78 | Incómodo | 29-15-0 (1 NC) |
-| **Joaquin Buckley** ◆ | 80 | 78 | 76 | 78 | 82 | 84 | Veterano | 21-8-0 |
-| **Bryan Battle** ◆ | 78 | 74 | 81 | 74 | 87 | 80 | — | 13-2-0 (1 NC) |
-| **Alex Pereira** ◆ | 88 | 74 | 74 | 74 | 79 | 83 | Camaleón | 13-4-0 |
+| Peleador | País | Rk | GOL | LUC | SUE | CAR | DUR | IQ | Atributo | Récord |
+|---|---|---|---|---|---|---|---|---|---|---|
+| **Nassourdine Imavov** ◆ | Francia | 3 | 88 | 79 | 80 | 87 | 88 | 86 | — | 17-4-0 (1 NC) |
+| **Anthony Hernandez** | Estados Unidos | 6 | 82 | 88 | 86 | 80 | 85 | 86 | Especialista CARDIO | 15-3-0 (1 NC) |
+| **Caio Borralho** | Brasil | 5 | 81 | 83 | 78 | 87 | 88 | 87 | — | 18-2-0 (1 NC) |
+| **Robert Whittaker** | Australia | — | 88 | 79 | 78 | 87 | 85 | 87 | Especialista IQ | 28-9-0 |
+| **Sean Strickland** ◆ | Estados Unidos | C | 88 | 75 | 75 | 86 | 89 | 87 | Especialista DUREZA | 31-7-0 |
+| **Israel Adesanya** ◆ | Nigeria | 8 | 87 | 74 | 79 | 87 | 84 | 88 | Veterano | 24-6-0 |
+| **Bo Nickal** | Estados Unidos | 14 | 81 | 85 | 85 | 75 | 84 | 86 | Especialista LUCHA | 9-1-0 |
+| **Ikram Aliskerov** | Rusia | 13 | 82 | 88 | 81 | 77 | 83 | 85 | — | 18-2-0 |
+| **Paulo Costa** ◆ | Brasil | — | 87 | 75 | 79 | 84 | 86 | 85 | Especialista DUREZA | 16-4-0 |
+| **Khamzat Chimaev** ◆ | Emiratos Árabes Unidos | 1 | 74 | 86 | 84 | 74 | 86 | 89 | Camaleón | 15-1-0 |
+| **Jared Cannonier** ◆ | Estados Unidos | 12 | 84 | 74 | 78 | 86 | 86 | 85 | Veterano | 18-10-0 |
+| **Dricus du Plessis** ◆ | Sudáfrica | 2 | 85 | 76 | 82 | 86 | 86 | 77 | Camaleón | 24-3-0 |
+| **Kamaru Usman** ◆ | Nigeria | — | 80 | 81 | 74 | 85 | 84 | 88 | — | 21-5-0 |
+| **Michael Page** | Inglaterra | — | 82 | 74 | 75 | 87 | 87 | 85 | Incómodo | 25-3-0 |
+| **Reinier de Ridder** | Países Bajos | 9 | 82 | 74 | 84 | 84 | 85 | 80 | Especialista SUELO | 21-4-0 |
+| **Brendan Allen** | Estados Unidos | 4 | 82 | 74 | 85 | 82 | 86 | 79 | Veterano | 27-7-0 |
+| **Gregory Rodrigues** | Brasil | 11 | 83 | 83 | 75 | 77 | 83 | 85 | — | 19-6-0 |
+| **Christian Leroy Duncan** | Inglaterra | 10 | 83 | 74 | 77 | 81 | 88 | 82 | — | 15-2-0 |
+| **Roman Dolidze** | Georgia | 15 | 81 | 74 | 77 | 85 | 88 | 79 | — | 15-5-0 |
+| **Punahele Soriano** | Estados Unidos | — | 81 | 76 | 79 | 82 | 86 | 80 | — | 13-4-0 |
+| **Joe Pyfer** | Estados Unidos | 7 | 82 | 74 | 84 | 76 | 85 | 80 | — | 16-3-0 |
+| **Kevin Holland** ◆ | Estados Unidos | — | 83 | 74 | 83 | 75 | 88 | 78 | Incómodo | 29-15-0 (1 NC) |
+| **Joaquin Buckley** ◆ | Estados Unidos | — | 80 | 78 | 76 | 78 | 82 | 84 | Veterano | 21-8-0 |
+| **Bryan Battle** ◆ | Estados Unidos | — | 78 | 74 | 81 | 74 | 87 | 80 | — | 13-2-0 (1 NC) |
+| **Alex Pereira** ◆ | Brasil | — | 88 | 74 | 74 | 74 | 79 | 83 | Camaleón | 13-4-0 |
 
 ### Plata
 
-| Peleador | GOL | LUC | SUE | CAR | DUR | IQ | Atributo | Récord |
-|---|---|---|---|---|---|---|---|---|
-| **Michel Pereira** ◆ | 81 | 82 | 82 | 82 | 82 | 82 | — | 32-15-0 (2 NC) |
-| **Abus Magomedov** | 82 | 82 | 82 | 80 | 82 | 82 | — | 29-7-1 |
-| **Marvin Vettori** | 82 | 79 | 80 | 82 | 82 | 82 | — | 19-10-1 |
-| **Torrez Finney** | 81 | 82 | 82 | 82 | 82 | 76 | — | 11-1-0 |
-| **Jack Hermansson** | 82 | 82 | 80 | 82 | 75 | 82 | — | 24-10-0 |
-| **Rodolfo Vieira** | 81 | 76 | 82 | 78 | 82 | 81 | — | 11-5-0 |
-| **Andre Muniz** | 81 | 82 | 82 | 79 | 73 | 79 | — | 24-8-0 |
-| **Zachary Reese** | 81 | 82 | 82 | 77 | 74 | 80 | — | 10-4-0 (1 NC) |
-| **Robert Bryczek** | 81 | 77 | 77 | 82 | 82 | 77 | — | 18-7-0 |
-| **Michal Oleksiejczuk** | 82 | 72 | 77 | 80 | 82 | 81 | — | 22-10-0 (1 NC) |
-| **Dustin Stoltzfus** | 81 | 73 | 82 | 77 | 82 | 79 | — | 17-8-0 |
-| **Brunno Ferreira** | 82 | 72 | 81 | 75 | 82 | 81 | — | 15-4-0 |
-| **Cody Brundage** | 81 | 80 | 77 | 75 | 77 | 81 | — | 12-9-1 (1 NC) |
-| **Edmen Shahbazyan** | 80 | 76 | 77 | 75 | 82 | 79 | — | 16-6-0 |
-| **Kyle Daukaus** | 81 | 82 | 82 | 77 | 72 | 75 | — | 17-5-0 (1 NC) |
-| **Sedriques Dumas** | 80 | 71 | 74 | 81 | 78 | 79 | — | 10-5-0 (1 NC) |
+| Peleador | País | Rk | GOL | LUC | SUE | CAR | DUR | IQ | Atributo | Récord |
+|---|---|---|---|---|---|---|---|---|---|---|
+| **Michel Pereira** ◆ | Brasil | — | 81 | 82 | 82 | 82 | 82 | 82 | — | 32-15-0 (2 NC) |
+| **Abus Magomedov** | Alemania | — | 82 | 82 | 82 | 80 | 82 | 82 | — | 29-7-1 |
+| **Marvin Vettori** | Italia | — | 82 | 79 | 80 | 82 | 82 | 82 | — | 19-10-1 |
+| **Torrez Finney** | Estados Unidos | — | 81 | 82 | 82 | 82 | 82 | 76 | — | 11-1-0 |
+| **Jack Hermansson** | Suecia | — | 82 | 82 | 80 | 82 | 75 | 82 | — | 24-10-0 |
+| **Rodolfo Vieira** | Brasil | — | 81 | 76 | 82 | 78 | 82 | 81 | — | 11-5-0 |
+| **Andre Muniz** | Brasil | — | 81 | 82 | 82 | 79 | 73 | 79 | — | 24-8-0 |
+| **Zachary Reese** | Estados Unidos | — | 81 | 82 | 82 | 77 | 74 | 80 | — | 10-4-0 (1 NC) |
+| **Robert Bryczek** | Polonia | — | 81 | 77 | 77 | 82 | 82 | 77 | — | 18-7-0 |
+| **Michal Oleksiejczuk** | Polonia | — | 82 | 72 | 77 | 80 | 82 | 81 | — | 22-10-0 (1 NC) |
+| **Dustin Stoltzfus** | Estados Unidos | — | 81 | 73 | 82 | 77 | 82 | 79 | — | 17-8-0 |
+| **Brunno Ferreira** | Brasil | — | 82 | 72 | 81 | 75 | 82 | 81 | — | 15-4-0 |
+| **Cody Brundage** | Estados Unidos | — | 81 | 80 | 77 | 75 | 77 | 81 | — | 12-9-1 (1 NC) |
+| **Edmen Shahbazyan** | Estados Unidos | — | 80 | 76 | 77 | 75 | 82 | 79 | — | 16-6-0 |
+| **Kyle Daukaus** | Estados Unidos | — | 81 | 82 | 82 | 77 | 72 | 75 | — | 17-5-0 (1 NC) |
+| **Sedriques Dumas** | Estados Unidos | — | 80 | 71 | 74 | 81 | 78 | 79 | — | 10-5-0 (1 NC) |
 
 ---
 
@@ -207,52 +395,52 @@ Datos de UFCStats sobre el historial completo de cada peleador. **Cada pelea se 
 
 ### Oro
 
-| Peleador | GOL | LUC | SUE | CAR | DUR | IQ | Atributo | Récord |
-|---|---|---|---|---|---|---|---|---|
-| **Khamzat Chimaev** ◆ | 80 | 89 | 86 | 79 | 88 | 87 | Camaleón | 15-1-0 |
-| **Sean Brady** | 80 | 84 | 85 | 86 | 85 | 87 | — | 19-2-0 |
-| **Kamaru Usman** ◆ | 83 | 85 | 74 | 88 | 87 | 88 | — | 21-5-0 |
-| **Gabriel Bonfim** | 81 | 81 | 86 | 80 | 87 | 88 | — | 20-1-0 |
-| **Belal Muhammad** | 81 | 82 | 74 | 87 | 88 | 88 | Especialista CARDIO | 24-6-0 (1 NC) |
-| **Rinat Fakhretdinov** | 82 | 81 | 79 | 84 | 88 | 86 | — | 24-1-1 |
-| **Shavkat Rakhmonov** | 82 | 81 | 85 | 79 | 87 | 85 | — | 19-0-0 |
-| **Michael Morales** | 84 | 84 | 75 | 79 | 88 | 87 | — | 19-0-0 |
-| **Islam Makhachev** ◆ | 81 | 84 | 82 | 80 | 80 | 87 | Camaleón+ | 29-1-0 |
-| **Yaroslav Amosov** | 82 | 83 | 86 | 78 | 84 | 81 | Veterano | 30-1-0 |
-| **Ian Machado Garry** | 83 | 75 | 75 | 88 | 88 | 84 | — | 17-2-0 |
-| **Joaquin Buckley** ◆ | 80 | 81 | 79 | 82 | 85 | 85 | Veterano | 21-8-0 |
-| **Kevin Holland** ◆ | 86 | 74 | 84 | 81 | 86 | 81 | Incómodo | 29-15-0 (1 NC) |
-| **Daniel Rodriguez** | 86 | 74 | 74 | 85 | 88 | 84 | — | 20-6-0 |
-| **Nassourdine Imavov** ◆ | 85 | 76 | 78 | 84 | 85 | 83 | — | 17-4-0 (1 NC) |
-| **Jack Della Maddalena** | 83 | 74 | 76 | 84 | 88 | 84 | — | 18-4-0 |
-| **Leon Edwards** | 82 | 74 | 76 | 87 | 85 | 85 | Veterano | 22-6-0 (1 NC) |
-| **Mike Malott** | 82 | 77 | 84 | 77 | 85 | 82 | — | 14-2-1 |
-| **Randy Brown** | 81 | 75 | 80 | 83 | 83 | 85 | Veterano | 20-8-0 |
-| **Neil Magny** | 83 | 76 | 74 | 85 | 86 | 81 | Veterano | 32-15-0 |
-| **Bryan Battle** ◆ | 82 | 74 | 82 | 78 | 88 | 81 | — | 13-2-0 (1 NC) |
-| **Sean Strickland** ◆ | 86 | 74 | 75 | 83 | 84 | 83 | Especialista DUREZA | 31-7-0 |
-| **Uros Medic** ◆ | 87 | 74 | 78 | 78 | 84 | 81 | — | 14-3-0 |
-| **Dricus du Plessis** ◆ | 82 | 75 | 80 | 83 | 85 | 74 | Camaleón | 24-3-0 |
-| **Carlos Prates** | 84 | 76 | 75 | 76 | 88 | 79 | Especialista GOLPEO | 24-7-0 |
+| Peleador | País | Rk | GOL | LUC | SUE | CAR | DUR | IQ | Atributo | Récord |
+|---|---|---|---|---|---|---|---|---|---|---|
+| **Khamzat Chimaev** ◆ | Emiratos Árabes Unidos | — | 80 | 89 | 86 | 79 | 88 | 87 | Camaleón | 15-1-0 |
+| **Sean Brady** | Estados Unidos | 6 | 80 | 84 | 85 | 86 | 85 | 87 | — | 19-2-0 |
+| **Kamaru Usman** ◆ | Nigeria | 9 | 83 | 85 | 74 | 88 | 87 | 88 | — | 21-5-0 |
+| **Gabriel Bonfim** | Brasil | 5 | 81 | 81 | 86 | 80 | 87 | 88 | — | 20-1-0 |
+| **Belal Muhammad** | Estados Unidos | 7 | 81 | 82 | 74 | 87 | 88 | 88 | Especialista CARDIO | 24-6-0 (1 NC) |
+| **Rinat Fakhretdinov** | Rusia | — | 82 | 81 | 79 | 84 | 88 | 86 | — | 24-1-1 |
+| **Shavkat Rakhmonov** | Kazajistán | — | 82 | 81 | 85 | 79 | 87 | 85 | — | 19-0-0 |
+| **Michael Morales** | Ecuador | 3 | 84 | 84 | 75 | 79 | 88 | 87 | — | 19-0-0 |
+| **Islam Makhachev** ◆ | Rusia | C | 81 | 84 | 82 | 80 | 80 | 87 | Camaleón+ | 29-1-0 |
+| **Yaroslav Amosov** | Ucrania | 11 | 82 | 83 | 86 | 78 | 84 | 81 | Veterano | 30-1-0 |
+| **Ian Machado Garry** | Irlanda | 1 | 83 | 75 | 75 | 88 | 88 | 84 | — | 17-2-0 |
+| **Joaquin Buckley** ◆ | Estados Unidos | 10 | 80 | 81 | 79 | 82 | 85 | 85 | Veterano | 21-8-0 |
+| **Kevin Holland** ◆ | Estados Unidos | — | 86 | 74 | 84 | 81 | 86 | 81 | Incómodo | 29-15-0 (1 NC) |
+| **Daniel Rodriguez** | Estados Unidos | 15 | 86 | 74 | 74 | 85 | 88 | 84 | — | 20-6-0 |
+| **Nassourdine Imavov** ◆ | Francia | — | 85 | 76 | 78 | 84 | 85 | 83 | — | 17-4-0 (1 NC) |
+| **Jack Della Maddalena** | Australia | 4 | 83 | 74 | 76 | 84 | 88 | 84 | — | 18-4-0 |
+| **Leon Edwards** | Inglaterra | 8 | 82 | 74 | 76 | 87 | 85 | 85 | Veterano | 22-6-0 (1 NC) |
+| **Mike Malott** | Canadá | 13 | 82 | 77 | 84 | 77 | 85 | 82 | — | 14-2-1 |
+| **Randy Brown** | Jamaica | — | 81 | 75 | 80 | 83 | 83 | 85 | Veterano | 20-8-0 |
+| **Neil Magny** | Estados Unidos | — | 83 | 76 | 74 | 85 | 86 | 81 | Veterano | 32-15-0 |
+| **Bryan Battle** ◆ | Estados Unidos | — | 82 | 74 | 82 | 78 | 88 | 81 | — | 13-2-0 (1 NC) |
+| **Sean Strickland** ◆ | Estados Unidos | — | 86 | 74 | 75 | 83 | 84 | 83 | Especialista DUREZA | 31-7-0 |
+| **Uros Medic** ◆ | Serbia | 12 | 87 | 74 | 78 | 78 | 84 | 81 | — | 14-3-0 |
+| **Dricus du Plessis** ◆ | Sudáfrica | — | 82 | 75 | 80 | 83 | 85 | 74 | Camaleón | 24-3-0 |
+| **Carlos Prates** | Brasil | 2 | 84 | 76 | 75 | 76 | 88 | 79 | Especialista GOLPEO | 24-7-0 |
 
 ### Plata
 
-| Peleador | GOL | LUC | SUE | CAR | DUR | IQ | Atributo | Récord |
-|---|---|---|---|---|---|---|---|---|
-| **Preston Parsons** | 81 | 82 | 82 | 82 | 77 | 82 | — | 11-6-0 |
-| **Jeremiah Wells** | 81 | 80 | 82 | 80 | 82 | 80 | — | 14-4-1 |
-| **Themba Gorimbo** | 81 | 82 | 75 | 82 | 82 | 82 | — | 14-7-0 |
-| **Court McGee** | 81 | 76 | 81 | 82 | 82 | 82 | — | 23-14-0 |
-| **Danny Barlow** | 81 | 81 | 75 | 80 | 82 | 82 | — | 9-2-0 |
-| **Geoff Neal** | 82 | 82 | 74 | 77 | 82 | 82 | — | 16-8-0 |
-| **Carlos Leal** | 80 | 78 | 75 | 81 | 82 | 82 | — | 23-7-0 |
-| **Trevin Giles** | 80 | 80 | 79 | 82 | 75 | 82 | — | 16-7-0 |
-| **Charles Radtke** | 82 | 80 | 80 | 79 | 75 | 82 | — | 12-5-0 |
-| **Michel Pereira** ◆ | 82 | 78 | 79 | 82 | 79 | 77 | — | 32-15-0 (2 NC) |
-| **Alex Morono** | 81 | 70 | 78 | 82 | 82 | 81 | — | 24-13-0 (1 NC) |
-| **Matthew Semelsberger** | 81 | 73 | 76 | 82 | 82 | 79 | — | 11-8-0 |
-| **Joel Alvarez** ◆ | 81 | 71 | 82 | 76 | 82 | 80 | — | 23-5-0 |
-| **Sam Patterson** | 82 | 73 | 82 | 74 | 82 | 76 | — | 15-3-1 |
+| Peleador | País | Rk | GOL | LUC | SUE | CAR | DUR | IQ | Atributo | Récord |
+|---|---|---|---|---|---|---|---|---|---|---|
+| **Preston Parsons** | Estados Unidos | — | 81 | 82 | 82 | 82 | 77 | 82 | — | 11-6-0 |
+| **Jeremiah Wells** | Estados Unidos | — | 81 | 80 | 82 | 80 | 82 | 80 | — | 14-4-1 |
+| **Themba Gorimbo** | Zimbabue | — | 81 | 82 | 75 | 82 | 82 | 82 | — | 14-7-0 |
+| **Court McGee** | Estados Unidos | — | 81 | 76 | 81 | 82 | 82 | 82 | — | 23-14-0 |
+| **Danny Barlow** | Estados Unidos | — | 81 | 81 | 75 | 80 | 82 | 82 | — | 9-2-0 |
+| **Geoff Neal** | Estados Unidos | — | 82 | 82 | 74 | 77 | 82 | 82 | — | 16-8-0 |
+| **Carlos Leal** | Brasil | — | 80 | 78 | 75 | 81 | 82 | 82 | — | 23-7-0 |
+| **Trevin Giles** | Estados Unidos | — | 80 | 80 | 79 | 82 | 75 | 82 | — | 16-7-0 |
+| **Charles Radtke** | Estados Unidos | — | 82 | 80 | 80 | 79 | 75 | 82 | — | 12-5-0 |
+| **Michel Pereira** ◆ | Brasil | — | 82 | 78 | 79 | 82 | 79 | 77 | — | 32-15-0 (2 NC) |
+| **Alex Morono** | Estados Unidos | — | 81 | 70 | 78 | 82 | 82 | 81 | — | 24-13-0 (1 NC) |
+| **Matthew Semelsberger** | Estados Unidos | — | 81 | 73 | 76 | 82 | 82 | 79 | — | 11-8-0 |
+| **Joel Alvarez** ◆ | España | — | 81 | 71 | 82 | 76 | 82 | 80 | — | 23-5-0 |
+| **Sam Patterson** | Inglaterra | — | 82 | 73 | 82 | 74 | 82 | 76 | — | 15-3-1 |
 
 ---
 
@@ -260,54 +448,54 @@ Datos de UFCStats sobre el historial completo de cada peleador. **Cada pelea se 
 
 ### Oro
 
-| Peleador | GOL | LUC | SUE | CAR | DUR | IQ | Atributo | Récord |
-|---|---|---|---|---|---|---|---|---|
-| **Islam Makhachev** ◆ | 83 | 88 | 86 | 84 | 83 | 89 | Camaleón+ | 29-1-0 |
-| **Rafa Garcia** | 81 | 86 | 78 | 86 | 88 | 86 | — | 19-4-0 |
-| **Bobby Green** | 88 | 81 | 79 | 83 | 84 | 88 | Veterano | 36-17-1 (1 NC) |
-| **Mateusz Gamrot** | 80 | 84 | 78 | 84 | 88 | 87 | Especialista LUCHA | 26-5-0 (1 NC) |
-| **Arman Tsarukyan** | 83 | 81 | 76 | 85 | 87 | 85 | — | 23-3-0 |
-| **Benoit Saint Denis** | 88 | 85 | 86 | 80 | 83 | 75 | — | 17-4-0 (1 NC) |
-| **Quillan Salkilld** | 82 | 84 | 84 | 76 | 86 | 85 | — | 13-1-0 |
-| **Rafael Fiziev** | 83 | 82 | 79 | 84 | 84 | 85 | — | 14-5-0 |
-| **Justin Gaethje** | 87 | 74 | 78 | 84 | 88 | 85 | Especialista DUREZA | 28-5-0 |
-| **Ilia Topuria** ◆ | 86 | 83 | 79 | 76 | 85 | 85 | Camaleón | 17-1-0 |
-| **Charles Oliveira** ◆ | 82 | 77 | 89 | 80 | 80 | 82 | Especialista SUELO | 37-11-0 (1 NC) |
-| **Renato Moicano** ◆ | 80 | 78 | 85 | 77 | 84 | 86 | Veterano | 21-7-1 |
-| **Grant Dawson** | 81 | 80 | 85 | 81 | 78 | 85 | — | 24-3-1 |
-| **Mauricio Ruffy** | 82 | 77 | 79 | 77 | 88 | 86 | — | 14-2-0 |
-| **Max Holloway** ◆ | 86 | 74 | 74 | 85 | 82 | 87 | Camaleón | 28-9-0 |
-| **Paddy Pimblett** | 81 | 74 | 86 | 78 | 88 | 80 | Veterano | 24-4-0 |
-| **Dan Hooker** ◆ | 82 | 76 | 79 | 78 | 86 | 86 | Veterano | 24-14-0 |
-| **Manuel Torres** | 84 | 85 | 81 | 79 | 75 | 83 | — | 17-4-0 |
-| **Beneil Dariush** | 81 | 81 | 84 | 77 | 74 | 86 | Veterano | 23-8-1 |
-| **Patricio Pitbull** ◆ | 78 | 76 | 76 | 84 | 86 | 78 | Veterano | 37-9-0 |
-| **Tom Nolan** | 82 | 74 | 84 | 79 | 84 | 74 | — | 11-1-0 |
-| **Drew Dober** | 84 | 74 | 78 | 74 | 88 | 74 | Veterano | 29-15-0 (1 NC) |
-| **Uros Medic** ◆ | 86 | 74 | 77 | 74 | 81 | 79 | — | 14-3-0 |
-| **Conor McGregor** ◆ | 80 | 74 | 78 | 74 | 82 | 80 | Camaleón | 22-7-0 |
+| Peleador | País | Rk | GOL | LUC | SUE | CAR | DUR | IQ | Atributo | Récord |
+|---|---|---|---|---|---|---|---|---|---|---|
+| **Islam Makhachev** ◆ | Rusia | — | 83 | 88 | 86 | 84 | 83 | 89 | Camaleón+ | 29-1-0 |
+| **Rafa Garcia** | México | — | 81 | 86 | 78 | 86 | 88 | 86 | — | 19-4-0 |
+| **Bobby Green** | Estados Unidos | — | 88 | 81 | 79 | 83 | 84 | 88 | Veterano | 36-17-1 (1 NC) |
+| **Mateusz Gamrot** | Polonia | 9 | 80 | 84 | 78 | 84 | 88 | 87 | Especialista LUCHA | 26-5-0 (1 NC) |
+| **Arman Tsarukyan** | Armenia | 2 | 83 | 81 | 76 | 85 | 87 | 85 | — | 23-3-0 |
+| **Benoit Saint Denis** | Francia | 6 | 88 | 85 | 86 | 80 | 83 | 75 | — | 17-4-0 (1 NC) |
+| **Quillan Salkilld** | Australia | 8 | 82 | 84 | 84 | 76 | 86 | 85 | — | 13-1-0 |
+| **Rafael Fiziev** | Azerbaiyán | 12 | 83 | 82 | 79 | 84 | 84 | 85 | — | 14-5-0 |
+| **Justin Gaethje** | Estados Unidos | C | 87 | 74 | 78 | 84 | 88 | 85 | Especialista DUREZA | 28-5-0 |
+| **Ilia Topuria** ◆ | España | 1 | 86 | 83 | 79 | 76 | 85 | 85 | Camaleón | 17-1-0 |
+| **Charles Oliveira** ◆ | Brasil | 3 | 82 | 77 | 89 | 80 | 80 | 82 | Especialista SUELO | 37-11-0 (1 NC) |
+| **Renato Moicano** ◆ | Brasil | 11 | 80 | 78 | 85 | 77 | 84 | 86 | Veterano | 21-7-1 |
+| **Grant Dawson** | Estados Unidos | — | 81 | 80 | 85 | 81 | 78 | 85 | — | 24-3-1 |
+| **Mauricio Ruffy** | Brasil | 7 | 82 | 77 | 79 | 77 | 88 | 86 | — | 14-2-0 |
+| **Max Holloway** ◆ | Estados Unidos | 4 | 86 | 74 | 74 | 85 | 82 | 87 | Camaleón | 28-9-0 |
+| **Paddy Pimblett** | Inglaterra | 5 | 81 | 74 | 86 | 78 | 88 | 80 | Veterano | 24-4-0 |
+| **Dan Hooker** ◆ | Nueva Zelanda | 10 | 82 | 76 | 79 | 78 | 86 | 86 | Veterano | 24-14-0 |
+| **Manuel Torres** | México | 15 | 84 | 85 | 81 | 79 | 75 | 83 | — | 17-4-0 |
+| **Beneil Dariush** | Estados Unidos | 14 | 81 | 81 | 84 | 77 | 74 | 86 | Veterano | 23-8-1 |
+| **Patricio Pitbull** ◆ | Brasil | — | 78 | 76 | 76 | 84 | 86 | 78 | Veterano | 37-9-0 |
+| **Tom Nolan** | Australia | 13 | 82 | 74 | 84 | 79 | 84 | 74 | — | 11-1-0 |
+| **Drew Dober** | Estados Unidos | — | 84 | 74 | 78 | 74 | 88 | 74 | Veterano | 29-15-0 (1 NC) |
+| **Uros Medic** ◆ | Serbia | — | 86 | 74 | 77 | 74 | 81 | 79 | — | 14-3-0 |
+| **Conor McGregor** ◆ | Irlanda | — | 80 | 74 | 78 | 74 | 82 | 80 | Camaleón | 22-7-0 |
 
 ### Plata
 
-| Peleador | GOL | LUC | SUE | CAR | DUR | IQ | Atributo | Récord |
-|---|---|---|---|---|---|---|---|---|
-| **Mateusz Rebecki** | 81 | 82 | 80 | 81 | 82 | 82 | — | 21-5-0 |
-| **Chris Duncan** | 82 | 82 | 82 | 77 | 82 | 82 | — | 15-3-0 |
-| **Trey Ogden** | 81 | 82 | 78 | 82 | 82 | 82 | — | 18-7-0 (1 NC) |
-| **Fares Ziam** | 82 | 82 | 75 | 82 | 82 | 82 | — | 18-5-0 |
-| **Jalin Turner** | 82 | 79 | 82 | 79 | 82 | 81 | — | 16-9-0 |
-| **Nasrat Haqparast** | 81 | 78 | 79 | 82 | 82 | 82 | — | 18-6-0 |
-| **Alexander Hernandez** | 82 | 75 | 79 | 82 | 82 | 82 | — | 18-9-0 |
-| **Jared Gordon** | 82 | 76 | 78 | 82 | 82 | 80 | — | 21-9-0 (1 NC) |
-| **Kaue Fernandes** | 80 | 82 | 75 | 78 | 78 | 82 | — | 11-3-0 |
-| **Terrance McKinney** | 82 | 82 | 82 | 77 | 70 | 81 | — | 18-9-0 |
-| **Kurt Holobaugh** | 81 | 71 | 79 | 82 | 82 | 79 | — | 22-10-0 (1 NC) |
-| **Jordan Leavitt** | 81 | 72 | 82 | 76 | 82 | 80 | — | 13-4-0 |
-| **Nazim Sadykhov** | 82 | 78 | 78 | 76 | 82 | 76 | — | 11-3-1 |
-| **Elves Brener** | 81 | 76 | 74 | 82 | 82 | 75 | — | 16-6-0 |
-| **Michael Chandler** | 80 | 77 | 78 | 76 | 77 | 80 | — | 23-11-0 |
-| **Joel Alvarez** ◆ | 82 | 70 | 82 | 68 | 76 | 78 | — | 23-5-0 |
-| **Mitch Ramirez** | 81 | 72 | 75 | 77 | 69 | 79 | — | 8-4-0 |
+| Peleador | País | Rk | GOL | LUC | SUE | CAR | DUR | IQ | Atributo | Récord |
+|---|---|---|---|---|---|---|---|---|---|---|
+| **Mateusz Rebecki** | Polonia | — | 81 | 82 | 80 | 81 | 82 | 82 | — | 21-5-0 |
+| **Chris Duncan** | Escocia | — | 82 | 82 | 82 | 77 | 82 | 82 | — | 15-3-0 |
+| **Trey Ogden** | Estados Unidos | — | 81 | 82 | 78 | 82 | 82 | 82 | — | 18-7-0 (1 NC) |
+| **Fares Ziam** | Francia | — | 82 | 82 | 75 | 82 | 82 | 82 | — | 18-5-0 |
+| **Jalin Turner** | Estados Unidos | — | 82 | 79 | 82 | 79 | 82 | 81 | — | 16-9-0 |
+| **Nasrat Haqparast** | Alemania | — | 81 | 78 | 79 | 82 | 82 | 82 | — | 18-6-0 |
+| **Alexander Hernandez** | Estados Unidos | — | 82 | 75 | 79 | 82 | 82 | 82 | — | 18-9-0 |
+| **Jared Gordon** | Estados Unidos | — | 82 | 76 | 78 | 82 | 82 | 80 | — | 21-9-0 (1 NC) |
+| **Kaue Fernandes** | Brasil ? | — | 80 | 82 | 75 | 78 | 78 | 82 | — | 11-3-0 |
+| **Terrance McKinney** | Estados Unidos | — | 82 | 82 | 82 | 77 | 70 | 81 | — | 18-9-0 |
+| **Kurt Holobaugh** | Estados Unidos | — | 81 | 71 | 79 | 82 | 82 | 79 | — | 22-10-0 (1 NC) |
+| **Jordan Leavitt** | Estados Unidos | — | 81 | 72 | 82 | 76 | 82 | 80 | — | 13-4-0 |
+| **Nazim Sadykhov** | Azerbaiyán | — | 82 | 78 | 78 | 76 | 82 | 76 | — | 11-3-1 |
+| **Elves Brener** | Brasil | — | 81 | 76 | 74 | 82 | 82 | 75 | — | 16-6-0 |
+| **Michael Chandler** | Estados Unidos | — | 80 | 77 | 78 | 76 | 77 | 80 | — | 23-11-0 |
+| **Joel Alvarez** ◆ | España | — | 82 | 70 | 82 | 68 | 76 | 78 | — | 23-5-0 |
+| **Mitch Ramirez** | Estados Unidos ? | — | 81 | 72 | 75 | 77 | 69 | 79 | — | 8-4-0 |
 
 ---
 
@@ -315,53 +503,53 @@ Datos de UFCStats sobre el historial completo de cada peleador. **Cada pelea se 
 
 ### Oro
 
-| Peleador | GOL | LUC | SUE | CAR | DUR | IQ | Atributo | Récord |
-|---|---|---|---|---|---|---|---|---|
-| **Ilia Topuria** ◆ | 88 | 86 | 82 | 79 | 88 | 87 | Camaleón | 17-1-0 |
-| **Arnold Allen** | 81 | 84 | 79 | 87 | 88 | 87 | — | 21-4-0 |
-| **Nathaniel Wood** ◆ | 82 | 82 | 83 | 87 | 88 | 84 | Veterano | 23-6-0 |
-| **Movsar Evloev** | 81 | 85 | 74 | 87 | 88 | 86 | — | 20-0-0 |
-| **Youssef Zalal** | 82 | 74 | 86 | 85 | 88 | 86 | — | 18-6-1 |
-| **Alexander Volkanovski** | 87 | 78 | 75 | 87 | 85 | 88 | Especialista IQ | 28-4-0 |
-| **Max Holloway** ◆ | 86 | 76 | 76 | 88 | 86 | 88 | Especialista CARDIO | 28-9-0 |
-| **Jean Silva** | 81 | 84 | 80 | 78 | 87 | 85 | Incómodo | 17-3-0 |
-| **Brian Ortega** | 81 | 74 | 85 | 85 | 88 | 81 | — | 16-5-0 (1 NC) |
-| **Lerone Murphy** | 83 | 74 | 76 | 87 | 88 | 84 | — | 17-1-1 |
-| **Patricio Pitbull** ◆ | 82 | 78 | 77 | 86 | 88 | 81 | Veterano | 37-9-0 |
-| **Diego Lopes** | 81 | 75 | 84 | 82 | 86 | 82 | Veterano | 28-8-0 |
-| **Pat Sabatini** | 81 | 84 | 85 | 84 | 74 | 82 | — | 22-5-0 |
-| **Steve Garcia** | 88 | 84 | 76 | 74 | 80 | 87 | — | 19-6-0 |
-| **Charles Jourdain** ◆ | 80 | 74 | 84 | 82 | 88 | 81 | — | 18-8-1 |
-| **David Onama** | 82 | 74 | 79 | 84 | 88 | 81 | — | 14-3-0 |
-| **Aljamain Sterling** ◆ | 82 | 74 | 80 | 86 | 82 | 82 | Camaleón | 26-5-0 |
-| **Kevin Vallejos** | 83 | 79 | 74 | 77 | 88 | 85 | — | 18-1-0 |
-| **Melquizael Costa** | 82 | 74 | 83 | 82 | 85 | 80 | Veterano | 26-8-0 |
-| **Yair Rodriguez** | 83 | 74 | 78 | 86 | 85 | 79 | Incómodo | 21-6-0 (1 NC) |
-| **Aaron Pico** | 82 | 82 | 76 | 84 | 77 | 80 | — | 14-5-0 |
-| **Conor McGregor** ◆ | 83 | 74 | 78 | 75 | 84 | 86 | Camaleón | 22-7-0 |
-| **Renato Moicano** ◆ | 77 | 76 | 84 | 74 | 82 | 85 | Veterano | 21-7-1 |
-| **Dan Hooker** ◆ | 79 | 75 | 78 | 75 | 83 | 84 | Veterano | 24-14-0 |
-| **Charles Oliveira** ◆ | 79 | 76 | 86 | 76 | 77 | 78 | Especialista SUELO | 37-11-0 (1 NC) |
+| Peleador | País | Rk | GOL | LUC | SUE | CAR | DUR | IQ | Atributo | Récord |
+|---|---|---|---|---|---|---|---|---|---|---|
+| **Ilia Topuria** ◆ | España | — | 88 | 86 | 82 | 79 | 88 | 87 | Camaleón | 17-1-0 |
+| **Arnold Allen** | Inglaterra | 7 | 81 | 84 | 79 | 87 | 88 | 87 | — | 21-4-0 |
+| **Nathaniel Wood** ◆ | Inglaterra | — | 82 | 82 | 83 | 87 | 88 | 84 | Veterano | 23-6-0 |
+| **Movsar Evloev** | Rusia | 1 | 81 | 85 | 74 | 87 | 88 | 86 | — | 20-0-0 |
+| **Youssef Zalal** | Marruecos | 8 | 82 | 74 | 86 | 85 | 88 | 86 | — | 18-6-1 |
+| **Alexander Volkanovski** | Australia | C | 87 | 78 | 75 | 87 | 85 | 88 | Especialista IQ | 28-4-0 |
+| **Max Holloway** ◆ | Estados Unidos | — | 86 | 76 | 76 | 88 | 86 | 88 | Especialista CARDIO | 28-9-0 |
+| **Jean Silva** | Brasil | 6 | 81 | 84 | 80 | 78 | 87 | 85 | Incómodo | 17-3-0 |
+| **Brian Ortega** | Estados Unidos | 11 | 81 | 74 | 85 | 85 | 88 | 81 | — | 16-5-0 (1 NC) |
+| **Lerone Murphy** | Inglaterra | 3 | 83 | 74 | 76 | 87 | 88 | 84 | — | 17-1-1 |
+| **Patricio Pitbull** ◆ | Brasil | 15 | 82 | 78 | 77 | 86 | 88 | 81 | Veterano | 37-9-0 |
+| **Diego Lopes** | Brasil | 2 | 81 | 75 | 84 | 82 | 86 | 82 | Veterano | 28-8-0 |
+| **Pat Sabatini** | Estados Unidos | — | 81 | 84 | 85 | 84 | 74 | 82 | — | 22-5-0 |
+| **Steve Garcia** | Estados Unidos | 10 | 88 | 84 | 76 | 74 | 80 | 87 | — | 19-6-0 |
+| **Charles Jourdain** ◆ | Canadá | — | 80 | 74 | 84 | 82 | 88 | 81 | — | 18-8-1 |
+| **David Onama** | Uganda | 14 | 82 | 74 | 79 | 84 | 88 | 81 | — | 14-3-0 |
+| **Aljamain Sterling** ◆ | Estados Unidos | 4 | 82 | 74 | 80 | 86 | 82 | 82 | Camaleón | 26-5-0 |
+| **Kevin Vallejos** | Argentina | 9 | 83 | 79 | 74 | 77 | 88 | 85 | — | 18-1-0 |
+| **Melquizael Costa** | Brasil | 13 | 82 | 74 | 83 | 82 | 85 | 80 | Veterano | 26-8-0 |
+| **Yair Rodriguez** | México | 5 | 83 | 74 | 78 | 86 | 85 | 79 | Incómodo | 21-6-0 (1 NC) |
+| **Aaron Pico** | Estados Unidos | 12 | 82 | 82 | 76 | 84 | 77 | 80 | — | 14-5-0 |
+| **Conor McGregor** ◆ | Irlanda | — | 83 | 74 | 78 | 75 | 84 | 86 | Camaleón | 22-7-0 |
+| **Renato Moicano** ◆ | Brasil | — | 77 | 76 | 84 | 74 | 82 | 85 | Veterano | 21-7-1 |
+| **Dan Hooker** ◆ | Nueva Zelanda | — | 79 | 75 | 78 | 75 | 83 | 84 | Veterano | 24-14-0 |
+| **Charles Oliveira** ◆ | Brasil | — | 79 | 76 | 86 | 76 | 77 | 78 | Especialista SUELO | 37-11-0 (1 NC) |
 
 ### Plata
 
-| Peleador | GOL | LUC | SUE | CAR | DUR | IQ | Atributo | Récord |
-|---|---|---|---|---|---|---|---|---|
-| **Gabriel Santos** | 82 | 82 | 82 | 82 | 82 | 82 | — | 12-2-0 |
-| **Christian Rodriguez** | 82 | 80 | 82 | 82 | 82 | 82 | — | 13-4-0 |
-| **Andre Fili** | 81 | 82 | 78 | 82 | 82 | 81 | — | 25-14-0 (1 NC) |
-| **Joanderson Brito** | 81 | 82 | 82 | 77 | 82 | 80 | — | 19-5-1 |
-| **Austin Bashi** | 81 | 82 | 82 | 79 | 82 | 78 | — | 14-2-0 |
-| **Losene Keita** | 82 | 78 | 77 | 82 | 82 | 82 | — | 16-2-0 |
-| **Jamall Emmers** | 81 | 82 | 74 | 82 | 82 | 82 | — | 22-8-0 |
-| **Bryce Mitchell** | 81 | 74 | 82 | 82 | 82 | 81 | — | 19-4-0 |
-| **Sean Woodson** | 81 | 81 | 74 | 82 | 82 | 82 | — | 13-2-1 |
-| **Damon Jackson** | 81 | 72 | 82 | 81 | 82 | 79 | — | 23-8-1 (1 NC) |
-| **Josh Emmett** | 81 | 71 | 78 | 82 | 82 | 82 | — | 19-7-0 |
-| **Morgan Charriere** | 82 | 82 | 76 | 77 | 82 | 77 | — | 21-12-1 |
-| **Julian Erosa** | 82 | 78 | 82 | 76 | 74 | 82 | — | 31-14-0 |
-| **Jose Delgado** | 81 | 76 | 74 | 80 | 82 | 77 | — | 12-2-0 |
-| **Dan Ige** | 82 | 72 | 77 | 82 | 82 | 75 | — | 19-11-0 |
+| Peleador | País | Rk | GOL | LUC | SUE | CAR | DUR | IQ | Atributo | Récord |
+|---|---|---|---|---|---|---|---|---|---|---|
+| **Gabriel Santos** | Brasil | — | 82 | 82 | 82 | 82 | 82 | 82 | — | 12-2-0 |
+| **Christian Rodriguez** | Estados Unidos | — | 82 | 80 | 82 | 82 | 82 | 82 | — | 13-4-0 |
+| **Andre Fili** | Estados Unidos | — | 81 | 82 | 78 | 82 | 82 | 81 | — | 25-14-0 (1 NC) |
+| **Joanderson Brito** | Brasil | — | 81 | 82 | 82 | 77 | 82 | 80 | — | 19-5-1 |
+| **Austin Bashi** | Estados Unidos | — | 81 | 82 | 82 | 79 | 82 | 78 | — | 14-2-0 |
+| **Losene Keita** | Bélgica | — | 82 | 78 | 77 | 82 | 82 | 82 | — | 16-2-0 |
+| **Jamall Emmers** | Estados Unidos | — | 81 | 82 | 74 | 82 | 82 | 82 | — | 22-8-0 |
+| **Bryce Mitchell** | Estados Unidos | — | 81 | 74 | 82 | 82 | 82 | 81 | — | 19-4-0 |
+| **Sean Woodson** | Estados Unidos | — | 81 | 81 | 74 | 82 | 82 | 82 | — | 13-2-1 |
+| **Damon Jackson** | Estados Unidos | — | 81 | 72 | 82 | 81 | 82 | 79 | — | 23-8-1 (1 NC) |
+| **Josh Emmett** | Estados Unidos | — | 81 | 71 | 78 | 82 | 82 | 82 | — | 19-7-0 |
+| **Morgan Charriere** | Francia | — | 82 | 82 | 76 | 77 | 82 | 77 | — | 21-12-1 |
+| **Julian Erosa** | Estados Unidos | — | 82 | 78 | 82 | 76 | 74 | 82 | — | 31-14-0 |
+| **Jose Delgado** | Estados Unidos ? | — | 81 | 76 | 74 | 80 | 82 | 77 | — | 12-2-0 |
+| **Dan Ige** | Estados Unidos | — | 82 | 72 | 77 | 82 | 82 | 75 | — | 19-11-0 |
 
 ---
 
@@ -369,50 +557,50 @@ Datos de UFCStats sobre el historial completo de cada peleador. **Cada pelea se 
 
 ### Oro
 
-| Peleador | GOL | LUC | SUE | CAR | DUR | IQ | Atributo | Récord |
-|---|---|---|---|---|---|---|---|---|
-| **Umar Nurmagomedov** | 83 | 85 | 81 | 86 | 87 | 87 | — | 20-1-0 |
-| **Merab Dvalishvili** | 80 | 88 | 76 | 89 | 88 | 86 | Especialista CARDIO | 21-5-0 |
-| **Petr Yan** | 89 | 80 | 79 | 86 | 86 | 86 | Especialista IQ | 20-5-0 |
-| **Raoni Barcelos** | 81 | 81 | 82 | 86 | 88 | 86 | — | 22-5-0 |
-| **Mario Bautista** | 81 | 80 | 85 | 84 | 88 | 85 | — | 18-3-0 |
-| **Farid Basharat** | 82 | 83 | 79 | 87 | 88 | 84 | — | 16-0-0 |
-| **Raul Rosas Jr.** | 81 | 86 | 84 | 84 | 85 | 80 | — | 12-1-0 |
-| **Sean O'Malley** | 87 | 74 | 79 | 83 | 88 | 86 | Especialista GOLPEO | 20-3-0 (1 NC) |
-| **Marlon Vera** | 81 | 74 | 84 | 85 | 87 | 86 | Especialista DUREZA | 23-12-1 |
-| **Payton Talbott** | 83 | 78 | 78 | 84 | 88 | 86 | — | 11-1-0 |
-| **Aljamain Sterling** ◆ | 83 | 74 | 84 | 88 | 83 | 85 | Camaleón | 26-5-0 |
-| **Aiemann Zahabi** | 81 | 76 | 78 | 86 | 85 | 87 | — | 14-3-0 |
-| **Marcus McGhee** | 80 | 79 | 79 | 82 | 88 | 85 | — | 11-2-0 |
-| **Song Yadong** | 81 | 76 | 78 | 85 | 88 | 84 | Veterano | 23-9-1 (1 NC) |
-| **Deiveson Figueiredo** ◆ | 82 | 74 | 85 | 84 | 85 | 81 | Camaleón | 25-7-1 |
-| **Nathaniel Wood** ◆ | 79 | 84 | 84 | 80 | 83 | 80 | Veterano | 23-6-0 |
-| **Cory Sandhagen** | 88 | 74 | 75 | 86 | 86 | 79 | Especialista IQ | 18-7-0 |
-| **Henry Cejudo** ◆ | 80 | 76 | 78 | 83 | 86 | 84 | Camaleón | 16-6-0 |
-| **Cody Garbrandt** | 81 | 78 | 78 | 79 | 74 | 86 | — | 15-8-0 |
-| **Charles Jourdain** ◆ | 76 | 74 | 82 | 78 | 86 | 80 | — | 18-8-1 |
-| **Kyoji Horiguchi** ◆ | 77 | 75 | 74 | 83 | 82 | 83 | Veterano | 36-6-0 (1 NC) |
+| Peleador | País | Rk | GOL | LUC | SUE | CAR | DUR | IQ | Atributo | Récord |
+|---|---|---|---|---|---|---|---|---|---|---|
+| **Umar Nurmagomedov** | Rusia | 3 | 83 | 85 | 81 | 86 | 87 | 87 | — | 20-1-0 |
+| **Merab Dvalishvili** | Georgia | 1 | 80 | 88 | 76 | 89 | 88 | 86 | Especialista CARDIO | 21-5-0 |
+| **Petr Yan** | Rusia | C | 89 | 80 | 79 | 86 | 86 | 86 | Especialista IQ | 20-5-0 |
+| **Raoni Barcelos** | Brasil | 13 | 81 | 81 | 82 | 86 | 88 | 86 | — | 22-5-0 |
+| **Mario Bautista** | Estados Unidos | 4 | 81 | 80 | 85 | 84 | 88 | 85 | — | 18-3-0 |
+| **Farid Basharat** | Afganistán | 14 | 82 | 83 | 79 | 87 | 88 | 84 | — | 16-0-0 |
+| **Raul Rosas Jr.** | México | 12 | 81 | 86 | 84 | 84 | 85 | 80 | — | 12-1-0 |
+| **Sean O'Malley** | Estados Unidos | 2 | 87 | 74 | 79 | 83 | 88 | 86 | Especialista GOLPEO | 20-3-0 (1 NC) |
+| **Marlon Vera** | Ecuador | 10 | 81 | 74 | 84 | 85 | 87 | 86 | Especialista DUREZA | 23-12-1 |
+| **Payton Talbott** | Estados Unidos | 11 | 83 | 78 | 78 | 84 | 88 | 86 | — | 11-1-0 |
+| **Aljamain Sterling** ◆ | Estados Unidos | — | 83 | 74 | 84 | 88 | 83 | 85 | Camaleón | 26-5-0 |
+| **Aiemann Zahabi** | Canadá | 7 | 81 | 76 | 78 | 86 | 85 | 87 | — | 14-3-0 |
+| **Marcus McGhee** | Estados Unidos | 15 | 80 | 79 | 79 | 82 | 88 | 85 | — | 11-2-0 |
+| **Song Yadong** | China | 6 | 81 | 76 | 78 | 85 | 88 | 84 | Veterano | 23-9-1 (1 NC) |
+| **Deiveson Figueiredo** ◆ | Brasil | 9 | 82 | 74 | 85 | 84 | 85 | 81 | Camaleón | 25-7-1 |
+| **Nathaniel Wood** ◆ | Inglaterra | — | 79 | 84 | 84 | 80 | 83 | 80 | Veterano | 23-6-0 |
+| **Cory Sandhagen** | Estados Unidos | 5 | 88 | 74 | 75 | 86 | 86 | 79 | Especialista IQ | 18-7-0 |
+| **Henry Cejudo** ◆ | Estados Unidos | — | 80 | 76 | 78 | 83 | 86 | 84 | Camaleón | 16-6-0 |
+| **Cody Garbrandt** | Estados Unidos | — | 81 | 78 | 78 | 79 | 74 | 86 | — | 15-8-0 |
+| **Charles Jourdain** ◆ | Canadá | — | 76 | 74 | 82 | 78 | 86 | 80 | — | 18-8-1 |
+| **Kyoji Horiguchi** ◆ | Japón | — | 77 | 75 | 74 | 83 | 82 | 83 | Veterano | 36-6-0 (1 NC) |
 
 ### Plata
 
-| Peleador | GOL | LUC | SUE | CAR | DUR | IQ | Atributo | Récord |
-|---|---|---|---|---|---|---|---|---|
-| **Ricky Simon** | 81 | 82 | 81 | 82 | 82 | 82 | — | 22-7-1 |
-| **Jean Matsumoto** | 81 | 82 | 80 | 82 | 82 | 82 | — | 18-2-0 |
-| **Kyler Phillips** | 82 | 81 | 78 | 82 | 82 | 82 | — | 12-5-0 |
-| **Montel Jackson** | 81 | 82 | 77 | 82 | 82 | 82 | — | 15-4-0 |
-| **Da'Mon Blackshear** | 82 | 78 | 82 | 78 | 82 | 82 | — | 17-8-1 |
-| **Miles Johns** | 82 | 78 | 78 | 82 | 82 | 82 | — | 16-5-0 (1 NC) |
-| **Vinicius Oliveira** | 82 | 79 | 74 | 82 | 82 | 82 | — | 24-4-0 |
-| **Chris Gutierrez** | 82 | 73 | 79 | 82 | 82 | 82 | — | 22-7-2 |
-| **Alateng Heili** | 80 | 82 | 75 | 82 | 82 | 77 | — | 17-10-2 |
-| **John Yannis** | 82 | 76 | 74 | 78 | 82 | 82 | — | 10-5-0 |
-| **Journey Newson** | 81 | 72 | 75 | 82 | 82 | 81 | — | 10-5-0 (1 NC) |
-| **Rob Font** | 82 | 70 | 75 | 82 | 82 | 81 | — | 22-10-0 |
-| **Adrian Yanez** | 81 | 74 | 78 | 75 | 82 | 82 | — | 18-6-1 |
-| **Cameron Saaiman** | 81 | 72 | 78 | 79 | 82 | 80 | — | 9-3-0 |
-| **Malcolm Wellmaker** | 82 | 72 | 76 | 76 | 82 | 81 | — | 10-2-0 |
-| **Toshiomi Kazama** | 80 | 75 | 82 | 78 | 70 | 80 | — | 11-5-0 |
+| Peleador | País | Rk | GOL | LUC | SUE | CAR | DUR | IQ | Atributo | Récord |
+|---|---|---|---|---|---|---|---|---|---|---|
+| **Ricky Simon** | Estados Unidos | — | 81 | 82 | 81 | 82 | 82 | 82 | — | 22-7-1 |
+| **Jean Matsumoto** | Brasil | — | 81 | 82 | 80 | 82 | 82 | 82 | — | 18-2-0 |
+| **Kyler Phillips** | Estados Unidos | — | 82 | 81 | 78 | 82 | 82 | 82 | — | 12-5-0 |
+| **Montel Jackson** | Estados Unidos | — | 81 | 82 | 77 | 82 | 82 | 82 | — | 15-4-0 |
+| **Da'Mon Blackshear** | Estados Unidos | — | 82 | 78 | 82 | 78 | 82 | 82 | — | 17-8-1 |
+| **Miles Johns** | Estados Unidos | — | 82 | 78 | 78 | 82 | 82 | 82 | — | 16-5-0 (1 NC) |
+| **Vinicius Oliveira** | Brasil | — | 82 | 79 | 74 | 82 | 82 | 82 | — | 24-4-0 |
+| **Chris Gutierrez** | Estados Unidos | — | 82 | 73 | 79 | 82 | 82 | 82 | — | 22-7-2 |
+| **Alateng Heili** | China | — | 80 | 82 | 75 | 82 | 82 | 77 | — | 17-10-2 |
+| **John Yannis** | Estados Unidos ? | — | 82 | 76 | 74 | 78 | 82 | 82 | — | 10-5-0 |
+| **Journey Newson** | Estados Unidos | — | 81 | 72 | 75 | 82 | 82 | 81 | — | 10-5-0 (1 NC) |
+| **Rob Font** | Estados Unidos | — | 82 | 70 | 75 | 82 | 82 | 81 | — | 22-10-0 |
+| **Adrian Yanez** | Estados Unidos | — | 81 | 74 | 78 | 75 | 82 | 82 | — | 18-6-1 |
+| **Cameron Saaiman** | Sudáfrica | — | 81 | 72 | 78 | 79 | 82 | 80 | — | 9-3-0 |
+| **Malcolm Wellmaker** | Estados Unidos | — | 82 | 72 | 76 | 76 | 82 | 81 | — | 10-2-0 |
+| **Toshiomi Kazama** | Japón | — | 80 | 75 | 82 | 78 | 70 | 80 | — | 11-5-0 |
 
 ---
 
@@ -420,47 +608,47 @@ Datos de UFCStats sobre el historial completo de cada peleador. **Cada pelea se 
 
 ### Oro
 
-| Peleador | GOL | LUC | SUE | CAR | DUR | IQ | Atributo | Récord |
-|---|---|---|---|---|---|---|---|---|
-| **Alexandre Pantoja** | 80 | 82 | 86 | 84 | 88 | 84 | Veterano | 30-6-0 |
-| **Brandon Moreno** | 84 | 76 | 81 | 88 | 88 | 84 | Veterano | 23-10-2 |
-| **Asu Almabayev** | 81 | 83 | 87 | 85 | 84 | 81 | — | 24-3-0 |
-| **Tim Elliott** | 81 | 86 | 84 | 86 | 88 | 76 | Veterano | 22-14-1 |
-| **Joshua Van** | 87 | 80 | 74 | 86 | 86 | 86 | Especialista CARDIO | 17-2-0 |
-| **Henry Cejudo** ◆ | 82 | 79 | 79 | 86 | 88 | 85 | Camaleón | 16-6-0 |
-| **Tagir Ulanbekov** | 81 | 83 | 85 | 85 | 88 | 76 | — | 17-3-0 |
-| **Tatsuro Taira** | 81 | 84 | 85 | 82 | 84 | 80 | — | 18-2-0 |
-| **Amir Albazi** | 81 | 74 | 83 | 85 | 88 | 85 | — | 17-3-0 |
-| **Alex Perez** | 81 | 86 | 83 | 75 | 84 | 85 | Veterano | 26-10-0 (1 NC) |
-| **Su Mudaerji** | 80 | 76 | 77 | 85 | 88 | 84 | — | 19-7-0 (1 NC) |
-| **Manel Kape** | 87 | 75 | 74 | 81 | 88 | 84 | Incómodo | 23-7-0 |
-| **Brandon Royval** | 82 | 74 | 85 | 84 | 84 | 79 | Incómodo | 18-9-0 |
-| **Edgar Chairez** | 81 | 74 | 86 | 79 | 88 | 80 | — | 14-6-0 (1 NC) |
-| **Kyoji Horiguchi** ◆ | 80 | 77 | 75 | 86 | 84 | 85 | Veterano | 36-6-0 (1 NC) |
-| **Steve Erceg** | 81 | 74 | 76 | 87 | 84 | 78 | — | 14-5-0 |
-| **Deiveson Figueiredo** ◆ | 85 | 74 | 86 | 74 | 83 | 77 | Camaleón | 25-7-1 |
+| Peleador | País | Rk | GOL | LUC | SUE | CAR | DUR | IQ | Atributo | Récord |
+|---|---|---|---|---|---|---|---|---|---|---|
+| **Alexandre Pantoja** | Brasil | 1 | 80 | 82 | 86 | 84 | 88 | 84 | Veterano | 30-6-0 |
+| **Brandon Moreno** | México | 8 | 84 | 76 | 81 | 88 | 88 | 84 | Veterano | 23-10-2 |
+| **Asu Almabayev** | Kazajistán | 7 | 81 | 83 | 87 | 85 | 84 | 81 | — | 24-3-0 |
+| **Tim Elliott** | Estados Unidos | 13 | 81 | 86 | 84 | 86 | 88 | 76 | Veterano | 22-14-1 |
+| **Joshua Van** | Birmania | C | 87 | 80 | 74 | 86 | 86 | 86 | Especialista CARDIO | 17-2-0 |
+| **Henry Cejudo** ◆ | Estados Unidos | — | 82 | 79 | 79 | 86 | 88 | 85 | Camaleón | 16-6-0 |
+| **Tagir Ulanbekov** | Rusia | 14 | 81 | 83 | 85 | 85 | 88 | 76 | — | 17-3-0 |
+| **Tatsuro Taira** | Japón | 4 | 81 | 84 | 85 | 82 | 84 | 80 | — | 18-2-0 |
+| **Amir Albazi** | Irak | 9 | 81 | 74 | 83 | 85 | 88 | 85 | — | 17-3-0 |
+| **Alex Perez** | Estados Unidos | 11 | 81 | 86 | 83 | 75 | 84 | 85 | Veterano | 26-10-0 (1 NC) |
+| **Su Mudaerji** | China | — | 80 | 76 | 77 | 85 | 88 | 84 | — | 19-7-0 (1 NC) |
+| **Manel Kape** | Angola | 2 | 87 | 75 | 74 | 81 | 88 | 84 | Incómodo | 23-7-0 |
+| **Brandon Royval** | Estados Unidos | 3 | 82 | 74 | 85 | 84 | 84 | 79 | Incómodo | 18-9-0 |
+| **Edgar Chairez** | México | 15 | 81 | 74 | 86 | 79 | 88 | 80 | — | 14-6-0 (1 NC) |
+| **Kyoji Horiguchi** ◆ | Japón | 5 | 80 | 77 | 75 | 86 | 84 | 85 | Veterano | 36-6-0 (1 NC) |
+| **Steve Erceg** | Australia | 12 | 81 | 74 | 76 | 87 | 84 | 78 | — | 14-5-0 |
+| **Deiveson Figueiredo** ◆ | Brasil | — | 85 | 74 | 86 | 74 | 83 | 77 | Camaleón | 25-7-1 |
 
 ### Plata
 
-| Peleador | GOL | LUC | SUE | CAR | DUR | IQ | Atributo | Récord |
-|---|---|---|---|---|---|---|---|---|
-| **Andre Lima** | 82 | 81 | 82 | 82 | 82 | 82 | — | 11-1-0 |
-| **Lone'er Kavanagh** | 82 | 82 | 75 | 82 | 82 | 82 | — | 10-2-0 |
-| **Mitch Raposo** | 81 | 79 | 76 | 82 | 82 | 82 | — | 11-3-0 |
-| **Cody Durden** | 81 | 82 | 75 | 82 | 82 | 80 | — | 18-11-1 |
-| **Clayton Carpenter** | 81 | 74 | 82 | 81 | 82 | 80 | — | 8-3-0 |
-| **Rafael Estevam** | 81 | 82 | 76 | 82 | 82 | 77 | — | 14-1-0 |
-| **Allan Nascimento** | 81 | 72 | 82 | 82 | 82 | 80 | — | 22-7-0 |
-| **Carlos Hernandez** | 81 | 74 | 79 | 82 | 82 | 81 | — | 10-5-0 |
-| **Bruno Silva** | 82 | 78 | 79 | 76 | 82 | 81 | — | 15-9-2 (1 NC) |
-| **Charles Johnson** | 82 | 72 | 77 | 82 | 82 | 82 | — | 20-9-0 |
-| **Felipe Bunes** | 81 | 73 | 82 | 79 | 82 | 80 | — | 14-9-0 |
-| **CJ Vergara** | 81 | 72 | 79 | 81 | 82 | 81 | — | 12-7-1 |
-| **Kevin Borjas** | 81 | 74 | 74 | 82 | 82 | 82 | — | 11-5-0 |
-| **Joseph Morales** | 81 | 72 | 82 | 77 | 79 | 81 | — | 15-2-0 |
-| **Jimmy Flick** | 80 | 71 | 82 | 77 | 82 | 78 | — | 17-9-0 |
-| **Ode' Osbourne** | 81 | 74 | 75 | 76 | 82 | 80 | — | 13-9-0 (2 NC) |
-| **Matt Schnell** | 81 | 71 | 82 | 77 | 71 | 80 | — | 17-11-0 (1 NC) |
+| Peleador | País | Rk | GOL | LUC | SUE | CAR | DUR | IQ | Atributo | Récord |
+|---|---|---|---|---|---|---|---|---|---|---|
+| **Andre Lima** | Brasil | — | 82 | 81 | 82 | 82 | 82 | 82 | — | 11-1-0 |
+| **Lone'er Kavanagh** | Inglaterra | 6 | 82 | 82 | 75 | 82 | 82 | 82 | — | 10-2-0 |
+| **Mitch Raposo** | Estados Unidos | — | 81 | 79 | 76 | 82 | 82 | 82 | — | 11-3-0 |
+| **Cody Durden** | Estados Unidos | — | 81 | 82 | 75 | 82 | 82 | 80 | — | 18-11-1 |
+| **Clayton Carpenter** | Estados Unidos | — | 81 | 74 | 82 | 81 | 82 | 80 | — | 8-3-0 |
+| **Rafael Estevam** | Brasil | — | 81 | 82 | 76 | 82 | 82 | 77 | — | 14-1-0 |
+| **Allan Nascimento** | Brasil | — | 81 | 72 | 82 | 82 | 82 | 80 | — | 22-7-0 |
+| **Carlos Hernandez** | Estados Unidos | — | 81 | 74 | 79 | 82 | 82 | 81 | — | 10-5-0 |
+| **Bruno Silva** | Brasil | — | 82 | 78 | 79 | 76 | 82 | 81 | — | 15-9-2 (1 NC) |
+| **Charles Johnson** | Estados Unidos | — | 82 | 72 | 77 | 82 | 82 | 82 | — | 20-9-0 |
+| **Felipe Bunes** | Brasil | — | 81 | 73 | 82 | 79 | 82 | 80 | — | 14-9-0 |
+| **CJ Vergara** | Estados Unidos | — | 81 | 72 | 79 | 81 | 82 | 81 | — | 12-7-1 |
+| **Kevin Borjas** | Perú | — | 81 | 74 | 74 | 82 | 82 | 82 | — | 11-5-0 |
+| **Joseph Morales** | Estados Unidos | — | 81 | 72 | 82 | 77 | 79 | 81 | — | 15-2-0 |
+| **Jimmy Flick** | Estados Unidos | — | 80 | 71 | 82 | 77 | 82 | 78 | — | 17-9-0 |
+| **Ode' Osbourne** | Jamaica | — | 81 | 74 | 75 | 76 | 82 | 80 | — | 13-9-0 (2 NC) |
+| **Matt Schnell** | Estados Unidos | — | 81 | 71 | 82 | 77 | 71 | 80 | — | 17-11-0 (1 NC) |
 
 ---
 
@@ -468,42 +656,42 @@ Datos de UFCStats sobre el historial completo de cada peleador. **Cada pelea se 
 
 ### Oro
 
-| Peleador | GOL | LUC | SUE | CAR | DUR | IQ | Atributo | Récord |
-|---|---|---|---|---|---|---|---|---|
-| **Luana Santos** | 82 | 87 | 84 | 84 | 88 | 86 | — | 11-2-0 |
-| **Kayla Harrison** | 82 | 87 | 84 | 83 | 85 | 86 | Especialista LUCHA | 19-1-0 |
-| **Amanda Nunes** | 88 | 84 | 83 | 80 | 83 | 87 | Veterano | 23-5-0 |
-| **Norma Dumont** | 81 | 83 | 79 | 88 | 85 | 86 | — | 13-3-0 |
-| **Ailin Perez** | 82 | 85 | 77 | 86 | 86 | 85 | — | 13-2-0 |
-| **Raquel Pennington** | 82 | 74 | 83 | 87 | 88 | 86 | — | 16-10-0 |
-| **Valentina Shevchenko** ◆ | 80 | 83 | 75 | 86 | 85 | 86 | Especialista IQ | 26-4-1 |
-| **Miesha Tate** | 80 | 74 | 85 | 86 | 87 | 82 | Veterano | 20-10-0 |
-| **Joselyne Edwards** | 81 | 74 | 82 | 85 | 88 | 82 | — | 18-6-0 |
-| **Jacqueline Cavalcanti** | 80 | 77 | 74 | 87 | 88 | 86 | — | 10-2-0 |
-| **Julianna Pena** | 82 | 74 | 81 | 85 | 88 | 79 | Especialista DUREZA | 13-6-0 |
-| **Karol Rosa** | 83 | 79 | 76 | 87 | 86 | 76 | — | 19-8-0 |
-| **Bia Mesquita** | 80 | 79 | 85 | 77 | 84 | 82 | — | 8-0-0 |
-| **Melissa Croden** | 81 | 80 | 77 | 85 | 86 | 78 | — | 8-3-0 |
-| **Michelle Montague** | 82 | 75 | 76 | 85 | 85 | 81 | — | 8-0-0 |
-| **Macy Chiasson** | 81 | 77 | 79 | 82 | 84 | 80 | — | 11-6-0 |
-| **Nora Cornolle** | 81 | 74 | 77 | 83 | 87 | 81 | — | 9-4-0 |
-| **Yana Santos** | 81 | 74 | 75 | 87 | 75 | 80 | — | 17-8-0 (1 NC) |
+| Peleador | País | Rk | GOL | LUC | SUE | CAR | DUR | IQ | Atributo | Récord |
+|---|---|---|---|---|---|---|---|---|---|---|
+| **Luana Santos** | Brasil | 7 | 82 | 87 | 84 | 84 | 88 | 86 | — | 11-2-0 |
+| **Kayla Harrison** | Estados Unidos | C | 82 | 87 | 84 | 83 | 85 | 86 | Especialista LUCHA | 19-1-0 |
+| **Amanda Nunes** | Brasil | — | 88 | 84 | 83 | 80 | 83 | 87 | Veterano | 23-5-0 |
+| **Norma Dumont** | Brasil | 4 | 81 | 83 | 79 | 88 | 85 | 86 | — | 13-3-0 |
+| **Ailin Perez** | Argentina | 5 | 82 | 85 | 77 | 86 | 86 | 85 | — | 13-2-0 |
+| **Raquel Pennington** | Estados Unidos | 2 | 82 | 74 | 83 | 87 | 88 | 86 | — | 16-10-0 |
+| **Valentina Shevchenko** ◆ | Kirguistán | — | 80 | 83 | 75 | 86 | 85 | 86 | Especialista IQ | 26-4-1 |
+| **Miesha Tate** | Estados Unidos | 14 | 80 | 74 | 85 | 86 | 87 | 82 | Veterano | 20-10-0 |
+| **Joselyne Edwards** | Panamá | 3 | 81 | 74 | 82 | 85 | 88 | 82 | — | 18-6-0 |
+| **Jacqueline Cavalcanti** | Brasil | 9 | 80 | 77 | 74 | 87 | 88 | 86 | — | 10-2-0 |
+| **Julianna Pena** | Estados Unidos | 1 | 82 | 74 | 81 | 85 | 88 | 79 | Especialista DUREZA | 13-6-0 |
+| **Karol Rosa** | Brasil | 10 | 83 | 79 | 76 | 87 | 86 | 76 | — | 19-8-0 |
+| **Bia Mesquita** | Brasil | 11 | 80 | 79 | 85 | 77 | 84 | 82 | — | 8-0-0 |
+| **Melissa Croden** | Canadá ? | 15 | 81 | 80 | 77 | 85 | 86 | 78 | — | 8-3-0 |
+| **Michelle Montague** | Nueva Zelanda ? | 12 | 82 | 75 | 76 | 85 | 85 | 81 | — | 8-0-0 |
+| **Macy Chiasson** | Estados Unidos | 8 | 81 | 77 | 79 | 82 | 84 | 80 | — | 11-6-0 |
+| **Nora Cornolle** | Francia | 13 | 81 | 74 | 77 | 83 | 87 | 81 | — | 9-4-0 |
+| **Yana Santos** | Rusia | 6 | 81 | 74 | 75 | 87 | 75 | 80 | — | 17-8-0 (1 NC) |
 
 ### Plata
 
-| Peleador | GOL | LUC | SUE | CAR | DUR | IQ | Atributo | Récord |
-|---|---|---|---|---|---|---|---|---|
-| **Ketlen Vieira** | 81 | 82 | 78 | 82 | 82 | 82 | — | 16-5-0 |
-| **Melissa Mullins** | 82 | 82 | 76 | 82 | 82 | 82 | — | 7-3-0 |
-| **Tainara Lisboa** | 81 | 74 | 79 | 82 | 82 | 80 | — | 7-4-0 |
-| **Stephanie Egger** | 81 | 78 | 81 | 76 | 82 | 80 | — | 8-5-0 |
-| **Irene Aldana** | 80 | 74 | 76 | 82 | 82 | 82 | — | 15-8-0 |
-| **Mayra Bueno Silva** ◆ | 81 | 73 | 82 | 78 | 82 | 80 | — | 10-7-1 (1 NC) |
-| **Josiane Nunes** | 82 | 73 | 74 | 82 | 82 | 81 | — | 10-4-0 |
-| **Klaudia Sygula** | 80 | 73 | 76 | 82 | 82 | 81 | — | 8-2-0 |
-| **Ravena Oliveira** | 81 | 73 | 79 | 79 | 82 | 80 | — | 7-5-1 |
-| **Chelsea Chandler** | 82 | 72 | 79 | 79 | 82 | 78 | — | 7-4-0 |
-| **Priscila Cachoeira** | 81 | 74 | 77 | 76 | 82 | 80 | — | 13-9-0 |
+| Peleador | País | Rk | GOL | LUC | SUE | CAR | DUR | IQ | Atributo | Récord |
+|---|---|---|---|---|---|---|---|---|---|---|
+| **Ketlen Vieira** | Brasil | — | 81 | 82 | 78 | 82 | 82 | 82 | — | 16-5-0 |
+| **Melissa Mullins** | Estados Unidos ? | — | 82 | 82 | 76 | 82 | 82 | 82 | — | 7-3-0 |
+| **Tainara Lisboa** | Brasil | — | 81 | 74 | 79 | 82 | 82 | 80 | — | 7-4-0 |
+| **Stephanie Egger** | Suiza | — | 81 | 78 | 81 | 76 | 82 | 80 | — | 8-5-0 |
+| **Irene Aldana** | México | — | 80 | 74 | 76 | 82 | 82 | 82 | — | 15-8-0 |
+| **Mayra Bueno Silva** ◆ | Brasil | — | 81 | 73 | 82 | 78 | 82 | 80 | — | 10-7-1 (1 NC) |
+| **Josiane Nunes** | Brasil | — | 82 | 73 | 74 | 82 | 82 | 81 | — | 10-4-0 |
+| **Klaudia Sygula** | Polonia | — | 80 | 73 | 76 | 82 | 82 | 81 | — | 8-2-0 |
+| **Ravena Oliveira** | Brasil | — | 81 | 73 | 79 | 79 | 82 | 80 | — | 7-5-1 |
+| **Chelsea Chandler** | Estados Unidos | — | 82 | 72 | 79 | 79 | 82 | 78 | — | 7-4-0 |
+| **Priscila Cachoeira** | Brasil | — | 81 | 74 | 77 | 76 | 82 | 80 | — | 13-9-0 |
 
 ---
 
@@ -511,47 +699,47 @@ Datos de UFCStats sobre el historial completo de cada peleador. **Cada pelea se 
 
 ### Oro
 
-| Peleador | GOL | LUC | SUE | CAR | DUR | IQ | Atributo | Récord |
-|---|---|---|---|---|---|---|---|---|
-| **Valentina Shevchenko** ◆ | 83 | 85 | 78 | 88 | 88 | 88 | Camaleón | 26-4-1 |
-| **Erin Blanchfield** | 81 | 84 | 87 | 85 | 87 | 85 | — | 14-2-0 |
-| **Wang Cong** | 88 | 83 | 79 | 84 | 88 | 86 | — | 10-1-0 |
-| **Manon Fiorot** | 88 | 82 | 75 | 86 | 88 | 87 | — | 13-2-0 |
-| **Jasmine Jasudavicius** | 82 | 80 | 84 | 86 | 87 | 85 | — | 15-4-0 |
-| **Eduarda Moura** | 81 | 85 | 80 | 84 | 88 | 84 | — | 12-2-0 |
-| **Natalia Silva** | 83 | 80 | 75 | 86 | 88 | 87 | — | 20-5-1 |
-| **Casey O'Neill** | 88 | 78 | 80 | 81 | 86 | 85 | — | 11-2-0 |
-| **Talita Alencar** | 81 | 80 | 81 | 86 | 88 | 80 | — | 8-1-1 |
-| **Miranda Maverick** | 82 | 74 | 81 | 86 | 88 | 82 | — | 17-6-0 |
-| **JJ Aldrich** | 81 | 74 | 78 | 88 | 88 | 84 | — | 15-7-0 |
-| **Tracy Cortez** | 82 | 78 | 74 | 88 | 88 | 82 | — | 12-4-0 |
-| **Alexa Grasso** ◆ | 80 | 74 | 82 | 87 | 87 | 81 | — | 17-5-1 |
-| **Zhang Weili** ◆ | 83 | 79 | 78 | 84 | 82 | 83 | Veterano | 26-4-0 |
-| **Maycee Barber** | 87 | 74 | 77 | 85 | 86 | 79 | — | 15-3-0 |
-| **Karine Silva** | 81 | 74 | 86 | 80 | 88 | 79 | — | 19-7-0 |
-| **Jessica Andrade** ◆ | 84 | 84 | 74 | 75 | 86 | 83 | Veterano | 26-15-0 |
-| **Rose Namajunas** ◆ | 78 | 76 | 77 | 87 | 85 | 81 | — | 15-8-0 |
-| **Gabriella Fernandes** | 81 | 74 | 79 | 85 | 87 | 78 | — | 11-4-0 |
-| **Loopy Godinez** ◆ | 77 | 81 | 78 | 82 | 82 | 82 | — | 14-6-0 |
-| **Tatiana Suarez** ◆ | 80 | 79 | 81 | 79 | 82 | 79 | Especialista LUCHA | 13-1-0 |
-| **Tabatha Ricci** ◆ | 80 | 74 | 74 | 83 | 86 | 79 | — | 12-5-0 |
-| **Gillian Robertson** ◆ | 79 | 74 | 82 | 77 | 85 | 78 | — | 17-9-0 |
+| Peleador | País | Rk | GOL | LUC | SUE | CAR | DUR | IQ | Atributo | Récord |
+|---|---|---|---|---|---|---|---|---|---|---|
+| **Valentina Shevchenko** ◆ | Kirguistán | C | 83 | 85 | 78 | 88 | 88 | 88 | Camaleón | 26-4-1 |
+| **Erin Blanchfield** | Estados Unidos | 4 | 81 | 84 | 87 | 85 | 87 | 85 | — | 14-2-0 |
+| **Wang Cong** | China | 8 | 88 | 83 | 79 | 84 | 88 | 86 | — | 10-1-0 |
+| **Manon Fiorot** | Francia | 2 | 88 | 82 | 75 | 86 | 88 | 87 | — | 13-2-0 |
+| **Jasmine Jasudavicius** | Canadá | 7 | 82 | 80 | 84 | 86 | 87 | 85 | — | 15-4-0 |
+| **Eduarda Moura** | Brasil | 13 | 81 | 85 | 80 | 84 | 88 | 84 | — | 12-2-0 |
+| **Natalia Silva** | Brasil | 1 | 83 | 80 | 75 | 86 | 88 | 87 | — | 20-5-1 |
+| **Casey O'Neill** | Australia | 12 | 88 | 78 | 80 | 81 | 86 | 85 | — | 11-2-0 |
+| **Talita Alencar** | Brasil | — | 81 | 80 | 81 | 86 | 88 | 80 | — | 8-1-1 |
+| **Miranda Maverick** | Estados Unidos | 10 | 82 | 74 | 81 | 86 | 88 | 82 | — | 17-6-0 |
+| **JJ Aldrich** | Estados Unidos | 14 | 81 | 74 | 78 | 88 | 88 | 84 | — | 15-7-0 |
+| **Tracy Cortez** | Estados Unidos | 9 | 82 | 78 | 74 | 88 | 88 | 82 | — | 12-4-0 |
+| **Alexa Grasso** ◆ | México | 3 | 80 | 74 | 82 | 87 | 87 | 81 | — | 17-5-1 |
+| **Zhang Weili** ◆ | China | — | 83 | 79 | 78 | 84 | 82 | 83 | Veterano | 26-4-0 |
+| **Maycee Barber** | Estados Unidos | 6 | 87 | 74 | 77 | 85 | 86 | 79 | — | 15-3-0 |
+| **Karine Silva** | Brasil | 11 | 81 | 74 | 86 | 80 | 88 | 79 | — | 19-7-0 |
+| **Jessica Andrade** ◆ | Brasil | — | 84 | 84 | 74 | 75 | 86 | 83 | Veterano | 26-15-0 |
+| **Rose Namajunas** ◆ | Estados Unidos | 5 | 78 | 76 | 77 | 87 | 85 | 81 | — | 15-8-0 |
+| **Gabriella Fernandes** | Brasil | 15 | 81 | 74 | 79 | 85 | 87 | 78 | — | 11-4-0 |
+| **Loopy Godinez** ◆ | México | — | 77 | 81 | 78 | 82 | 82 | 82 | — | 14-6-0 |
+| **Tatiana Suarez** ◆ | Estados Unidos | — | 80 | 79 | 81 | 79 | 82 | 79 | Especialista LUCHA | 13-1-0 |
+| **Tabatha Ricci** ◆ | Brasil | — | 80 | 74 | 74 | 83 | 86 | 79 | — | 12-5-0 |
+| **Gillian Robertson** ◆ | Canadá | — | 79 | 74 | 82 | 77 | 85 | 78 | — | 17-9-0 |
 
 ### Plata
 
-| Peleador | GOL | LUC | SUE | CAR | DUR | IQ | Atributo | Récord |
-|---|---|---|---|---|---|---|---|---|
-| **Cynthia Calvillo** | 81 | 82 | 82 | 82 | 82 | 82 | — | 9-6-1 |
-| **Ivana Petrovic** | 81 | 78 | 82 | 82 | 82 | 82 | — | 7-3-0 |
-| **Viviane Araujo** | 81 | 82 | 77 | 82 | 82 | 82 | — | 13-7-0 |
-| **Jamie-Lyn Horth** | 82 | 80 | 75 | 82 | 82 | 82 | — | 9-3-0 |
-| **Andrea Lee** | 81 | 76 | 79 | 82 | 82 | 81 | — | 13-11-0 |
-| **Ariane Lipski** | 81 | 73 | 79 | 82 | 82 | 81 | — | 17-11-0 |
-| **Luana Carolina** | 82 | 73 | 76 | 82 | 82 | 82 | — | 11-5-0 |
-| **Molly McCann** | 81 | 72 | 75 | 82 | 82 | 80 | — | 14-8-0 |
-| **Vanessa Demopoulos** | 80 | 70 | 77 | 82 | 82 | 77 | — | 11-8-0 |
-| **Montserrat Ruiz** | 80 | 75 | 77 | 82 | 72 | 80 | — | 10-5-0 |
-| **Mayra Bueno Silva** ◆ | 78 | 70 | 79 | 74 | 79 | 77 | — | 10-7-1 (1 NC) |
+| Peleador | País | Rk | GOL | LUC | SUE | CAR | DUR | IQ | Atributo | Récord |
+|---|---|---|---|---|---|---|---|---|---|---|
+| **Cynthia Calvillo** | Estados Unidos | — | 81 | 82 | 82 | 82 | 82 | 82 | — | 9-6-1 |
+| **Ivana Petrovic** | Croacia | — | 81 | 78 | 82 | 82 | 82 | 82 | — | 7-3-0 |
+| **Viviane Araujo** | Brasil | — | 81 | 82 | 77 | 82 | 82 | 82 | — | 13-7-0 |
+| **Jamie-Lyn Horth** | Canadá | — | 82 | 80 | 75 | 82 | 82 | 82 | — | 9-3-0 |
+| **Andrea Lee** | Estados Unidos | — | 81 | 76 | 79 | 82 | 82 | 81 | — | 13-11-0 |
+| **Ariane Lipski** | Brasil | — | 81 | 73 | 79 | 82 | 82 | 81 | — | 17-11-0 |
+| **Luana Carolina** | Brasil | — | 82 | 73 | 76 | 82 | 82 | 82 | — | 11-5-0 |
+| **Molly McCann** | Inglaterra | — | 81 | 72 | 75 | 82 | 82 | 80 | — | 14-8-0 |
+| **Vanessa Demopoulos** | Estados Unidos | — | 80 | 70 | 77 | 82 | 82 | 77 | — | 11-8-0 |
+| **Montserrat Ruiz** | México | — | 80 | 75 | 77 | 82 | 72 | 80 | — | 10-5-0 |
+| **Mayra Bueno Silva** ◆ | Brasil | — | 78 | 70 | 79 | 74 | 79 | 77 | — | 10-7-1 (1 NC) |
 
 ---
 
@@ -559,44 +747,44 @@ Datos de UFCStats sobre el historial completo de cada peleador. **Cada pelea se 
 
 ### Oro
 
-| Peleador | GOL | LUC | SUE | CAR | DUR | IQ | Atributo | Récord |
-|---|---|---|---|---|---|---|---|---|
-| **Alexia Thainara** | 81 | 85 | 84 | 85 | 88 | 86 | — | 15-1-0 |
-| **Virna Jandiroba** | 81 | 82 | 85 | 86 | 88 | 85 | Especialista SUELO | 23-4-0 |
-| **Loopy Godinez** ◆ | 81 | 85 | 82 | 87 | 86 | 86 | — | 14-6-0 |
-| **Zhang Weili** ◆ | 86 | 81 | 81 | 87 | 85 | 85 | Veterano | 26-4-0 |
-| **Piera Rodriguez** | 82 | 85 | 79 | 87 | 88 | 84 | — | 12-2-0 |
-| **Tatiana Suarez** ◆ | 82 | 86 | 86 | 82 | 85 | 82 | Especialista LUCHA | 13-1-0 |
-| **Rose Namajunas** ◆ | 82 | 78 | 80 | 88 | 88 | 84 | — | 15-8-0 |
-| **Mackenzie Dern** | 81 | 74 | 88 | 87 | 88 | 81 | Especialista SUELO | 17-5-0 |
-| **Alice Ardelean** | 80 | 82 | 79 | 85 | 88 | 85 | — | 12-7-0 |
-| **Jessica Andrade** ◆ | 87 | 86 | 75 | 78 | 88 | 84 | Veterano | 26-15-0 |
-| **Fatima Kline** | 83 | 81 | 76 | 85 | 88 | 85 | — | 10-1-0 |
-| **Angela Hill** | 83 | 74 | 78 | 87 | 87 | 84 | Especialista CARDIO | 19-16-0 |
-| **Tabatha Ricci** ◆ | 82 | 76 | 76 | 86 | 88 | 82 | — | 12-5-0 |
-| **Amanda Lemos** | 82 | 75 | 81 | 83 | 86 | 81 | — | 15-7-1 |
-| **Gillian Robertson** ◆ | 81 | 74 | 86 | 79 | 87 | 80 | — | 17-9-0 |
-| **Denise Gomes** | 81 | 76 | 78 | 85 | 88 | 77 | — | 12-3-0 |
-| **Alexa Grasso** ◆ | 75 | 75 | 80 | 85 | 86 | 76 | — | 17-5-1 |
+| Peleador | País | Rk | GOL | LUC | SUE | CAR | DUR | IQ | Atributo | Récord |
+|---|---|---|---|---|---|---|---|---|---|---|
+| **Alexia Thainara** | Brasil | 8 | 81 | 85 | 84 | 85 | 88 | 86 | — | 15-1-0 |
+| **Virna Jandiroba** | Brasil | 3 | 81 | 82 | 85 | 86 | 88 | 85 | Especialista SUELO | 23-4-0 |
+| **Loopy Godinez** ◆ | México | 7 | 81 | 85 | 82 | 87 | 86 | 86 | — | 14-6-0 |
+| **Zhang Weili** ◆ | China | 1 | 86 | 81 | 81 | 87 | 85 | 85 | Veterano | 26-4-0 |
+| **Piera Rodriguez** | Venezuela | — | 82 | 85 | 79 | 87 | 88 | 84 | — | 12-2-0 |
+| **Tatiana Suarez** ◆ | Estados Unidos | 2 | 82 | 86 | 86 | 82 | 85 | 82 | Especialista LUCHA | 13-1-0 |
+| **Rose Namajunas** ◆ | Estados Unidos | — | 82 | 78 | 80 | 88 | 88 | 84 | — | 15-8-0 |
+| **Mackenzie Dern** | Estados Unidos | C | 81 | 74 | 88 | 87 | 88 | 81 | Especialista SUELO | 17-5-0 |
+| **Alice Ardelean** | Rumanía | — | 80 | 82 | 79 | 85 | 88 | 85 | — | 12-7-0 |
+| **Jessica Andrade** ◆ | Brasil | 9 | 87 | 86 | 75 | 78 | 88 | 84 | Veterano | 26-15-0 |
+| **Fatima Kline** | Estados Unidos ? | 6 | 83 | 81 | 76 | 85 | 88 | 85 | — | 10-1-0 |
+| **Angela Hill** | Estados Unidos | 13 | 83 | 74 | 78 | 87 | 87 | 84 | Especialista CARDIO | 19-16-0 |
+| **Tabatha Ricci** ◆ | Brasil | 10 | 82 | 76 | 76 | 86 | 88 | 82 | — | 12-5-0 |
+| **Amanda Lemos** | Brasil | 11 | 82 | 75 | 81 | 83 | 86 | 81 | — | 15-7-1 |
+| **Gillian Robertson** ◆ | Canadá | 5 | 81 | 74 | 86 | 79 | 87 | 80 | — | 17-9-0 |
+| **Denise Gomes** | Brasil | 14 | 81 | 76 | 78 | 85 | 88 | 77 | — | 12-3-0 |
+| **Alexa Grasso** ◆ | México | — | 75 | 75 | 80 | 85 | 86 | 76 | — | 17-5-1 |
 
 ### Plata
 
-| Peleador | GOL | LUC | SUE | CAR | DUR | IQ | Atributo | Récord |
-|---|---|---|---|---|---|---|---|---|
-| **Iasmin Lucindo** | 82 | 82 | 78 | 82 | 82 | 82 | — | 18-6-0 |
-| **Luana Pinheiro** | 81 | 82 | 75 | 82 | 82 | 82 | — | 11-5-0 |
-| **Yazmin Jauregui** | 81 | 81 | 76 | 82 | 82 | 82 | — | 11-2-0 |
-| **Emily Ducote** | 81 | 80 | 75 | 82 | 82 | 82 | — | 13-9-0 |
-| **Julia Polastri** | 82 | 74 | 79 | 82 | 82 | 82 | — | 14-6-0 |
-| **Loma Lookboonmee** | 82 | 82 | 75 | 82 | 82 | 76 | — | 10-5-0 |
-| **Xiong Jing Nan** | 82 | 77 | 77 | 82 | 82 | 78 | — | 19-3-0 |
-| **Sam Hughes** | 81 | 74 | 77 | 82 | 82 | 82 | — | 11-7-0 |
-| **Karolina Kowalkiewicz** | 82 | 74 | 74 | 82 | 82 | 82 | — | 16-10-0 |
-| **Mizuki Inoue** | 82 | 78 | 75 | 82 | 82 | 76 | — | 16-6-0 |
-| **Ashley Yoder** | 81 | 74 | 77 | 82 | 82 | 79 | — | 8-9-0 |
-| **Bruna Brasil** | 81 | 75 | 74 | 82 | 82 | 80 | — | 11-7-1 |
-| **Jaqueline Amorim** | 81 | 70 | 82 | 77 | 82 | 79 | — | 11-2-0 |
-| **Istela Nunes** | 82 | 72 | 76 | 78 | 77 | 80 | — | 6-6-0 (1 NC) |
+| Peleador | País | Rk | GOL | LUC | SUE | CAR | DUR | IQ | Atributo | Récord |
+|---|---|---|---|---|---|---|---|---|---|---|
+| **Iasmin Lucindo** | Brasil | — | 82 | 82 | 78 | 82 | 82 | 82 | — | 18-6-0 |
+| **Luana Pinheiro** | Brasil | — | 81 | 82 | 75 | 82 | 82 | 82 | — | 11-5-0 |
+| **Yazmin Jauregui** | México | — | 81 | 81 | 76 | 82 | 82 | 82 | — | 11-2-0 |
+| **Emily Ducote** | Estados Unidos | — | 81 | 80 | 75 | 82 | 82 | 82 | — | 13-9-0 |
+| **Julia Polastri** | Brasil | — | 82 | 74 | 79 | 82 | 82 | 82 | — | 14-6-0 |
+| **Loma Lookboonmee** | Tailandia | — | 82 | 82 | 75 | 82 | 82 | 76 | — | 10-5-0 |
+| **Xiong Jing Nan** | China | — | 82 | 77 | 77 | 82 | 82 | 78 | — | 19-3-0 |
+| **Sam Hughes** | Estados Unidos | — | 81 | 74 | 77 | 82 | 82 | 82 | — | 11-7-0 |
+| **Karolina Kowalkiewicz** | Polonia | — | 82 | 74 | 74 | 82 | 82 | 82 | — | 16-10-0 |
+| **Mizuki Inoue** | Japón | 15 | 82 | 78 | 75 | 82 | 82 | 76 | — | 16-6-0 |
+| **Ashley Yoder** | Estados Unidos | — | 81 | 74 | 77 | 82 | 82 | 79 | — | 8-9-0 |
+| **Bruna Brasil** | Brasil | — | 81 | 75 | 74 | 82 | 82 | 80 | — | 11-7-1 |
+| **Jaqueline Amorim** | Brasil | — | 81 | 70 | 82 | 77 | 82 | 79 | — | 11-2-0 |
+| **Istela Nunes** | Brasil | — | 82 | 72 | 76 | 78 | 77 | 80 | — | 6-6-0 (1 NC) |
 
 ---
 

@@ -478,6 +478,20 @@ function construirSets(){
     const req=ordenar(ROSTER.filter(c=>c.rasgos.some(r=>r.tipo===t))).slice(-4).map(c=>c.id);
     if(req.length===4) out.push({id:'ras-'+t,n:RASGOS[t].ic+' Escuela '+RASGOS[t].n,req,premio:'oro'});
   }
+  /* Nacionalidad. Estados Unidos y Brasil son el 58% del roster, así que un set de país
+     completo con ellos sería inalcanzable: se piden los cuatro mejores de cada país, no
+     todos. Y se cuenta por peleador, no por carta — si no, tener a Pereira daría tres
+     casillas brasileñas por un solo hombre. */
+  const porPais={};
+  for(const c of ordenar(ROSTER)){
+    const p=porPais[c.pais]=porPais[c.pais]||{vistos:new Set(),req:[]};
+    if(p.vistos.has(c.persona)||p.req.length>=4) continue;
+    p.vistos.add(c.persona); p.req.push(c.id);
+  }
+  for(const [pais,p] of Object.entries(porPais)){
+    if(p.req.length<4) continue;                  // países con menos de cuatro no dan set
+    out.push({id:'pai-'+pais,n:'Bandera · '+pais,req:p.req,premio:'oro'});
+  }
   return out;
 }
 let SETS=[];
@@ -498,6 +512,9 @@ const RETOS=[
    check:l=>l.length===3&&l.every(c=>c.rasgos.length)&&
      new Set(l.map(c=>c.rasgos[0].tipo)).size===3,
    premio:{sobre:'oro',divisa:0}},
+  {id:'r5',n:'Mundial',d:'Entrega 4 cartas de 4 países distintos',
+   check:l=>l.length===4&&new Set(l.map(c=>c.pais)).size===4,
+   premio:{sobre:'plata',divisa:250}},
 ];
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -749,7 +766,7 @@ function cartaHTML(c,o={}){
     +(c.alineable?'':`<span class="tag nof">colección</span>`);
   const nCop=o.copias&&o.copias>1?`<span class="tag" style="position:absolute;top:6px;right:6px">×${o.copias}</span>`:'';
   return `<div class="carta ${cls} ${o.compacta?'compacta':''} ${o.sel?'sel':''}" ${o.attr||''}>
-    ${nCop}<div class="hd"><div><div class="est">${EST[c.estatus].c||EST[c.estatus].n}</div>
+    ${nCop}<div class="hd"><div><div class="est">${etiquetaEstatus(c)}</div>
     <div class="div">${DIV[c.division].n}</div></div>
     <div class="av">${c.alineable?'🥊':'📘'}</div></div>
     <div class="nm">${esc(c.nombre)}</div><div class="ap">${c.apodo?'"'+esc(c.apodo)+'"':''}</div>
@@ -964,7 +981,7 @@ function vApertura(){
       <div class="pop" style="max-width:225px;margin:0 auto 12px">${cartaHTML(c)}</div>
       <div class="mb">${nueva?'<span class="chip on">NUEVA</span>':'<span class="chip">repetida</span>'}
         ${c.alineable?'':'<span class="chip">colección</span>'}</div>
-      <div class="sub mb">${DIV[c.division].n} · ${esc(c.record||'')}</div>
+      <div class="sub mb">${DIV[c.division].n} · ${esc(c.pais||'')} · ${esc(c.record||'')}</div>
       <button class="btn" data-a="revelar">${a.i+1<a.items.length?'Siguiente':'Ver el resumen'}</button>
       <div class="tiny" style="margin-top:8px">Toca en cualquier sitio para continuar</div>
     </div>`;
@@ -1011,8 +1028,8 @@ function detalleCarta(iid){
   const otras=ROSTER.filter(o=>o.persona===c.persona&&o.id!==c.id);
   ov(`<div style="max-width:200px;margin:0 auto 12px">${cartaHTML(c)}</div>
     <div class="center mb"><b>${esc(c.nombre)}</b>
-    <div class="sub">${EST[c.estatus].n} de ${DIV[c.division].n}</div>
-    <div class="tiny">Récord ${esc(c.record||'—')}</div>
+    <div class="sub">${c.rk===0?'Campeón':c.rk?'#'+c.rk+' de':''} ${DIV[c.division].n}${c.rk?'':' · '+EST[c.estatus].n}</div>
+    <div class="tiny">${esc(c.pais||'—')} · récord ${esc(c.record||'—')}</div>
     ${otras.length?`<div class="tiny">También pelea en ${otras.map(o=>DIV[o.division].n).join(' y ')} — pero no puedes alinear las dos</div>`:''}
     <div class="tiny">Tienes ${copias(c.id)} copia(s)${it.notraspasable?' · no traspasable':''}</div></div>
     ${c.rasgos.length?`<div class="card-panel">${c.rasgos.map(r=>`<div style="margin-bottom:8px">
@@ -1467,11 +1484,10 @@ function vNotas(){
     396 cartas de 351 peleadores de la UFC, con sus seis stats y su récord, sacadas de la base
     de datos del proyecto. Cuarenta y cuatro tienen carta en más de una división: puedes
     coleccionarlas todas, pero <b>solo alinear una a la vez</b>.<br><br>
-    Lo que la base de datos <b>no</b> trae todavía es el puesto en el ranking. El juego lo
-    necesita para ordenar la colección y para los niveles de los sobres, así que de momento se
-    deduce de las propias stats: dentro de cada división, el mejor oro es el campeón, los cuatro
-    siguientes el top 5, y así. <b>No es el ranking real de la UFC</b> — en cuanto la base de
-    datos traiga esa columna, se sustituye por el dato de verdad.
+    Cada carta lleva su <b>puesto en el ranking congelado</b> en la fecha de impresión —🏆 el
+    campeón, #1 a #15 los clasificados— y su <b>bandera</b>. El puesto es lo que ordena la
+    colección, decide el nivel de los oros de cada sobre y fija cuántos repetidos cuesta una
+    ficha. Son 57 países y 168 cartas rankeadas.
   </div></div>
 
   <div class="card-panel"><h3>🎓 Si es tu primera partida</h3><div class="sub">
