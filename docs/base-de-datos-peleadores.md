@@ -1,7 +1,7 @@
 # Base de datos de peleadores
 
 **396 cartas · 351 peleadores · 57 países · 170 cartas rankeadas**
-**18 de agosto de 2026 · rev. 19 de agosto: columnas País y Rk**
+**18 de agosto de 2026 · rev. 19 de agosto: columnas País y Rk · dos rankeados corregidos de plata a oro**
 
 Seis stats sobre 100. **Sin media de ningún tipo**: la carta se lee por sus números.
 
@@ -16,8 +16,8 @@ Seis stats sobre 100. **Sin media de ningún tipo**: la carta se lee por sus nú
 
 | Rareza | Quién entra | Banda | Cartas |
 |---|---|---|---|
-| **Oro** | Rankeado, racha de 3+, 2+ peleas de título, o 12+ victorias UFC con +4 | 74-89 | 236 |
-| **Plata** | Resto del roster UFC | 64-82 | 160 |
+| **Oro** | Rankeado, racha de 3+, 2+ peleas de título, o 12+ victorias UFC con +4 | 74-89 | 238 |
+| **Plata** | Resto del roster UFC | 64-82 | 158 |
 | Bronce | Otras promotoras (pendiente) | 55-74 | 0 |
 | Especiales | Capa aparte | hasta 92 | — |
 
@@ -48,7 +48,7 @@ Datos de UFCStats sobre el historial completo de cada peleador. **Cada pelea se 
 | Especialista SUELO | 5 |
 | Especialista GOLPEO | 4 |
 | Camaleón+ | 2 |
-| **Total** | **110** de 236 oros |
+| **Total** | **110** de 238 oros |
 
 ---
 
@@ -201,16 +201,17 @@ era la de ligero por las cuatro defensas, con welter como secundaria. El cintur�
 y el ligero lo tiene Gaethje. Esa decisión ya se puede cerrar, y probablemente hay que darle la
 vuelta.
 
-**2. Dos rankeados están puestos como plata**, lo que contradice la regla de rareza —estar rankeado
-es una de las cuatro vías a oro—:
+**2. Dos rankeados estaban puestos como plata** — corregido el 19 de agosto. Estar rankeado es una
+de las cuatro vías a oro, así que los dos pasan a oro:
 
-| División | Rk | Peleador |
-|---|---|---|
-| Mosca (M) | #6 | Lone'er Kavanagh |
-| Paja (F) | #15 | Mizuki Inoue |
+| División | Rk | Peleador | Antes | Ahora |
+|---|---|---|---|---|
+| Mosca (M) | #6 | Lone'er Kavanagh | Plata | **Oro** |
+| Paja (F) | #15 | Mizuki Inoue | Plata | **Oro** |
 
-Kavanagh es el caso serio: un #6 de la división en una carta que, por diseño, no lleva atributo y no
-se alinea nunca.
+Kavanagh era el caso serio: un #6 de la división en una carta que, por diseño, no llevaba atributo y
+no se alineaba nunca. Los dos siguen sin atributo —solo 110 de los oros llevan— pero ya se alinean,
+ordenan por su puesto y cuestan lo que cuesta un rankeado al reciclar.
 
 **3. Dos peleadores están rankeados en una división en la que no tienen carta.** Ambos tienen ficha,
 pero solo en peso medio:
@@ -625,6 +626,7 @@ del roster.
 | **Brandon Royval** | Estados Unidos | 3 | 82 | 74 | 85 | 84 | 84 | 79 | Incómodo | 18-9-0 |
 | **Edgar Chairez** | México | 15 | 81 | 74 | 86 | 79 | 88 | 80 | — | 14-6-0 (1 NC) |
 | **Kyoji Horiguchi** ◆ | Japón | 5 | 80 | 77 | 75 | 86 | 84 | 85 | Veterano | 36-6-0 (1 NC) |
+| **Lone'er Kavanagh** | Inglaterra | 6 | 82 | 82 | 75 | 82 | 82 | 82 | — | 10-2-0 |
 | **Steve Erceg** | Australia | 12 | 81 | 74 | 76 | 87 | 84 | 78 | — | 14-5-0 |
 | **Deiveson Figueiredo** ◆ | Brasil | — | 85 | 74 | 86 | 74 | 83 | 77 | Camaleón | 25-7-1 |
 
@@ -633,7 +635,6 @@ del roster.
 | Peleador | País | Rk | GOL | LUC | SUE | CAR | DUR | IQ | Atributo | Récord |
 |---|---|---|---|---|---|---|---|---|---|---|
 | **Andre Lima** | Brasil | — | 82 | 81 | 82 | 82 | 82 | 82 | — | 11-1-0 |
-| **Lone'er Kavanagh** | Inglaterra | 6 | 82 | 82 | 75 | 82 | 82 | 82 | — | 10-2-0 |
 | **Mitch Raposo** | Estados Unidos | — | 81 | 79 | 76 | 82 | 82 | 82 | — | 11-3-0 |
 | **Cody Durden** | Estados Unidos | — | 81 | 82 | 75 | 82 | 82 | 80 | — | 18-11-1 |
 | **Clayton Carpenter** | Estados Unidos | — | 81 | 74 | 82 | 81 | 82 | 80 | — | 8-3-0 |
@@ -766,6 +767,7 @@ del roster.
 | **Gillian Robertson** ◆ | Canadá | 5 | 81 | 74 | 86 | 79 | 87 | 80 | — | 17-9-0 |
 | **Denise Gomes** | Brasil | 14 | 81 | 76 | 78 | 85 | 88 | 77 | — | 12-3-0 |
 | **Alexa Grasso** ◆ | México | — | 75 | 75 | 80 | 85 | 86 | 76 | — | 17-5-1 |
+| **Mizuki Inoue** | Japón | 15 | 82 | 78 | 75 | 82 | 82 | 76 | — | 16-6-0 |
 
 ### Plata
 
@@ -780,7 +782,6 @@ del roster.
 | **Xiong Jing Nan** | China | — | 82 | 77 | 77 | 82 | 82 | 78 | — | 19-3-0 |
 | **Sam Hughes** | Estados Unidos | — | 81 | 74 | 77 | 82 | 82 | 82 | — | 11-7-0 |
 | **Karolina Kowalkiewicz** | Polonia | — | 82 | 74 | 74 | 82 | 82 | 82 | — | 16-10-0 |
-| **Mizuki Inoue** | Japón | 15 | 82 | 78 | 75 | 82 | 82 | 76 | — | 16-6-0 |
 | **Ashley Yoder** | Estados Unidos | — | 81 | 74 | 77 | 82 | 82 | 79 | — | 8-9-0 |
 | **Bruna Brasil** | Brasil | — | 81 | 75 | 74 | 82 | 82 | 80 | — | 11-7-1 |
 | **Jaqueline Amorim** | Brasil | — | 81 | 70 | 82 | 77 | 82 | 79 | — | 11-2-0 |
