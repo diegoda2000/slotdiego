@@ -269,15 +269,19 @@ De arriba abajo:
 Nombre y pestaña de ranking llevan relieve y un reflejo cruzado, para que se lean como parte del
 metal y no como una pegatina encima.
 
-Las medidas, todas comprobadas contra el marco:
+Las medidas, todas comprobadas contra el marco. [R5] La comprobación es
+`herramientas/medir-carta.mjs`, que no calcula nada: dibuja la carta a tamaño natural, la fotografía
+con y sin cada texto y se queda con la diferencia, que es la tinta. El mapa completo de la interfaz
+—huecos, rejillas de cada pantalla y a qué tamaño se ve la carta en cada una— está en
+**interfaz.md**.
 
 | Elemento | Dónde y por qué |
 |---|---|
 | **Récord** | La franja de y 70,6% a 75,3% está limpia de lado a lado y las etiquetas de las stats no empiezan hasta el 75,32% |
-| **Números** | Llenan el rombo: la tinta mide 3,06% de ancho de carta contra los 3,07% que el rombo ofrece de alto |
+| **Números** | [R5] Llenan el rombo de borde a borde: la tinta va del 76,17% al 78,22% y el rombo del 76,05% al 78,22%. Las tres filas usan las alturas leídas del dibujo —76,05%, 82,33% y 88,71%— y no las que se habían apuntado, unas centésimas desviadas |
 | **Bandera y peso** | **Dos mitades iguales**, no un bloque centrado. Centrar el par como bloque dejaba el hueco 1,28% a la derecha del eje, porque la bandera es más ancha que "HW"; con dos columnas iguales la frontera **es** el eje, y sale simétrico de "HW" a "WFLW" |
 | **Altura del peso** | Las mayúsculas del peso miden lo mismo que la bandera: 4,52% contra 4,49% |
-| **Centrado vertical** | Números, nombre y ranking se centran por **altura de mayúsculas**, 0,42 em más abajo. Centrar con flex centra la caja de línea, y la caja de Oswald reserva sitio bajo la base para las colas: los números se salían del rombo por arriba |
+| **Centrado vertical** | [R5] **Ningún texto lleva desplazamiento**: el centrado del navegador ya los deja donde toca. Lo llevaron —0,42 em hacia abajo— y estaba mal: la medición que lo justificaba metía la sonda de la línea de base dentro de un contenedor flex, donde el navegador la convierte en otro elemento en vez de apoyarla en el texto. Dejaba el nombre y los números un 1% de la altura por debajo de su sitio, colgando del rombo y de la placa |
 | **Ranking** | Centrado en la pestaña **como si fuera un rectángulo**: su esquina inferior izquierda se sale de la carta y el ojo ve el hueco recortado, cuyo centro está en otro sitio |
 
 **El texto se mide contra el ancho de la propia carta**, no contra la pantalla. Se probó con
@@ -807,15 +811,19 @@ Y al completarse, **una franja de luz barre la carta entera** una sola vez.
 
 Dos condiciones para que no canse, y son innegociables porque el sobre básico es ilimitado:
 
-- **Dura poco** — de un segundo por una plata a menos de tres por un campeón
+- **Dura poco** — 1,4 s por una plata, 1,7 s por un oro
 - **Se salta tocando.** Quien va por su sobre número cuarenta no puede estar obligado a mirarlo
+- [R5] **La excepción es el campeón y el top 5**, que duran 8,89 s porque van con el anuncio. Ahí la
+  espera *es* el premio
 
 #### [R4] El sonido
 
-**Sintetizado, sin un solo archivo de audio.** Tres razones y en este orden: no hay licencias que
-arrastrar —y el proyecto ya carga conscientemente con las de usar peleadores reales—, no suma un byte
-a la aplicación, y funciona sin conexión. Cuando el juego tenga dirección de sonido de verdad se
-sustituye por dentro y nada más se entera.
+**Sintetizado, salvo una excepción.** Todo el sonido del juego se genera con Web Audio, sin archivos.
+Tres razones y en este orden: no hay licencias que arrastrar —y el proyecto ya carga conscientemente
+con las de usar peleadores reales—, no suma un byte a la aplicación, y funciona sin conexión.
+
+[R5] La excepción es **el anuncio de campeón y top 5**, que sí es un archivo (146 KB). Está más abajo,
+y se justifica precisamente por ser una excepción.
 
 - Cada dato que cae suena **un tono más agudo que el anterior**, así que la escalera va contando sola
   lo que queda para ver la carta
@@ -825,6 +833,41 @@ sustituye por dentro y nada más se entera.
 Dos cosas que son de la plataforma, no del diseño: los móviles no dejan sonar nada hasta que hay un
 toque, así que el contexto de audio se crea **dentro** del toque que abre el sobre; y en iPhone la
 aplicación **calla si el móvil está en silencio**, que es lo correcto.
+
+##### [R5] El anuncio, y por qué es la única excepción
+
+Hay **un** sonido que sale de un archivo: el anuncio de ring, y suena **solo cuando la mejor carta
+del sobre es un campeón o un top 5**.
+
+Reservarlo es todo el diseño. Sonando en cada sobre sería ruido al décimo, y además taparía lo que el
+sonido sintetizado ya cuenta: lo grave o agudo que entra dice el nivel antes de que se vea nada.
+Guardado para las dos categorías que importan, **el sonido mismo es la noticia** — lo oyes y ya sabes
+lo que ha caído, antes de mirar.
+
+Cuando suena, **manda el clip y la revelación va detrás**: la carta arranca vacía —solo el marco— y
+cada parte se enciende contra la forma del audio. La voz entra a los 0,9 s, y entre el 5,7 y el 6,4
+hay un valle antes del tramo final: ahí es donde entra el peleador con sus stats.
+
+| Qué se destapa | Cuándo |
+|---|---|
+| Nacionalidad | 0,9 s |
+| Peso | 2,1 s |
+| Récord | 3,4 s |
+| Ranking | 4,9 s |
+| El peleador y sus stats | 6,5 s |
+| La carta queda suelta | 8,89 s, con el final del clip |
+
+Tres decisiones que no se ven pero sostienen esto:
+
+- Los pasos se programan **todos contra el mismo cero**, no encadenados. Encadenados, cada tirón del
+  navegador se sumaba al siguiente y la revelación se estiraba; contra un audio fijo, se habría
+  descuadrado sola
+- Suena con `<audio>` y **no** con Web Audio: Web Audio necesita el archivo descodificado, y para eso
+  hace falta `fetch()`, que no puede leer un archivo de al lado cuando el juego se abre con `file://`
+- Saltarse la revelación **apaga el anuncio con un fundido**, no lo corta en seco
+
+Esto abre un frente de licencias que antes no existía: hasta aquí no había un solo archivo de audio
+y ahora hay uno. Queda anotado junto a lo de usar peleadores reales, en el apartado 10.
 
 Hay un **interruptor de sonido en Más**, y se recuerda entre sesiones.
 
@@ -900,6 +943,12 @@ UFC está licenciada en exclusiva a EA.
 - **Cero marcas de promotoras:** ni logos, ni cinturones, ni octógono reconocible
 - Nada que sugiera respaldo o patrocinio de ningún peleador
 - Las promotoras pequeñas son bastante más accesibles para acuerdos directos que las grandes
+
+[R5] **Y ahora también el audio.** El anuncio de campeón y top 5 es una grabación de la voz de un
+anunciador real, sacada de un banco de sonidos. Hasta aquí el juego no tenía un solo archivo de audio
+y ese frente no existía; ahora existe. Va en el APK y en el `.ipa`, que se publican en un repositorio
+público. La mitigación es la misma que para el arte: **el sonido está en un archivo aparte**
+(`juego/sonidos/`) y se cambia por una grabación propia sin tocar una línea de código.
 
 *(No soy abogado. Esto es orientación práctica, no asesoramiento legal — antes de monetizar conviene
 consultarlo con un profesional.)*
@@ -1071,6 +1120,22 @@ Cierra el bloque de presentación y corrige los datos.
 | 11 | §9.1 | **Los tres sobres, reajustados.** El básico da mitad y mitad, un rankeado cada seis sobres y casi siempre del 12-15. Las platas se parten en alta y baja |
 | 12 | §9.1 | **El walkout y el sonido**: la carta se llena por partes, sobre sí misma, sin parpadear, con sonido sintetizado |
 | 13 | §9.2 | **La primera copia nunca se recicla** |
+
+## Anexo D · [R5] Resumen de cambios
+
+Ronda de presentación: la carta y el sonido.
+
+| # | Punto | Qué cambia |
+|---|---|---|
+| 1 | §2.3.3 | **Ningún texto de la carta lleva desplazamiento vertical.** El que llevaban se había puesto sobre una medición falsa —la sonda de la línea de base caía dentro de un contenedor flex— y dejaba el nombre y los números un 1% de la altura por debajo, colgando del rombo y de la placa |
+| 2 | §2.3.3 | Las tres filas de stats usan las alturas **leídas del dibujo** (76,05 / 82,33 / 88,71%) en vez de las apuntadas, que iban unas centésimas desviadas. Los números llenan el rombo de borde a borde sin desbordar |
+| 3 | §2.3.3 | Nueva herramienta de comprobación, `medir-carta.mjs`: dibuja la carta a tamaño natural, la fotografía con y sin cada texto y se queda con la diferencia. No calcula, mide |
+| 4 | nuevo | **interfaz.md**, el mapa de la distribución: los huecos del marco, las rejillas de cada pantalla y a qué tamaño se ve una carta en cada una. Es el documento de trabajo para rediseñar |
+| 5 | §9.1 | **El anuncio de campeón y top 5.** Único sonido que sale de un archivo, y suena solo en esas dos categorías: reservado, el sonido mismo es la noticia |
+| 6 | §9.1 | Cuando suena el anuncio, la revelación va detrás del clip: 8,89 s, con cada parte de la carta encendiéndose contra la forma del audio |
+| 7 | §10 | Nuevo frente de licencias: hasta ahora no había un solo archivo de audio. El sonido va aparte, para poder sustituirlo por una grabación propia sin tocar código |
+
+---
 
 ### Roster resultante
 

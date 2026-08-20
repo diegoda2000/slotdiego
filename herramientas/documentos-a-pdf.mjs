@@ -18,6 +18,7 @@ fs.mkdirSync(SALIDA, { recursive: true });
 const DOCS = [
   ['docs/actualizado/GDD.md', 'GDD', ''],
   ['docs/actualizado/decisiones-descartadas.md', 'decisiones-descartadas', ''],
+  ['docs/actualizado/interfaz.md', 'interfaz', ''],
   ['docs/base-de-datos-peleadores.md', 'base-de-datos-peleadores', 'datos'],
 ];
 
