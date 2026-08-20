@@ -12,6 +12,9 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 import androidx.webkit.WebViewAssetLoader;
 
 /**
@@ -66,6 +69,18 @@ public class MainActivity extends Activity {
 
         setContentView(web, new ViewGroup.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+
+        /* Desde Android 15 la aplicación se dibuja de borde a borde por defecto, así que
+         * la barra de estado —la hora, la batería— se queda ENCIMA de la cabecera del
+         * juego. Se le pide al sistema cuánto ocupan sus barras y se aparta el WebView
+         * ese tanto. Se pregunta en vez de calcularlo porque cada móvil tiene lo suyo:
+         * muesca, agujero, barra de gestos o botones. */
+        ViewCompat.setOnApplyWindowInsetsListener(web, (v, ventana) -> {
+            Insets barras = ventana.getInsets(
+                    WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout());
+            v.setPadding(barras.left, barras.top, barras.right, barras.bottom);
+            return WindowInsetsCompat.CONSUMED;
+        });
 
         if (estado == null) web.loadUrl(INICIO);
         else web.restoreState(estado);

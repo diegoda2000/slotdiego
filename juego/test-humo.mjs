@@ -393,7 +393,7 @@ const llenan = await page.evaluate(() => {
   const out = {};
   // La tienda queda fuera a propósito: es una lista de tarjetas iguales que se comparan
   // entre ellas, no bloques estirados. Estirarlas rompería justamente la comparación.
-  for (const v of ['inicio', 'retos', 'club']) {
+  for (const v of ['inicio', 'club']) {
     ir(v);
     const q = document.querySelector('.pila');
     const barra = parseFloat(getComputedStyle(document.body).paddingBottom) || 0;
@@ -402,9 +402,11 @@ const llenan = await page.evaluate(() => {
   vista = guardado.vista; tmp = guardado.tmp; render();
   return out;
 });
-const cojas = Object.entries(llenan).filter(([, m]) => m === null || m > 40).map(([v]) => v);
+// con tope de alto, lo que sobra se reparte arriba y abajo, así que se mide el hueco
+// de abajo contra la mitad de lo que sobra, no contra cero
+const cojas = Object.entries(llenan).filter(([, m]) => m === null || m > 130).map(([v]) => v);
 comprobar(cojas.length === 0,
-  `Inicio, Retos y Club llenan la pantalla (${cojas.join(', ') || Object.values(llenan).map(m => m + 'px').join(' · ')})`);
+  `Inicio y Club reparten el alto sin dejar hueco muerto (${cojas.join(', ') || Object.values(llenan).map(m => m + 'px').join(' · ')})`);
 
 /* Y en Inicio no puede haber estado de plantilla: eso es del Club. */
 const inicioLimpio = await page.evaluate(() => {
@@ -573,65 +575,17 @@ comprobar(escalera[2] > escalera[1] && escalera[2] > escalera[0],
   `el sobre de oro es el que más campeones da: ${escalera.map(v => v.toFixed(2)).join('% · ')}%`);
 
 /* ── 2d. Amigos por código ────────────────────────────────────────────── */
-console.log('\n2d. Amigos por código');
-const cods = await page.evaluate(() => {
-  S.nombre = 'Diego'; S.amigos = [];
-  const mio = miCodigo();
-  // simula el código de otro jugador con una plantilla legal distinta.
-  // Ojo: hay peleadores con carta en dos divisiones, así que hay que evitar repetir persona.
-  const usados = new Set(), otra = [];
-  for (const d of DIVISIONES) {
-    const pool = ROSTER.filter(c => c.alineable && c.division === d.id && !usados.has(c.persona));
-    const c = pool[pool.length - 1];
-    usados.add(c.persona); otra.push(c.id);
-  }
-  return { mio, ajeno: codificar('JA1', { n: 'Ana', c: otra }) };
-});
-comprobar(/^JA1\./.test(cods.mio), 'tu plantilla genera un código');
+/* El código de plantilla ya no existe: era un texto que había que copiar, pegar y
+   volver a pegar para registrar el resultado, y para eso está la partida en directo,
+   que juega de verdad. Lo que se comprueba ahora es que no quede ni rastro. */
+const sinCodigos = await page.evaluate(() => ({
+  fn: ['miCodigo','anadirAmigo','registrarResultado'].filter(n => typeof window[n] === 'function'),
+  vista: typeof window.vAmigos === 'function',
+  enlace: (ir('inicio'), !!document.querySelector('[data-nav="amigos"]')),
+}));
+comprobar(sinCodigos.fn.length === 0 && !sinCodigos.vista && !sinCodigos.enlace,
+  `no queda nada del código de plantilla (${sinCodigos.fn.join(', ') || 'ni funciones, ni vista, ni enlace'})`);
 
-const pruebas = await page.evaluate(cs => {
-  const r = {};
-  r.roto = anadirAmigo(cs.ajeno.slice(0, -4));                 // truncado
-  r.basura = anadirAmigo('esto no es un codigo');
-  r.malaPlantilla = anadirAmigo(codificar('JA1', { n: 'X', c: ['c0', 'c1'] }));
-  r.bien = anadirAmigo(cs.ajeno);
-  r.repetido = anadirAmigo(cs.ajeno);
-  r.amigos = S.amigos.length;
-  return r;
-}, cods);
-comprobar(typeof pruebas.roto === 'string', 'un código truncado se rechaza con explicación');
-comprobar(typeof pruebas.basura === 'string', 'un texto cualquiera se rechaza');
-comprobar(typeof pruebas.malaPlantilla === 'string', 'una plantilla ilegal se rechaza');
-comprobar(!!pruebas.bien.aviso, 'un código válido añade al amigo');
-comprobar(pruebas.amigos === 1, 'volver a pegar el mismo código actualiza en vez de duplicar');
-
-// partida completa contra la plantilla del amigo
-await page.evaluate(() => { const a = S.amigos[0]; empezarPartida(a); });
-comprobar(await page.evaluate(() => P.rival === 'Ana' && !!P.amigoId),
-  'la partida se juega contra la plantilla del amigo');
-const mismaPlantilla = await page.evaluate(() => {
-  const a = S.amigos[0];
-  return a.cartas.every(id => P.cartas.r[PORID[id].division].id === id);
-});
-comprobar(mismaPlantilla, 'el rival alinea exactamente las cartas del código');
-
-const resu = await page.evaluate(() => {
-  const a = S.amigos[0];
-  const propio = codigoResultado(a, { j: 4, r: 2 }, true);   // el que TÚ le mandas a Ana
-  const ajeno = codificar('JAR', { n: 'Ana', v: 'Diego', m: [4, 1], g: 1 }); // el que Ana te manda
-  const antes = a.p;
-  const rMio = registrarResultado(propio);   // lleva tu nombre: no es de un amigo
-  const rAna = registrarResultado(ajeno);
-  return { propio, rMio, rAna, subio: S.amigos[0].g === 1, tocado: S.amigos[0].p !== antes };
-});
-comprobar(/^JAR\./.test(resu.propio), 'la victoria genera un código de resultado');
-comprobar(typeof resu.rMio === 'string', 'un resultado que no viene de un amigo se rechaza');
-comprobar(!!resu.rAna.aviso, 'el resultado que te manda un amigo se acepta');
-comprobar(resu.subio && !resu.tocado, 'la victoria del amigo suma en su columna, no en la tuya');
-
-await page.evaluate(() => { vista = 'inicio'; render(); });
-
-/* ── 2e. En directo: viene configurado de fábrica ─────────────────────── */
 console.log('\n2e. Pantalla de partida en directo');
 
 // Con servidor de fábrica —que es como sale el APK— no hay nada que configurar
@@ -717,13 +671,18 @@ const menu = await page.evaluate(() => {
   ir('inicio'); const i = document.querySelector('#app').textContent;
   return { j, i };
 });
-comprobar(/Partida en directo/.test(menu.j) && /Contra la IA/.test(menu.j),
-  'Jugar separa el directo de la partida contra la IA');
-comprobar(/RETAR A UN AMIGO/i.test(menu.i),
-  'y retar a un amigo es su propia fila en Inicio, no se confunde con jugar');
-const avisoAmigos = await page.evaluate(() => { ir('amigos'); return document.querySelector('#app').textContent; });
-comprobar(/no es jugar a la vez/i.test(avisoAmigos),
-  'la pantalla de retar plantillas avisa de que no es en directo');
+comprobar(/PvP/.test(menu.j) && /Contra un amigo/i.test(menu.j) && /Contra la IA/i.test(menu.j),
+  'Jugar ofrece PvP, contra un amigo y contra la IA');
+comprobar(/SBC/.test(menu.i) && /Draft/.test(menu.i),
+  'e Inicio lleva Jugar, Draft, SBC, Aprende y Logros');
+// PvP y "contra un amigo" llevan las dos a la misma pantalla de directo: una crea la
+// sala y la otra entra con el código. Que las dos lleguen ahí es lo que hay que asegurar.
+const dosCaminos = await page.evaluate(() => {
+  ir('jugar');
+  return [...document.querySelectorAll('[data-nav="directo"]')].length;
+});
+comprobar(dosCaminos === 2,
+  `PvP y contra un amigo llevan los dos a la partida en directo (${dosCaminos} caminos)`);
 
 /* ── 2f. Incómodo: la regla corregida ─────────────────────────────────── */
 console.log('\n2f. Incómodo al fallar la elección');
