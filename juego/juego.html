@@ -58,7 +58,8 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 
 /* Sub-pestañas dentro de una sección. Se apoyan en la misma fila, sin caja: una barra
    más sería otra franja de alto comida a las cartas. */
-.subtabs{display:flex;gap:16px;border-bottom:1px solid var(--line);margin:0 0 10px}
+.subtabs{display:flex;gap:26px;justify-content:center;
+  border-bottom:1px solid var(--line);margin:0 0 10px}
 .subtabs button{font-family:var(--titulo);letter-spacing:.04em;text-transform:uppercase;
   font-size:12.5px;font-weight:650;color:var(--dim2);padding:0 0 7px;border-bottom:2px solid transparent}
 .subtabs button.on{color:var(--txt);border-bottom-color:var(--acc)}
@@ -125,23 +126,27 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 /* Los botones de menú usan la MISMA tarjeta que los sobres; donde el sobre lleva su arte,
    ellos llevan su icono. Un solo patrón para toda la navegación: si mañana cambia la
    tarjeta, cambian todos a la vez y no se van separando unos de otros. */
-/* LA TARJETA DE MENÚ. Sigue la referencia: el dibujo ocupa el bloque y el nombre se
-   apoya abajo, centrado. Con el texto arriba y el icono al lado, un bloque alto se queda
-   con un renglón perdido y un rectángulo vacío debajo. */
+/* LA TARJETA DE MENÚ es la MISMA que la de un sobre: el texto a la izquierda, el dibujo
+   a la derecha saliéndose de la caja, y el dato en una píldora sobre el borde de abajo.
+   Un solo patrón para toda la navegación; donde el sobre lleva su arte y su precio, un
+   botón de menú lleva su icono y su cuenta. */
+.sobre-art.icono{font-size:56px;line-height:1;
+  filter:drop-shadow(0 7px 15px rgba(0,0,0,.6))}
 .sobre-fila.menu{margin:0;height:100%}
-.sobre-fila.menu .fila{flex-direction:column;align-items:center;justify-content:flex-end;
-  gap:0;height:100%;padding:14px 12px 15px;overflow:hidden}
-.sobre-fila.menu .sobre-art{position:absolute;left:0;right:0;top:0;bottom:38%;
-  width:auto;display:flex;align-items:center;justify-content:center}
-.sobre-fila.menu .sobre-art.icono{font-size:min(15vw,54px);line-height:1;
-  filter:drop-shadow(0 8px 18px rgba(0,0,0,.6))}
-.sobre-fila.menu .cu{flex:0 0 auto;text-align:center;width:100%}
-.sobre-fila.menu .cu b{display:block;font-size:17px;letter-spacing:.03em;margin:0}
-.sobre-fila.menu .cu .sub{display:block;font-size:12px;margin-top:2px}
-/* En media tarjeta cabe menos, así que el dibujo baja de tamaño y el nombre también. */
-.sobre-fila.menu.media .sobre-art.icono{font-size:min(11vw,40px)}
-.sobre-fila.menu.media .cu b{font-size:16px}
-.sobre-fila.menu.media .cu .sub{font-size:11.5px}
+.sobre-fila.menu .fila{height:100%}
+/* Sin píldora no hace falta reservarle sitio abajo: el hueco quedaría vacío y la tarjeta
+   se leería descolgada. */
+.sobre-fila.menu:not(:has(> .precio)) .fila{padding-bottom:13px}
+/* En media tarjeta cabe menos: el dibujo y el nombre bajan de tamaño y el hueco que se
+   le reserva al dibujo se estrecha, para que al texto no le falte sitio. */
+.sobre-fila.menu.media .fila{padding:14px 84px 22px 13px}
+.sobre-fila.menu.media .sobre-art{width:76px;right:6px}
+.sobre-fila.menu.media .sobre-art.icono{font-size:40px}
+.sobre-fila.menu.media .fila .cu b{font-size:16px}
+/* La píldora se centra sobre la MITAD DE TEXTO, no sobre la tarjeta entera: el dibujo
+   ocupa la derecha, y una píldora centrada en la caja quedaría mordida por él. El
+   desplazamiento es la mitad de lo que ocupa el hueco del dibujo. */
+.sobre-fila.menu.media .precio{transform:translateX(-40px);padding:5px 14px;font-size:13px}
 .mitades .sobre-fila{flex:1 1 0;min-width:0}
 .sobre-fila .fila.alerta{border-color:var(--acc)}
 /* La píldora del precio monta sobre el borde de abajo, centrada en la parte de texto. */
@@ -1364,13 +1369,17 @@ function vInicio(){
     ${tarjeta({nav:'jugar', ic:'🥊', t:'JUGAR', d:'En directo, contra un amigo o contra la IA',
       off:!ok})}
     <div class="mitades">
-      ${tarjeta({nav:'draft', ic:'🎲', t:'Draft', d:'Monta un once y juégalo', media:true})}
-      ${tarjeta({nav:'retosdetalle', ic:'📜', t:'SBC', d:'Entrega cartas, gana premio', media:true})}
+      ${tarjeta({nav:'draft', ic:'🎲', t:'Draft', d:'Monta un once y juégalo',
+        media:true})}
+      ${tarjeta({nav:'retosdetalle', ic:'📜', t:'SBC', d:'Entrega cartas, gana premio',
+        media:true})}
     </div>
     <div class="mitades">
       ${tarjeta({nav:'aprende', ic:'🎓', t:'Aprende a jugar',
-        d:S.tutorialHecho?'Reglas y tutorial':'Empieza por aquí', alerta:!S.tutorialHecho, media:true})}
-      ${tarjeta({nav:'logros', ic:'🏅', t:'Logros', d:`${hechos} de ${l.length}`, media:true})}
+        d:S.tutorialHecho?'Reglas y tutorial':'Empieza por aquí',
+        alerta:!S.tutorialHecho, media:true})}
+      ${tarjeta({nav:'logros', ic:'🏅', t:'Logros', d:'Lo que llevas conseguido',
+        media:true, pie:`${hechos} de ${l.length}`})}
     </div>
   </div>`;
 }
@@ -1401,9 +1410,12 @@ function vJugar(){
   const ok=plantillaCompleta();
   return `<div class="pcab"><h2>Jugar</h2></div>
     <div class="pila">
-      ${tarjeta({nav:'directo', ic:'🟢', t:'PvP', d:'Crea una sala y juega en directo', off:!ok})}
-      ${tarjeta({nav:'directo', ic:'👥', t:'Contra un amigo', d:'Entra con su código de sala', off:!ok})}
-      ${tarjeta({a:'jugar', ic:'🤖', t:'Contra la IA', d:'Sin conexión, cuando quieras', off:!ok})}
+      ${tarjeta({nav:'directo', ic:'🟢', t:'PvP', d:'Crea una sala y juega en directo',
+        off:!ok})}
+      ${tarjeta({nav:'directo', ic:'👥', t:'Contra un amigo', d:'Entra con su código de sala',
+        off:!ok})}
+      ${tarjeta({a:'jugar', ic:'🤖', t:'Contra la IA', d:'Sin conexión, cuando quieras',
+        off:!ok})}
     </div>
     <button class="btn sec" data-nav="inicio">Atrás</button>`;
 }
@@ -1471,22 +1483,25 @@ function vClub(){
   return `<div class="pcab"><h2>Club</h2></div>
     <div class="pila">
       ${tarjeta({nav:'plantilla', ic:'📋', t:'Plantilla',
-        d:ok?'Las once, completas':'Sin completar'})}
+        d:ok?'Las once, completas':'Te faltan divisiones',
+        pie:`${DIVISIONES.filter(d=>S.plantilla[d.id]).length} de ${DIVISIONES.length}`})}
       <div class="mitades">
-        ${tarjeta({nav:'coleccion', ic:'🗂️', t:'Colección',
-          d:`${distintas} de ${ROSTER.length}`, media:true})}
-        ${tarjeta({nav:'sets', ic:'🧩', t:'Sets',
-          d:`${hechos} de ${SETS.length}`, media:true})}
+        ${tarjeta({nav:'coleccion', ic:'🗂️', t:'Colección', d:'Tu álbum, hoja a hoja',
+          media:true, pie:`${distintas} de ${ROSTER.length}`})}
+        ${tarjeta({nav:'sets', ic:'🧩', t:'Sets', d:'Completa y desbloquea',
+          media:true, pie:`${hechos} de ${SETS.length}`})}
       </div>
       <div class="mitades">
         ${tarjeta({nav:'reciclaje', ic:'♻️', t:'Reciclaje',
           d:rep?`${rep} repetidas`:'Sin repetidas', media:true})}
-        ${tarjeta({nav:'intercambio', ic:'🤝', t:'Intercambio',
-          d:'Cuesta 1 ficha', media:true})}
+        ${tarjeta({nav:'intercambio', ic:'🤝', t:'Intercambio', d:'Cuesta 1 ficha',
+          media:true})}
       </div>
       <div class="mitades">
-        ${tarjeta({nav:'ajustes', ic:'⚙️', t:'Ajustes', d:'Sonido y datos', media:true})}
-        ${tarjeta({nav:'redes', ic:'📣', t:'Mis redes', d:'Dónde se cuenta', media:true})}
+        ${tarjeta({nav:'ajustes', ic:'⚙️', t:'Ajustes',
+          d:S.mudo?'Sonido apagado':'Sonido encendido', media:true})}
+        ${tarjeta({nav:'redes', ic:'📣', t:'Mis redes', d:'Dónde se cuenta',
+          media:true})}
       </div>
     </div>`;
 }
