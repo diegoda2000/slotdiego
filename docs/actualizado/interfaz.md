@@ -21,11 +21,38 @@ Los tamaños por pantalla salen de abrir el juego en cuatro ventanas y medir el 
 | **Qué son** | El marco **vacío**. El texto no está en la imagen: lo pinta el juego encima, en porcentajes |
 | **Escalado** | Una sola carta que escala. No hay versión pequeña y versión grande |
 
-El texto se mide contra el **ancho de la propia carta**, no contra la pantalla: el juego pone en cada
-carta una variable `--cw` con su ancho en píxeles y todos los tamaños de letra son una fracción de
-esa. Se probó con consultas de contenedor de CSS y hubo que quitarlo, porque no existen en los
-WebView antiguos y allí el texto se quedaba fijo y se salía de los huecos en cuanto la carta era
-pequeña.
+### 1.1.1 Cómo escala, y por qué así
+
+La carta **se maqueta siempre a 620 px de ancho** —el del dibujo— y después se encoge con
+`transform: scale()` hasta el tamaño que le toque. Dentro de ese lienzo todos los tamaños de letra
+son fijos: el número mide 22,3 px, el nombre 31,6 px, la etiqueta 26 px.
+
+No es un rodeo. **Los WebView traen un tamaño mínimo de letra** —8 px en Android— y cualquier texto
+por debajo se dibuja a 8 px de todas formas. Calculando las letras contra el ancho real de la carta,
+en el álbum de un móvil salían así:
+
+| | calculado | lo que dibujaba el móvil |
+|---|---|---|
+| Número | 3,3 px | **8 px** |
+| Etiqueta | 3,9 px | **8 px** |
+| Nombre | 4,2 px | **8 px** |
+| Récord | 2,6 px | **8 px** |
+
+Los cuatro acababan del mismo tamaño y desbordando su hueco: el número ocupaba **el 158% del ancho de
+su rombo** y las etiquetas se montaban encima de los números. Maquetando a 620 px las letras son de
+22 px, ningún mínimo interviene, y lo que encoge después es el dibujo entero — y encoger no es
+tipografía. Vale igual para Android, para iPhone y para el navegador.
+
+El lienzo lleva además `text-size-adjust: none`, para que el "texto grande" del sistema no vuelva a
+deformar la carta. Fuera de la carta ese ajuste sigue funcionando, que es donde tiene sentido.
+
+**En Chromium de escritorio nada de esto pasa**, porque no tiene mínimo de letra. Por eso las pruebas
+daban verde mientras en el móvil estaba roto. Ahora la tanda se lanza con
+`--blink-settings=minimumFontSize=8,minimumLogicalFontSize=8` y comprueba el encaje también en una
+ventana de 360 px, que es donde las cartas se hacen más pequeñas.
+
+Antes de esto se probó con consultas de contenedor de CSS y también hubo que quitarlo: no existen en
+los WebView antiguos.
 
 ### 1.2 A qué tamaño se ve de verdad
 
@@ -39,6 +66,11 @@ apertura desaparece en el álbum, donde la carta mide la cuarta parte.
 | **Plantilla** (las 11) | 78 × 111 | 109 × 155 | 112 × 159 | 124 × 176 |
 | **Colección** (álbum 4×4) | 58 × 82 | 93 × 131 | 97 × 137 | 119 × 169 |
 | **Reciclaje** (4×3) | igual que el álbum | | | |
+
+**La carta enseña lo mismo en todas las pantallas.** Hubo una versión "compacta" que en la plantilla
+escondía el récord, el rasgo y los nombres de las stats, con la excusa de que a ese tamaño no se
+leerían; dejaba números sueltos con rayas al lado. Era al revés: la carta de la plantilla mide 109 px
+y la del álbum 93, y en el álbum se veían. Lo que no se leía era el desbordamiento de arriba.
 
 En píxeles: **el caso peor real es 58 px de ancho**. Ahí un número de stat mide 2 px de alto. Lo que
 se dibuje pensando en la carta grande hay que mirarlo también a ese tamaño.

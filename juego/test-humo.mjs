@@ -23,7 +23,15 @@ function comprobar(cond, txt) {
 // El contenedor trae Chromium preinstalado; se puede fijar con CHROMIUM_PATH.
 const exe = process.env.CHROMIUM_PATH || '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
 const fs = await import('fs');
-const lanzar = fs.existsSync(exe) ? { executablePath: exe } : {};
+/* Se lanza con TAMAÑO MÍNIMO DE LETRA, como un WebView de verdad.
+
+   Sin esto, la prueba corría en Chromium de escritorio, que no tiene mínimo, y daba verde
+   mientras en el móvil las cartas estaban rotas: Android dibuja a 8 px cualquier texto por
+   debajo de 8, y en el álbum los números salían a 3,3 px y las etiquetas a 3,9, así que
+   los tres acababan a 8 y se salían de su hueco. Comprobar donde el fallo no existe no es
+   comprobar nada. */
+const MINIMO_MOVIL = '--blink-settings=minimumFontSize=8,minimumLogicalFontSize=8';
+const lanzar = { args: [MINIMO_MOVIL], ...(fs.existsSync(exe) ? { executablePath: exe } : {}) };
 const page = await (await chromium.launch(lanzar)).newPage();
 page.on('pageerror', e => errores.push(String(e)));
 page.on('console', m => { if (m.type() === 'error') errores.push('console: ' + m.text()); });
@@ -549,7 +557,7 @@ const encaje = await page.evaluate(() => {
       return t.width <= b.width + holgura && t.left >= b.left - holgura
           && t.right <= b.right + holgura;
     };
-    if (!carta.style.getPropertyValue('--cw')) malos.push('sin --cw');
+    if (!carta.style.getPropertyValue('--k')) malos.push('sin escala');
     carta.querySelectorAll('.c-et,.c-num,.c-nom').forEach(el => {
       if (el.textContent.trim() && !dentro(el, R.width * 0.01))
         malos.push(el.className + ':' + el.textContent.trim());
@@ -559,6 +567,86 @@ const encaje = await page.evaluate(() => {
 });
 comprobar(encaje.length === 0,
   `en la rejilla, nombres y stats caben en su hueco (${encaje.slice(0, 4).join(', ') || 'todos'})`);
+
+/* Y hay que comprobarlo EN CADA PANTALLA Y EN UNA VENTANA ESTRECHA, que es donde las
+   cartas se hacen más pequeñas. Con el mínimo de letra puesto, en el álbum de un móvil de
+   360 px la carta mide 58 px: ahí es donde reventaba, con los números saliéndose del rombo
+   un 158% de su ancho y las etiquetas montándose encima. */
+const ventanaPrueba = page.viewportSize();
+await page.setViewportSize({ width: 360, height: 740 });
+const estrecho = await page.evaluate(() => {
+  // se aparta TODO lo que se toca, incluida la pantalla en la que estábamos: estos
+  // bloques cambian de vista y lo que viene detrás cuenta con encontrarla como estaba
+  const guardado = { coleccion: S.coleccion.slice(), plantilla: { ...S.plantilla },
+                     vista, tmp };
+  const l = ROSTER.filter(c => c.rareza === 'oro').slice(0, 40);
+  S.coleccion = l.map((c, i) => ({ iid: 'e' + i, cid: c.id }));
+  S.plantilla = {};
+  for (const d of DIVISIONES) {
+    const c = l.find(x => x.division === d.id);
+    if (c) S.plantilla[d.id] = S.coleccion.find(x => x.cid === c.id).iid;
+  }
+  const malos = [];
+  for (const [pantalla, sel] of [['colección', '.grid .carta'], ['plantilla', '.pgrid .carta:not(.oculta)']]) {
+    ir(pantalla === 'colección' ? 'coleccion' : 'plantilla');
+    for (const carta of document.querySelectorAll(sel)) {
+      const R = carta.getBoundingClientRect();
+      if (!R.width) continue;
+      for (const el of carta.querySelectorAll('.c-et,.c-num,.c-nom,.c-record')) {
+        if (!el.textContent.trim()) continue;
+        const b = el.getBoundingClientRect();
+        const r = document.createRange(); r.selectNodeContents(el);
+        const t = r.getBoundingClientRect();
+        // se permite un 1% de la carta, que es el suavizado del borde
+        if (t.width > b.width + R.width * 0.01)
+          malos.push(`${pantalla} ${R.width.toFixed(0)}px ${el.className} "${el.textContent.trim()}"`
+            + ` ocupa ${(t.width / b.width * 100).toFixed(0)}% de su hueco`);
+      }
+    }
+  }
+  S.coleccion = guardado.coleccion; S.plantilla = guardado.plantilla;
+  vista = guardado.vista; tmp = guardado.tmp; render();
+  return { malos: malos.slice(0, 4), total: malos.length };
+});
+await page.setViewportSize(ventanaPrueba);
+comprobar(estrecho.total === 0,
+  `y también en un móvil estrecho, con el mínimo de letra del sistema (${estrecho.malos.join(' · ') || 'colección y plantilla, todo dentro'})`);
+
+/* La carta enseña LO MISMO en todas las pantallas. Hubo una versión "compacta" que en la
+   plantilla escondía el récord y los nombres de las stats, y dejaba números sueltos con
+   rayas al lado. */
+const completa = await page.evaluate(() => {
+  const guardado = { coleccion: S.coleccion.slice(), plantilla: { ...S.plantilla },
+                     vista, tmp };
+  const l = ROSTER.filter(c => c.rareza === 'oro' && c.record).slice(0, 40);
+  S.coleccion = l.map((c, i) => ({ iid: 'f' + i, cid: c.id }));
+  S.plantilla = {};
+  for (const d of DIVISIONES) {
+    const c = l.find(x => x.division === d.id);
+    if (c) S.plantilla[d.id] = S.coleccion.find(x => x.cid === c.id).iid;
+  }
+  const mira = (v, sel) => {
+    ir(v);
+    const c = document.querySelector(sel);
+    if (!c) return null;
+    const hay = s => { const e = c.querySelector(s);
+      return !!(e && e.textContent.trim() && getComputedStyle(e).display !== 'none'); };
+    return { nombre: hay('.c-nom'), record: hay('.c-record'),
+             etiquetas: c.querySelectorAll('.c-et').length === 6
+               && getComputedStyle(c.querySelector('.c-et')).display !== 'none',
+             numeros: c.querySelectorAll('.c-num').length === 6, peso: hay('.c-pie .peso') };
+  };
+  // :not(.oculta) — si no, coge el primer hueco vacío de la plantilla y no una carta
+  const out = { coleccion: mira('coleccion', '.grid .carta'),
+                plantilla: mira('plantilla', '.pgrid .carta:not(.oculta)') };
+  S.coleccion = guardado.coleccion; S.plantilla = guardado.plantilla;
+  vista = guardado.vista; tmp = guardado.tmp; render();
+  return out;
+});
+const falta = Object.entries(completa)
+  .flatMap(([p, v]) => Object.entries(v || {}).filter(([, ok]) => !ok).map(([k]) => `${p}: ${k}`));
+comprobar(falta.length === 0,
+  `y enseña lo mismo en todas: nombre, récord, etiquetas, números y peso (${falta.join(', ') || 'completo en las dos'})`);
 
 /* Y tiene que caer en su sitio también DE ARRIBA A ABAJO, que es lo que se ha roto dos
    veces: los números asomando por debajo del rombo, el nombre saliéndose de la placa.
@@ -591,7 +679,7 @@ const vertical = await page.evaluate(huecos => {
   const jaula = document.createElement('div');
   jaula.style.cssText = 'position:fixed;left:-3000px;top:0;width:620px';
   const carta = orig.cloneNode(true);
-  carta.style.setProperty('--cw', '620px');
+  carta.style.setProperty('--k', '1');   // el lienzo, a tamaño natural
   jaula.appendChild(carta); document.body.appendChild(jaula);
 
   const cv = document.createElement('canvas').getContext('2d');

@@ -81,6 +81,29 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 .carta.sel{outline:2px solid var(--acc);outline-offset:1px}
 .carta:active{transform:scale(.985)}
 
+/* EL LIENZO. La carta se maqueta SIEMPRE a 620 px de ancho —el del dibujo del marco— y
+   después se encoge con transform hasta el tamaño que le toque en la pantalla.
+
+   No es un rodeo, es la única forma de que el texto caiga en su sitio en un móvil. Los
+   WebView traen un TAMAÑO MÍNIMO DE LETRA —8 px en Android— y cualquier texto por debajo
+   se dibuja a 8 px de todos modos. En el álbum la carta mide 93 px, así que el número
+   salía a 3,3 px, la etiqueta a 3,9 y el nombre a 4,2, y los tres acababan dibujados a 8:
+   todos del mismo tamaño y todos desbordando su hueco. Los números se salían del rombo un
+   158% de su ancho y las etiquetas se montaban encima. En Chromium de escritorio no pasa,
+   que es justo por lo que se coló: se estaba comprobando donde el fallo no existe.
+
+   Maquetando a 620 px las letras son de 22 px y ningún mínimo interviene; lo que encoge
+   después es el dibujo entero, y encoger no es tipografía. Vale igual para Android, para
+   iPhone y para el navegador. */
+.carta .lienzo{position:absolute;left:0;top:0;width:620px;height:877px;
+  --cw:620px;                    /* dentro del lienzo el ancho es siempre este */
+  font-size:calc(620px*.034);line-height:1.1;
+  /* Y que el tamaño de letra del sistema tampoco deforme la carta: si el móvil está en
+     "texto grande", el WebView multiplica todas las letras y volverían a salirse del
+     hueco. Fuera de la carta el ajuste sigue funcionando, que es donde tiene sentido. */
+  -webkit-text-size-adjust:none;text-size-adjust:none;
+  transform:scale(var(--k,.15));transform-origin:0 0;pointer-events:none}
+
 /* Los huecos del marco, medidos sobre la propia imagen con un cuentapíxeles. */
 
 /* Pestaña del ranking. Es un paralelogramo inclinado hacia abajo-izquierda: arriba va de
@@ -118,8 +141,6 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
   color:#3a3d42;font-weight:700;letter-spacing:.05em;
   font-size:calc(var(--cw,110px)*.028)}
 .carta.plata .c-record{color:#33383e}
-/* En la carta compacta de la plantilla no cabe, y a ese tamaño no se leería. */
-.carta.compacta .c-record{display:none}
 
 /* Placa del nombre: x 25,3–74,2%, y 66,02–70,51%. Centrado en los dos ejes. Lo largo
    que sea el nombre lo pone tamNombre() en --nom, para llenar la placa sin salirse. */
@@ -190,9 +211,12 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 /* Compacta, para que las once de la plantilla quepan a la vez: el marco se mantiene
    —es lo que distingue un oro de una plata de un vistazo— y se cae lo que a ese tamaño
    ya no se puede leer. */
-.carta.compacta .c-rasgo,.carta.compacta .c-et{display:none}
-.carta.compacta .c-icono{font-size:calc(var(--cw,110px)*.13)}
-.carta.compacta .c-pie{letter-spacing:.04em}
+/* Ya no hay carta "compacta". Estuvo escondiendo el récord, el rasgo y los nombres de las
+   stats en la plantilla, con la excusa de que a ese tamaño no se leerían. Era al revés: la
+   carta de la plantilla mide 109 px y la del álbum 93, y en el álbum se veían. Lo que no
+   se leía era otra cosa —el texto se salía de su hueco por el mínimo de letra del móvil—,
+   y eso ya está arreglado en el lienzo. La carta es la misma en todas las pantallas y
+   enseña lo mismo en todas: una sola carta que escala. */
 
 /* La carta que enseña el sobre manda en la pantalla: se lleva todo el alto que queda
    por debajo de la barra, y el ancho sale de ahí por la proporción de la carta, así que
@@ -1057,6 +1081,7 @@ function cartaHTML(c,o={}){
      clases y no con un selector por nivel para que funcione en cualquier motor. */
   const rev=o.rev?('revelando '+o.rev.map(k=>'ve-'+k).join(' ')):'';
   return `<div class="carta ${c.rareza} ${o.compacta?'compacta':''} ${o.sel?'sel':''} ${rev}" ${o.attr||''}>
+   <div class="lienzo">
     <div class="c-rk">${etiquetaEstatus(c)}<i class="brillo"></i></div>
     ${nCop}
     <div class="c-mid">
@@ -1070,6 +1095,7 @@ function cartaHTML(c,o={}){
       ${bnd?`<img class="bnd" src="${bnd}" alt="${esc(c.pais)}" loading="lazy">`:''}
       <span class="peso">${SIGLA_DIV[c.division]}</span>
     </div>
+   </div>
   </div>`;
 }
 
@@ -1141,13 +1167,16 @@ function ajustarRejillas(){
    Se leen TODOS los anchos y luego se escriben TODOS: mezclarlos obligaría al
    navegador a recalcular la página una vez por carta, y en la colección hay
    cuatrocientas. */
+/* Se leen TODOS los anchos antes de escribir ninguna escala: mezclando lecturas y
+   escrituras, el navegador recalcula la maqueta en cada vuelta y con cuarenta cartas eso
+   se nota. */
 function medirCartas(raiz){
   const cartas=(raiz||document).querySelectorAll('.carta');
   if(!cartas.length) return;
   const anchos=new Array(cartas.length);
   for(let i=0;i<cartas.length;i++) anchos[i]=cartas[i].getBoundingClientRect().width;
   for(let i=0;i<cartas.length;i++)
-    if(anchos[i]) cartas[i].style.setProperty('--cw', anchos[i].toFixed(2)+'px');
+    if(anchos[i]) cartas[i].style.setProperty('--k', (anchos[i]/620).toFixed(5));
 }
 
 // Girar el móvil o abrir el teclado cambia el ancho de las cartas, así que se rehace la cuenta.

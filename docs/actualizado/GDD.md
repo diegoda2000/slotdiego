@@ -284,9 +284,16 @@ con y sin cada texto y se queda con la diferencia, que es la tinta. El mapa comp
 | **Centrado vertical** | [R5] **Ningún texto lleva desplazamiento**: el centrado del navegador ya los deja donde toca. Lo llevaron —0,42 em hacia abajo— y estaba mal: la medición que lo justificaba metía la sonda de la línea de base dentro de un contenedor flex, donde el navegador la convierte en otro elemento en vez de apoyarla en el texto. Dejaba el nombre y los números un 1% de la altura por debajo de su sitio, colgando del rombo y de la placa |
 | **Ranking** | Centrado en la pestaña **como si fuera un rectángulo**: su esquina inferior izquierda se sale de la carta y el ojo ve el hueco recortado, cuyo centro está en otro sitio |
 
-**El texto se mide contra el ancho de la propia carta**, no contra la pantalla. Se probó con
-consultas de contenedor y hubo que cambiarlo: no existen en los WebView antiguos, y allí el texto se
-quedaba en un tamaño fijo y se salía de los huecos en cuanto la carta era pequeña.
+[R5] **La carta se maqueta siempre a 620 px y se encoge con `transform`.** Los WebView traen un
+tamaño mínimo de letra —8 px en Android— y calculando las letras contra el ancho real de la carta, en
+el álbum salían a 3-4 px y el móvil las dibujaba todas a 8: del mismo tamaño y desbordando su hueco,
+con el número ocupando el 158% del ancho de su rombo y las etiquetas montándose encima. Maquetando
+grande y encogiendo el dibujo entero, ningún mínimo interviene. En Chromium de escritorio no pasa, y
+por eso se coló: se estaba comprobando donde el fallo no existe.
+
+[R5] **Y enseña lo mismo en todas las pantallas.** Hubo una versión "compacta" que en la plantilla
+escondía el récord y los nombres de las stats. Era al revés de lo que parecía: la carta de la
+plantilla es *más grande* que la del álbum, donde sí se veían.
 
 ### 2.4 [R3] Rareza y bandas
 

@@ -29,7 +29,9 @@ const HUECOS = {
 };
 
 const exe = process.env.CHROMIUM_PATH || '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
-const nav = await chromium.launch(fs.existsSync(exe) ? { executablePath: exe } : {});
+// Con el mínimo de letra de un móvil, que es donde el texto se salía de su hueco.
+const nav = await chromium.launch({ args: ['--blink-settings=minimumFontSize=8,minimumLogicalFontSize=8'],
+  ...(fs.existsSync(exe) ? { executablePath: exe } : {}) });
 const pag = await nav.newPage({ viewport: { width: 800, height: 1200 }, deviceScaleFactor: 2 });
 await pag.goto('file://' + path.resolve('juego/juego.html'));
 await pag.waitForFunction(() => typeof window.ROSTER !== 'undefined');
@@ -52,7 +54,7 @@ const carta = await pag.evaluate(() => {
   jaula.id = 'jaula';
   jaula.style.cssText = 'position:fixed;left:20px;top:20px;width:620px;z-index:9999';
   const c = document.querySelector('.grid .carta').cloneNode(true);
-  c.style.setProperty('--cw', '620px');
+  c.style.setProperty('--k', '1');       // el lienzo, a tamaño natural
   jaula.appendChild(c); document.body.appendChild(jaula);
   return { nombre: c.querySelector('.c-nom').textContent, rk: c.querySelector('.c-rk').textContent };
 });
