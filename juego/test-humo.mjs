@@ -284,11 +284,15 @@ console.log('\n2c-ter. La tienda y el flujo de apertura');
 const tienda = await page.evaluate(() => {
   S.gratis = {}; S.sobres = []; S.divisa = 1000; S.coleccion = [];
   ir('tienda');
-  const filas = [...document.querySelectorAll('[data-a="comprar"]')];
+  // se listan por la tarjeta, no por la acción: el gratis lleva "versobre" y los de pago
+  // "comprar", justamente porque el gratis no pasa por el inventario
+  const tarjetas = [...document.querySelectorAll('.sobre-fila')];
+  const filas = tarjetas.map(t => t.querySelector('.fila'));
   const conPrecio = f => f.closest('.sobre-fila').querySelector('.precio').textContent.trim();
   return {
     sub: tmp.sub || 'comprar',
     orden: filas.map(f => f.dataset.t),
+    acciones: filas.map(f => f.dataset.a),
     // ninguna fila lleva un botón dentro: la fila ENTERA es el botón
     botonesDentro: filas.reduce((n, f) => n + f.querySelectorAll('button,[data-a]').length, 0),
     // el gratis lleva su etiqueta donde los otros llevan el precio
@@ -306,6 +310,8 @@ comprobar(tienda.orden.join(',') === 'basico,plata,oro',
   `las filas van básico, plata y oro (${tienda.orden.join(', ')})`);
 comprobar(tienda.botonesDentro === 0,
   'la fila entera es el botón: no hay ningún Reclamar ni Abrir dentro');
+comprobar(tienda.acciones.join(',') === 'versobre,comprar,comprar',
+  `el gratis va al sobre y los de pago se compran (${tienda.acciones.join(', ')})`);
 comprobar(/gratis/i.test(tienda.gratis),
   `el gratis lleva su etiqueta donde los otros llevan su precio (${tienda.precios.join(' · ')})`);
 comprobar(tienda.vacio.dice && tienda.vacio.enlace,
@@ -471,26 +477,44 @@ comprobar(pobre.sigueIgual, 'y tocarla no hace nada ni da ningún error');
 comprobar(!(await page.evaluate(() => document.body.innerHTML.includes('abrirtodo'))),
   'no hay ninguna forma de abrir varios sobres de golpe');
 
-// El gratis pasa por el mismo sitio que los demás: se reclama en Comprar y se abre igual
+/* El GRATIS no pasa por el inventario: se toca y va derecho al sobre en grande. Guardarlo
+   primero, para tener que ir a "Mis sobres" a abrirlo, es un paso de trámite sobre algo
+   que no cuesta nada y que se reclama justamente para abrirlo ya. */
 const gratis = await page.evaluate(async () => {
-  const guardado = { coleccion: S.coleccion.slice(), plantilla: { ...S.plantilla } };
   S.gratis = {}; S.sobres = []; S.divisa = 0; S.coleccion = [];
   ir('tienda');
-  document.querySelector('[data-a="comprar"][data-t="basico"]').click();
-  const trasReclamar = { sobres: S.sobres.length, sub: tmp.sub, div: S.divisa };
+  document.querySelector('[data-a="versobre"][data-t="basico"]').click();
+  const enSobre = { vista, guardados: S.sobres.length };
+  document.querySelector('[data-a="abrirsobre"]').click();
+  await new Promise(r => setTimeout(r, 950));
+  const r = { enSobre, vista, cartas: S.coleccion.length, guardados: S.sobres.length };
+  pararAviso(); return r;
+});
+comprobar(gratis.enSobre.vista === 'sobre' && gratis.enSobre.guardados === 0,
+  'el gratis va derecho al sobre en grande, sin pasar por el inventario');
+comprobar(gratis.vista === 'apertura' && gratis.cartas === 9 && gratis.guardados === 0,
+  'y el toque lo abre ahí mismo, entregando sus 9 cartas');
+
+/* La revelación tiene que ir POR PARTES también aquí. El walkout arranca después del
+   encendido de las florituras, y ese retraso no puede comerse los pasos. */
+const porPartes = await page.evaluate(async () => {
+  S.gratis = {}; S.sobres = []; S.coleccion = []; ir('tienda');
   document.querySelector('[data-a="versobre"][data-t="basico"]').click();
   document.querySelector('[data-a="abrirsobre"]').click();
-  // el toque enciende las florituras y solo después arranca el walkout
-  await new Promise(r => setTimeout(r, 950));
-  const r = { trasReclamar, vista, cartas: S.coleccion.length, guardados: S.sobres.length };
-  pararAviso();
-  S.coleccion = guardado.coleccion; S.plantilla = guardado.plantilla;
-  return r;
+  await new Promise(r => setTimeout(r, 900));          // el encendido
+  const t0 = performance.now(), visto = {};
+  const mira = () => { const k = document.querySelector('.apertura-carta .carta'); if (!k) return;
+    for (const cl of ['ve-pais', 've-peso', 've-record', 've-rk', 've-todo'])
+      if (k.classList.contains(cl) && visto[cl] === undefined) visto[cl] = Math.round(performance.now() - t0); };
+  const iv = setInterval(mira, 10);
+  await new Promise(r => setTimeout(r, 2600));
+  clearInterval(iv); pararAviso();
+  return visto;
 });
-comprobar(gratis.trasReclamar.sobres === 1 && gratis.trasReclamar.div === 0,
-  'el gratis se reclama en la misma fila que los demás, y no cuesta nada');
-comprobar(gratis.vista === 'apertura' && gratis.cartas === 9 && gratis.guardados === 0,
-  'y se abre por el mismo camino, entregando sus 9 cartas');
+const pasos = Object.values(porPartes);
+comprobar(pasos.length >= 4, `la carta se destapa por partes (${pasos.length} pasos)`);
+comprobar(pasos.length >= 2 && pasos[pasos.length - 1] - pasos[0] > 600,
+  `y separados en el tiempo, no de golpe (${pasos.join(', ')} ms)`);
 
 /* Este bloque abre y compra sobres a mano, así que deja la colección y la plantilla en
    un estado cualquiera. Se rehacen antes de seguir: lo que viene detrás cuenta con una
