@@ -609,6 +609,32 @@ const estrecho = await page.evaluate(() => {
   return { malos: malos.slice(0, 4), total: malos.length };
 });
 await page.setViewportSize(ventanaPrueba);
+/* El álbum tiene que LLENAR la pantalla: cuatro filas de tres, sin scroll y sin dejar un
+   hueco muerto debajo. Con cuatro columnas no llenaba —el ancho se agotaba antes que el
+   alto y la hoja ocupaba poco más de media pantalla— y con doce cartas salían además tres
+   filas en vez de cuatro. */
+const album = await page.evaluate(() => {
+  const guardado = { coleccion: S.coleccion.slice(), vista, tmp };
+  const l = ROSTER.filter(c => c.rareza === 'oro').slice(0, 12);
+  S.coleccion = l.map((c, i) => ({ iid: 'b' + i, cid: c.id }));
+  ir('coleccion');
+  const cartas = [...document.querySelectorAll('.grid .carta')];
+  const filas = new Set(cartas.map(e => Math.round(e.getBoundingClientRect().top))).size;
+  const nav = document.querySelector('.album-nav').getBoundingClientRect();
+  const barra = parseFloat(getComputedStyle(document.body).paddingBottom) || 0;
+  const out = { cartas: cartas.length, filas, cols: cartas.length / filas,
+    // lo que queda libre bajo el paginador, sin contar la barra de navegación
+    muerto: Math.round(innerHeight - nav.bottom - barra),
+    scroll: document.documentElement.scrollHeight > innerHeight + 1 };
+  S.coleccion = guardado.coleccion; vista = guardado.vista; tmp = guardado.tmp; render();
+  return out;
+});
+comprobar(album.filas === 4 && album.cols === 3,
+  `el álbum es de cuatro filas de tres (salen ${album.filas} de ${album.cols})`);
+comprobar(!album.scroll, 'y no hay que deslizar para verlo');
+comprobar(album.muerto < 40,
+  `y llena la pantalla, sin hueco muerto debajo (quedan ${album.muerto}px)`);
+
 comprobar(estrecho.total === 0,
   `y también en un móvil estrecho, con el mínimo de letra del sistema (${estrecho.malos.join(' · ') || 'colección y plantilla, todo dentro'})`);
 

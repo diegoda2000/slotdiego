@@ -64,8 +64,15 @@ apertura desaparece en el álbum, donde la carta mide la cuarta parte.
 | **Apertura** (la carta grande) | 331 × 469 | 379 × 536 | 396 × 560 | 523 × 740 |
 | **Resumen del sobre** (3×3) | 68 × 96 | 109 × 155 | 113 × 160 | 129 × 183 |
 | **Plantilla** (las 11) | 78 × 111 | 109 × 155 | 112 × 159 | 124 × 176 |
-| **Colección** (álbum 4×4) | 58 × 82 | 93 × 131 | 97 × 137 | 119 × 169 |
+| **Colección** (álbum 3×4) | 58 × 82 | 94 × 133 | 97 × 137 | 119 × 169 |
 | **Reciclaje** (4×3) | igual que el álbum | | | |
+
+**Por qué el álbum es de tres columnas y no de cuatro.** Con cuatro, el ancho de la pantalla se
+agota antes que el alto: las cartas no pueden pasar de 92 px porque no caben más anchas, y las cuatro
+filas ocupan poco más de media pantalla dejando un hueco muerto debajo. Con tres columnas la carta
+crece hasta que lo que se agota es el **alto**, que es la dimensión que sobraba, y la hoja llega hasta
+la barra de navegación. Doce cartas por hoja son además exactamente cuatro filas de tres, así que la
+hoja llena nunca sale coja.
 
 **La carta enseña lo mismo en todas las pantallas.** Hubo una versión "compacta" que en la plantilla
 escondía el récord, el rasgo y los nombres de las stats, con la excusa de que a ese tamaño no se
@@ -157,7 +164,7 @@ de las pantallas que las enseñan.
 | **Sobres** | Lista de sobres. Hoy cada uno es un emoji: 📦 básico, 🎁 plata, 🥇 oro |
 | **Apertura** | Una sola carta, lo más grande que quepa, con su resplandor por nivel |
 | **Resumen del sobre** | 3 × 3 — las nueve del sobre a la vez |
-| **Colección** | Álbum de 4 × 4, se pasa de página. Sin scroll |
+| **Colección** | Álbum de **3 × 4** (tres columnas, cuatro filas), se pasa de página. Sin scroll |
 | **Plantilla** | 11 divisiones: tres filas de tres y una última fila de dos, centrada |
 | **Reciclaje** | 4 × 3, paginado |
 | **Partida** | Las cartas del duelo, enfrentadas |

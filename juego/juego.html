@@ -1652,10 +1652,16 @@ function vColeccion(){
   l.sort((a,b)=>comparar(a.c,b.c));      // siempre de mejor a peor
   const total=ROSTER.length, distintas=new Set(S.coleccion.map(x=>x.cid)).size;
 
-  /* La colección es un ÁLBUM, no una lista: páginas de 4×4 que se pasan. Una colección
-     que se recorre con el dedo hacia abajo no se mira, se escanea, y aquí mirar las
-     cartas es medio juego. Con páginas, cada una es una hoja del álbum. */
-  const POR_PAG=16;
+  /* La colección es un ÁLBUM, no una lista: páginas que se pasan. Una colección que se
+     recorre con el dedo hacia abajo no se mira, se escanea, y aquí mirar las cartas es
+     medio juego. Con páginas, cada una es una hoja del álbum.
+
+     TRES columnas y CUATRO filas, no cuatro y cuatro. Con cuatro columnas el ancho de la
+     pantalla se agotaba antes que el alto: las cartas salían a 92 px porque no cabían más
+     anchas, y las cuatro filas ocupaban poco más de media pantalla dejando un hueco vacío
+     debajo. Con tres columnas la carta crece hasta que lo que se agota es el ALTO, que es
+     la dimensión que aquí sobraba, y la hoja llena la pantalla. */
+  const POR_PAG=12;
   const pags=Math.max(1, Math.ceil(l.length/POR_PAG));
   if(tmp.pag===undefined) tmp.pag=0;
   tmp.pag=Math.max(0, Math.min(tmp.pag, pags-1));
@@ -1676,7 +1682,7 @@ function vColeccion(){
       ${DIVISIONES.map(d=>`<span class="chip ${f.div===d.id?'on':''}" data-f="div" data-v="${d.id}">${d.n}</span>`).join('')}
     </div>
     ${l.length?`
-      <div class="grid fit" style="--cols:4" data-fit="4,4">${hoja.map(o=>
+      <div class="grid fit" style="--cols:3" data-fit="3,4">${hoja.map(o=>
         cartaHTML(o.c,{attr:`data-carta="${o.x.iid}"`})).join('')}</div>
       <div class="album-nav">
         <button class="btn gho sm" data-a="pag" data-v="-1" ${tmp.pag?'':'disabled'}>‹</button>
