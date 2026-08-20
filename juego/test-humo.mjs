@@ -336,9 +336,9 @@ comprobar(await page.locator('[data-a="salirapertura"]').count() === 1, 'hay bot
    ahí desde el primer momento y se va llenando por partes, en el orden pedido —
    nacionalidad, peso, récord, ranking— y al final el peleador con sus stats. */
 const aviso = await page.evaluate(() => ({
-  // se para el reloj del aviso: si sigue corriendo va cambiando de paso él solo
+  // se paran los relojes del aviso: si siguen corriendo va cambiando de paso él solo
   // y pisa los que pone la prueba
-  _: clearTimeout(arrancarAviso.t),
+  _: pararAviso(),
   orden: pasosAviso(PORID[tmp.ap.items[0].cid]).map(p => p.k),
   rk: PORID[tmp.ap.items[0].cid].rk,
   panel: !!document.querySelector('.aviso-caja'),
@@ -387,11 +387,96 @@ comprobar(ult.foto && ult.nombre && ult.stats && ult.bandera && ult.record,
   'y al final está la carta entera, sin haber perdido nada por el camino');
 
 // Tocando se salta el aviso y aparece la carta sin esperar.
-await page.evaluate(() => { tmp.ap.fase = 'aviso'; tmp.ap.paso = 1; render();
-  clearTimeout(arrancarAviso.t); });
+await page.evaluate(() => { tmp.ap.fase = 'aviso'; tmp.ap.paso = 1; render(); pararAviso(); });
 await page.locator('.apertura').click();
 comprobar(await page.evaluate(() => tmp.ap.fase === 'carta' && !tmp.ap.resumen),
   'un toque durante el aviso lo salta y suelta la carta');
+
+/* ── 2b-bis. El anuncio de campeón y top 5 ────────────────────────────────
+   Es el único sonido del juego que sale de un archivo, y está reservado a propósito:
+   si sonara en cada sobre dejaría de significar que ha caído algo gordo, y encima
+   taparía lo que el sonido de siempre ya cuenta con lo grave o agudo que entra. */
+console.log('\n2b-bis. El anuncio de campeón y top 5');
+const anuncio = await page.evaluate(async () => {
+  // Este bloque abre sobres a mano y deja la colección con una carta suelta. Lo que hay
+  // guardado se aparta y se devuelve al final: si no, las pruebas de después se quedan
+  // sin plantilla y fallan por algo que no tiene nada que ver con ellas.
+  window.__guardado = { coleccion: S.coleccion.slice(), plantilla: { ...S.plantilla }, mudo: S.mudo };
+  // se cuentan las veces que se pide el anuncio, sin llegar a reproducir nada
+  const real = SONIDO.anuncio.bind(SONIDO);
+  let pedidos = [];
+  SONIDO.anuncio = function () { pedidos.push(tmp.ap ? tmp.ap.nivel : '?'); };
+  const abrir = f => {
+    const c = ROSTER.find(f);
+    const it = { iid: 'a' + Math.random(), cid: c.id };
+    S.coleccion = [it]; pedidos = [];
+    abrirTanda([it], 'oro');
+    const r = { nivel: tmp.ap.nivel, pedidos: pedidos.length };
+    pararAviso();
+    return r;
+  };
+  const out = {
+    campeon: abrir(c => c.estatus === 'campeon'),
+    top5:    abrir(c => c.estatus === 'top5'),
+    top10:   abrir(c => c.estatus === 'top10'),
+    oro:     abrir(c => c.estatus === 'oro'),
+    plata:   abrir(c => c.rareza === 'plata'),
+  };
+  SONIDO.anuncio = real;
+  // y en mudo no suena nada, ni siquiera al campeón
+  S.mudo = true;
+  const c = ROSTER.find(x => x.estatus === 'campeon');
+  const it = { iid: 'am', cid: c.id }; S.coleccion = [it];
+  abrirTanda([it], 'oro');
+  out.mudo = !!(SONIDO.clip && !SONIDO.clip.paused);
+  pararAviso(); S.mudo = false;
+  // los momentos tienen que acabar justo con el clip
+  out.momentos = NIVEL_APERTURA.corona.momentos;
+  out.dura = ANUNCIO_MS;
+  out.pasosCorona = pasosAviso(ROSTER.find(x => x.estatus === 'campeon')).length;
+  return out;
+});
+comprobar(anuncio.campeon.pedidos === 1 && anuncio.top5.pedidos === 1,
+  'el anuncio suena con un campeón y con un top 5');
+comprobar(anuncio.top10.pedidos === 0 && anuncio.oro.pedidos === 0 && anuncio.plata.pedidos === 0,
+  'y NO suena en el resto: top 10, oro normal ni plata');
+comprobar(!anuncio.mudo, 'en mudo no suena tampoco al campeón');
+comprobar(anuncio.momentos.length === anuncio.pasosCorona + 1,
+  `hay un momento por paso más el de soltar la carta (${anuncio.momentos.length} para ${anuncio.pasosCorona} pasos)`);
+comprobar(anuncio.momentos[anuncio.momentos.length - 1] === anuncio.dura,
+  `la carta se suelta justo cuando acaba el clip (${anuncio.dura} ms)`);
+comprobar(anuncio.momentos.every((m, i) => i === 0 || m > anuncio.momentos[i - 1]),
+  'y los momentos van en orden, sin pisarse');
+
+/* Los pasos se programan contra un cero común, así que tienen que caer donde dice la
+   tabla. Se mide de verdad: se abre el sobre y se cronometra cuándo se enciende cada
+   parte de la carta. */
+const reloj = await page.evaluate(async () => {
+  const c = ROSTER.find(x => x.estatus === 'campeon');
+  const it = { iid: 'ar', cid: c.id }; S.coleccion = [it];
+  S.mudo = true;                       // se cronometra la imagen, no hace falta oírlo
+  abrirTanda([it], 'oro');
+  const t0 = performance.now(), visto = {};
+  const mira = () => {
+    const k = document.querySelector('.apertura-carta .carta');
+    if (!k) return;
+    for (const cl of ['ve-pais', 've-peso', 've-record', 've-rk', 've-todo'])
+      if (k.classList.contains(cl) && visto[cl] === undefined)
+        visto[cl] = Math.round(performance.now() - t0);
+  };
+  const iv = setInterval(mira, 10);
+  await new Promise(r => setTimeout(r, 7000));
+  clearInterval(iv); pararAviso();
+  // se devuelve todo como estaba
+  S.coleccion = window.__guardado.coleccion;
+  S.plantilla = window.__guardado.plantilla;
+  S.mudo = window.__guardado.mudo;
+  return { visto, momentos: NIVEL_APERTURA.corona.momentos };
+});
+const salieron = ['ve-pais', 've-peso', 've-record', 've-rk', 've-todo'].map(k => reloj.visto[k]);
+const desvio = salieron.map((t, i) => t === undefined ? 9999 : Math.abs(t - reloj.momentos[i]));
+comprobar(desvio.every(d => d < 150),
+  `cada parte se enciende cuando toca (${salieron.join(', ')} contra ${reloj.momentos.slice(0, 5).join(', ')} ms)`);
 
 // La carta que enseña el sobre es la mejor de las nueve, y manda en la pantalla.
 // Se mide en una ventana de móvil, que es donde se juega: en una de escritorio, ancha

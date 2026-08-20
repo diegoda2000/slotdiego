@@ -1155,7 +1155,7 @@ addEventListener('resize', ()=>{ ajustarRejillas(); medirCartas(); });
 
 // Irse a otra pantalla corta el aviso de la apertura: si no, el temporizador
 // seguiría vivo y volvería a pintar encima de donde esté el jugador.
-function ir(v){ clearTimeout(arrancarAviso.t); vista=v; tmp={}; window.scrollTo(0,0); render(); }
+function ir(v){ pararAviso(); vista=v; tmp={}; window.scrollTo(0,0); render(); }
 
 /* ── INICIO ── */
 function vInicio(){
@@ -1362,16 +1362,66 @@ const SONIDO={
     }
   },
   clic(){ this.tono({f:520, f2:340, t:0.07, tipo:'square', vol:0.05}); },
+
+  /* EL ANUNCIO. Es el único sonido del juego que no está sintetizado: un archivo de
+     verdad, y suena solo cuando la mejor carta del sobre es un campeón o un top 5.
+     Reservarlo es lo que lo mantiene vivo: si sonara en cada sobre, al décimo sería
+     ruido y además taparía lo que el sonido de siempre ya cuenta —lo grave o agudo
+     que entra te dice el nivel antes de ver nada.
+
+     Va con <audio> y no con Web Audio a propósito. Web Audio necesita el archivo
+     descodificado, y para eso hay que leerlo con fetch(); el juego se abre también
+     con file://, donde fetch() no puede leer el archivo de al lado. <audio> sí. */
+  clip:null,
+  /* Cada arranque y cada corte llevan número. Sin él, abrir dos sobres de campeón
+     seguidos mataba el segundo anuncio: el fundido del primero seguía corriendo y,
+     al cumplirse su cuarto de segundo, paraba el clip que acababa de empezar. */
+  vez:0,
+  anuncio(){
+    if(S.mudo) return;
+    try{
+      if(!this.clip){ this.clip=new Audio('sonidos/its-time.mp3'); this.clip.preload='auto'; }
+      this.vez++;                       // cualquier fundido pendiente deja de mandar
+      this.clip.currentTime=0;
+      this.clip.volume=1;
+      const p=this.clip.play();
+      if(p&&p.catch) p.catch(()=>{});   // si el navegador lo bloquea, el juego sigue igual
+    }catch(e){}
+  },
+  /* Cuando el jugador se salta la revelación hay que callar el anuncio. Pararlo en seco
+     suena a que algo ha fallado, así que se baja el volumen en un cuarto de segundo. */
+  cortarAnuncio(){
+    const a=this.clip; if(!a||a.paused) return;
+    const mio=++this.vez, t0=performance.now(), v0=a.volume;
+    const baja=()=>{
+      if(this.vez!==mio) return;        // ha vuelto a sonar: este fundido ya no pinta nada
+      const k=(performance.now()-t0)/250;
+      if(k>=1){ a.pause(); a.currentTime=0; a.volume=v0; return; }
+      a.volume=v0*(1-k);
+      requestAnimationFrame(baja);
+    };
+    requestAnimationFrame(baja);
+  },
 };
+
+/* Lo que dura el anuncio, medido sobre el propio archivo. Los momentos de la
+   revelación de abajo están puestos contra él. */
+const ANUNCIO_MS=8890;
 
 /* Lo que define cada nivel en la apertura: cuánto dura el aviso, de qué color es,
    y a qué suena. Una sola tabla para animación y sonido, para que no puedan
    contarte cosas distintas. */
 const NIVEL_APERTURA={
+  /* Campeón y top 5 llevan el anuncio, y entonces manda el clip: la carta se llena a su
+     ritmo y no al revés. Los momentos están puestos sobre la propia forma del audio —
+     la voz entra a los 0,9 s, y entre el 5,7 y el 6,4 hay un valle antes del tramo
+     final, que es donde entra el peleador con sus stats. */
   corona:{n:'corona', paso:700, hz:[150,760], pegada:0.34, corte:2600,
-          luz:'#ffd24a', luz2:'#ff4a3d'},
+          luz:'#ffd24a', luz2:'#ff4a3d',
+          anuncio:true, momentos:[900,2100,3400,4900,6500,ANUNCIO_MS]},
   top5  :{n:'top5',   paso:560, hz:[150,620], pegada:0.28, corte:2100,
-          luz:'#ffcf3f', luz2:'#e8a021'},
+          luz:'#ffcf3f', luz2:'#e8a021',
+          anuncio:true, momentos:[900,2100,3400,4900,6500,ANUNCIO_MS]},
   top10 :{n:'top10',  paso:430, hz:[160,500], pegada:0.22, corte:1700,
           luz:'#dfe6ee', luz2:'#9fb4c8'},
   top15 :{n:'top15',  paso:430, hz:[160,440], pegada:0.19, corte:1500,
@@ -1411,9 +1461,14 @@ function abrirTanda(items,tipo){
    la pantalla te está diciendo desde el principio si viene algo bueno. Es a
    propósito: esa tensión es el momento que engancha, más que la carta en sí.
 
-   Dos condiciones para que no canse: dura poco —de 1 s por una plata a 2,8 s por
-   una corona— y **se salta tocando**. Quien va por su sobre número cuarenta no
-   puede estar obligado a mirarlo entero. */
+   Dos condiciones para que no canse: dura poco —1,4 s por una plata, 1,7 s por un oro—
+   y **se salta tocando**. Quien va por su sobre número cuarenta no puede estar obligado
+   a mirarlo entero.
+
+   La excepción es el campeón y el top 5, que van con el anuncio y duran los 8,9 s que
+   dura el clip. Ahí la espera ES el premio, y por eso mismo no se le da a nada más: si
+   sonara en cada sobre dejaría de significar que ha caído algo gordo. Y se sigue
+   pudiendo saltar, que corta el anuncio con un fundido. */
 function pasosAviso(c){
   // Nacionalidad, peso, récord, ranking, y al final la foto con las stats. Cada uno
   // aparece EN SU SITIO de la carta, no en una lista aparte: lo que se está viendo
@@ -1429,33 +1484,63 @@ function pasosAviso(c){
   p.push({k:'todo', et:'El peleador', gordo:true});
   return p;
 }
+/* Cuándo sale cada paso, en milisegundos desde que arranca la revelación. La lista tiene
+   un valor más que pasos: el último es cuándo se suelta la carta. */
+function momentosAviso(N,n){
+  if(N.anuncio){
+    if(N.momentos&&N.momentos.length===n+1) return N.momentos;
+    /* Reparto de emergencia. Si algún día cambian los pasos y la lista de momentos se
+       queda corta, lo importante es que el anuncio y la revelación sigan acabando a la
+       vez; descuadrados quedan mucho peor que mal repartidos. */
+    return Array.from({length:n+1},(_,i)=>Math.round(ANUNCIO_MS*(i+1)/(n+1)));
+  }
+  return Array.from({length:n+1},(_,i)=>i*N.paso);
+}
+/* Los pasos se programan TODOS de golpe contra el mismo cero, no uno detrás de otro.
+   Encadenándolos, cada retraso del navegador se sumaba al siguiente y la revelación se
+   iba estirando; con el anuncio eso sería fatal, porque acabaría descuadrada del audio.
+   Programándolos contra un cero común, un tirón atrasa un paso y no arrastra a los demás. */
 function arrancarAviso(){
-  clearTimeout(arrancarAviso.t);
+  pararAviso();
   const a=tmp.ap; if(!a||a.fase!=='aviso') return;
   const N=NIVEL_APERTURA[a.nivel]||NIVEL_APERTURA.oro;
   const pasos=pasosAviso(PORID[a.items[0].cid]);
-  a.paso=(a.paso||0);
-  if(a.paso>=pasos.length){ soltarCarta(); return; }
-  const p=pasos[a.paso];
-  // Cada dato entra un poco más agudo que el anterior: la escalera se oye subir.
-  SONIDO.dato(a.paso, pasos.length, a.nivel, p.gordo);
-  /* Se le añade la clase A LA CARTA QUE YA ESTÁ, no se repinta la pantalla. Repintando,
-     el navegador crea elementos nuevos y vuelve a lanzar la animación de entrada de todo
-     lo que ya estaba visible: la carta entera parpadea en cada paso. */
-  const carta=document.querySelector('.aviso .carta');
-  if(carta) carta.classList.add('ve-'+p.k);
-  else render();
-  a.paso++;
-  arrancarAviso.t=setTimeout(arrancarAviso, N.paso);
+  const cuando=momentosAviso(N,pasos.length);
+  a.paso=N.anuncio?0:(a.paso||0);
+  if(N.anuncio) SONIDO.anuncio();
+  arrancarAviso.t=pasos.map((p,i)=>setTimeout(()=>{
+    if(!tmp.ap||tmp.ap!==a||a.fase!=='aviso') return;
+    // Con anuncio, el clip ES el sonido: los tonos encima solo estorbarían.
+    if(!N.anuncio) SONIDO.dato(i, pasos.length, a.nivel, p.gordo);
+    /* Se le añade la clase A LA CARTA QUE YA ESTÁ, no se repinta la pantalla. Repintando,
+       el navegador crea elementos nuevos y vuelve a lanzar la animación de entrada de todo
+       lo que ya estaba visible: la carta entera parpadea en cada paso. */
+    const carta=document.querySelector('.aviso .carta');
+    if(carta) carta.classList.add('ve-'+p.k);
+    else render();
+    a.paso=i+1;
+  }, cuando[i]));
+  arrancarAviso.t.push(setTimeout(soltarCarta, cuando[pasos.length]));
+}
+/* Corta la revelación entera: los pasos que faltaban y el anuncio si estaba sonando.
+   Vale para las dos salidas —el final de siempre y el salto del jugador— porque al
+   final natural el clip ya ha terminado y cortarlo no hace nada. */
+function pararAviso(){
+  const t=arrancarAviso.t;
+  if(Array.isArray(t)) t.forEach(clearTimeout); else clearTimeout(t);
+  arrancarAviso.t=[];
+  SONIDO.cortarAnuncio();
 }
 /* Soltar la carta NO repinta nada. Se le añaden a la que ya está en pantalla las clases
    que faltan y se cambian los dos textos a mano. Repintar aquí destruiría la carta y la
    volvería a crear, y eso se ve como un parpadeo justo en el momento importante. */
 function soltarCarta(){
-  clearTimeout(arrancarAviso.t);
-  const a=tmp.ap; if(!a||a.fase!=='aviso') return;
+  const a=tmp.ap; if(!a||a.fase!=='aviso'){ pararAviso(); return; }
+  const N=NIVEL_APERTURA[a.nivel]||NIVEL_APERTURA.oro;
+  pararAviso();
   a.fase='carta';
-  SONIDO.impacto(a.nivel);
+  // Con anuncio no hay golpe de aterrizaje: el propio clip es el remate.
+  if(!N.anuncio) SONIDO.impacto(a.nivel);
   const caja=document.querySelector('.apertura.aviso');
   const carta=caja&&caja.querySelector('.carta');
   if(!caja||!carta){ render(); return; }
@@ -1511,7 +1596,9 @@ function vApertura(){
   const c=PORID[a.items[0].cid];
   const todos=pasosAviso(c);
   const enAviso=a.fase==='aviso';
-  const vistos=enAviso ? todos.slice(0, Math.max(1, a.paso||1)) : todos;
+  /* Con anuncio la carta empieza VACÍA: el marco solo, esperando a que entre la voz a los
+     0,9 s. Sin anuncio se ve ya el primer dato, que es como ha sido siempre. */
+  const vistos=enAviso ? todos.slice(0, N.anuncio ? (a.paso||0) : Math.max(1, a.paso||1)) : todos;
   const ult=vistos[vistos.length-1];
   const gorda=c.estatus==='campeon'||c.estatus==='top5';
   return barra+`
@@ -3063,7 +3150,7 @@ document.addEventListener('click',e=>{
       soltarCarta(); break;
     case 'revelar':                      // un toque en la carta y sale el sobre entero
       if(!tmp.ap||tmp.ap.resumen) break;
-      clearTimeout(arrancarAviso.t);
+      pararAviso();
       tmp.ap.resumen=true; window.scrollTo(0,0); render(); break;
     case 'mudo':
       S.mudo=!S.mudo; guardar();
