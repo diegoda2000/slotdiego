@@ -475,6 +475,76 @@ const encaje = await page.evaluate(() => {
 comprobar(encaje.length === 0,
   `en la rejilla, nombres y stats caben en su hueco (${encaje.slice(0, 4).join(', ') || 'todos'})`);
 
+/* Y tiene que caer en su sitio también DE ARRIBA A ABAJO, que es lo que se ha roto dos
+   veces: los números asomando por debajo del rombo, el nombre saliéndose de la placa.
+   No vale mirar la caja del elemento: la caja de línea de Oswald reserva sitio para las
+   colas de las letras y siempre sobra por abajo, así que un texto puede estar dentro de
+   su caja y fuera del hueco dibujado. Hay que mirar dónde cae la TINTA.
+
+   La línea de base se saca con una sonda: un inline-block de altura cero apoya su borde
+   inferior justo encima de ella. Hay que envolver antes el texto, porque estos elementos
+   son contenedores flex y un hijo suelto se convertiría en otro ítem flex en vez de
+   apoyarse en la base — ese fallo es el que dio por buenos unos números que estaban un
+   1% más abajo de donde debían.
+
+   Se mide sobre una COPIA de la carta a tamaño natural (620 px, el del dibujo del marco):
+   en la rejilla las cartas van a 90-100 px y ahí Chromium redondea las medidas de texto
+   del canvas a píxeles enteros, con una fuente de 3,3 px devuelve 3, un 25% de error.
+   Toda la geometría de la carta va en porcentajes, así que medirla grande vale para todos
+   los tamaños. Las cifras de referencia las da herramientas/medir-carta.mjs, que no
+   calcula nada: dibuja la carta y mira los píxeles. */
+const HUECOS = {
+  // Los tres rombos, leídos del dibujo del marco (oro.webp, 620x877) columna a columna
+  '.c-num': [[76.05, 78.22], [82.33, 84.49], [88.71, 90.88]],
+  '.c-nom': [[66.02, 70.51]],       // placa del nombre
+  '.c-record': [[70.60, 75.30]],    // banda del récord
+  '.c-rk': [[1.82, 11.97]],         // pestaña del ranking
+};
+const vertical = await page.evaluate(huecos => {
+  const orig = document.querySelector('.grid .carta');
+  if (!orig) return ['no hay ninguna carta en pantalla'];
+  const jaula = document.createElement('div');
+  jaula.style.cssText = 'position:fixed;left:-3000px;top:0;width:620px';
+  const carta = orig.cloneNode(true);
+  carta.style.setProperty('--cw', '620px');
+  jaula.appendChild(carta); document.body.appendChild(jaula);
+
+  const cv = document.createElement('canvas').getContext('2d');
+  const R = carta.getBoundingClientRect();
+  const pc = y => (y - R.top) / R.height * 100;
+  const malos = [];
+  for (const [sel, filas] of Object.entries(huecos)) {
+    [...carta.querySelectorAll(sel)].forEach((el, i) => {
+      const texto = el.textContent.trim();
+      if (!texto || !el.getClientRects().length) return;
+      const env = document.createElement('span');
+      while (el.firstChild) env.appendChild(el.firstChild);
+      const sonda = document.createElement('i');
+      sonda.style.cssText = 'display:inline-block;width:0;height:0';
+      env.appendChild(sonda); el.appendChild(env);
+      const base = sonda.getBoundingClientRect().bottom;
+      const s = getComputedStyle(el);
+      cv.font = `${s.fontWeight} ${s.fontSize} ${s.fontFamily}`;
+      // Alto por las mayúsculas —así una "y" no arrastra la medida— y bajo por lo que
+      // de verdad baje este texto, que es lo que puede asomar por debajo del hueco.
+      const alto = cv.measureText('H').actualBoundingBoxAscent;
+      const bajo = Math.max(0, cv.measureText(texto).actualBoundingBoxDescent);
+      const tinta = [pc(base - alto), pc(base + bajo)];
+      // Las seis stats van en tres filas de dos, intercaladas: la número i está en la
+      // fila i>>1, igual que las coloca cartaHTML().
+      const [arriba, abajo] = filas[filas.length === 1 ? 0 : i >> 1];
+      const H = 0.25;                                  // holgura, en % de la altura
+      if (tinta[0] < arriba - H || tinta[1] > abajo + H)
+        malos.push(`${sel} "${texto}" ${tinta[0].toFixed(2)}-${tinta[1].toFixed(2)}`
+                 + ` fuera de ${arriba}-${abajo}`);
+    });
+  }
+  jaula.remove();
+  return malos;
+}, HUECOS);
+comprobar(vertical.length === 0,
+  `y la tinta cae dentro de su hueco del marco (${vertical.slice(0, 3).join(' · ') || 'ranking, nombre, récord y los seis números'})`);
+
 /* ── 2c. Sobre básico ilimitado ───────────────────────────────────────── */
 console.log('\n2c. Sobre básico ilimitado');
 const ilim = await page.evaluate(() => {

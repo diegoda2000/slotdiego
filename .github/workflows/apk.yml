@@ -1,9 +1,17 @@
 name: APK
 
-# Construye el APK de Android y lo deja descargable.
-# Se hace aquí y no en local porque el SDK de Android y el plugin de Gradle se
-# descargan de dl.google.com, que el entorno de desarrollo tiene bloqueado.
-# Los runners de GitHub ya traen el SDK instalado.
+# Comprueba que el APK de Android sigue construyendo, y lo deja como artefacto de la
+# ejecución. Se hace aquí y no en local porque el SDK de Android y el plugin de Gradle
+# se descargan de dl.google.com, que el entorno de desarrollo tiene bloqueado. Los
+# runners de GitHub ya traen el SDK instalado.
+#
+# NO publica la descarga apk-latest. De eso se encarga el flujo "Servidor", que
+# construye el mismo APK pero con la dirección del servidor ya dentro, y que publica
+# el APK y el .ipa juntos. Si publicaran los dos, se pisarían: los dos borran y
+# vuelven a crear la misma publicación en el mismo empujón, y quien acabara el último
+# se quedaría con ella. Estuvo pasando: durante minuto y medio de cada despliegue la
+# descarga se quedaba sin el .ipa, y bastaba con que el runner de macOS fuera un poco
+# más rápido para que se quedara sin él del todo.
 
 on:
   workflow_dispatch:
@@ -17,7 +25,7 @@ on:
       - '.github/workflows/apk.yml'
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   construir:
@@ -52,16 +60,3 @@ jobs:
           name: jaula-abierta-apk
           path: salida/jaula-abierta.apk
           if-no-files-found: error
-
-      # Una publicación fija para poder descargar el APK desde el móvil con un
-      # enlace estable, sin tener que entrar en la pestaña Actions.
-      - name: Publicar descarga directa
-        if: github.ref_name == 'main' || startsWith(github.ref_name, 'claude/')
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh release delete apk-latest --yes --cleanup-tag || true
-          gh release create apk-latest salida/jaula-abierta.apk \
-            --title "Jaula Abierta — APK de prueba" \
-            --notes "Prototipo jugable. Descarga el .apk en el móvil e instálalo permitiendo orígenes desconocidos. Construido desde ${{ github.sha }}." \
-            --prerelease

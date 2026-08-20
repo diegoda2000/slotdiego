@@ -123,15 +123,15 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 
 /* Placa del nombre: x 25,3–74,2%, y 66,02–70,51%. Centrado en los dos ejes. Lo largo
    que sea el nombre lo pone tamNombre() en --nom, para llenar la placa sin salirse. */
+/* Ni el nombre ni los números llevan desplazamiento: el centrado del navegador ya los
+   deja donde toca. Lo comprueba herramientas/medir-carta.mjs, que no calcula nada —
+   dibuja la carta a tamaño natural y mira en qué píxeles cae la tinta. Tal como está:
+   el nombre ocupa del 66,99% al 70,41% y su placa va del 66,02% al 70,51%. */
 .carta .c-nom{position:absolute;left:25.3%;right:25.8%;top:66.02%;height:4.49%;
   display:flex;align-items:center;justify-content:center;line-height:1;
-  transform:translateY(.42em);
   color:#2e2107;font-weight:700;font-size:calc(var(--cw,110px)*var(--nom,.045));
   overflow:hidden;white-space:nowrap;padding:0 1.5%;
   text-shadow:0 .07em 0 rgba(255,255,255,.45), 0 -.04em .03em rgba(0,0,0,.45)}
-/* Como al nombre sí se le ha bajado 0,42 em, su reflejo deshace ese movimiento para
-   seguir cayendo sobre la placa del marco y no sobre el texto. */
-.carta .c-nom .brillo{transform:translateY(-.42em)}
 .carta.plata .c-nom{color:#1a1e22;
   text-shadow:0 .07em 0 rgba(255,255,255,.55), 0 -.04em .03em rgba(0,0,0,.4)}
 
@@ -145,17 +145,11 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 
 /* El número va dentro del rombo, centrado; el nombre de la stat, centrado sobre su
    línea y apoyado en ella. */
-/* Los translateY de este bloque y de la placa del nombre y la pestaña del ranking NO son
-   ajustes a ojo. Centrar con flex centra la CAJA DE LÍNEA, y la caja de Oswald reserva
-   sitio bajo la base para las colas de las letras: el texto queda alto dentro de su hueco.
-   En los números se notaba, porque se salían del rombo por arriba — la tinta iba del
-   74,92% al 77,09% y el rombo va del 76,05% al 78,22%.
-   Lo correcto es centrar por ALTURA DE MAYÚSCULAS, no por la tinta entera: si no, un
-   nombre con "p" o con "y" se subiría para compensar su propia cola. Medido sobre nombres
-   con y sin colas, ese desplazamiento es 0,42 em, constante, y viene de la fuente. */
-.carta .c-num{position:absolute;height:2.15%;display:flex;align-items:center;
+/* Los tres rombos de la izquierda están, en el dibujo del marco, en el 76,05-78,22%,
+   82,33-84,49% y 88,71-90,88% de la altura. Las cifras caen dentro de los tres sin tocar
+   nada: 76,17-78,16 en el primero. */
+.carta .c-num{position:absolute;height:2.17%;display:flex;align-items:center;
   justify-content:center;line-height:1;color:#2b1f07;font-weight:700;
-  transform:translateY(.42em);
   font-size:calc(var(--cw,110px)*.036);font-variant-numeric:tabular-nums}
 .carta.plata .c-num{color:#15181c}
 .carta .c-num.pen{color:#7a1109}
@@ -1030,10 +1024,12 @@ const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',
    `rombo` es la caja SEGURA del rombo, la parte donde es macizo en toda su altura: como
    está inclinado, su rectángulo interior es más estrecho que su ancho aparente, y usar
    el aparente hacía que los números se salieran por el filo. */
+/* Las tres alturas salen de medir el propio dibujo del marco columna a columna: los
+   rombos ocupan 76,05-78,22%, 82,33-84,49% y 88,71-90,88%. */
 const FILAS_STAT = [
-  {rombo:'76.07%', linea:'75.32%'},
-  {rombo:'82.37%', linea:'81.55%'},
-  {rombo:'88.74%', linea:'87.92%'},
+  {rombo:'76.05%', linea:'75.32%'},
+  {rombo:'82.33%', linea:'81.55%'},
+  {rombo:'88.71%', linea:'87.92%'},
 ];
 const COLS_STAT = [
   {rombo:'17.2%,5.2%',  linea:'24.2%,21.2%'},
