@@ -277,21 +277,119 @@ comprobar(bandas.alta > 20 && bandas.baja > 20,
 comprobar(oficio.exacto.basico < oficio.exacto.plata && oficio.exacto.plata < oficio.exacto.oro,
   `y la carta alta sube con el sobre (${oficio.exacto.basico.toFixed(2)}% · ${oficio.exacto.plata.toFixed(2)}% · ${oficio.exacto.oro.toFixed(2)}%)`);
 
-// Solo el básico es gratis: los de plata y oro se compran o se ganan.
-await page.evaluate(() => { S.gratis = {}; S.sobres = []; ir('sobres'); });
-comprobar(await page.locator('[data-reloj]').count() === 1,
-  'solo hay un sobre gratis, el básico');
-const idBasico = await page.evaluate(() => GRATIS.find(g => TIPOS_SOBRE[g.tipo].unico).id);
-comprobar(await page.locator(`[data-a="abrirgratis"][data-g="${idBasico}"]`).count() === 1,
-  'el básico tiene botón de abrir, no de reclamar');
-comprobar(await page.locator(`[data-a="gratis"][data-g="${idBasico}"]`).count() === 0,
-  'y ya no se puede reclamar para guardarlo');
-await page.locator(`[data-a="abrirgratis"][data-g="${idBasico}"]`).click();
-const directo = await page.evaluate(() => ({ vista, guardados: S.sobres.length,
-  enTanda: tmp.ap ? tmp.ap.items.length : 0 }));
-comprobar(directo.vista === 'apertura', 'abrir el básico lleva directo a la apertura');
-comprobar(directo.guardados === 0, 'y el sobre no pasa por "Tus sobres"');
-comprobar(directo.enTanda === 9, 'con sus 9 cartas');
+/* ── La Tienda y el flujo de apertura ──────────────────────────────────
+   Un solo camino para los tres sobres: fila → pantalla del sobre → toque encima del
+   sobre → walkout → resumen. Sin atajos y sin abrir varios de golpe. */
+console.log('\n2c-ter. La tienda y el flujo de apertura');
+const tienda = await page.evaluate(() => {
+  S.gratis = {}; S.sobres = []; S.divisa = 1000; S.coleccion = [];
+  ir('tienda');
+  const filas = [...document.querySelectorAll('[data-a="versobre"]')];
+  return {
+    sub: tmp.sub || 'comprar',
+    orden: filas.map(f => f.dataset.t),
+    // ninguna fila lleva un botón dentro: la fila ENTERA es el botón
+    botonesDentro: filas.reduce((n, f) => n + f.querySelectorAll('button,[data-a]').length, 0),
+    // el gratis lleva su 0 donde los otros llevan el precio
+    gratisCon0: /(^|\s)0(\s|$)/.test(filas.find(f => f.dataset.t === 'basico')
+      .querySelector('.precio').textContent.trim()),
+    precios: filas.map(f => f.querySelector('.precio').textContent.trim()),
+    // "Mis sobres" vacío lo dice y enlaza a Comprar
+    vacio: (() => { tmp.sub = 'mios'; render();
+      const t = document.querySelector('#app').textContent;
+      const enlace = !!document.querySelector('[data-a="sub"][data-v="comprar"].btn, .btn[data-a="sub"]');
+      tmp.sub = 'comprar'; render();
+      return { dice: /no tienes ning/i.test(t), enlace }; })(),
+  };
+});
+comprobar(tienda.orden.join(',') === 'basico,plata,oro',
+  `las filas van básico, plata y oro (${tienda.orden.join(', ')})`);
+comprobar(tienda.botonesDentro === 0,
+  'la fila entera es el botón: no hay ningún Reclamar ni Abrir dentro');
+comprobar(tienda.gratisCon0,
+  `el gratis lleva 0 donde los otros llevan su precio (${tienda.precios.join(' · ')})`);
+comprobar(tienda.vacio.dice && tienda.vacio.enlace,
+  'sin sobres guardados, "Mis sobres" lo dice y enlaza a Comprar');
+
+/* Entrar a mirar un sobre no puede costar nada, y salir sin abrir tampoco. */
+const mirar = await page.evaluate(() => {
+  S.divisa = 1000; S.sobres = [{ tipo: 'oro' }]; S.coleccion = [];
+  ir('tienda');
+  const est = () => ({ div: S.divisa, sobres: S.sobres.length, cartas: S.coleccion.length });
+  const antes = est();
+  document.querySelector('[data-a="versobre"][data-t="oro"]').click();
+  const dentro = { vista, ...est() };
+  document.querySelector('[data-a="volvertienda"]').click();
+  return { antes, dentro, fuera: { vista, ...est() } };
+});
+comprobar(mirar.dentro.vista === 'sobre', 'la fila lleva a la pantalla del sobre');
+comprobar(JSON.stringify(mirar.antes) === JSON.stringify(
+    { div: mirar.dentro.div, sobres: mirar.dentro.sobres, cartas: mirar.dentro.cartas }),
+  'y entrar ahí no cobra ni consume nada');
+comprobar(mirar.fuera.vista === 'tienda' && mirar.fuera.div === 1000 && mirar.fuera.sobres === 1,
+  'salir sin abrir devuelve a la tienda sin haber cobrado ni gastado el sobre');
+
+/* El cobro va en el toque sobre el sobre, y primero se gasta lo que ya está pagado. */
+const cobro = await page.evaluate(() => {
+  S.divisa = 1000; S.sobres = [{ tipo: 'oro' }]; S.coleccion = [];
+  ir('tienda');
+  document.querySelector('[data-a="versobre"][data-t="oro"]').click();
+  document.querySelector('[data-a="abrirsobre"]').click();
+  const conGuardado = { vista, div: S.divisa, sobres: S.sobres.length, cartas: S.coleccion.length };
+  pararAviso(); soltarCarta(); tmp.ap.resumen = true; render();
+  const bs = [...document.querySelectorAll('#app .btn')].map(b => b.textContent.trim());
+  // "Abrir otro" devuelve a la pantalla del sobre, NO abre
+  document.querySelector('[data-a="versobre"]').click();
+  const trasOtro = { vista, div: S.divisa, cartas: S.coleccion.length };
+  // ahora ya no queda guardado: se cobran las monedas
+  document.querySelector('[data-a="abrirsobre"]').click();
+  const pagando = { vista, div: S.divisa, cartas: S.coleccion.length };
+  pararAviso();
+  return { conGuardado, bs, trasOtro, pagando };
+});
+comprobar(cobro.conGuardado.sobres === 0 && cobro.conGuardado.div === 1000,
+  'con un sobre guardado se gasta el sobre, no las monedas');
+comprobar(cobro.conGuardado.cartas === 9, 'y entrega sus 9 cartas');
+comprobar(cobro.bs.some(b => /abrir otro/i.test(b)) && cobro.bs.some(b => /^atr/i.test(b)),
+  `el resumen ofrece Abrir otro y Atrás (${cobro.bs.join(' · ')})`);
+comprobar(cobro.trasOtro.vista === 'sobre' && cobro.trasOtro.cartas === 9,
+  '"Abrir otro" vuelve a la pantalla del sobre sin abrir nada');
+comprobar(cobro.pagando.div === 400 && cobro.pagando.cartas === 18,
+  `sin guardados, el toque sobre el sobre cobra las monedas (${cobro.pagando.div})`);
+
+/* Sin fichas: la fila se lee entera, no responde y no da error. */
+const pobre = await page.evaluate(() => {
+  S.divisa = 0; S.sobres = []; ir('tienda');
+  const f = document.querySelector('[data-a="versobre"][data-t="oro"]');
+  const antes = { div: S.divisa, cartas: S.coleccion.length, vista };
+  f.click();
+  return { apagada: f.classList.contains('apagada'), desactivada: f.disabled,
+    precio: f.querySelector('.precio').textContent.trim(),
+    nombre: /oro/i.test(f.textContent),
+    sigueIgual: vista === antes.vista && S.divisa === antes.div && S.coleccion.length === antes.cartas };
+});
+comprobar(pobre.apagada && pobre.desactivada, 'sin fichas, la fila sale apagada y no responde');
+comprobar(pobre.precio.includes('600') && pobre.nombre,
+  `y se sigue leyendo entera, con su precio (${pobre.precio})`);
+comprobar(pobre.sigueIgual, 'y tocarla no hace nada ni da ningún error');
+
+comprobar(!(await page.evaluate(() => document.body.innerHTML.includes('abrirtodo'))),
+  'no hay ninguna forma de abrir varios sobres de golpe');
+
+// El gratis pasa por el mismo sitio que los demás
+const gratis = await page.evaluate(() => {
+  S.gratis = {}; S.sobres = []; S.divisa = 0; S.coleccion = [];
+  ir('tienda');
+  document.querySelector('[data-a="versobre"][data-t="basico"]').click();
+  const dentro = vista;
+  document.querySelector('[data-a="abrirsobre"]').click();
+  const r = { dentro, vista, cartas: S.coleccion.length, guardados: S.sobres.length };
+  pararAviso(); return r;
+});
+comprobar(gratis.dentro === 'sobre' && gratis.vista === 'apertura',
+  'el gratis pasa por la misma pantalla del sobre que los de pago');
+comprobar(gratis.cartas === 9 && gratis.guardados === 0,
+  'y entrega sus 9 cartas sin pasar por "Mis sobres"');
 
 // Bono de bienvenida
 const bono = await page.evaluate(() => {
@@ -335,8 +433,10 @@ await page.evaluate(() => { S = estadoNuevo(); for (let i = 0; i < 4; i++) abrir
 
 /* ── 2b. Apertura: la carta grande, un toque, y el sobre entero ────────── */
 console.log('\n2b. Pantalla de apertura');
-await page.evaluate(() => { S.sobres = [{ tipo: 'oro' }, { tipo: 'oro' }]; ir('sobres'); });
-await page.locator('[data-a="abrir"]').first().click();
+await page.evaluate(() => { S.sobres = [{ tipo: 'oro' }, { tipo: 'oro' }];
+  ir('tienda'); tmp.sub = 'mios'; render(); });
+await page.locator('[data-a="versobre"][data-t="oro"]').click();
+await page.locator('[data-a="abrirsobre"]').click();
 comprobar(await page.evaluate(() => vista === 'apertura'), 'abrir lleva a la pantalla de apertura');
 comprobar(await page.locator('[data-a="salirapertura"]').count() === 1, 'hay botón de atrás');
 
@@ -512,10 +612,12 @@ if (ventana) await page.setViewportSize(ventana);
 const guardadasAlEntrar = await page.evaluate(() => S.coleccion.length);
 await page.locator('[data-a="salirapertura"]').click();           // se sale a medias
 const trasSalir = await page.evaluate(() => ({ vista, cartas: S.coleccion.length }));
-comprobar(trasSalir.vista === 'sobres', 'el atrás sale de la apertura');
+comprobar(trasSalir.vista === 'tienda', 'el atrás sale de la apertura a la tienda');
 comprobar(trasSalir.cartas === guardadasAlEntrar, 'salir a medias no pierde ninguna carta');
 
-await page.locator('[data-a="abrir"]').first().click();
+await page.evaluate(() => { tmp.sub = 'mios'; render(); });
+await page.locator('[data-a="versobre"][data-t="oro"]').click();
+await page.locator('[data-a="abrirsobre"]').click();
 // Un toque salta el aviso y suelta la carta; el siguiente abre el sobre entero.
 // Son dos toques en total y ninguno es de trámite: el primero se puede no dar.
 await page.locator('.apertura').click();
@@ -529,20 +631,28 @@ comprobar(resumen.enResumen, 'un toque en la carta lleva al sobre entero');
 comprobar(resumen.mostradas === resumen.total && resumen.total > 0,
   'el resumen enseña todas las cartas del sobre');
 
-/* Desde la apertura solo se encadena lo que ya tienes guardado. El básico se reclama
-   en la pantalla de sobres y en ningún otro sitio. */
+/* "Abrir otro" solo sale si de verdad queda otro: uno guardado, el gratis listo, o dinero
+   para pagarlo. Y nunca abre desde aquí — devuelve a la pantalla del sobre. */
 const encadena = await page.evaluate(() => {
-  // con uno guardado del mismo tipo, sí se puede encadenar
-  S.sobres = [{ tipo: 'oro' }]; abrirTanda(abrirSobre('oro'), 'oro'); tmp.ap.resumen = true; render();
-  const propios = document.querySelectorAll('[data-a="abrir"]').length;
-  // tras un básico, con la mochila vacía, no se ofrece nada
-  S.sobres = []; abrirTanda(abrirSobre('basico'), 'basico'); tmp.ap.resumen = true; render();
-  const trasBasico = document.querySelectorAll('[data-a="abrirgratis"],[data-a="abrir"]').length;
-  return { propios, trasBasico };
+  const otros = () => [...document.querySelectorAll('[data-a="versobre"]')].length;
+  // con uno guardado del mismo tipo, sí se ofrece
+  S.divisa = 0; S.sobres = [{ tipo: 'oro' }];
+  abrirTanda(abrirSobre('oro'), 'oro'); tmp.ap.resumen = true; render();
+  const guardado = otros();
+  // sin guardados y sin dinero, no se ofrece nada
+  S.sobres = []; S.divisa = 0;
+  abrirTanda(abrirSobre('oro'), 'oro'); tmp.ap.resumen = true; render();
+  const seco = otros();
+  // con dinero suficiente, otra vez sí
+  S.divisa = 5000;
+  abrirTanda(abrirSobre('oro'), 'oro'); tmp.ap.resumen = true; render();
+  const conDinero = otros();
+  pararAviso();
+  return { guardado, seco, conDinero };
 });
-comprobar(encadena.propios >= 1, 'con sobres guardados sí ofrece abrir otro de los tuyos');
-comprobar(encadena.trasBasico === 0,
-  'pero tras un básico no ofrece encadenar otro: el gratis solo se reclama en Sobres');
+comprobar(encadena.guardado >= 1, 'con otro sobre guardado se ofrece abrir otro');
+comprobar(encadena.seco === 0, 'sin guardados y sin dinero no se ofrece: solo queda Atrás');
+comprobar(encadena.conDinero >= 1, 'y con dinero de sobra vuelve a ofrecerse');
 
 /* El texto de la carta se mide contra su propio ancho, así que tiene que caer en su
    sitio a cualquier tamaño. Esto es lo que se rompía en la rejilla del resumen. */
@@ -744,10 +854,56 @@ const vertical = await page.evaluate(huecos => {
 comprobar(vertical.length === 0,
   `y la tinta cae dentro de su hueco del marco (${vertical.slice(0, 3).join(' · ') || 'ranking, nombre, récord y los seis números'})`);
 
+/* Ninguna pantalla puede quedarse sin puerta. Se recorre la navegación entera desde la
+   barra y el engranaje, y lo que no se alcance por enlace tiene que alcanzarse por una
+   acción concreta — y aquí se nombra cuál. Una pantalla que el juego sabe pintar pero a
+   la que no se llega es código muerto que parece vivo. */
+console.log('\n2c-quater. Todas las pantallas tienen puerta');
+const puertas = await page.evaluate(() => {
+  const guardado = { vista, tmp, coleccion: S.coleccion.slice(), plantilla: { ...S.plantilla } };
+  const l = ROSTER.filter(c => c.alineable);
+  S.coleccion = []; S.plantilla = {};
+  DIVISIONES.forEach((d, i) => { const c = l.find(x => x.division === d.id);
+    if (c) { const iid = 'w' + i; S.coleccion.push({ iid, cid: c.id }); S.plantilla[d.id] = iid; } });
+  S.divisa = 5000; S.sobres = [{ tipo: 'oro' }];
+
+  const vistos = new Set(), cola = ['inicio', 'tienda', 'retos', 'club', 'ajustes'];
+  while (cola.length) {
+    const v = cola.shift(); if (vistos.has(v)) continue; vistos.add(v);
+    try { ir(v); } catch (e) { continue; }
+    for (const e of document.querySelectorAll('[data-nav]'))
+      if (!vistos.has(e.dataset.nav)) cola.push(e.dataset.nav);
+  }
+  // Las que no se alcanzan por enlace se alcanzan por una acción. Se comprueba una a una.
+  const porAccion = {};
+  ir('tienda');
+  document.querySelector('[data-a="versobre"][data-t="oro"]').click();
+  porAccion.sobre = vista === 'sobre';
+  document.querySelector('[data-a="abrirsobre"]').click();
+  porAccion.apertura = vista === 'apertura';
+  pararAviso();
+  ir('jugar');
+  document.querySelector('[data-a="jugar"]').click();
+  porAccion.partida = vista === 'partida';
+  P = null; ir('directo');
+  // online se alcanza al entrar en una sala; aquí basta con que el juego sepa llevarte
+  porAccion.online = typeof vOnline === 'function' &&
+    !!document.querySelector('[data-a="crearsala"],[data-a="entrarsala"],#codigosala');
+
+  S.coleccion = guardado.coleccion; S.plantilla = guardado.plantilla;
+  vista = guardado.vista; tmp = guardado.tmp; render();
+  return { porEnlace: [...vistos].sort(), porAccion };
+});
+comprobar(puertas.porEnlace.length >= 19,
+  `${puertas.porEnlace.length} pantallas se alcanzan navegando desde la barra y el engranaje`);
+const sinPuerta = Object.entries(puertas.porAccion).filter(([, ok]) => !ok).map(([k]) => k);
+comprobar(sinPuerta.length === 0,
+  `y las cuatro que no son de menú tienen su acción (${sinPuerta.join(', ') || 'sobre, apertura, partida y online'})`);
+
 /* ── 2c. Sobre básico ilimitado ───────────────────────────────────────── */
 console.log('\n2c. Sobre básico ilimitado');
 const ilim = await page.evaluate(() => {
-  S.gratis = {}; S.sobres = []; ir('sobres');
+  S.gratis = {}; S.sobres = []; ir('tienda');
   const g = GRATIS.find(x => x.espera === 0);
   let cartas = 0;
   for (let i = 0; i < 5; i++) {
@@ -934,9 +1090,15 @@ comprobar(!veredictos.muerto.ok && /No contesta/i.test(veredictos.muerto.txt),
   'una dirección muerta se explica con qué comprobar');
 
 // los dos modos están separados y no se confunden
-const menu = await page.evaluate(() => { ir('mas'); return document.querySelector('#app').textContent; });
-comprobar(/Partida en directo/.test(menu) && /Retar plantillas/.test(menu),
-  'el menú separa jugar en directo de retar plantillas');
+const menu = await page.evaluate(() => {
+  ir('jugar'); const j = document.querySelector('#app').textContent;
+  ir('inicio'); const i = document.querySelector('#app').textContent;
+  return { j, i };
+});
+comprobar(/Partida en directo/.test(menu.j) && /Contra la IA/.test(menu.j),
+  'Jugar separa el directo de la partida contra la IA');
+comprobar(/RETAR A UN AMIGO/i.test(menu.i),
+  'y retar a un amigo es su propia fila en Inicio, no se confunde con jugar');
 const avisoAmigos = await page.evaluate(() => { ir('amigos'); return document.querySelector('#app').textContent; });
 comprobar(/no es jugar a la vez/i.test(avisoAmigos),
   'la pantalla de retar plantillas avisa de que no es en directo');
@@ -1110,7 +1272,9 @@ comprobar(def.elOtro.cambios === 0, 'y solo al que le toca defender, no al que d
 
 /* ── 2h. Declarar tocando cartas, y el defensor manda la suya ──────────── */
 console.log('\n2h. Declarar por carta y confirmación del defensor');
-await page.evaluate(() => { vista = 'inicio'; render(); });
+// Inicio → JUGAR → Contra la IA: el camino que hace el jugador de verdad
+await page.evaluate(() => { ir('inicio'); });
+await page.locator('[data-nav="jugar"]').click();
 await page.locator('[data-a="jugar"]').click();
 await page.locator('[data-rol="declarar"]').click();
 for (let i = 0; i < 40; i++) {
@@ -1195,9 +1359,21 @@ comprobar(tut.legalJ && tut.legalR, 'las dos plantillas del tutorial son legales
 comprobar(tut.vet && tut.esp && tut.cam, 'la tuya lleva Veterano, Especialista y Camaleón garantizados');
 comprobar(tut.inc, 'y la del sparring lleva Incómodo, para que lo veas de verdad');
 
-await page.evaluate(() => { vista = 'inicio'; S.tutorialHecho = false; render(); });
-comprobar(await page.locator('[data-a="tutorial"]').count() > 0,
-  'el tutorial se ofrece en el inicio mientras no se haya hecho');
+/* El tutorial ya no cuelga de Inicio: vive dentro de "Aprende a jugar". Mientras no se
+   haya jugado, esa mitad va en rojo y el tutorial es lo primero de dentro. */
+const sinHacer = await page.evaluate(() => {
+  S.tutorialHecho = false; ir('inicio');
+  const mitad = document.querySelector('[data-nav="aprende"]');
+  const roja = mitad && mitad.classList.contains('alerta');
+  ir('aprende');
+  const filas = [...document.querySelectorAll('.fila')];
+  return { roja, primera: filas[0] && filas[0].dataset.a === 'tutorial',
+           enInicio: (ir('inicio'), document.querySelectorAll('[data-a="tutorial"]').length) };
+});
+comprobar(sinHacer.roja, 'sin hacer el tutorial, "Aprende a jugar" va en rojo en Inicio');
+comprobar(sinHacer.primera, 'y dentro, el tutorial es la primera línea');
+comprobar(sinHacer.enInicio === 0, 'pero no cuelga de Inicio: Inicio solo lleva a la sección');
+await page.evaluate(() => { ir('aprende'); });
 await page.locator('[data-a="tutorial"]').first().click();
 const arranque = await page.evaluate(() => ({
   fase: P.fase, tut: !!P.tutorial,
@@ -1243,9 +1419,20 @@ comprobar(finT.fase === 'fin', `la partida tutorial se puede terminar jugando ($
 comprobar(avisos >= 8, `el entrenador explica los conceptos por el camino (${avisos} avisos)`);
 comprobar(finT.premio && finT.hecho, 'al acabar se marca como hecho y se entrega la recompensa');
 comprobar(finT.partidas === 0, 'y NO cuenta en tu registro de partidas: se juega con plantilla prestada');
-await page.evaluate(() => { vista = 'inicio'; render(); });
-comprobar(await page.locator('[data-a="tutorial"]').count() === 0,
-  'hecho el tutorial, el inicio deja de ofrecerlo');
+/* Hecho el tutorial: deja el rojo, las reglas pasan delante — y el tutorial NO
+   desaparece, se puede repetir. */
+const yaHecho = await page.evaluate(() => {
+  ir('inicio');
+  const mitad = document.querySelector('[data-nav="aprende"]');
+  const roja = mitad && mitad.classList.contains('alerta');
+  ir('aprende');
+  const filas = [...document.querySelectorAll('.fila')];
+  return { roja, primeraEsReglas: filas[0] && filas[0].dataset.nav === 'reglas',
+           tutorialSigue: filas.some(f => f.dataset.a === 'tutorial') };
+});
+comprobar(!yaHecho.roja, 'hecho el tutorial, "Aprende a jugar" deja el rojo');
+comprobar(yaHecho.primeraEsReglas, 'y las reglas pasan a ser la primera línea');
+comprobar(yaHecho.tutorialSigue, 'pero el tutorial sigue ahí, para repetirlo');
 comprobar(await page.evaluate(() => { vista = 'reglas'; render();
   return document.body.textContent.includes('Camaleón') && document.body.textContent.includes('55 de cada 100'); }),
   'y las reglas completas siguen a mano en su pantalla');

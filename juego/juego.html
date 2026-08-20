@@ -49,6 +49,50 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 #top .logo span{color:var(--acc)}
 .res{display:flex;align-items:center;gap:4px;font-size:13px;font-weight:650;
   background:var(--bg3);padding:5px 9px;border-radius:7px;white-space:nowrap}
+/* El engranaje no ocupa alto propio: cabe en la fila que ya existía. Cada píxel de
+   cromo sale del tamaño de la carta. */
+#top .engranaje{font-size:16px;line-height:1;padding:5px 4px 5px 2px;flex:none}
+
+/* Sub-pestañas dentro de una sección. Se apoyan en la misma fila, sin caja: una barra
+   más sería otra franja de alto comida a las cartas. */
+.subtabs{display:flex;gap:16px;border-bottom:1px solid var(--line);margin:0 0 10px}
+.subtabs button{font-family:var(--titulo);letter-spacing:.04em;text-transform:uppercase;
+  font-size:12.5px;font-weight:650;color:var(--dim2);padding:0 0 7px;border-bottom:2px solid transparent}
+.subtabs button.on{color:var(--txt);border-bottom-color:var(--acc)}
+
+/* La FILA: el patrón de toda la navegación nueva. La fila entera es el botón — no lleva
+   un botón dentro. Un botón dentro de una fila que también responde al toque son dos
+   blancos para lo mismo, y el jugador nunca sabe cuál toca. */
+.fila{display:flex;align-items:center;gap:11px;width:100%;text-align:left;
+  background:var(--bg2);border:1px solid var(--line);border-radius:11px;
+  padding:11px 12px;margin-bottom:8px}
+.fila:active{transform:scale(.992);filter:brightness(1.12)}
+.fila .ic{flex:none;font-size:23px;line-height:1}
+.fila .cu{flex:2;min-width:0}
+.fila .cu b{font-family:var(--titulo);letter-spacing:.02em;font-size:15px}
+.fila .cu .sub{font-size:11.5px;line-height:1.35}
+.fila .der{flex:none;display:flex;align-items:center;gap:7px;color:var(--dim2)}
+.fila .precio{font-family:var(--titulo);font-weight:700;font-size:14px;color:var(--txt);
+  background:var(--bg3);border-radius:7px;padding:5px 9px;white-space:nowrap}
+/* Sin fichas: se sigue leyendo entera y con su precio, pero no responde. */
+.fila.apagada{opacity:.42}
+.fila.apagada:active{transform:none;filter:none}
+.fila.alerta{border-color:var(--acc)}
+.fila.grande{padding:15px 13px}
+.fila.grande .cu b{font-size:18px}
+/* Dos mitades exactamente iguales. */
+.mitades{display:flex;gap:8px;margin-bottom:8px}
+.mitades .fila{flex:1 1 0;min-width:0;margin:0}
+
+/* El sobre de la pantalla de apertura. Grande y solo: lo único que se puede tocar ahí. */
+.sobre-toque{display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:10px;width:100%;background:var(--bg2);border:1px solid var(--line);border-radius:14px;
+  padding:26px 14px;margin-bottom:10px}
+.sobre-toque:active{transform:scale(.985);filter:brightness(1.15)}
+.sobre-toque[disabled]{opacity:.45}
+.sobre-arte{font-size:74px;line-height:1;filter:drop-shadow(0 6px 14px rgba(0,0,0,.5))}
+.sobre-pie{font-family:var(--titulo);letter-spacing:.06em;text-transform:uppercase;
+  font-size:12px;color:var(--dim)}
 
 /* ── navegación ── */
 #nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:var(--bg2);
@@ -436,6 +480,7 @@ th{color:var(--dim2);font-size:11px;text-transform:uppercase;letter-spacing:.04e
   <div class="logo">JAULA <span>ABIERTA</span></div>
   <div class="res" id="r-div">🪙 <span>0</span></div>
   <div class="res" id="r-fic">🎟️ <span>0</span></div>
+  <button class="engranaje" data-nav="ajustes" aria-label="Ajustes">⚙️</button>
 </div>
 <div id="app"></div>
 <div id="nav"></div>
@@ -1099,13 +1144,21 @@ function cartaHTML(c,o={}){
   </div>`;
 }
 
+/* Cuatro pestañas, y cada una es un SITIO, no una pantalla: dentro de cada una viven
+   varias. Antes eran cinco y dos de ellas —Colección y Plantilla— eran pantallas sueltas
+   ascendidas a pestaña, mientras el cajón de "Más" escondía otras ocho. */
+const PESTANAS=[
+  ['tienda', '🛒', 'Tienda', ['apertura','sobre']],
+  ['inicio', '🏠', 'Inicio', ['jugar','aprende','logros','reglas','directo','amigos','online','partida']],
+  ['retos',  '🏆', 'Retos',  ['reciclaje']],
+  ['club',   '🛡️', 'Club',   ['plantilla','coleccion','intercambio','sets']],
+];
 function navHTML(){
-  const items=[['inicio','🏠','Inicio'],['sobres','🎁','Sobres'],['coleccion','🗂️','Colección'],
-    ['plantilla','📋','Plantilla'],['mas','⋯','Más']];
   const pend=S.sobres.length+nGratisListos();
-  return items.map(([v,i,t])=>{
-    const b=v==='sobres'&&pend?`<span class="badge">${pend}</span>`:'';
-    const on=vista===v||(v==='sobres'&&vista==='apertura');
+  return PESTANAS.map(([v,i,t,dentro])=>{
+    // La insignia va en Tienda, que es de donde ahora se abren los sobres.
+    const b=v==='tienda'&&pend?`<span class="badge">${pend}</span>`:'';
+    const on=vista===v||dentro.includes(vista);
     return `<button data-nav="${v}" class="${on?'on':''}"><span class="ic">${i}</span>${t}${b}</button>`;
   }).join('');
 }
@@ -1117,10 +1170,13 @@ function render(){
   $('#nav').innerHTML = sinNav?'':navHTML();
   $('#nav').style.display = sinNav?'none':'flex';
   document.body.style.paddingBottom = sinNav?'12px':'64px';
-  const f={inicio:vInicio,sobres:vSobres,coleccion:vColeccion,plantilla:vPlantilla,
-    mas:vMas,reciclaje:vReciclaje,sets:vSets,retos:vRetos,intercambio:vIntercambio,
-    partida:vPartida,notas:vNotas,reglas:vReglas,apertura:vApertura,amigos:vAmigos,
-    online:vOnline,directo:vDirecto}[vista]||vInicio;
+  const f={inicio:vInicio,tienda:vTienda,retos:vRetosTab,club:vClub,
+    sobre:vSobre,apertura:vApertura,
+    jugar:vJugar,aprende:vAprende,logros:vLogros,reglas:vReglas,
+    ajustes:vAjustes,redes:vRedes,notas:vNotas,
+    coleccion:vColeccion,plantilla:vPlantilla,intercambio:vIntercambio,sets:vSets,
+    reciclaje:vReciclaje,retosdetalle:vRetos,
+    partida:vPartida,amigos:vAmigos,online:vOnline,directo:vDirecto}[vista]||vInicio;
   $('#app').innerHTML=f();
   $('#app').classList.remove('flash'); void $('#app').offsetWidth; $('#app').classList.add('flash');
   ajustarRejillas();    // antes de medir: cambia lo anchas que son las cartas
@@ -1187,56 +1243,181 @@ addEventListener('resize', ()=>{ ajustarRejillas(); medirCartas(); });
 function ir(v){ pararAviso(); vista=v; tmp={}; window.scrollTo(0,0); render(); }
 
 /* ── INICIO ── */
+/* ── INICIO ──
+   Cuatro filas y nada más: jugar, retar, y una partida en dos para aprender y logros.
+   La tabla de márgenes ya no vive aquí — es material de consulta, y su sitio es Reglas.
+   Inicio es de donde se sale a jugar, no un manual. */
 function vInicio(){
   const ok=plantillaCompleta();
-  // Ya no hay media de plantilla: lo que dice de qué está hecha es cuántos rankeados
-  // llevas, que además es lo que el jugador persigue.
   const cartasPl=ok?DIVISIONES.map(d=>cartaDe(S.plantilla[d.id])):[];
-  const nOro=cartasPl.filter(c=>c.rareza==='oro').length;
   const nRank=cartasPl.filter(c=>['campeon','top5','top10','top15'].includes(c.estatus)).length;
-  const listos=nGratisListos();
-  // El tutorial va lo primero mientras no se haya hecho: es la puerta de entrada, y no
-  // exige plantilla completa porque juega con uno prestada — se puede hacer al instalar.
-  const tuto=S.tutorialHecho?'':`<div class="card-panel" style="border-color:#2f6b4d;background:#16211c">
-      <div class="row" style="align-items:center"><div style="flex:none;font-size:26px">🎓</div>
-      <div style="flex:2"><b>Aprende a jugar</b>
-        <div class="sub">Una partida guiada, con plantilla prestada. Te explica las reglas mientras
-        juegas y al terminar te llevas 🪙 250 y un sobre de oro.</div></div></div>
-      <button class="btn sm" data-a="tutorial" style="width:100%;margin-top:9px">Empezar el tutorial</button>
-    </div>`;
-  return tuto+`<div class="card-panel center" style="padding:20px 14px">
+  const nOro=cartasPl.filter(c=>c.rareza==='oro').length;
+  const hechos=logros().filter(l=>l.hecho).length, total=logros().length;
+  return `<div class="card-panel center" style="padding:16px 14px;margin-bottom:9px">
       <div class="tiny">TU PLANTILLA</div>
-      <div style="font-size:44px;font-weight:800;letter-spacing:-.04em;line-height:1">
-        ${ok?nRank:'—'}<span style="font-size:19px;color:var(--dim2)"> /11</span></div>
-      <div class="sub">${ok?`rankeados · ${nOro} oros`:'sin completar'}</div>
-      <div class="sub">${S.victorias} victorias de ${S.partidas} partidas</div>
+      <div style="font-size:38px;font-weight:800;letter-spacing:-.04em;line-height:1.05">
+        ${ok?nRank:'—'}<span style="font-size:17px;color:var(--dim2)"> /11</span></div>
+      <div class="sub">${ok?`rankeados · ${nOro} oros`:'sin completar'} · ${S.victorias} de ${S.partidas} partidas</div>
     </div>
-    ${ok?'':`<div class="card-panel" style="border-color:var(--warn)">
-      <b>Te faltan divisiones por cubrir.</b><div class="sub">Necesitas una carta alineable en las 11 divisiones para poder jugar. Abre sobres o revisa la plantilla.</div></div>`}
-    <button class="btn" data-a="jugar" ${ok?'':'disabled'} style="padding:15px;font-size:16px">🥊 Jugar contra la IA</button>
-    <div class="divider"></div>
-    <button class="btn sec mb" data-nav="directo" ${ok?'':'disabled'}>
-      🟢 Partida en directo — los dos a la vez</button>
-    <button class="btn sec mb" data-nav="amigos" ${ok?'':'disabled'}>
-      👥 Retar la plantilla de un amigo${S.amigos.length?` (${S.amigos.length})`:''}</button>
-    <button class="btn sec mb" data-nav="sobres">
-      🎁 Sobres${listos?` — ${listos} gratis listo${listos>1?'s':''}`:S.sobres.length?` — ${S.sobres.length} sin abrir`:''}</button>
-    <div class="card-panel">
-      <h3>Cómo se gana</h3>
-      <div class="sub">Se juegan 6 duelos. En cada uno se declara <b>división + stat</b>, y la stat
-      se gasta para los dos. Gana el primero que llegue a 4. Si acaba empatado, decide quién tiene
-      <b>más finishes</b>; y solo si también van iguales, un duelo de desempate.</div>
-      <div class="divider"></div>
-      <table><tr><th>Margen</th><th>Resultado</th></tr>
-      <tr><td>10 o más</td><td>Finish</td></tr>
-      <tr><td>4 a 9</td><td>Decisión</td></tr>
-      <tr><td>1 a 3</td><td>Reñido — 55/45</td></tr>
-      <tr><td>0</td><td>Empate — moneda al aire 50/50</td></tr></table>
-      <button class="btn gho sm" data-nav="reglas" style="width:100%;margin-top:9px">📖 Reglas completas</button>
+    ${ok?'':`<div class="fila apagada" style="opacity:1;border-color:var(--warn)">
+      <span class="ic">⚠️</span><span class="cu"><b>Te faltan divisiones</b>
+      <span class="sub" style="display:block">Necesitas una carta alineable en las 11 para poder jugar.</span></span></div>`}
+    <button class="fila grande ${ok?'':'apagada'}" ${ok?'':'disabled'} data-nav="jugar">
+      <span class="ic">🥊</span><span class="cu"><b>JUGAR</b>
+      <span class="sub" style="display:block">En directo o contra la IA</span></span>
+      <span class="der">›</span></button>
+    <button class="fila grande ${ok?'':'apagada'}" ${ok?'':'disabled'} data-nav="amigos">
+      <span class="ic">👥</span><span class="cu"><b>RETAR A UN AMIGO</b>
+      <span class="sub" style="display:block">Su plantilla, por código${S.amigos.length?` · ${S.amigos.length} guardado${S.amigos.length>1?'s':''}`:''}</span></span>
+      <span class="der">›</span></button>
+    <div class="mitades">
+      <button class="fila ${S.tutorialHecho?'':'alerta'}" data-nav="aprende">
+        <span class="ic">🎓</span><span class="cu"><b>Aprende a jugar</b>
+        <span class="sub" style="display:block">${S.tutorialHecho?'Reglas y tutorial':'Empieza por aquí'}</span></span></button>
+      <button class="fila" data-nav="logros">
+        <span class="ic">🏅</span><span class="cu"><b>Logros</b>
+        <span class="sub" style="display:block">${hechos} de ${total}</span></span></button>
     </div>`;
 }
 
+/* Elegir con quién se juega. Antes eran dos botones sueltos en Inicio; ahora Inicio dice
+   JUGAR y aquí se decide contra quién, que es la pregunta de verdad. */
+function vJugar(){
+  const ok=plantillaCompleta();
+  return `<div class="pcab"><h2>Jugar</h2></div>
+    <button class="fila grande ${ok?'':'apagada'}" ${ok?'':'disabled'} data-nav="directo">
+      <span class="ic">🟢</span><span class="cu"><b>Partida en directo</b>
+      <span class="sub" style="display:block">Los dos a la vez, por código de sala</span></span>
+      <span class="der">›</span></button>
+    <button class="fila grande ${ok?'':'apagada'}" ${ok?'':'disabled'} data-a="jugar">
+      <span class="ic">🤖</span><span class="cu"><b>Contra la IA</b>
+      <span class="sub" style="display:block">Sin conexión, cuando quieras</span></span>
+      <span class="der">›</span></button>
+    <button class="btn sec" data-nav="inicio">Atrás</button>`;
+}
+
+/* Aprende a jugar: el tutorial y las reglas, en un sitio. Mientras el tutorial no se haya
+   jugado va primero; después pasan las reglas delante, pero el tutorial NO desaparece —
+   se puede repetir, y sigue sin contar en el registro de partidas. */
+function vAprende(){
+  const tuto=`<button class="fila ${S.tutorialHecho?'':'alerta'}" data-a="tutorial">
+      <span class="ic">🎓</span><span class="cu"><b>Partida tutorial</b>
+      <span class="sub" style="display:block">${S.tutorialHecho
+        ? 'Ya la hiciste. Se puede repetir; no cuenta en tu registro.'
+        : 'Guiada, con plantilla prestada. Al acabar: 🪙 250 y un sobre de oro.'}</span></span>
+      <span class="der">›</span></button>`;
+  const reglas=`<button class="fila" data-nav="reglas">
+      <span class="ic">📖</span><span class="cu"><b>Reglas del juego</b>
+      <span class="sub" style="display:block">Todo, con los números exactos</span></span>
+      <span class="der">›</span></button>`;
+  return `<div class="pcab"><h2>Aprende a jugar</h2></div>
+    ${S.tutorialHecho?reglas+tuto:tuto+reglas}
+    <button class="btn sec" data-nav="inicio">Atrás</button>`;
+}
+
+/* ── LOGROS ──
+   Salen de lo que el juego YA mide. No dan recompensa: añadir premios cambiaría la
+   economía, y eso no es una decisión de maquetación. */
+function logros(){
+  const distintas=new Set(S.coleccion.map(x=>x.cid)).size;
+  const tiene=f=>S.coleccion.filter(x=>f(PORID[x.cid])).length;
+  const divs=new Set(S.coleccion.map(x=>PORID[x.cid].division)).size;
+  const L=(n,d,v,meta)=>({n,d,v:Math.min(v,meta),meta,hecho:v>=meta});
+  return [
+    L('Primera sangre','Gana una partida',S.victorias,1),
+    L('Veterano','Juega 10 partidas',S.partidas,10),
+    L('Invicto','Gana 5 partidas',S.victorias,5),
+    L('Plantilla completa','Cubre las 11 divisiones',plantillaCompleta()?11:divs,11),
+    L('Coleccionista','Reúne 50 cartas distintas',distintas,50),
+    L('Archivero','Reúne 150 cartas distintas',distintas,150),
+    L('Cazador de coronas','Consigue un campeón',tiene(c=>c.estatus==='campeon'),1),
+    L('Sala de trofeos','Consigue 5 campeones',tiene(c=>c.estatus==='campeon'),5),
+    L('Élite','Consigue 10 cartas del top 5',tiene(c=>c.estatus==='top5'),10),
+    L('Vuelta al mundo','Cartas de 20 países',new Set(S.coleccion.map(x=>PORID[x.cid].pais).filter(Boolean)).size,20),
+    L('Escuela','Haz la partida tutorial',S.tutorialHecho?1:0,1),
+    L('Reciclador','Acumula 500 fichas',S.fichas,500),
+  ];
+}
+function vLogros(){
+  const l=logros(), hechos=l.filter(x=>x.hecho).length;
+  return `<div class="pcab"><h2>Logros</h2><span class="sub">${hechos} de ${l.length}</span></div>
+    ${l.map(x=>`<div class="fila ${x.hecho?'':'apagada'}" style="${x.hecho?'':'opacity:.62'}">
+      <span class="ic">${x.hecho?'🏅':'🔒'}</span>
+      <span class="cu"><b>${x.n}</b><span class="sub" style="display:block">${x.d}</span>
+        <span class="bar" style="margin-top:5px"><span style="width:${x.v/x.meta*100}%"></span></span></span>
+      <span class="der"><span class="precio">${x.v}/${x.meta}</span></span></div>`).join('')}
+    <button class="btn sec" data-nav="inicio">Atrás</button>`;
+}
+
+/* ── RETOS ── (la pestaña; el reto en curso lo pinta vRetos)
+   El reciclaje vive aquí y no en Club porque compite por lo mismo: las cartas repetidas.
+   Tenerlo en otro sitio obligaba a ir y venir para decidir si una repetida se recicla o
+   se entrega en un reto. */
+function vRetosTab(){
+  const rep=S.coleccion.length-new Set(S.coleccion.map(x=>x.cid)).size;
+  return `<div class="pcab"><h2>Retos</h2></div>
+    <button class="fila grande" data-nav="retosdetalle">
+      <span class="ic">📜</span><span class="cu"><b>Retos</b>
+      <span class="sub" style="display:block">Entrega cartas, gana recompensas</span></span>
+      <span class="der">›</span></button>
+    <button class="fila grande" data-nav="reciclaje">
+      <span class="ic">♻️</span><span class="cu"><b>Reciclaje</b>
+      <span class="sub" style="display:block">Convierte repetidas en fichas${rep?` · tienes ${rep}`:''}</span></span>
+      <span class="der">›</span></button>`;
+}
+
+/* ── CLUB ──
+   Todo lo que es "lo mío": las cartas y lo que se hace con ellas. */
+function vClub(){
+  const distintas=new Set(S.coleccion.map(x=>x.cid)).size;
+  const ok=plantillaCompleta();
+  return `<div class="pcab"><h2>Club</h2></div>
+    <button class="fila grande" data-nav="plantilla">
+      <span class="ic">📋</span><span class="cu"><b>Plantilla</b>
+      <span class="sub" style="display:block">${ok?'Las once, completas':'Sin completar'}</span></span>
+      <span class="der">›</span></button>
+    <button class="fila grande" data-nav="coleccion">
+      <span class="ic">🗂️</span><span class="cu"><b>Colección</b>
+      <span class="sub" style="display:block">${distintas} de ${ROSTER.length} distintas</span></span>
+      <span class="der">›</span></button>
+    <button class="fila grande" data-nav="intercambio">
+      <span class="ic">🤝</span><span class="cu"><b>Sala de intercambio</b>
+      <span class="sub" style="display:block">Trueque puro, cuesta 1 ficha</span></span>
+      <span class="der">›</span></button>
+    <button class="fila grande" data-nav="sets">
+      <span class="ic">🧩</span><span class="cu"><b>Sets de colección</b>
+      <span class="sub" style="display:block">Completa y desbloquea cartas</span></span>
+      <span class="der">›</span></button>`;
+}
+
+/* ── AJUSTES ── detrás del engranaje. */
+function vAjustes(){
+  return `<div class="pcab"><h2>Ajustes</h2></div>
+    <button class="fila" data-a="mudo">
+      <span class="ic">${S.mudo?'🔇':'🔊'}</span>
+      <span class="cu"><b>Sonido</b><span class="sub" style="display:block">${
+        S.mudo?'Apagado':'Encendido — se oye al abrir sobres'}</span></span>
+      <span class="der"><span class="chip ${S.mudo?'':'on'}">${S.mudo?'OFF':'ON'}</span></span></button>
+    <button class="fila" data-nav="redes">
+      <span class="ic">📣</span><span class="cu"><b>Mis redes</b>
+      <span class="sub" style="display:block">Dónde se cuenta lo que va saliendo</span></span>
+      <span class="der">›</span></button>
+    <button class="fila" data-nav="notas">
+      <span class="ic">📝</span><span class="cu"><b>Notas del prototipo</b>
+      <span class="sub" style="display:block">Qué está hecho y qué no</span></span>
+      <span class="der">›</span></button>
+    <div class="divider"></div>
+    <button class="btn gho" data-a="reiniciar">Borrar partida y empezar de cero</button>`;
+}
+
+function vRedes(){
+  return `<div class="pcab"><h2>Mis redes</h2></div>
+    <div class="card-panel sub">Aún no hay nada publicado. Cuando lo haya, los enlaces van aquí.</div>
+    <button class="btn sec" data-nav="ajustes">Atrás</button>`;
+}
+
 /* ── SOBRES ── */
+
 // Lo que de verdad quiere saber quien va a gastarse la divisa es dos cosas: cuántos
 // oros trae y cuánto de improbable es la carta gorda. Las dos se calculan del reparto
 // real, no se escriben a mano, para que no puedan mentir si mañana se retoca la tabla.
@@ -1246,68 +1427,121 @@ const desgloseSobre=t=>{
   return NIVELES.map(n=>`${n.n} ${(T.nivel[n.id]/tot*100).toFixed(n.id==='corona'?2:0)}%`).join(' · ');
 };
 
-function vSobres(){
-  const pend=S.sobres.reduce((a,s)=>{a[s.tipo]=(a[s.tipo]||0)+1;return a},{});
-  const orden=Object.keys(TIPOS_SOBRE);
-  return `<h2>Sobres</h2>
-    <div class="sub mb">Todos traen <b>9 cartas</b> y ninguna se repite dentro del mismo sobre.
-    Lo que cambia de uno a otro es cuántas son de oro y de qué nivel.</div>
+/* ── TIENDA ──
+   Dos sub-pestañas: Comprar y Mis sobres. Comprar es la que abre.
 
-    <h3>🎁 Gratis</h3>
-    ${GRATIS.map(g=>{
-      const T=TIPOS_SOBRE[g.tipo], ok=listoGratis(g), directo=!!T.unico;
-      return `<div class="card-panel" style="${ok?'border-color:var(--acc)':''}">
-        <div class="row" style="align-items:center">
-          <div style="flex:none;font-size:26px">${T.ic}</div>
-          <div style="flex:2"><b>${T.n}</b>
-            ${directo?'<span class="chip on" style="margin-left:5px">ILIMITADO</span>':''}
-            <div class="tiny">${fichaSobre(g.tipo)}</div>
-            <div class="tiny">${desgloseSobre(g.tipo)}</div></div>
-          <button class="btn sm" data-a="${directo?'abrirgratis':'gratis'}" data-g="${g.id}"
-            data-reloj="${g.id}" ${ok?'':'disabled'} style="flex:none;min-width:92px">
-            ${ok?(directo?'Abrir':'Reclamar'):reloj(restaGratis(g))}</button>
-        </div>
-        ${directo?'<div class="tiny" style="margin-top:6px">Se abre al momento, de uno en uno. Es el único sobre gratis.</div>':''}
-      </div>`;
-    }).join('')}
+   TODAS LAS FILAS SON IGUALES, incluida la del gratis: lleva un 0 en el mismo sitio donde
+   las otras llevan su precio. Un sobre gratis con un botón "Reclamar" y los de pago con
+   otro "Comprar" son dos gestos distintos para lo mismo, y el jugador tiene que aprender
+   los dos. Con un 0 en el hueco del precio no hay nada que aprender.
 
-    <h3 style="margin-top:14px">📥 Tus sobres</h3>
+   Y ninguna fila abre nada por sí sola: llevan a la PANTALLA DEL SOBRE. Ahí se ve qué trae
+   y con qué probabilidad, y solo el toque sobre el sobre cobra y abre. */
+function vTienda(){
+  const sub=tmp.sub||'comprar';
+  const cab=`<div class="pcab"><h2>Tienda</h2></div>
+    <div class="subtabs">
+      <button data-a="sub" data-v="comprar" class="${sub==='comprar'?'on':''}">Comprar</button>
+      <button data-a="sub" data-v="mios" class="${sub==='mios'?'on':''}">Mis sobres${S.sobres.length?` (${S.sobres.length})`:''}</button>
+    </div>`;
+  return cab + (sub==='mios' ? tiendaMios() : tiendaComprar());
+}
+
+/* ¿Se puede abrir otro de este tipo? Uno guardado, el gratis disponible, o dinero para
+   pagarlo. Se pregunta en tres sitios y tiene que contestar lo mismo en los tres. */
+function puedeOtro(t){
+  if(S.sobres.some(s=>s.tipo===t)) return true;
+  const g=GRATIS.find(x=>x.tipo===t);
+  if(g&&listoGratis(g)) return true;
+  const T=TIPOS_SOBRE[t];
+  return !!(T&&T.coste>0&&S.divisa>=T.coste);
+}
+
+// El orden es siempre el mismo y sale del coste: básico, plata, oro.
+const ORDEN_TIENDA=()=>Object.keys(TIPOS_SOBRE).sort((a,b)=>TIPOS_SOBRE[a].coste-TIPOS_SOBRE[b].coste);
+
+function tiendaComprar(){
+  return ORDEN_TIENDA().map(k=>{
+    const T=TIPOS_SOBRE[k];
+    const g=GRATIS.find(x=>x.tipo===k);
+    const espera=g&&g.espera>0&&!listoGratis(g);
+    const caro=T.coste>0&&S.divisa<T.coste;
+    const off=caro||espera;
+    return `<button class="fila ${off?'apagada':''}" ${off?'disabled':''} data-a="versobre" data-t="${k}">
+      <span class="ic">${T.ic}</span>
+      <span class="cu"><b>${T.n}</b>
+        <span class="sub" style="display:block">${orosTexto(k)} de ${T.cartas} cartas</span>
+        <span class="sub" style="display:block">${pctCorona(k).toFixed(2)}% de campeón o top 5 · ${
+          (100-T.nivel.oro/Object.values(T.nivel).reduce((a,b)=>a+b,0)*100).toFixed(0)}% de rankeado</span></span>
+      <span class="der"><span class="precio" ${espera?`data-reloj="${g.id}"`:''}>${
+        espera?reloj(restaGratis(g)):(T.coste?'🪙 '+T.coste:'0')}</span></span>
+    </button>`;
+  }).join('');
+}
+
+function tiendaMios(){
+  const hay=S.sobres.reduce((a,s)=>{a[s.tipo]=(a[s.tipo]||0)+1;return a},{});
+  const lista=ORDEN_TIENDA().filter(t=>hay[t]);
+  if(!lista.length) return `<div class="card-panel sub">No tienes ningún sobre guardado.
+    <div style="margin-top:9px"><button class="btn sm" data-a="sub" data-v="comprar">Ir a Comprar</button></div></div>`;
+  return lista.map(t=>{
+    const T=TIPOS_SOBRE[t];
+    return `<button class="fila" data-a="versobre" data-t="${t}" data-mio="1">
+      <span class="ic">${T.ic}</span>
+      <span class="cu"><b>${T.n}</b>
+        <span class="sub" style="display:block">${orosTexto(t)} de ${T.cartas} cartas</span>
+        <span class="sub" style="display:block">${pctCorona(t).toFixed(2)}% de campeón o top 5</span></span>
+      <span class="der"><span class="precio">×${hay[t]}</span></span>
+    </button>`;
+  }).join('');
+}
+
+/* ── LA PANTALLA DEL SOBRE ──
+   El mismo sitio para el gratis, para el comprado y para el del inventario. Enseña el
+   sobre, qué trae y sus probabilidades, y no hace nada más hasta que se toca ENCIMA DEL
+   SOBRE.
+
+   Las fichas se descuentan en ese toque y no al entrar: entrar a mirar qué trae un sobre
+   de oro no puede costar 600. Salir de aquí sin abrir no cobra nada y no gasta el sobre. */
+function vSobre(){
+  const t=tmp.sobre; const T=TIPOS_SOBRE[t]; if(!T) return vTienda();
+  const tengo=S.sobres.filter(s=>s.tipo===t).length;
+  const g=GRATIS.find(x=>x.tipo===t);
+  const gratisListo=g&&listoGratis(g);
+  const puedo=tengo>0||gratisListo||(T.coste>0&&S.divisa>=T.coste);
+  const coste=tengo>0||gratisListo?'':`🪙 ${T.coste}`;
+  const tot=Object.values(T.nivel).reduce((a,b)=>a+b,0);
+  return `<div class="pcab"><h2>${T.n}</h2></div>
+    <button class="sobre-toque" data-a="abrirsobre" data-t="${t}" ${puedo?'':'disabled'}>
+      <span class="sobre-arte">${T.ic}</span>
+      <span class="sobre-pie">${puedo?'Toca el sobre para abrirlo':'No te llega'}${coste?' · '+coste:''}</span>
+    </button>
     <div class="card-panel">
-    ${S.sobres.length?orden.filter(t=>pend[t]).map(t=>`
-      <div class="row" style="align-items:center;margin-bottom:7px">
-        <div style="flex:none;font-size:22px">${TIPOS_SOBRE[t].ic}</div>
-        <div style="flex:2"><b>${TIPOS_SOBRE[t].n}</b> <span class="chip">×${pend[t]}</span></div>
-        <button class="btn sm" data-a="abrir" data-t="${t}" style="flex:none">Abrir</button>
-        ${(pend[t]>1&&!TIPOS_SOBRE[t].unico)?`<button class="btn sm sec" data-a="abrirtodo" data-t="${t}" style="flex:none">Abrir ${pend[t]}</button>`:''}
-      </div>`).join('')
-      :'<div class="sub">No tienes sobres guardados. Se ganan comprándolos o en los retos.</div>'}
+      <b>Qué trae</b>
+      <div class="sub">${T.cartas} cartas, y ninguna se repite dentro del mismo sobre.
+        De ellas, ${orosTexto(t)}.</div>
+      <div class="divider"></div>
+      <b>Con qué probabilidad</b>
+      <table><tr><th>Nivel</th><th style="text-align:right">Por carta de oro</th></tr>
+      ${NIVELES.map(n=>`<tr><td>${n.n}</td><td style="text-align:right">${(T.nivel[n.id]/tot*100).toFixed(n.id==='corona'?2:1)}%</td></tr>`).join('')}
+      </table>
+      <div class="tiny" style="margin-top:7px">Campeón o top 5 en el sobre entero: ${pctCorona(t).toFixed(2)}%</div>
     </div>
-
-    <h3 style="margin-top:14px">🪙 Comprar</h3>
-    ${orden.filter(k=>TIPOS_SOBRE[k].coste>0).map(k=>{
-      const t=TIPOS_SOBRE[k];
-      return `<div class="card-panel"><div class="row" style="align-items:center">
-        <div style="flex:none;font-size:26px">${t.ic}</div>
-        <div style="flex:2"><b>${t.n}</b>
-          <div class="tiny">${fichaSobre(k)}</div>
-          <div class="tiny">${desgloseSobre(k)}</div></div>
-        <button class="btn sm" data-a="comprar" data-t="${k}" ${S.divisa<t.coste?'disabled':''}
-          style="flex:none;min-width:80px">🪙 ${t.coste}</button>
-      </div></div>`;
-    }).join('')}`;
+    <button class="btn sec" data-a="volvertienda">Atrás</button>`;
 }
 
 // Los relojes se refrescan solos sin volver a pintar la pantalla entera:
 // un render completo cada segundo se comería los toques del jugador.
 function actualizarRelojes(){
   for(const g of GRATIS){
-    const b=document.querySelector(`[data-reloj="${g.id}"]`);
-    if(!b) continue;
+    const e=document.querySelector(`[data-reloj="${g.id}"]`);
+    if(!e) continue;
     const ok=listoGratis(g);
-    b.textContent=ok?'Reclamar':reloj(restaGratis(g));
-    b.disabled=!ok;
-    const panel=b.closest('.card-panel');
-    if(panel) panel.style.borderColor=ok?'var(--acc)':'';
+    // El reloj vive en el hueco del precio: mientras corre se lee la cuenta atrás donde
+    // los otros sobres llevan su coste, y al llegar a cero se convierte en el 0 del gratis.
+    e.textContent=ok?'0':reloj(restaGratis(g));
+    const fila=e.closest('.fila');
+    if(fila){ fila.classList.toggle('apagada',!ok); fila.disabled=!ok; }
   }
   const listos=nGratisListos();
   if(actualizarRelojes.ultimo===undefined) actualizarRelojes.ultimo=listos;
@@ -1603,13 +1837,15 @@ function vApertura(){
         return `<div>${cartaHTML(c,{attr:`data-carta="${it.iid}"`})}
           <div class="pie-carta">${a.nuevas.includes(it.iid)?'nueva':'repetida'}</div></div>`;
       }).join('')}</div>
-      ${/* Solo se encadena lo que ya tienes guardado. El básico se reclama en la
-             pantalla de sobres y en ningún otro sitio: encadenarlo aquí convierte
-             la apertura en una máquina de tirar de la palanca sin salir nunca. */
-        S.sobres.some(s=>s.tipo===a.tipo)
-        ? `<button class="btn mb" data-a="abrir" data-t="${a.tipo}">Abrir otro ${TIPOS_SOBRE[a.tipo].n} de los tuyos</button>` : ''}
-      <button class="btn sec mb" data-nav="sobres">Volver a los sobres</button>
-      <button class="btn gho" data-nav="coleccion">Ver la colección</button>`;
+      ${/* "Abrir otro" NO abre nada: devuelve a la PANTALLA DEL SOBRE, con el sobre otra
+             vez ahí para pulsar encima. El mismo gesto siempre, y el cobro siempre en el
+             mismo sitio. Un botón que abriera desde aquí sería un atajo que se salta la
+             pantalla donde se ve qué trae y cuánto cuesta.
+             Solo aparece si de verdad queda otro: uno guardado, el gratis listo, o dinero
+             para pagarlo. Si no, solo Atrás. */
+        puedeOtro(a.tipo)
+        ? `<button class="btn mb" data-a="versobre" data-t="${a.tipo}">Abrir otro ${TIPOS_SOBRE[a.tipo].n}</button>` : ''}
+      <button class="btn sec" data-a="volvertienda">Atrás</button>`;
   }
 
   const N=NIVEL_APERTURA[a.nivel]||NIVEL_APERTURA.oro;
@@ -1748,33 +1984,6 @@ function elegirParaSlot(divId){
 }
 
 /* ── MÁS ── */
-function vMas(){
-  return `<h2>Más</h2>
-    ${[['directo','🟢','Partida en directo','Los dos a la vez, por código de sala'],
-       ['amigos','👥','Retar plantillas','Sin conexión: la IA juega la de tu amigo'],
-       ['reciclaje','♻️','Reciclaje','Convierte repetidas en fichas'],
-       ['sets','🧩','Sets de colección','Completa y desbloquea cartas'],
-       ['retos','📜','Retos','Entrega cartas, gana recompensas'],
-       ['intercambio','🤝','Sala de intercambio','Trueque puro, cuesta 1 ficha'],
-       ['reglas','📖','Reglas del juego','Todo, con los números exactos'],
-       ['notas','📝','Notas del prototipo','Qué está hecho y qué no']]
-      .map(([v,i,t,d])=>`<div class="card-panel" data-nav="${v}" style="cursor:pointer">
-        <div class="row" style="align-items:center"><div style="flex:none;font-size:22px">${i}</div>
-        <div style="flex:2"><b>${t}</b><div class="sub">${d}</div></div><div style="flex:none;color:var(--dim2)">›</div>
-        </div></div>`).join('')}
-    <div class="divider"></div>
-    <div class="card-panel" data-a="mudo" style="cursor:pointer">
-      <div class="row" style="align-items:center">
-        <div style="flex:none;font-size:22px">${S.mudo?'🔇':'🔊'}</div>
-        <div style="flex:2"><b>Sonido</b>
-          <div class="sub">${S.mudo?'Apagado':'Encendido — se oye al abrir sobres'}</div></div>
-        <div style="flex:none"><span class="chip ${S.mudo?'':'on'}">${S.mudo?'OFF':'ON'}</span></div>
-      </div>
-    </div>
-    <div class="divider"></div>
-    <button class="btn gho" data-a="reiniciar">Borrar partida y empezar de cero</button>`;
-}
-
 /* ── RECICLAJE ── */
 function vReciclaje(){
   const sel=tmp.sel||[];
@@ -1860,7 +2069,7 @@ function vRetos(){
       <div style="flex:2"><b>${sel.length} entregadas</b><div class="sub">${ok?'Requisitos cumplidos':'Aún no cumple'}</div></div>
       <button class="btn sm" data-a="entregarreto" ${ok?'':'disabled'}>Entregar</button></div></div>
     <div class="grid">${disp.map(x=>cartaHTML(PORID[x.cid],{attr:`data-rec="${x.iid}"`,sel:sel.includes(x.iid)})).join('')}</div>
-    <div class="divider"></div><button class="btn sec" data-nav="retos" data-a="salirreto">Volver</button>`;
+    <div class="divider"></div><button class="btn sec" data-nav="retosdetalle" data-a="salirreto">Volver</button>`;
 }
 
 /* ── INTERCAMBIO ── */
@@ -1873,7 +2082,7 @@ function vIntercambio(){
     a cambio de oros.</div>
     <button class="btn" data-a="entrarsala" ${S.fichas<1?'disabled':''}>
       ${S.fichas<1?'Necesitas 1 ficha':'Entrar (1 🎟️)'}</button></div>
-    <button class="btn sec" data-nav="mas">Volver</button>`;
+    <button class="btn sec" data-nav="club">Volver</button>`;
   const s=tmp.sala, mias=tmp.ofrezco||[], suyas=tmp.pido||[];
   const val=l=>l.reduce((a,c)=>a+({plata:1,oro:6,top15:14,top10:22,top5:45,campeon:90})[c.estatus],0);
   const bandas=l=>l.map(c=>ORDEN_ESTATUS.indexOf(c.estatus));
@@ -1947,7 +2156,7 @@ function vDirecto(){
           Cómo se publica el servidor</button>
       `:''}
     </div>
-    <button class="btn gho" data-nav="mas">Volver</button>`;
+    <button class="btn gho" data-nav="jugar">Volver</button>`;
 }
 
 function ayudaServidor(){
@@ -2075,7 +2284,7 @@ function vAmigos(){
       Para jugar <b>los dos a la vez</b>, cada uno decidiendo lo suyo, usa
       <b>Partida en directo</b>: eso ya funciona.</div>
     </div>
-    <button class="btn sec" data-nav="mas">Volver</button>`;
+    <button class="btn sec" data-nav="inicio">Volver</button>`;
 }
 
 /* ── REGLAS ──
@@ -2171,7 +2380,7 @@ function vReglas(){
     <b>Retar plantillas</b> — asíncrono: peleas contra la plantilla real de un amigo, pero sus
     decisiones las toma la IA porque él no está delante.
   </div></div>
-  <button class="btn sec" data-nav="mas">Volver</button>`;
+  <button class="btn sec" data-nav="aprende">Volver</button>`;
 }
 
 /* ── NOTAS ── */
@@ -2222,7 +2431,7 @@ function vNotas(){
     emparejamiento con desconocidos —solo salas por código—, ni ligas, telemetría, arte, sonido
     o monetización. La sala de intercambio empareja con un jugador simulado.
   </div></div>
-  <button class="btn sec" data-nav="mas">Volver</button>`;
+  <button class="btn sec" data-nav="ajustes">Volver</button>`;
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -3159,26 +3368,35 @@ document.addEventListener('click',e=>{
       P.fase='fin'; P.fin='r';
       P.log.push({t:'sys',x:'Te rindes: cuenta como derrota.'});
       render(); break;
-    case 'gratis':{
-      const g=GRATIS.find(x=>x.id===d.g); if(!g||!listoGratis(g)) break;
-      if(g.espera>0) S.gratis[g.id]=Date.now();
-      S.sobres.push({tipo:g.tipo});   // se guarda, no se abre: acumular es la gracia
-      guardar(); render(); break; }
-    case 'abrirgratis':{
-      // El básico no se guarda: se abre en el sitio y de uno en uno.
-      const g=GRATIS.find(x=>x.id===d.g); if(!g||!listoGratis(g)) break;
-      if(g.espera>0) S.gratis[g.id]=Date.now();
-      abrirTanda(abrirSobre(g.tipo),g.tipo); break; }
-    case 'comprar':{
-      const T=TIPOS_SOBRE[d.t]; if(S.divisa<T.coste) break;
-      S.divisa-=T.coste; S.sobres.push({tipo:d.t}); guardar(); render(); break; }
-    case 'abrir':{
-      const i=S.sobres.findIndex(s=>s.tipo===d.t); if(i<0) break;
-      S.sobres.splice(i,1); abrirTanda(abrirSobre(d.t),d.t); break; }
-    case 'abrirtodo':{
-      const items=[];
-      for(let i=S.sobres.length-1;i>=0;i--) if(S.sobres[i].tipo===d.t){ S.sobres.splice(i,1); items.push(...abrirSobre(d.t)); }
-      abrirTanda(items,d.t); break; }
+    case 'sub':                          // cambiar de sub-pestaña dentro de la Tienda
+      tmp.sub=d.v; window.scrollTo(0,0); render(); break;
+    /* Ir a la pantalla del sobre. NO cobra ni gasta nada: solo enseña qué trae.
+       Se recuerda de qué sub-pestaña se vino, para que el Atrás del resumen devuelva ahí. */
+    case 'versobre':{
+      if(!TIPOS_SOBRE[d.t]) break;
+      const desde=tmp.sub||(d.mio?'mios':'comprar');
+      vista='sobre'; tmp={sobre:d.t, desde};
+      window.scrollTo(0,0); render(); break; }
+    case 'volvertienda':
+      vista='tienda'; tmp={sub:(tmp.desde||(tmp.ap&&tmp.ap.desde)||'comprar')};
+      window.scrollTo(0,0); render(); break;
+    /* EL ÚNICO SITIO donde se cobra y se abre, y siempre por un toque encima del sobre.
+       El orden importa: primero se gasta lo que ya está pagado —un sobre guardado—, luego
+       el gratis, y solo si no hay ninguno de los dos se cobran fichas. Al revés, entrar
+       con un sobre de oro guardado y 600 monedas cobraría las monedas y dejaría el sobre
+       sin tocar. */
+    case 'abrirsobre':{
+      const t=d.t, T=TIPOS_SOBRE[t]; if(!T) break;
+      const desde=tmp.desde||'comprar';
+      const i=S.sobres.findIndex(s=>s.tipo===t);
+      const g=GRATIS.find(x=>x.tipo===t);
+      if(i>=0) S.sobres.splice(i,1);
+      else if(g&&listoGratis(g)){ if(g.espera>0) S.gratis[g.id]=Date.now(); }
+      else if(T.coste>0&&S.divisa>=T.coste) S.divisa-=T.coste;
+      else break;                        // no se puede: no pasa nada, y no se cobra nada
+      guardar();
+      abrirTanda(abrirSobre(t),t);
+      tmp.ap.desde=desde; break; }
     case 'pag':                          // pasar hoja del álbum de la colección
       tmp.pag=(tmp.pag||0)+Number(d.v); window.scrollTo(0,0); render(); break;
     case 'saltaraviso':                  // el aviso siempre se puede saltar
@@ -3191,7 +3409,9 @@ document.addEventListener('click',e=>{
       S.mudo=!S.mudo; guardar();
       if(!S.mudo) SONIDO.clic();         // se oye al encenderlo, que es lo que se espera
       render(); break;
-    case 'salirapertura': ir('sobres'); break;
+    case 'salirapertura':
+      vista='tienda'; tmp={sub:(tmp.ap&&tmp.ap.desde)||'comprar'};
+      window.scrollTo(0,0); render(); break;
     case 'autoplantilla': autoPlantilla(S,true); guardar(); render(); break;
     case 'reciclar':{
       const g=reciclar(tmp.sel||[]); tmp.sel=[]; tmp.pag=0;

@@ -158,10 +158,53 @@ Fondo `#0d1014`, contenido centrado con un ancho máximo de **760 px**, barra de
 abajo. Todo el juego cabe en el alto de la pantalla: **no se hace scroll para ver cartas** en ninguna
 de las pantallas que las enseñan.
 
+### 2.0 La navegación
+
+Cuatro pestañas abajo, y cada una es un **sitio** con varias pantallas dentro, no una
+pantalla ascendida a pestaña:
+
+| Pestaña | Qué hay dentro |
+|---|---|
+| **Tienda** | Comprar · Mis sobres → pantalla del sobre → apertura. Lleva la insignia de sobres sin abrir |
+| **Inicio** | Jugar (directo / IA) · Retar a un amigo · Aprende a jugar (tutorial + reglas) · Logros |
+| **Retos** | Retos · Reciclaje |
+| **Club** | Plantilla · Colección · Sala de intercambio · Sets de colección |
+
+Se arranca **siempre en Inicio**; no se recuerda la última pantalla. El engranaje de la
+cabecera lleva a Ajustes (sonido), Mis redes y Notas del prototipo.
+
+**El patrón es la fila**: la fila entera es el botón. No lleva un botón dentro. Un botón
+dentro de una fila que también responde al toque son dos blancos para lo mismo, y el
+jugador nunca sabe cuál toca. Una fila que no se puede usar sale apagada, se sigue leyendo
+entera con su precio, y no responde ni da error.
+
+### 2.0.1 El flujo de apertura
+
+El mismo para el gratis, el comprado y el del inventario:
+
+```
+fila → pantalla del sobre → toque encima del sobre → walkout → resumen de las nueve
+```
+
+Dos cosas que sostienen esto:
+
+- **Las fichas se descuentan en el toque sobre el sobre, no al entrar.** Entrar a mirar qué
+  trae un sobre de oro no puede costar 600. Salir sin abrir no cobra nada y no consume el
+  sobre.
+- **"Abrir otro" no abre**: devuelve a la pantalla del sobre, con el sobre otra vez ahí
+  para pulsar encima. El mismo gesto siempre, y el cobro siempre en el mismo sitio. Solo
+  aparece si de verdad queda otro — uno guardado, el gratis listo, o dinero para pagarlo.
+  Nunca se abren varios de golpe.
+
+En la pantalla del sobre se gasta primero lo que **ya está pagado**: un sobre guardado,
+luego el gratis, y solo si no hay ninguno de los dos se cobran fichas. Al revés, entrar con
+un sobre de oro guardado y 600 monedas cobraría las monedas y dejaría el sobre sin tocar.
+
 | Pantalla | Cómo se colocan las cartas |
 |---|---|
 | **Inicio** | Sin cartas |
-| **Sobres** | Lista de sobres. Hoy cada uno es un emoji: 📦 básico, 🎁 plata, 🥇 oro |
+| **Tienda** | Filas de sobre. Hoy el arte es un emoji: 📦 básico, 🎁 plata, 🥇 oro |
+| **Pantalla del sobre** | El sobre grande, qué trae y la tabla de probabilidades |
 | **Apertura** | Una sola carta, lo más grande que quepa, con su resplandor por nivel |
 | **Resumen del sobre** | 3 × 3 — las nueve del sobre a la vez |
 | **Colección** | Álbum de **3 × 4** (tres columnas, cuatro filas), se pasa de página. Sin scroll |
