@@ -284,20 +284,20 @@ console.log('\n2c-ter. La tienda y el flujo de apertura');
 const tienda = await page.evaluate(() => {
   S.gratis = {}; S.sobres = []; S.divisa = 1000; S.coleccion = [];
   ir('tienda');
-  const filas = [...document.querySelectorAll('[data-a="versobre"]')];
+  const filas = [...document.querySelectorAll('[data-a="comprar"]')];
+  const conPrecio = f => f.closest('.sobre-fila').querySelector('.precio').textContent.trim();
   return {
     sub: tmp.sub || 'comprar',
     orden: filas.map(f => f.dataset.t),
     // ninguna fila lleva un botón dentro: la fila ENTERA es el botón
     botonesDentro: filas.reduce((n, f) => n + f.querySelectorAll('button,[data-a]').length, 0),
-    // el gratis lleva su 0 donde los otros llevan el precio
-    gratisCon0: /(^|\s)0(\s|$)/.test(filas.find(f => f.dataset.t === 'basico')
-      .querySelector('.precio').textContent.trim()),
-    precios: filas.map(f => f.querySelector('.precio').textContent.trim()),
+    // el gratis lleva su etiqueta donde los otros llevan el precio
+    gratis: conPrecio(filas.find(f => f.dataset.t === 'basico')),
+    precios: filas.map(conPrecio),
     // "Mis sobres" vacío lo dice y enlaza a Comprar
     vacio: (() => { tmp.sub = 'mios'; render();
       const t = document.querySelector('#app').textContent;
-      const enlace = !!document.querySelector('[data-a="sub"][data-v="comprar"].btn, .btn[data-a="sub"]');
+      const enlace = !!document.querySelector('.btn[data-a="sub"][data-v="comprar"]');
       tmp.sub = 'comprar'; render();
       return { dice: /no tienes ning/i.test(t), enlace }; })(),
   };
@@ -306,65 +306,160 @@ comprobar(tienda.orden.join(',') === 'basico,plata,oro',
   `las filas van básico, plata y oro (${tienda.orden.join(', ')})`);
 comprobar(tienda.botonesDentro === 0,
   'la fila entera es el botón: no hay ningún Reclamar ni Abrir dentro');
-comprobar(tienda.gratisCon0,
-  `el gratis lleva 0 donde los otros llevan su precio (${tienda.precios.join(' · ')})`);
+comprobar(/gratis/i.test(tienda.gratis),
+  `el gratis lleva su etiqueta donde los otros llevan su precio (${tienda.precios.join(' · ')})`);
 comprobar(tienda.vacio.dice && tienda.vacio.enlace,
   'sin sobres guardados, "Mis sobres" lo dice y enlaza a Comprar');
 
-/* Entrar a mirar un sobre no puede costar nada, y salir sin abrir tampoco. */
-const mirar = await page.evaluate(() => {
-  S.divisa = 1000; S.sobres = [{ tipo: 'oro' }]; S.coleccion = [];
-  ir('tienda');
-  const est = () => ({ div: S.divisa, sobres: S.sobres.length, cartas: S.coleccion.length });
-  const antes = est();
-  document.querySelector('[data-a="versobre"][data-t="oro"]').click();
-  const dentro = { vista, ...est() };
-  document.querySelector('[data-a="volvertienda"]').click();
-  return { antes, dentro, fuera: { vista, ...est() } };
+/* Las probabilidades no van en la fila: van detrás de la (i) de la esquina. En la fila
+   eran dos líneas de números que nadie lee al pasar y que la engordan; quien las quiere
+   las quiere con sitio para leerlas. */
+const NIVEL_CORONA_LUZ = await page.evaluate(() => NIVEL_APERTURA.corona.luz);
+const laI = await page.evaluate(() => {
+  S.divisa = 1000; S.sobres = []; ir('tienda');
+  const fila = document.querySelector('[data-a="comprar"][data-t="oro"]');
+  const enLaFila = /%/.test(fila.textContent);
+  const i = document.querySelectorAll('.info').length;
+  // la (i) está FUERA de la fila, para que tocarla no dispare también la fila
+  const dentroDeLaFila = fila.querySelectorAll('.info').length;
+  // y cada sobre lleva su arte de verdad, no un emoji
+  window.__arte = [...document.querySelectorAll('.sobre-art img')].map(i => i.getAttribute('src'));
+  document.querySelector('.info[data-t="oro"]').click();
+  const capa = document.querySelector('.ov, #ov, .overlay') || document.body;
+  const texto = capa.textContent;
+  const abrio = /por carta de oro/i.test(texto);
+  const sigueEnTienda = vista === 'tienda';
+  cerrarOv();
+  return { enLaFila, i, dentroDeLaFila, abrio, sigueEnTienda };
 });
-comprobar(mirar.dentro.vista === 'sobre', 'la fila lleva a la pantalla del sobre');
-comprobar(JSON.stringify(mirar.antes) === JSON.stringify(
-    { div: mirar.dentro.div, sobres: mirar.dentro.sobres, cartas: mirar.dentro.cartas }),
-  'y entrar ahí no cobra ni consume nada');
-comprobar(mirar.fuera.vista === 'tienda' && mirar.fuera.div === 1000 && mirar.fuera.sobres === 1,
-  'salir sin abrir devuelve a la tienda sin haber cobrado ni gastado el sobre');
+comprobar(!laI.enLaFila, 'la fila del sobre no lleva porcentajes encima');
+comprobar(laI.i === 3 && laI.dentroDeLaFila === 0,
+  `cada sobre lleva su (i) en la esquina, fuera de la fila (${laI.i} de 3)`);
+comprobar(laI.abrio, 'y tocarla saca las probabilidades');
+comprobar(laI.sigueEnTienda, 'sin salir de la tienda ni comprar nada');
 
-/* El cobro va en el toque sobre el sobre, y primero se gasta lo que ya está pagado. */
-const cobro = await page.evaluate(() => {
-  S.divisa = 1000; S.sobres = [{ tipo: 'oro' }]; S.coleccion = [];
-  ir('tienda');
-  document.querySelector('[data-a="versobre"][data-t="oro"]').click();
-  document.querySelector('[data-a="abrirsobre"]').click();
-  const conGuardado = { vista, div: S.divisa, sobres: S.sobres.length, cartas: S.coleccion.length };
-  pararAviso(); soltarCarta(); tmp.ap.resumen = true; render();
-  const bs = [...document.querySelectorAll('#app .btn')].map(b => b.textContent.trim());
-  // "Abrir otro" devuelve a la pantalla del sobre, NO abre
-  document.querySelector('[data-a="versobre"]').click();
-  const trasOtro = { vista, div: S.divisa, cartas: S.coleccion.length };
-  // ahora ya no queda guardado: se cobran las monedas
-  document.querySelector('[data-a="abrirsobre"]').click();
-  const pagando = { vista, div: S.divisa, cartas: S.coleccion.length };
-  pararAviso();
-  return { conGuardado, bs, trasOtro, pagando };
+/* Las florituras del fondo se encienden con el COLOR DEL NIVEL en el momento de abrir, y
+   antes de que se vea una sola carta. Es el primer aviso de que ha caído algo gordo. */
+const flor = await page.evaluate(async () => {
+  const prueba = async estatus => {
+    // el sobre ya comprado: aquí solo se abre
+    S.divisa = 9000; S.sobres = [{ tipo: 'oro' }]; ir('tienda'); tmp.sub = 'mios'; render();
+    document.querySelector('[data-a="versobre"][data-t="oro"]').click();
+    const esc = document.querySelector('#escena');
+    const caja = document.querySelector('.sobre-toque');
+    const apagadaAntes = !esc.classList.contains('encendida');
+    const dibujo = esc.querySelectorAll('.floritura svg path').length;
+    const real = abrirSobre;
+    const c = ROSTER.find(x => x.estatus === estatus);
+    abrirSobre = () => [{ iid: 'f' + Math.random(), cid: c.id }];
+    document.querySelector('[data-a="abrirsobre"]').click();
+    const r = { apagadaAntes, dibujo,
+      encendida: esc.classList.contains('encendida'),
+      luz: esc.style.getPropertyValue('--luz'),
+      bloqueada: caja.disabled,
+      // y todavía NO se ha pasado al walkout: el aviso llega antes que la carta
+      sigueEnElSobre: vista === 'sobre' };
+    abrirSobre = real;
+    await new Promise(x => setTimeout(x, 950));
+    pararAviso();
+    return r;
+  };
+  return { corona: await prueba('campeon'), oro: await prueba('oro') };
 });
-comprobar(cobro.conGuardado.sobres === 0 && cobro.conGuardado.div === 1000,
-  'con un sobre guardado se gasta el sobre, no las monedas');
-comprobar(cobro.conGuardado.cartas === 9, 'y entrega sus 9 cartas');
-comprobar(cobro.bs.some(b => /abrir otro/i.test(b)) && cobro.bs.some(b => /^atr/i.test(b)),
-  `el resumen ofrece Abrir otro y Atrás (${cobro.bs.join(' · ')})`);
-comprobar(cobro.trasOtro.vista === 'sobre' && cobro.trasOtro.cartas === 9,
-  '"Abrir otro" vuelve a la pantalla del sobre sin abrir nada');
-comprobar(cobro.pagando.div === 400 && cobro.pagando.cartas === 18,
-  `sin guardados, el toque sobre el sobre cobra las monedas (${cobro.pagando.div})`);
+comprobar(flor.corona.dibujo >= 8,
+  `el fondo de la pantalla del sobre lleva sus florituras (${flor.corona.dibujo} trazos)`);
+comprobar(flor.corona.apagadaAntes, 'apagadas mientras se mira el sobre');
+comprobar(flor.corona.encendida && flor.corona.luz === NIVEL_CORONA_LUZ,
+  `y se encienden del color del nivel al abrir (campeón: ${flor.corona.luz})`);
+comprobar(flor.oro.luz && flor.oro.luz !== flor.corona.luz,
+  `con un color distinto según lo que toque (oro: ${flor.oro.luz})`);
+comprobar(flor.corona.sigueEnElSobre,
+  'y el aviso llega antes que la carta: todavía no ha empezado el walkout');
+comprobar(flor.corona.bloqueada, 'un segundo toque mientras enciende no hace nada');
+const arte = await page.evaluate(() => window.__arte || []);
+comprobar(arte.length === 3 && arte.every(a => /^sobres\/.+\.webp$/.test(a)),
+  `cada sobre lleva su arte propio (${arte.join(', ')})`);
+
+/* Las secciones tienen que LLENAR la pantalla. Apiladas arriba dejaban media pantalla
+   muerta debajo. */
+const llenan = await page.evaluate(() => {
+  const guardado = { vista, tmp };
+  const out = {};
+  // La tienda queda fuera a propósito: es una lista de tarjetas iguales que se comparan
+  // entre ellas, no bloques estirados. Estirarlas rompería justamente la comparación.
+  for (const v of ['inicio', 'retos', 'club']) {
+    ir(v);
+    const q = document.querySelector('.pila');
+    const barra = parseFloat(getComputedStyle(document.body).paddingBottom) || 0;
+    out[v] = q ? Math.round(innerHeight - q.getBoundingClientRect().bottom - barra) : null;
+  }
+  vista = guardado.vista; tmp = guardado.tmp; render();
+  return out;
+});
+const cojas = Object.entries(llenan).filter(([, m]) => m === null || m > 40).map(([v]) => v);
+comprobar(cojas.length === 0,
+  `Inicio, Retos y Club llenan la pantalla (${cojas.join(', ') || Object.values(llenan).map(m => m + 'px').join(' · ')})`);
+
+/* Y en Inicio no puede haber estado de plantilla: eso es del Club. */
+const inicioLimpio = await page.evaluate(() => {
+  const guardado = { vista, tmp };
+  ir('inicio');
+  const t = document.querySelector('#app').textContent;
+  vista = guardado.vista; tmp = guardado.tmp; render();
+  return { plantilla: /TU PLANTILLA|rankeados/i.test(t), margenes: /Finish|Decisión/i.test(t) };
+});
+comprobar(!inicioLimpio.plantilla, 'Inicio no lleva el estado de la plantilla: eso vive en Club');
+comprobar(!inicioLimpio.margenes, 'ni la tabla de márgenes, que vive en Reglas');
+
+/* COMPRAR Y ABRIR SON DOS DECISIONES DISTINTAS, y se toman en dos sitios distintos.
+   La fila de Comprar paga y mete el sobre en "Mis sobres". La pantalla del sobre no cobra
+   nada: el sobre ya es tuyo cuando llegas, y lo único que se puede hacer ahí es abrirlo. */
+const compra = await page.evaluate(() => {
+  window.__antes = { coleccion: S.coleccion.slice(), plantilla: { ...S.plantilla } };
+  S.divisa = 2000; S.sobres = []; S.gratis = {}; S.coleccion = [];
+  ir('tienda');
+  const antes = { div: S.divisa, sobres: S.sobres.length };
+  document.querySelector('[data-a="comprar"][data-t="oro"]').click();
+  return { antes, tras: { div: S.divisa, sobres: S.sobres.length, sub: tmp.sub, vista },
+           cartas: S.coleccion.length };
+});
+comprobar(compra.tras.div === 1400 && compra.tras.sobres === 1,
+  `la fila de Comprar paga y guarda el sobre (${compra.antes.div} → ${compra.tras.div})`);
+comprobar(compra.cartas === 0 && compra.tras.vista === 'tienda',
+  'y no abre nada: comprar y abrir son dos decisiones distintas');
+comprobar(compra.tras.sub === 'mios',
+  'después salta a "Mis sobres", que es donde acaba de aparecer');
+
+const abrir = await page.evaluate(async () => {
+  const guardado = { coleccion: S.coleccion.slice(), plantilla: { ...S.plantilla } };
+  document.querySelector('[data-a="versobre"][data-t="oro"]').click();
+  const enSobre = { vista, div: S.divisa, sobres: S.sobres.length };
+  // en esta pantalla no hay nada que pagar, así que no se menciona ningún precio
+  const hablaDePrecio = /🪙/.test(document.querySelector('#app').textContent);
+  document.querySelector('[data-a="abrirsobre"]').click();
+  await new Promise(r => setTimeout(r, 950));
+  const tras = { vista, div: S.divisa, sobres: S.sobres.length };
+  pararAviso();
+  S.coleccion = guardado.coleccion; S.plantilla = guardado.plantilla;
+  return { enSobre, hablaDePrecio, tras };
+});
+comprobar(abrir.enSobre.vista === 'sobre' && abrir.enSobre.div === 1400 && abrir.enSobre.sobres === 1,
+  'entrar a la pantalla del sobre no cobra ni consume nada');
+comprobar(!abrir.hablaDePrecio, 'y ahí no se habla de precio: no hay nada que pagar');
+comprobar(abrir.tras.div === 1400 && abrir.tras.sobres === 0,
+  `abrir gasta el sobre y NO el dinero (${abrir.tras.div} monedas intactas)`);
+comprobar(abrir.tras.vista === 'apertura',
+  'y tras encenderse las florituras arranca el walkout');
 
 /* Sin fichas: la fila se lee entera, no responde y no da error. */
 const pobre = await page.evaluate(() => {
-  S.divisa = 0; S.sobres = []; ir('tienda');
-  const f = document.querySelector('[data-a="versobre"][data-t="oro"]');
+  S.divisa = 0; S.sobres = []; S.gratis = { g1: Date.now() }; ir('tienda');
+  const f = document.querySelector('[data-a="comprar"][data-t="oro"]');
+  const fuera = f.closest('.sobre-fila');
   const antes = { div: S.divisa, cartas: S.coleccion.length, vista };
   f.click();
-  return { apagada: f.classList.contains('apagada'), desactivada: f.disabled,
-    precio: f.querySelector('.precio').textContent.trim(),
+  return { apagada: fuera.classList.contains('apagada'), desactivada: f.disabled,
+    precio: fuera.querySelector('.precio').textContent.trim(),
     nombre: /oro/i.test(f.textContent),
     sigueIgual: vista === antes.vista && S.divisa === antes.div && S.coleccion.length === antes.cartas };
 });
@@ -376,529 +471,32 @@ comprobar(pobre.sigueIgual, 'y tocarla no hace nada ni da ningún error');
 comprobar(!(await page.evaluate(() => document.body.innerHTML.includes('abrirtodo'))),
   'no hay ninguna forma de abrir varios sobres de golpe');
 
-// El gratis pasa por el mismo sitio que los demás
-const gratis = await page.evaluate(() => {
+// El gratis pasa por el mismo sitio que los demás: se reclama en Comprar y se abre igual
+const gratis = await page.evaluate(async () => {
+  const guardado = { coleccion: S.coleccion.slice(), plantilla: { ...S.plantilla } };
   S.gratis = {}; S.sobres = []; S.divisa = 0; S.coleccion = [];
   ir('tienda');
+  document.querySelector('[data-a="comprar"][data-t="basico"]').click();
+  const trasReclamar = { sobres: S.sobres.length, sub: tmp.sub, div: S.divisa };
   document.querySelector('[data-a="versobre"][data-t="basico"]').click();
-  const dentro = vista;
   document.querySelector('[data-a="abrirsobre"]').click();
-  const r = { dentro, vista, cartas: S.coleccion.length, guardados: S.sobres.length };
-  pararAviso(); return r;
+  // el toque enciende las florituras y solo después arranca el walkout
+  await new Promise(r => setTimeout(r, 950));
+  const r = { trasReclamar, vista, cartas: S.coleccion.length, guardados: S.sobres.length };
+  pararAviso();
+  S.coleccion = guardado.coleccion; S.plantilla = guardado.plantilla;
+  return r;
 });
-comprobar(gratis.dentro === 'sobre' && gratis.vista === 'apertura',
-  'el gratis pasa por la misma pantalla del sobre que los de pago');
-comprobar(gratis.cartas === 9 && gratis.guardados === 0,
-  'y entrega sus 9 cartas sin pasar por "Mis sobres"');
+comprobar(gratis.trasReclamar.sobres === 1 && gratis.trasReclamar.div === 0,
+  'el gratis se reclama en la misma fila que los demás, y no cuesta nada');
+comprobar(gratis.vista === 'apertura' && gratis.cartas === 9 && gratis.guardados === 0,
+  'y se abre por el mismo camino, entregando sus 9 cartas');
 
-// Bono de bienvenida
-const bono = await page.evaluate(() => {
-  const s = estadoNuevo();
-  const c = {}; for (const x of s.sobres) c[x.tipo] = (c[x.tipo] || 0) + 1;
-  return c;
-});
-comprobar(bono.oro === 2 && bono.plata === 2,
-  `el jugador nuevo arranca con 2 de oro y 2 de plata (${JSON.stringify(bono)})`);
-
-/* ── 2a-bis. Reciclaje: solo repetidos, y por tramos ──────────────────── */
-console.log('\n2·. Reciclaje');
-const rec = await page.evaluate(() => {
-  S.coleccion = []; S.plantilla = {}; S.fichas = 0;
-  const plata = ROSTER.find(c => c.estatus === 'plata');
-  const oro = ROSTER.find(c => c.estatus === 'oro');
-  const meter = (c, n) => { const out = [];
-    for (let i = 0; i < n; i++) { const iid = 'x' + Math.random().toString(36).slice(2);
-      S.coleccion.push({ iid, cid: c.id }); out.push(iid); } return out; };
-  const unicos = meter(plata, 1);
-  const unaSola = reciclable(unicos[0]);
-  const muchas = meter(plata, 30);          // ahora hay 31: 30 repetidos
-  const mezcla = meter(oro, 3);
-  const cuentaMezclada = cuentaReciclaje([...muchas.slice(0, 10), ...mezcla]).fichas;
-  const antes = S.fichas;
-  const g = reciclar([...unicos, ...muchas, ...mezcla]);
-  return { unaSola, cuentaMezclada, ganadas: g, fichas: S.fichas - antes,
-    quedan: S.coleccion.filter(x => x.cid === plata.id).length,
-    quedanOro: S.coleccion.filter(x => x.cid === oro.id).length };
-});
-comprobar(rec.unaSola === false, 'la primera copia de una carta NO se puede reciclar');
-comprobar(rec.cuentaMezclada === 0,
-  'diez platas y tres oros sueltos no completan ninguna ficha: no se mezclan tramos');
-comprobar(rec.ganadas === 1, `30 platas repetidas dan exactamente 1 ficha (dio ${rec.ganadas})`);
-comprobar(rec.quedan === 1, 'y queda la copia buena, que no se toca');
-comprobar(rec.quedanOro === 3, 'los oros que no llegaban a ficha se quedan intactos');
-
-// El test de reciclaje deja la colección vacía a propósito; se rehace antes de seguir.
+/* Este bloque abre y compra sobres a mano, así que deja la colección y la plantilla en
+   un estado cualquiera. Se rehacen antes de seguir: lo que viene detrás cuenta con una
+   plantilla completa, y fallaría por algo que no tiene nada que ver con ello. */
 await page.evaluate(() => { S = estadoNuevo(); for (let i = 0; i < 4; i++) abrirSobre('oro');
   autoPlantilla(S, true); guardar(); ir('inicio'); });
-
-/* ── 2b. Apertura: la carta grande, un toque, y el sobre entero ────────── */
-console.log('\n2b. Pantalla de apertura');
-await page.evaluate(() => { S.sobres = [{ tipo: 'oro' }, { tipo: 'oro' }];
-  ir('tienda'); tmp.sub = 'mios'; render(); });
-await page.locator('[data-a="versobre"][data-t="oro"]').click();
-await page.locator('[data-a="abrirsobre"]').click();
-comprobar(await page.evaluate(() => vista === 'apertura'), 'abrir lleva a la pantalla de apertura');
-comprobar(await page.locator('[data-a="salirapertura"]').count() === 1, 'hay botón de atrás');
-
-/* Antes de la carta entera va el aviso, y pasa TODO SOBRE LA CARTA: el marco está
-   ahí desde el primer momento y se va llenando por partes, en el orden pedido —
-   nacionalidad, peso, récord, ranking— y al final el peleador con sus stats. */
-const aviso = await page.evaluate(() => ({
-  // se paran los relojes del aviso: si siguen corriendo va cambiando de paso él solo
-  // y pisa los que pone la prueba
-  _: pararAviso(),
-  orden: pasosAviso(PORID[tmp.ap.items[0].cid]).map(p => p.k),
-  rk: PORID[tmp.ap.items[0].cid].rk,
-  panel: !!document.querySelector('.aviso-caja'),
-  marco: !!document.querySelector('.apertura-carta .carta'),
-}));
-/* Cada paso se mira DESPUÉS de que su animación de entrada termine. Leyéndolo antes,
-   la opacidad todavía va por 0 —es el fotograma inicial de la animación— y parecería
-   que no se ha destapado nada. */
-aviso.visto = [];
-for (let i = 1; i <= aviso.orden.length; i++) {
-  await page.evaluate(x => { tmp.ap.paso = x; render(); }, i);
-  await page.waitForTimeout(420);
-  aviso.visto.push(await page.evaluate(() => {
-    const carta = document.querySelector('.apertura-carta .carta');
-    const puesto = sel => { const e = carta.querySelector(sel); if (!e) return false;
-      const s = getComputedStyle(e);
-      return s.visibility !== 'hidden' && +s.opacity > 0.9; };
-    return { bandera: puesto('.c-pie .bnd'), peso: puesto('.c-pie .peso'),
-      record: puesto('.c-record'), rk: puesto('.c-rk'),
-      foto: puesto('.c-mid'), nombre: puesto('.c-nom'), stats: puesto('.c-num') };
-  }));
-}
-comprobar(!aviso.panel && aviso.marco,
-  'el aviso pasa sobre la propia carta, no en un recuadro aparte');
-comprobar(aviso.orden.slice(0, 3).join(',') === 'pais,peso,record',
-  `y se destapa en el orden pedido (${aviso.orden.join(' → ')})`);
-comprobar(aviso.rk === null
-    ? !aviso.orden.includes('rk')
-    : aviso.orden[3] === 'rk',
-  aviso.rk === null ? 'una carta sin rankear no destapa la pestaña del ranking'
-                    : 'el ranking va justo antes del peleador');
-comprobar(aviso.orden[aviso.orden.length - 1] === 'todo',
-  'y lo último en salir son la foto y las stats');
-
-const v = aviso.visto;
-comprobar(v[0].bandera && !v[0].peso && !v[0].record && !v[0].rk && !v[0].foto,
-  'en el primer paso solo está la bandera');
-comprobar(v[1].bandera && v[1].peso && !v[1].record,
-  'en el segundo se suma el peso, sin perder la bandera');
-comprobar(v[2].record && !v[2].foto && !v[2].stats,
-  'en el tercero el récord, y el peleador sigue tapado');
-if (aviso.rk !== null) comprobar(v[3].rk && !v[3].foto && !v[3].stats,
-  'en el cuarto el ranking, y el peleador todavía tapado');
-const ult = v[v.length - 1];
-comprobar(ult.foto && ult.nombre && ult.stats && ult.bandera && ult.record,
-  'y al final está la carta entera, sin haber perdido nada por el camino');
-
-// Tocando se salta el aviso y aparece la carta sin esperar.
-await page.evaluate(() => { tmp.ap.fase = 'aviso'; tmp.ap.paso = 1; render(); pararAviso(); });
-await page.locator('.apertura').click();
-comprobar(await page.evaluate(() => tmp.ap.fase === 'carta' && !tmp.ap.resumen),
-  'un toque durante el aviso lo salta y suelta la carta');
-
-/* ── 2b-bis. El anuncio de campeón y top 5 ────────────────────────────────
-   Es el único sonido del juego que sale de un archivo, y está reservado a propósito:
-   si sonara en cada sobre dejaría de significar que ha caído algo gordo, y encima
-   taparía lo que el sonido de siempre ya cuenta con lo grave o agudo que entra. */
-console.log('\n2b-bis. El anuncio de campeón y top 5');
-const anuncio = await page.evaluate(async () => {
-  // Este bloque abre sobres a mano y deja la colección con una carta suelta. Lo que hay
-  // guardado se aparta y se devuelve al final: si no, las pruebas de después se quedan
-  // sin plantilla y fallan por algo que no tiene nada que ver con ellas.
-  window.__guardado = { coleccion: S.coleccion.slice(), plantilla: { ...S.plantilla }, mudo: S.mudo };
-  // se cuentan las veces que se pide el anuncio, sin llegar a reproducir nada
-  const real = SONIDO.anuncio.bind(SONIDO);
-  let pedidos = [];
-  SONIDO.anuncio = function () { pedidos.push(tmp.ap ? tmp.ap.nivel : '?'); };
-  const abrir = f => {
-    const c = ROSTER.find(f);
-    const it = { iid: 'a' + Math.random(), cid: c.id };
-    S.coleccion = [it]; pedidos = [];
-    abrirTanda([it], 'oro');
-    const r = { nivel: tmp.ap.nivel, pedidos: pedidos.length };
-    pararAviso();
-    return r;
-  };
-  const out = {
-    campeon: abrir(c => c.estatus === 'campeon'),
-    top5:    abrir(c => c.estatus === 'top5'),
-    top10:   abrir(c => c.estatus === 'top10'),
-    oro:     abrir(c => c.estatus === 'oro'),
-    plata:   abrir(c => c.rareza === 'plata'),
-  };
-  SONIDO.anuncio = real;
-  // y en mudo no suena nada, ni siquiera al campeón
-  S.mudo = true;
-  const c = ROSTER.find(x => x.estatus === 'campeon');
-  const it = { iid: 'am', cid: c.id }; S.coleccion = [it];
-  abrirTanda([it], 'oro');
-  out.mudo = !!(SONIDO.clip && !SONIDO.clip.paused);
-  pararAviso(); S.mudo = false;
-  // los momentos tienen que acabar justo con el clip
-  out.momentos = NIVEL_APERTURA.corona.momentos;
-  out.dura = ANUNCIO_MS;
-  out.pasosCorona = pasosAviso(ROSTER.find(x => x.estatus === 'campeon')).length;
-  return out;
-});
-comprobar(anuncio.campeon.pedidos === 1 && anuncio.top5.pedidos === 1,
-  'el anuncio suena con un campeón y con un top 5');
-comprobar(anuncio.top10.pedidos === 0 && anuncio.oro.pedidos === 0 && anuncio.plata.pedidos === 0,
-  'y NO suena en el resto: top 10, oro normal ni plata');
-comprobar(!anuncio.mudo, 'en mudo no suena tampoco al campeón');
-comprobar(anuncio.momentos.length === anuncio.pasosCorona + 1,
-  `hay un momento por paso más el de soltar la carta (${anuncio.momentos.length} para ${anuncio.pasosCorona} pasos)`);
-comprobar(anuncio.momentos[anuncio.momentos.length - 1] === anuncio.dura,
-  `la carta se suelta justo cuando acaba el clip (${anuncio.dura} ms)`);
-comprobar(anuncio.momentos.every((m, i) => i === 0 || m > anuncio.momentos[i - 1]),
-  'y los momentos van en orden, sin pisarse');
-
-/* Los pasos se programan contra un cero común, así que tienen que caer donde dice la
-   tabla. Se mide de verdad: se abre el sobre y se cronometra cuándo se enciende cada
-   parte de la carta. */
-const reloj = await page.evaluate(async () => {
-  const c = ROSTER.find(x => x.estatus === 'campeon');
-  const it = { iid: 'ar', cid: c.id }; S.coleccion = [it];
-  S.mudo = true;                       // se cronometra la imagen, no hace falta oírlo
-  abrirTanda([it], 'oro');
-  const t0 = performance.now(), visto = {};
-  const mira = () => {
-    const k = document.querySelector('.apertura-carta .carta');
-    if (!k) return;
-    for (const cl of ['ve-pais', 've-peso', 've-record', 've-rk', 've-todo'])
-      if (k.classList.contains(cl) && visto[cl] === undefined)
-        visto[cl] = Math.round(performance.now() - t0);
-  };
-  const iv = setInterval(mira, 10);
-  await new Promise(r => setTimeout(r, 7000));
-  clearInterval(iv); pararAviso();
-  // se devuelve todo como estaba
-  S.coleccion = window.__guardado.coleccion;
-  S.plantilla = window.__guardado.plantilla;
-  S.mudo = window.__guardado.mudo;
-  return { visto, momentos: NIVEL_APERTURA.corona.momentos };
-});
-const salieron = ['ve-pais', 've-peso', 've-record', 've-rk', 've-todo'].map(k => reloj.visto[k]);
-const desvio = salieron.map((t, i) => t === undefined ? 9999 : Math.abs(t - reloj.momentos[i]));
-comprobar(desvio.every(d => d < 150),
-  `cada parte se enciende cuando toca (${salieron.join(', ')} contra ${reloj.momentos.slice(0, 5).join(', ')} ms)`);
-
-// La carta que enseña el sobre es la mejor de las nueve, y manda en la pantalla.
-// Se mide en una ventana de móvil, que es donde se juega: en una de escritorio, ancha
-// y baja, la carta la limita el alto y ocuparía poco ancho con toda la razón.
-const ventana = page.viewportSize();
-await page.setViewportSize({ width: 390, height: 780 });
-await page.waitForTimeout(120);
-const portada = await page.evaluate(() => {
-  const carta = document.querySelector('.apertura-carta .carta');
-  const r = carta.getBoundingClientRect();
-  const mejor = tmp.ap.items.map(it => PORID[it.cid]).sort(comparar)[0];
-  return { anchoCarta: r.width, anchoPantalla: innerWidth, altoCarta: r.height,
-           altoPantalla: innerHeight,
-           esLaMejor: carta.textContent.includes(mejor.nombre),
-           botones: document.querySelectorAll('.apertura button').length };
-});
-comprobar(portada.esLaMejor, 'enseña la mejor carta del sobre');
-comprobar(portada.anchoCarta / portada.anchoPantalla > 0.85,
-  `la carta ocupa casi todo el ancho (${(portada.anchoCarta / portada.anchoPantalla * 100).toFixed(0)}%)`);
-comprobar(portada.altoCarta <= portada.altoPantalla,
-  'y cabe de alto sin salirse de la pantalla');
-comprobar(portada.botones === 0, 'no hay botón de continuar: se toca la carta');
-if (ventana) await page.setViewportSize(ventana);
-
-const guardadasAlEntrar = await page.evaluate(() => S.coleccion.length);
-await page.locator('[data-a="salirapertura"]').click();           // se sale a medias
-const trasSalir = await page.evaluate(() => ({ vista, cartas: S.coleccion.length }));
-comprobar(trasSalir.vista === 'tienda', 'el atrás sale de la apertura a la tienda');
-comprobar(trasSalir.cartas === guardadasAlEntrar, 'salir a medias no pierde ninguna carta');
-
-await page.evaluate(() => { tmp.sub = 'mios'; render(); });
-await page.locator('[data-a="versobre"][data-t="oro"]').click();
-await page.locator('[data-a="abrirsobre"]').click();
-// Un toque salta el aviso y suelta la carta; el siguiente abre el sobre entero.
-// Son dos toques en total y ninguno es de trámite: el primero se puede no dar.
-await page.locator('.apertura').click();
-await page.locator('.apertura').click();
-const resumen = await page.evaluate(() => ({
-  enResumen: tmp.ap && tmp.ap.resumen,
-  mostradas: document.querySelectorAll('[data-carta]').length,
-  total: tmp.ap ? tmp.ap.items.length : 0,
-}));
-comprobar(resumen.enResumen, 'un toque en la carta lleva al sobre entero');
-comprobar(resumen.mostradas === resumen.total && resumen.total > 0,
-  'el resumen enseña todas las cartas del sobre');
-
-/* "Abrir otro" solo sale si de verdad queda otro: uno guardado, el gratis listo, o dinero
-   para pagarlo. Y nunca abre desde aquí — devuelve a la pantalla del sobre. */
-const encadena = await page.evaluate(() => {
-  const otros = () => [...document.querySelectorAll('[data-a="versobre"]')].length;
-  // con uno guardado del mismo tipo, sí se ofrece
-  S.divisa = 0; S.sobres = [{ tipo: 'oro' }];
-  abrirTanda(abrirSobre('oro'), 'oro'); tmp.ap.resumen = true; render();
-  const guardado = otros();
-  // sin guardados y sin dinero, no se ofrece nada
-  S.sobres = []; S.divisa = 0;
-  abrirTanda(abrirSobre('oro'), 'oro'); tmp.ap.resumen = true; render();
-  const seco = otros();
-  // con dinero suficiente, otra vez sí
-  S.divisa = 5000;
-  abrirTanda(abrirSobre('oro'), 'oro'); tmp.ap.resumen = true; render();
-  const conDinero = otros();
-  pararAviso();
-  return { guardado, seco, conDinero };
-});
-comprobar(encadena.guardado >= 1, 'con otro sobre guardado se ofrece abrir otro');
-comprobar(encadena.seco === 0, 'sin guardados y sin dinero no se ofrece: solo queda Atrás');
-comprobar(encadena.conDinero >= 1, 'y con dinero de sobra vuelve a ofrecerse');
-
-/* El texto de la carta se mide contra su propio ancho, así que tiene que caer en su
-   sitio a cualquier tamaño. Esto es lo que se rompía en la rejilla del resumen. */
-const encaje = await page.evaluate(() => {
-  const malos = [];
-  document.querySelectorAll('.grid .carta').forEach(carta => {
-    const R = carta.getBoundingClientRect();
-    const dentro = (el, holgura = 0) => {
-      const b = el.getBoundingClientRect();
-      const r = document.createRange(); r.selectNodeContents(el);
-      const t = r.getBoundingClientRect();
-      return t.width <= b.width + holgura && t.left >= b.left - holgura
-          && t.right <= b.right + holgura;
-    };
-    if (!carta.style.getPropertyValue('--k')) malos.push('sin escala');
-    carta.querySelectorAll('.c-et,.c-num,.c-nom').forEach(el => {
-      if (el.textContent.trim() && !dentro(el, R.width * 0.01))
-        malos.push(el.className + ':' + el.textContent.trim());
-    });
-  });
-  return malos;
-});
-comprobar(encaje.length === 0,
-  `en la rejilla, nombres y stats caben en su hueco (${encaje.slice(0, 4).join(', ') || 'todos'})`);
-
-/* Y hay que comprobarlo EN CADA PANTALLA Y EN UNA VENTANA ESTRECHA, que es donde las
-   cartas se hacen más pequeñas. Con el mínimo de letra puesto, en el álbum de un móvil de
-   360 px la carta mide 58 px: ahí es donde reventaba, con los números saliéndose del rombo
-   un 158% de su ancho y las etiquetas montándose encima. */
-const ventanaPrueba = page.viewportSize();
-await page.setViewportSize({ width: 360, height: 740 });
-const estrecho = await page.evaluate(() => {
-  // se aparta TODO lo que se toca, incluida la pantalla en la que estábamos: estos
-  // bloques cambian de vista y lo que viene detrás cuenta con encontrarla como estaba
-  const guardado = { coleccion: S.coleccion.slice(), plantilla: { ...S.plantilla },
-                     vista, tmp };
-  const l = ROSTER.filter(c => c.rareza === 'oro').slice(0, 40);
-  S.coleccion = l.map((c, i) => ({ iid: 'e' + i, cid: c.id }));
-  S.plantilla = {};
-  for (const d of DIVISIONES) {
-    const c = l.find(x => x.division === d.id);
-    if (c) S.plantilla[d.id] = S.coleccion.find(x => x.cid === c.id).iid;
-  }
-  const malos = [];
-  for (const [pantalla, sel] of [['colección', '.grid .carta'], ['plantilla', '.pgrid .carta:not(.oculta)']]) {
-    ir(pantalla === 'colección' ? 'coleccion' : 'plantilla');
-    for (const carta of document.querySelectorAll(sel)) {
-      const R = carta.getBoundingClientRect();
-      if (!R.width) continue;
-      for (const el of carta.querySelectorAll('.c-et,.c-num,.c-nom,.c-record')) {
-        if (!el.textContent.trim()) continue;
-        const b = el.getBoundingClientRect();
-        const r = document.createRange(); r.selectNodeContents(el);
-        const t = r.getBoundingClientRect();
-        // se permite un 1% de la carta, que es el suavizado del borde
-        if (t.width > b.width + R.width * 0.01)
-          malos.push(`${pantalla} ${R.width.toFixed(0)}px ${el.className} "${el.textContent.trim()}"`
-            + ` ocupa ${(t.width / b.width * 100).toFixed(0)}% de su hueco`);
-      }
-    }
-  }
-  S.coleccion = guardado.coleccion; S.plantilla = guardado.plantilla;
-  vista = guardado.vista; tmp = guardado.tmp; render();
-  return { malos: malos.slice(0, 4), total: malos.length };
-});
-await page.setViewportSize(ventanaPrueba);
-/* El álbum tiene que LLENAR la pantalla: cuatro filas de tres, sin scroll y sin dejar un
-   hueco muerto debajo. Con cuatro columnas no llenaba —el ancho se agotaba antes que el
-   alto y la hoja ocupaba poco más de media pantalla— y con doce cartas salían además tres
-   filas en vez de cuatro. */
-const album = await page.evaluate(() => {
-  const guardado = { coleccion: S.coleccion.slice(), vista, tmp };
-  const l = ROSTER.filter(c => c.rareza === 'oro').slice(0, 12);
-  S.coleccion = l.map((c, i) => ({ iid: 'b' + i, cid: c.id }));
-  ir('coleccion');
-  const cartas = [...document.querySelectorAll('.grid .carta')];
-  const filas = new Set(cartas.map(e => Math.round(e.getBoundingClientRect().top))).size;
-  const nav = document.querySelector('.album-nav').getBoundingClientRect();
-  const barra = parseFloat(getComputedStyle(document.body).paddingBottom) || 0;
-  const out = { cartas: cartas.length, filas, cols: cartas.length / filas,
-    // lo que queda libre bajo el paginador, sin contar la barra de navegación
-    muerto: Math.round(innerHeight - nav.bottom - barra),
-    scroll: document.documentElement.scrollHeight > innerHeight + 1 };
-  S.coleccion = guardado.coleccion; vista = guardado.vista; tmp = guardado.tmp; render();
-  return out;
-});
-comprobar(album.filas === 4 && album.cols === 3,
-  `el álbum es de cuatro filas de tres (salen ${album.filas} de ${album.cols})`);
-comprobar(!album.scroll, 'y no hay que deslizar para verlo');
-comprobar(album.muerto < 40,
-  `y llena la pantalla, sin hueco muerto debajo (quedan ${album.muerto}px)`);
-
-comprobar(estrecho.total === 0,
-  `y también en un móvil estrecho, con el mínimo de letra del sistema (${estrecho.malos.join(' · ') || 'colección y plantilla, todo dentro'})`);
-
-/* La carta enseña LO MISMO en todas las pantallas. Hubo una versión "compacta" que en la
-   plantilla escondía el récord y los nombres de las stats, y dejaba números sueltos con
-   rayas al lado. */
-const completa = await page.evaluate(() => {
-  const guardado = { coleccion: S.coleccion.slice(), plantilla: { ...S.plantilla },
-                     vista, tmp };
-  const l = ROSTER.filter(c => c.rareza === 'oro' && c.record).slice(0, 40);
-  S.coleccion = l.map((c, i) => ({ iid: 'f' + i, cid: c.id }));
-  S.plantilla = {};
-  for (const d of DIVISIONES) {
-    const c = l.find(x => x.division === d.id);
-    if (c) S.plantilla[d.id] = S.coleccion.find(x => x.cid === c.id).iid;
-  }
-  const mira = (v, sel) => {
-    ir(v);
-    const c = document.querySelector(sel);
-    if (!c) return null;
-    const hay = s => { const e = c.querySelector(s);
-      return !!(e && e.textContent.trim() && getComputedStyle(e).display !== 'none'); };
-    return { nombre: hay('.c-nom'), record: hay('.c-record'),
-             etiquetas: c.querySelectorAll('.c-et').length === 6
-               && getComputedStyle(c.querySelector('.c-et')).display !== 'none',
-             numeros: c.querySelectorAll('.c-num').length === 6, peso: hay('.c-pie .peso') };
-  };
-  // :not(.oculta) — si no, coge el primer hueco vacío de la plantilla y no una carta
-  const out = { coleccion: mira('coleccion', '.grid .carta'),
-                plantilla: mira('plantilla', '.pgrid .carta:not(.oculta)') };
-  S.coleccion = guardado.coleccion; S.plantilla = guardado.plantilla;
-  vista = guardado.vista; tmp = guardado.tmp; render();
-  return out;
-});
-const falta = Object.entries(completa)
-  .flatMap(([p, v]) => Object.entries(v || {}).filter(([, ok]) => !ok).map(([k]) => `${p}: ${k}`));
-comprobar(falta.length === 0,
-  `y enseña lo mismo en todas: nombre, récord, etiquetas, números y peso (${falta.join(', ') || 'completo en las dos'})`);
-
-/* Y tiene que caer en su sitio también DE ARRIBA A ABAJO, que es lo que se ha roto dos
-   veces: los números asomando por debajo del rombo, el nombre saliéndose de la placa.
-   No vale mirar la caja del elemento: la caja de línea de Oswald reserva sitio para las
-   colas de las letras y siempre sobra por abajo, así que un texto puede estar dentro de
-   su caja y fuera del hueco dibujado. Hay que mirar dónde cae la TINTA.
-
-   La línea de base se saca con una sonda: un inline-block de altura cero apoya su borde
-   inferior justo encima de ella. Hay que envolver antes el texto, porque estos elementos
-   son contenedores flex y un hijo suelto se convertiría en otro ítem flex en vez de
-   apoyarse en la base — ese fallo es el que dio por buenos unos números que estaban un
-   1% más abajo de donde debían.
-
-   Se mide sobre una COPIA de la carta a tamaño natural (620 px, el del dibujo del marco):
-   en la rejilla las cartas van a 90-100 px y ahí Chromium redondea las medidas de texto
-   del canvas a píxeles enteros, con una fuente de 3,3 px devuelve 3, un 25% de error.
-   Toda la geometría de la carta va en porcentajes, así que medirla grande vale para todos
-   los tamaños. Las cifras de referencia las da herramientas/medir-carta.mjs, que no
-   calcula nada: dibuja la carta y mira los píxeles. */
-const HUECOS = {
-  // Los tres rombos, leídos del dibujo del marco (oro.webp, 620x877) columna a columna
-  '.c-num': [[76.05, 78.22], [82.33, 84.49], [88.71, 90.88]],
-  '.c-nom': [[66.02, 70.51]],       // placa del nombre
-  '.c-record': [[70.60, 75.30]],    // banda del récord
-  '.c-rk': [[1.82, 11.97]],         // pestaña del ranking
-};
-const vertical = await page.evaluate(huecos => {
-  const orig = document.querySelector('.grid .carta');
-  if (!orig) return ['no hay ninguna carta en pantalla'];
-  const jaula = document.createElement('div');
-  jaula.style.cssText = 'position:fixed;left:-3000px;top:0;width:620px';
-  const carta = orig.cloneNode(true);
-  carta.style.setProperty('--k', '1');   // el lienzo, a tamaño natural
-  jaula.appendChild(carta); document.body.appendChild(jaula);
-
-  const cv = document.createElement('canvas').getContext('2d');
-  const R = carta.getBoundingClientRect();
-  const pc = y => (y - R.top) / R.height * 100;
-  const malos = [];
-  for (const [sel, filas] of Object.entries(huecos)) {
-    [...carta.querySelectorAll(sel)].forEach((el, i) => {
-      const texto = el.textContent.trim();
-      if (!texto || !el.getClientRects().length) return;
-      const env = document.createElement('span');
-      while (el.firstChild) env.appendChild(el.firstChild);
-      const sonda = document.createElement('i');
-      sonda.style.cssText = 'display:inline-block;width:0;height:0';
-      env.appendChild(sonda); el.appendChild(env);
-      const base = sonda.getBoundingClientRect().bottom;
-      const s = getComputedStyle(el);
-      cv.font = `${s.fontWeight} ${s.fontSize} ${s.fontFamily}`;
-      // Alto por las mayúsculas —así una "y" no arrastra la medida— y bajo por lo que
-      // de verdad baje este texto, que es lo que puede asomar por debajo del hueco.
-      const alto = cv.measureText('H').actualBoundingBoxAscent;
-      const bajo = Math.max(0, cv.measureText(texto).actualBoundingBoxDescent);
-      const tinta = [pc(base - alto), pc(base + bajo)];
-      // Las seis stats van en tres filas de dos, intercaladas: la número i está en la
-      // fila i>>1, igual que las coloca cartaHTML().
-      const [arriba, abajo] = filas[filas.length === 1 ? 0 : i >> 1];
-      const H = 0.25;                                  // holgura, en % de la altura
-      if (tinta[0] < arriba - H || tinta[1] > abajo + H)
-        malos.push(`${sel} "${texto}" ${tinta[0].toFixed(2)}-${tinta[1].toFixed(2)}`
-                 + ` fuera de ${arriba}-${abajo}`);
-    });
-  }
-  jaula.remove();
-  return malos;
-}, HUECOS);
-comprobar(vertical.length === 0,
-  `y la tinta cae dentro de su hueco del marco (${vertical.slice(0, 3).join(' · ') || 'ranking, nombre, récord y los seis números'})`);
-
-/* Ninguna pantalla puede quedarse sin puerta. Se recorre la navegación entera desde la
-   barra y el engranaje, y lo que no se alcance por enlace tiene que alcanzarse por una
-   acción concreta — y aquí se nombra cuál. Una pantalla que el juego sabe pintar pero a
-   la que no se llega es código muerto que parece vivo. */
-console.log('\n2c-quater. Todas las pantallas tienen puerta');
-const puertas = await page.evaluate(() => {
-  const guardado = { vista, tmp, coleccion: S.coleccion.slice(), plantilla: { ...S.plantilla } };
-  const l = ROSTER.filter(c => c.alineable);
-  S.coleccion = []; S.plantilla = {};
-  DIVISIONES.forEach((d, i) => { const c = l.find(x => x.division === d.id);
-    if (c) { const iid = 'w' + i; S.coleccion.push({ iid, cid: c.id }); S.plantilla[d.id] = iid; } });
-  S.divisa = 5000; S.sobres = [{ tipo: 'oro' }];
-
-  const vistos = new Set(), cola = ['inicio', 'tienda', 'retos', 'club', 'ajustes'];
-  while (cola.length) {
-    const v = cola.shift(); if (vistos.has(v)) continue; vistos.add(v);
-    try { ir(v); } catch (e) { continue; }
-    for (const e of document.querySelectorAll('[data-nav]'))
-      if (!vistos.has(e.dataset.nav)) cola.push(e.dataset.nav);
-  }
-  // Las que no se alcanzan por enlace se alcanzan por una acción. Se comprueba una a una.
-  const porAccion = {};
-  ir('tienda');
-  document.querySelector('[data-a="versobre"][data-t="oro"]').click();
-  porAccion.sobre = vista === 'sobre';
-  document.querySelector('[data-a="abrirsobre"]').click();
-  porAccion.apertura = vista === 'apertura';
-  pararAviso();
-  ir('jugar');
-  document.querySelector('[data-a="jugar"]').click();
-  porAccion.partida = vista === 'partida';
-  P = null; ir('directo');
-  // online se alcanza al entrar en una sala; aquí basta con que el juego sepa llevarte
-  porAccion.online = typeof vOnline === 'function' &&
-    !!document.querySelector('[data-a="crearsala"],[data-a="entrarsala"],#codigosala');
-
-  S.coleccion = guardado.coleccion; S.plantilla = guardado.plantilla;
-  vista = guardado.vista; tmp = guardado.tmp; render();
-  return { porEnlace: [...vistos].sort(), porAccion };
-});
-comprobar(puertas.porEnlace.length >= 19,
-  `${puertas.porEnlace.length} pantallas se alcanzan navegando desde la barra y el engranaje`);
-const sinPuerta = Object.entries(puertas.porAccion).filter(([, ok]) => !ok).map(([k]) => k);
-comprobar(sinPuerta.length === 0,
-  `y las cuatro que no son de menú tienen su acción (${sinPuerta.join(', ') || 'sobre, apertura, partida y online'})`);
 
 /* ── 2c. Sobre básico ilimitado ───────────────────────────────────────── */
 console.log('\n2c. Sobre básico ilimitado');

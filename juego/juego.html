@@ -24,7 +24,7 @@
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 body{background:var(--bg);color:var(--txt);font:15px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif;
   overscroll-behavior:none;padding-bottom:64px}
-#app{max-width:760px;margin:0 auto;padding:12px 12px 20px}
+#app{max-width:760px;margin:0 auto;padding:12px 12px 20px;position:relative;z-index:1}
 h1,h2,h3{font-family:var(--titulo);font-weight:600;letter-spacing:.005em;text-transform:uppercase}
 h2{font-size:19px;margin-bottom:2px}
 h3{font-size:15px;margin-bottom:8px}
@@ -81,8 +81,73 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 .fila.grande{padding:15px 13px}
 .fila.grande .cu b{font-size:18px}
 /* Dos mitades exactamente iguales. */
-.mitades{display:flex;gap:8px;margin-bottom:8px}
+.mitades{display:flex;gap:8px;min-height:0}
 .mitades .fila{flex:1 1 0;min-width:0;margin:0}
+
+/* LA PILA. Los bloques de una sección se reparten TODO el alto que queda, en vez de
+   apilarse arriba dejando media pantalla muerta debajo. El alto libre lo mide
+   ajustarRejillas(), igual que hace con las rejillas de cartas. */
+.pila{display:flex;flex-direction:column;gap:8px}
+.pila > *{flex:1 1 0;min-height:0;margin:0}
+/* Dentro de un bloque estirado, el contenido se centra en vertical. */
+/* Dentro de una pila, un bloque de navegación deja de ser una fila y pasa a ser un
+   MOSAICO: el icono crece con el hueco y el texto se apoya abajo a la izquierda. Estirar
+   una fila sin más deja un renglón perdido en mitad de un rectángulo vacío. */
+.pila .fila{flex-direction:column;align-items:stretch;justify-content:space-between;
+  padding:14px 15px;gap:0}
+.pila .fila .ic{font-size:min(13vw,54px);align-self:flex-start;
+  filter:drop-shadow(0 4px 10px rgba(0,0,0,.45))}
+.pila .fila .cu{flex:0 0 auto}
+.pila .fila .cu b{font-size:19px;letter-spacing:.03em}
+.pila .fila .cu .sub{font-size:12.5px}
+/* El chevron no pinta nada en un mosaico: el bloque entero ya se ve pulsable. */
+.pila .fila .der{display:none}
+.mitades .fila .ic{font-size:min(10vw,42px)}
+.mitades .fila .cu b{font-size:16px}
+/* Las filas de la tienda siguen siendo filas: llevan precio a la derecha y se comparan
+   entre ellas de un vistazo, que es justo lo que una lista hace mejor que un mosaico. */
+.pila .sobre-fila .fila{flex-direction:row;align-items:center;justify-content:flex-start;
+  gap:11px;padding:11px 12px}
+.pila .sobre-fila .fila .ic{font-size:min(9vw,38px);align-self:center}
+.pila .sobre-fila .fila .cu{flex:2}
+.pila .sobre-fila .fila .cu b{font-size:16px}
+.pila .sobre-fila .fila .der{display:flex}
+
+/* LA TARJETA DE SOBRE. Copiada de la referencia: el texto a la izquierda, el arte del
+   sobre a la derecha y SALIÉNDOSE de la tarjeta por arriba y por abajo, y el precio en
+   una píldora que monta sobre el borde inferior.
+
+   No se estiran a pantalla completa. Son una LISTA: se comparan entre ellas de un
+   vistazo, y para eso tienen que caber varias a la vez y medir todas lo mismo. */
+.sobre-fila{position:relative;margin:0 0 30px;flex:0 0 auto}
+.sobre-fila .fila{position:relative;align-items:flex-start;overflow:visible;
+  min-height:126px;padding:14px 124px 22px 14px;margin:0;
+  background:linear-gradient(118deg,#18222b 0%,#131a21 46%,#0f1319 100%)}
+.sobre-fila .fila .ic{display:none}
+.sobre-fila .fila .cu b{display:block;font-size:19px;line-height:1.15;margin-bottom:3px}
+.sobre-fila .fila .cu .sub{font-size:12px;line-height:1.4}
+/* El arte, saliéndose de la caja: es lo que hace que el sobre se lea como un objeto y
+   no como un icono metido en una celda. */
+.sobre-art{position:absolute;right:9px;top:-11px;bottom:-11px;width:106px;
+  pointer-events:none;display:flex;align-items:center;justify-content:center}
+.sobre-art img{max-width:100%;max-height:100%;width:auto;height:auto;
+  filter:drop-shadow(0 7px 15px rgba(0,0,0,.65))}
+/* La píldora del precio monta sobre el borde de abajo, centrada en la parte de texto. */
+.sobre-fila .precio{position:absolute;left:50%;bottom:-14px;transform:translateX(-62px);
+  z-index:3;font-family:var(--titulo);font-weight:700;font-size:14px;letter-spacing:.02em;
+  background:var(--bg3);border:1px solid var(--line);border-radius:999px;
+  padding:6px 20px;white-space:nowrap;color:var(--txt)}
+.sobre-fila .fila .der{display:none}
+.sobre-fila.apagada{opacity:.42}
+
+/* La (i), en la esquina de arriba. Es la única excepción a que la fila entera sea el
+   botón, y va FUERA de ella para que tocarla no dispare también la fila. */
+.info{position:absolute;top:7px;right:130px;z-index:4;
+  width:21px;height:21px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--titulo);font-weight:700;font-size:11.5px;line-height:1;
+  color:var(--dim);background:rgba(0,0,0,.45);border:1px solid var(--line)}
+.info:active{background:var(--acc);border-color:var(--acc);color:#fff}
 
 /* El sobre de la pantalla de apertura. Grande y solo: lo único que se puede tocar ahí. */
 .sobre-toque{display:flex;flex-direction:column;align-items:center;justify-content:center;
@@ -90,7 +155,53 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
   padding:26px 14px;margin-bottom:10px}
 .sobre-toque:active{transform:scale(.985);filter:brightness(1.15)}
 .sobre-toque[disabled]{opacity:.45}
-.sobre-arte{font-size:74px;line-height:1;filter:drop-shadow(0 6px 14px rgba(0,0,0,.5))}
+/* LA ESCENA DEL SOBRE. Ocupa la PANTALLA ENTERA, por detrás de todo: el sobre flota
+   encima, sin caja que lo encierre. Meterlo en un recuadro lo convertía en una ilustración
+   dentro de una ficha; así es el sitio donde estás.
+
+   Los trazos van apagados mientras se mira el sobre y se encienden con el color del nivel
+   en el momento de abrirlo. Ese es el primer aviso: antes de ver una sola carta, la
+   pantalla ya te ha dicho lo que viene.
+
+   Van en SVG dibujado aquí mismo, sin archivo: un fondo así en PNG serían cientos de kB
+   por cada color, y aquí basta con cambiarle el trazo al mismo dibujo. */
+.escena{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;
+  background:radial-gradient(120% 90% at 50% 44%, #12181f 0%, #0a0d11 68%);
+  opacity:0;transition:opacity .3s ease}
+.escena:not(:empty){opacity:1}
+.escena .floritura{position:absolute;inset:0;
+  color:#1c242e;                        /* apagado: apenas se intuye */
+  transition:color .45s ease, filter .45s ease}
+.escena .floritura svg{width:100%;height:100%;display:block}
+/* Se enciende LA REJA, no la pantalla. El color va al trazo y el brillo es el halo del
+   propio trazo; el fondo se queda negro. Un resplandor de fondo teñía la pantalla entera
+   y se comía el sobre, que es lo que hay que mirar. */
+/* El brillo va PEGADO al trazo. Con un halo ancho, la luz rellena los huecos de la malla
+   y la pantalla entera se tiñe: entonces ya no es una reja encendida, es un filtro de
+   color encima de todo, y el sobre —que es lo que hay que mirar— desaparece. */
+.escena.encendida .floritura{color:var(--luz,#ffd24a);
+  filter:drop-shadow(0 0 3px var(--luz,#ffd24a))}
+
+/* El sobre: sin caja, solo él. */
+.sobre-toque{display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:14px;width:100%;background:none;border:0;padding:0;margin:0;min-height:0}
+.sobre-toque[disabled]{opacity:.5}
+.sobre-arte{max-width:66%;max-height:100%;width:auto;height:auto;min-height:0;
+  filter:drop-shadow(0 14px 34px rgba(0,0,0,.8));
+  transition:transform .55s cubic-bezier(.2,.7,.3,1), filter .55s ease}
+.sobre-toque:active .sobre-arte{transform:scale(.975)}
+/* Al abrir, el sobre NO se escala. Escalarlo lo promociona a una capa aparte y ahí el
+   navegador lo compone con su alfa de borde: el fondo se colaba por dentro del sobre y
+   parecía que las florituras pasaran por delante. Sin transform, el sobre tapa lo que
+   tiene detrás, que es lo único que se le pide. */
+.sobre-arte.abriendo{filter:drop-shadow(0 14px 34px rgba(0,0,0,.8)) brightness(1.08)}
+.sobre-pie{font-family:var(--titulo);letter-spacing:.06em;text-transform:uppercase;
+  font-size:12px;color:var(--dim)}
+/* En la pantalla del sobre la (i) va arriba a la derecha, sobre la escena. */
+.info-suelta{position:absolute;right:14px;top:92px}
+@media (prefers-reduced-motion:reduce){
+  .escena .floritura,.sobre-arte{transition-duration:.01ms}
+}
 .sobre-pie{font-family:var(--titulo);letter-spacing:.06em;text-transform:uppercase;
   font-size:12px;color:var(--dim)}
 
@@ -482,6 +593,7 @@ th{color:var(--dim2);font-size:11px;text-transform:uppercase;letter-spacing:.04e
   <div class="res" id="r-fic">🎟️ <span>0</span></div>
   <button class="engranaje" data-nav="ajustes" aria-label="Ajustes">⚙️</button>
 </div>
+<div id="escena" class="escena"></div>
 <div id="app"></div>
 <div id="nav"></div>
 
@@ -626,6 +738,7 @@ const TIPOS_SOBRE={
      de los últimos puestos, 12-15, y de ahí para arriba la probabilidad es simbólica.
      Se hace un equipo, no se hace un equipo de campeones. */
   basico:{n:'Sobre básico', ic:'📦', coste:0, unico:true, gratis:true,
+    desc:'Gratis y sin límite. Mitad oros y mitad platas, para montar un once desde el primer día.',
     oros  :{3:15, 4:35, 5:35, 6:15},
     nivel :{corona:0.01, top611:0.09, top1215:3.9, oro:96},
     platas:{plataAlta:40, plataBaja:60}},
@@ -633,11 +746,13 @@ const TIPOS_SOBRE={
      BAJAS: las de arriba son las que cuesta completar, y si cayeran por igual el sobre
      se quedaría sin recorrido a las pocas compras. */
   plata :{n:'Sobre de plata', ic:'🎁', coste:250,
+    desc:'Para cerrar la colección de platas. Reparte sobre todo platas bajas.',
     oros  :{1:40, 2:40, 3:20},
     nivel :{corona:0.30, top611:2, top1215:40, oro:57.7},
     platas:{plataAlta:8, plataBaja:92}},
   /* ORO — el caro, y el único que reparte cartas de arriba de verdad. */
   oro   :{n:'Sobre de oro', ic:'🥇', coste:600,
+    desc:'El caro, y el único que reparte cartas de arriba de verdad.',
     oros  :{7:30, 8:45, 9:25},
     nivel :{corona:0.60, top611:3.20, top1215:46.2, oro:50},
     platas:{plataAlta:55, plataBaja:45}},
@@ -1177,6 +1292,11 @@ function render(){
     coleccion:vColeccion,plantilla:vPlantilla,intercambio:vIntercambio,sets:vSets,
     reciclaje:vReciclaje,retosdetalle:vRetos,
     partida:vPartida,amigos:vAmigos,online:vOnline,directo:vDirecto}[vista]||vInicio;
+  /* La escena del sobre va FUERA de #app, para poder ocupar la pantalla entera por
+     detrás de todo. Se pinta solo donde hace falta y se borra al salir. */
+  const esc=$('#escena');
+  if(vista==='sobre'){ if(!esc.firstChild) esc.innerHTML=`<span class="floritura">${FLORITURAS}</span>`; }
+  else { esc.innerHTML=''; esc.className='escena'; esc.removeAttribute('style'); }
   $('#app').innerHTML=f();
   $('#app').classList.remove('flash'); void $('#app').offsetWidth; $('#app').classList.add('flash');
   ajustarRejillas();    // antes de medir: cambia lo anchas que son las cartas
@@ -1196,6 +1316,18 @@ function render(){
 
    Cualquier rejilla marcada con data-fit="columnas,filas" entra por aquí. */
 function ajustarRejillas(){
+  /* Las pilas se estiran hasta el fondo. Se hace con la misma cuenta que las rejillas:
+     dónde empieza el bloque, qué hay debajo, y cuánto queda. */
+  for(const q of document.querySelectorAll('.pila')){
+    q.style.height='auto';
+    const arriba=q.getBoundingClientRect().top;
+    let abajo=parseFloat(getComputedStyle(document.body).paddingBottom)||0;
+    for(let e=q.nextElementSibling;e;e=e.nextElementSibling){
+      const r=e.getBoundingClientRect();
+      if(r.height) abajo+=r.height+8;
+    }
+    q.style.height=Math.max(180, innerHeight-arriba-abajo-12).toFixed(1)+'px';
+  }
   for(const g of document.querySelectorAll('[data-fit]')){
     const [cols,filas]=g.dataset.fit.split(',').map(Number);
     if(!cols||!filas) continue;
@@ -1247,19 +1379,19 @@ function ir(v){ pararAviso(); vista=v; tmp={}; window.scrollTo(0,0); render(); }
    Cuatro filas y nada más: jugar, retar, y una partida en dos para aprender y logros.
    La tabla de márgenes ya no vive aquí — es material de consulta, y su sitio es Reglas.
    Inicio es de donde se sale a jugar, no un manual. */
+/* ── INICIO ──
+   Solo lo que se hace desde aquí: jugar, retar, aprender y ver los logros. Nada de
+   estado de plantilla — eso es del Club, y tenerlo aquí obligaba a mirar dos sitios para
+   lo mismo. La tabla de márgenes tampoco vive aquí: es material de consulta, y su sitio
+   es Reglas.
+
+   Los bloques se reparten el alto entero de la pantalla. Apilados arriba dejaban media
+   pantalla muerta debajo, que es lo que se veía. */
 function vInicio(){
   const ok=plantillaCompleta();
-  const cartasPl=ok?DIVISIONES.map(d=>cartaDe(S.plantilla[d.id])):[];
-  const nRank=cartasPl.filter(c=>['campeon','top5','top10','top15'].includes(c.estatus)).length;
-  const nOro=cartasPl.filter(c=>c.rareza==='oro').length;
-  const hechos=logros().filter(l=>l.hecho).length, total=logros().length;
-  return `<div class="card-panel center" style="padding:16px 14px;margin-bottom:9px">
-      <div class="tiny">TU PLANTILLA</div>
-      <div style="font-size:38px;font-weight:800;letter-spacing:-.04em;line-height:1.05">
-        ${ok?nRank:'—'}<span style="font-size:17px;color:var(--dim2)"> /11</span></div>
-      <div class="sub">${ok?`rankeados · ${nOro} oros`:'sin completar'} · ${S.victorias} de ${S.partidas} partidas</div>
-    </div>
-    ${ok?'':`<div class="fila apagada" style="opacity:1;border-color:var(--warn)">
+  const l=logros(), hechos=l.filter(x=>x.hecho).length;
+  return `<div class="pila">
+    ${ok?'':`<div class="fila" style="border-color:var(--warn);flex:0 0 auto">
       <span class="ic">⚠️</span><span class="cu"><b>Te faltan divisiones</b>
       <span class="sub" style="display:block">Necesitas una carta alineable en las 11 para poder jugar.</span></span></div>`}
     <button class="fila grande ${ok?'':'apagada'}" ${ok?'':'disabled'} data-nav="jugar">
@@ -1276,8 +1408,9 @@ function vInicio(){
         <span class="sub" style="display:block">${S.tutorialHecho?'Reglas y tutorial':'Empieza por aquí'}</span></span></button>
       <button class="fila" data-nav="logros">
         <span class="ic">🏅</span><span class="cu"><b>Logros</b>
-        <span class="sub" style="display:block">${hechos} de ${total}</span></span></button>
-    </div>`;
+        <span class="sub" style="display:block">${hechos} de ${l.length}</span></span></button>
+    </div>
+  </div>`;
 }
 
 /* Elegir con quién se juega. Antes eran dos botones sueltos en Inicio; ahora Inicio dice
@@ -1285,6 +1418,7 @@ function vInicio(){
 function vJugar(){
   const ok=plantillaCompleta();
   return `<div class="pcab"><h2>Jugar</h2></div>
+    <div class="pila">
     <button class="fila grande ${ok?'':'apagada'}" ${ok?'':'disabled'} data-nav="directo">
       <span class="ic">🟢</span><span class="cu"><b>Partida en directo</b>
       <span class="sub" style="display:block">Los dos a la vez, por código de sala</span></span>
@@ -1293,6 +1427,7 @@ function vJugar(){
       <span class="ic">🤖</span><span class="cu"><b>Contra la IA</b>
       <span class="sub" style="display:block">Sin conexión, cuando quieras</span></span>
       <span class="der">›</span></button>
+    </div>
     <button class="btn sec" data-nav="inicio">Atrás</button>`;
 }
 
@@ -1356,6 +1491,7 @@ function vLogros(){
 function vRetosTab(){
   const rep=S.coleccion.length-new Set(S.coleccion.map(x=>x.cid)).size;
   return `<div class="pcab"><h2>Retos</h2></div>
+    <div class="pila">
     <button class="fila grande" data-nav="retosdetalle">
       <span class="ic">📜</span><span class="cu"><b>Retos</b>
       <span class="sub" style="display:block">Entrega cartas, gana recompensas</span></span>
@@ -1363,7 +1499,7 @@ function vRetosTab(){
     <button class="fila grande" data-nav="reciclaje">
       <span class="ic">♻️</span><span class="cu"><b>Reciclaje</b>
       <span class="sub" style="display:block">Convierte repetidas en fichas${rep?` · tienes ${rep}`:''}</span></span>
-      <span class="der">›</span></button>`;
+      <span class="der">›</span></button></div>`;
 }
 
 /* ── CLUB ──
@@ -1372,6 +1508,7 @@ function vClub(){
   const distintas=new Set(S.coleccion.map(x=>x.cid)).size;
   const ok=plantillaCompleta();
   return `<div class="pcab"><h2>Club</h2></div>
+    <div class="pila">
     <button class="fila grande" data-nav="plantilla">
       <span class="ic">📋</span><span class="cu"><b>Plantilla</b>
       <span class="sub" style="display:block">${ok?'Las once, completas':'Sin completar'}</span></span>
@@ -1387,7 +1524,7 @@ function vClub(){
     <button class="fila grande" data-nav="sets">
       <span class="ic">🧩</span><span class="cu"><b>Sets de colección</b>
       <span class="sub" style="display:block">Completa y desbloquea cartas</span></span>
-      <span class="der">›</span></button>`;
+      <span class="der">›</span></button></div>`;
 }
 
 /* ── AJUSTES ── detrás del engranaje. */
@@ -1444,22 +1581,26 @@ function vTienda(){
       <button data-a="sub" data-v="comprar" class="${sub==='comprar'?'on':''}">Comprar</button>
       <button data-a="sub" data-v="mios" class="${sub==='mios'?'on':''}">Mis sobres${S.sobres.length?` (${S.sobres.length})`:''}</button>
     </div>`;
-  return cab + (sub==='mios' ? tiendaMios() : tiendaComprar());
+  // La tienda es una LISTA, no una pila estirada: las tarjetas miden todas lo mismo y
+  // se comparan de un vistazo, que es para lo que sirve una lista.
+  return cab + (sub==='mios'?tiendaMios():tiendaComprar());
 }
 
 /* ¿Se puede abrir otro de este tipo? Uno guardado, el gratis disponible, o dinero para
    pagarlo. Se pregunta en tres sitios y tiene que contestar lo mismo en los tres. */
-function puedeOtro(t){
-  if(S.sobres.some(s=>s.tipo===t)) return true;
-  const g=GRATIS.find(x=>x.tipo===t);
-  if(g&&listoGratis(g)) return true;
-  const T=TIPOS_SOBRE[t];
-  return !!(T&&T.coste>0&&S.divisa>=T.coste);
-}
+/* ¿Queda otro de este tipo PARA ABRIR? Solo cuenta lo que ya tienes: comprar es otra
+   decisión y se toma en la tienda, no en el resumen de un sobre recién abierto. */
+function puedeOtro(t){ return S.sobres.some(s=>s.tipo===t); }
 
 // El orden es siempre el mismo y sale del coste: básico, plata, oro.
 const ORDEN_TIENDA=()=>Object.keys(TIPOS_SOBRE).sort((a,b)=>TIPOS_SOBRE[a].coste-TIPOS_SOBRE[b].coste);
 
+/* Las probabilidades NO van en la fila. Ocupaban dos líneas de números que nadie lee al
+   pasar y que engordan la fila; y el jugador que sí las quiere las quiere de verdad, con
+   sitio para leerlas. Van detrás de la (i) de la esquina, que es donde se las busca.
+
+   La (i) es un botón aparte DENTRO de la fila, y es la única excepción a que la fila
+   entera sea el botón: se para el toque para que no dispare también la fila. */
 function tiendaComprar(){
   return ORDEN_TIENDA().map(k=>{
     const T=TIPOS_SOBRE[k];
@@ -1467,32 +1608,36 @@ function tiendaComprar(){
     const espera=g&&g.espera>0&&!listoGratis(g);
     const caro=T.coste>0&&S.divisa<T.coste;
     const off=caro||espera;
-    return `<button class="fila ${off?'apagada':''}" ${off?'disabled':''} data-a="versobre" data-t="${k}">
-      <span class="ic">${T.ic}</span>
-      <span class="cu"><b>${T.n}</b>
-        <span class="sub" style="display:block">${orosTexto(k)} de ${T.cartas} cartas</span>
-        <span class="sub" style="display:block">${pctCorona(k).toFixed(2)}% de campeón o top 5 · ${
-          (100-T.nivel.oro/Object.values(T.nivel).reduce((a,b)=>a+b,0)*100).toFixed(0)}% de rankeado</span></span>
-      <span class="der"><span class="precio" ${espera?`data-reloj="${g.id}"`:''}>${
-        espera?reloj(restaGratis(g)):(T.coste?'🪙 '+T.coste:'0')}</span></span>
-    </button>`;
+    return `<div class="sobre-fila ${off?'apagada':''}">
+      <button class="fila" ${off?'disabled':''} data-a="comprar" data-t="${k}">
+        <span class="cu"><b>${T.n}</b>
+          <span class="sub">${T.desc}</span></span>
+        <span class="sobre-art"><img src="sobres/${k}.webp" alt="" loading="lazy"></span>
+      </button>
+      <span class="precio" ${espera?`data-reloj="${g.id}"`:''}>${
+        espera?reloj(restaGratis(g)):(T.coste?'🪙 '+T.coste:'GRATIS')}</span>
+      <button class="info" data-a="probs" data-t="${k}" aria-label="Probabilidades">i</button>
+    </div>`;
   }).join('');
 }
 
 function tiendaMios(){
   const hay=S.sobres.reduce((a,s)=>{a[s.tipo]=(a[s.tipo]||0)+1;return a},{});
   const lista=ORDEN_TIENDA().filter(t=>hay[t]);
-  if(!lista.length) return `<div class="card-panel sub">No tienes ningún sobre guardado.
+  if(!lista.length) return `<div class="card-panel sub" style="flex:0 0 auto">
+    No tienes ningún sobre guardado.
     <div style="margin-top:9px"><button class="btn sm" data-a="sub" data-v="comprar">Ir a Comprar</button></div></div>`;
   return lista.map(t=>{
     const T=TIPOS_SOBRE[t];
-    return `<button class="fila" data-a="versobre" data-t="${t}" data-mio="1">
-      <span class="ic">${T.ic}</span>
-      <span class="cu"><b>${T.n}</b>
-        <span class="sub" style="display:block">${orosTexto(t)} de ${T.cartas} cartas</span>
-        <span class="sub" style="display:block">${pctCorona(t).toFixed(2)}% de campeón o top 5</span></span>
-      <span class="der"><span class="precio">×${hay[t]}</span></span>
-    </button>`;
+    return `<div class="sobre-fila">
+      <button class="fila" data-a="versobre" data-t="${t}" data-mio="1">
+        <span class="cu"><b>${T.n}</b>
+          <span class="sub">${T.desc}</span></span>
+        <span class="sobre-art"><img src="sobres/${t}.webp" alt="" loading="lazy"></span>
+      </button>
+      <span class="precio">×${hay[t]}</span>
+      <button class="info" data-a="probs" data-t="${t}" aria-label="Probabilidades">i</button>
+    </div>`;
   }).join('');
 }
 
@@ -1503,31 +1648,72 @@ function tiendaMios(){
 
    Las fichas se descuentan en ese toque y no al entrar: entrar a mirar qué trae un sobre
    de oro no puede costar 600. Salir de aquí sin abrir no cobra nada y no gasta el sobre. */
+/* ── LA PANTALLA DEL SOBRE ──
+   Aquí NO se compra: el sobre ya es tuyo cuando llegas. Lo único que se puede hacer es
+   abrirlo, y por eso lo único que se puede tocar es el sobre.
+
+   Comprar y abrir separados no es un rodeo: son dos decisiones distintas —gastar dinero y
+   gastar el sobre— y juntarlas en el mismo toque convertía esta pantalla en una caja
+   registradora. Aquí ya no hay nada que pagar, así que no hay nada que pensar: se toca. */
 function vSobre(){
   const t=tmp.sobre; const T=TIPOS_SOBRE[t]; if(!T) return vTienda();
   const tengo=S.sobres.filter(s=>s.tipo===t).length;
-  const g=GRATIS.find(x=>x.tipo===t);
-  const gratisListo=g&&listoGratis(g);
-  const puedo=tengo>0||gratisListo||(T.coste>0&&S.divisa>=T.coste);
-  const coste=tengo>0||gratisListo?'':`🪙 ${T.coste}`;
-  const tot=Object.values(T.nivel).reduce((a,b)=>a+b,0);
-  return `<div class="pcab"><h2>${T.n}</h2></div>
-    <button class="sobre-toque" data-a="abrirsobre" data-t="${t}" ${puedo?'':'disabled'}>
-      <span class="sobre-arte">${T.ic}</span>
-      <span class="sobre-pie">${puedo?'Toca el sobre para abrirlo':'No te llega'}${coste?' · '+coste:''}</span>
-    </button>
-    <div class="card-panel">
-      <b>Qué trae</b>
-      <div class="sub">${T.cartas} cartas, y ninguna se repite dentro del mismo sobre.
-        De ellas, ${orosTexto(t)}.</div>
-      <div class="divider"></div>
-      <b>Con qué probabilidad</b>
-      <table><tr><th>Nivel</th><th style="text-align:right">Por carta de oro</th></tr>
-      ${NIVELES.map(n=>`<tr><td>${n.n}</td><td style="text-align:right">${(T.nivel[n.id]/tot*100).toFixed(n.id==='corona'?2:1)}%</td></tr>`).join('')}
-      </table>
-      <div class="tiny" style="margin-top:7px">Campeón o top 5 en el sobre entero: ${pctCorona(t).toFixed(2)}%</div>
+  const puedo=tengo>0;
+  return `<div class="pcab"><h2>${T.n}</h2>${tengo>1?`<span class="sub">te quedan ${tengo}</span>`:''}</div>
+    <div class="pila" style="justify-content:center">
+      <button class="sobre-toque" data-a="abrirsobre" data-t="${t}" ${puedo?'':'disabled'}>
+        <img class="sobre-arte" src="sobres/${t}.webp" alt="">
+        <span class="sobre-pie">${puedo?'Toca el sobre para abrirlo':'Ya no te queda ninguno'}</span>
+      </button>
     </div>
+    <button class="info info-suelta" data-a="probs" data-t="${t}" aria-label="Probabilidades">i</button>
     <button class="btn sec" data-a="volvertienda">Atrás</button>`;
+}
+
+/* El dibujo de las florituras: arcos largos que cruzan la escena y unas cuñas rectas.
+   Se pinta con currentColor, así que el color lo pone el CSS y basta con cambiar una
+   variable para que pasen de apagadas a encendidas del color del nivel. */
+/* EL FONDO DE LA PANTALLA DEL SOBRE.
+
+   Arcos dibujados, nada más: un SVG de unas pocas líneas que se pinta con currentColor,
+   así que el color lo pone el CSS y basta con cambiar una variable para que pase de
+   apagado a encendido del color del nivel. Sin archivos, sin texturas y sin máscaras.
+
+   Se probó antes con la reja de un octágono, con la textura sacada de una foto. Se veía
+   bien y falló por otro lado: el sobre lleva transparencia en sus zonas negras y la reja
+   se colaba a través de él. Un fondo que atraviesa lo que tiene delante no es un fondo. */
+const FLORITURAS=`<svg viewBox="0 0 400 860" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+  <g fill="none" stroke="currentColor" stroke-linecap="round">
+    <path d="M-80 235 Q 200 95 480 235"  stroke-width="2.4"/>
+    <path d="M-80 268 Q 200 128 480 268" stroke-width="1.2" opacity=".6"/>
+    <path d="M-80 300 Q 200 170 480 300" stroke-width=".9"  opacity=".3"/>
+    <path d="M-80 625 Q 200 765 480 625" stroke-width="2.4"/>
+    <path d="M-80 592 Q 200 732 480 592" stroke-width="1.2" opacity=".6"/>
+    <path d="M-80 560 Q 200 690 480 560" stroke-width=".9"  opacity=".3"/>
+    <path d="M-40 -20 L 96 200 L -40 420" stroke-width="1.8" opacity=".8"/>
+    <path d="M440 -20 L 304 200 L 440 420" stroke-width="1.8" opacity=".8"/>
+    <path d="M-40 880 L 96 660 L -40 440" stroke-width="1.8" opacity=".8"/>
+    <path d="M440 880 L 304 660 L 440 440" stroke-width="1.8" opacity=".8"/>
+    <path d="M28 430 L 150 430"  stroke-width="1.4" opacity=".45"/>
+    <path d="M250 430 L 372 430" stroke-width="1.4" opacity=".45"/>
+  </g>
+</svg>`;
+
+/* Las probabilidades, cuando se piden. Aquí sí caben enteras y con sitio para leerlas. */
+function ovProbabilidades(t){
+  const T=TIPOS_SOBRE[t]; if(!T) return;
+  const tot=Object.values(T.nivel).reduce((a,b)=>a+b,0);
+  ov(`<div style="text-align:left">
+    <h3>${T.ic} ${T.n}</h3>
+    <div class="sub mb">${T.cartas} cartas, y ninguna se repite dentro del mismo sobre.
+      De ellas, ${orosTexto(t)}.</div>
+    <table><tr><th>Nivel</th><th style="text-align:right">Por carta de oro</th></tr>
+    ${NIVELES.map(n=>`<tr><td>${n.n}</td><td style="text-align:right">${
+      (T.nivel[n.id]/tot*100).toFixed(n.id==='corona'?2:1)}%</td></tr>`).join('')}
+    </table>
+    <div class="tiny" style="margin:8px 0 12px">Campeón o top 5 en el sobre entero:
+      <b>${pctCorona(t).toFixed(2)}%</b></div>
+    <button class="btn" data-a="cerrarov" style="width:100%">Vale</button></div>`);
 }
 
 // Los relojes se refrescan solos sin volver a pintar la pantalla entera:
@@ -1671,6 +1857,9 @@ const SONIDO={
    revelación de abajo están puestos contra él. */
 const ANUNCIO_MS=8890;
 
+// El temporizador del encendido del sobre, para poder cortarlo si el jugador se va.
+function abrirsobre(){}
+
 /* Lo que define cada nivel en la apertura: cuánto dura el aviso, de qué color es,
    y a qué suena. Una sola tabla para animación y sonido, para que no puedan
    contarte cosas distintas. */
@@ -1703,12 +1892,21 @@ const NIVEL_APERTURA={
    Dos pasos y ya: la mejor carta del sobre a pantalla casi completa, se toca, y sale
    el sobre entero. Antes se iban pasando las nueve una a una, que para nueve cartas
    son ocho toques de trámite. */
+/* El nivel de una tanda lo marca su MEJOR carta, que es la primera: la lista viene ya
+   ordenada de mejor a peor. Estaba metido dentro de abrirTanda y ahora hace falta antes,
+   para saber de qué color encender las florituras. */
+function nivelDe(items){
+  const mejor=items.length?PORID[items[0].cid]:null;
+  if(!mejor) return 'plata';
+  if(mejor.estatus==='campeon') return 'corona';
+  if(mejor.estatus==='top5') return 'top5';
+  return mejor.estatus;
+}
 function abrirTanda(items,tipo){
   vista='apertura';
   const mejor=items.length?PORID[items[0].cid]:null;
   tmp={ap:{items,tipo,resumen:items.length===0,
-    nivel:mejor?(mejor.estatus==='campeon'||mejor.estatus==='top5'
-      ?(mejor.estatus==='campeon'?'corona':'top5'):mejor.estatus):'plata',
+    nivel:nivelDe(items),
     fase:items.length?'aviso':'resumen',
     nuevas:items.filter(it=>S.coleccion.filter(x=>x.cid===it.cid).length===1).map(it=>it.iid)}};
   window.scrollTo(0,0); render();
@@ -1789,6 +1987,7 @@ function arrancarAviso(){
    Vale para las dos salidas —el final de siempre y el salto del jugador— porque al
    final natural el clip ya ha terminado y cortarlo no hace nada. */
 function pararAviso(){
+  clearTimeout(abrirsobre.t);          // y el encendido del sobre, si estaba a medias
   const t=arrancarAviso.t;
   if(Array.isArray(t)) t.forEach(clearTimeout); else clearTimeout(t);
   arrancarAviso.t=[];
@@ -1844,7 +2043,7 @@ function vApertura(){
              Solo aparece si de verdad queda otro: uno guardado, el gratis listo, o dinero
              para pagarlo. Si no, solo Atrás. */
         puedeOtro(a.tipo)
-        ? `<button class="btn mb" data-a="versobre" data-t="${a.tipo}">Abrir otro ${TIPOS_SOBRE[a.tipo].n}</button>` : ''}
+        ? `<button class="btn mb" data-a="versobre" data-t="${a.tipo}" data-mio="1">Abrir otro ${TIPOS_SOBRE[a.tipo].n}</button>` : ''}
       <button class="btn sec" data-a="volvertienda">Atrás</button>`;
   }
 
@@ -3368,6 +3567,19 @@ document.addEventListener('click',e=>{
       P.fase='fin'; P.fin='r';
       P.log.push({t:'sys',x:'Te rindes: cuenta como derrota.'});
       render(); break;
+    /* Comprar: se paga aquí y el sobre entra en "Mis sobres". No se abre solo — abrirlo
+       es otra decisión y se toma en su pantalla. Después salta a "Mis sobres", que es
+       donde acaba de aparecer, para que se vea que la compra ha surtido efecto. */
+    case 'comprar':{
+      const T=TIPOS_SOBRE[d.t]; if(!T) break;
+      const g=GRATIS.find(x=>x.tipo===d.t);
+      if(g&&listoGratis(g)){ if(g.espera>0) S.gratis[g.id]=Date.now(); }
+      else if(T.coste>0&&S.divisa>=T.coste) S.divisa-=T.coste;
+      else break;                        // no llega: no pasa nada y no se cobra nada
+      S.sobres.push({tipo:d.t});
+      guardar(); tmp.sub='mios'; window.scrollTo(0,0); render(); break; }
+    case 'probs':                        // la (i) de la esquina de un sobre
+      ovProbabilidades(d.t); break;
     case 'sub':                          // cambiar de sub-pestaña dentro de la Tienda
       tmp.sub=d.v; window.scrollTo(0,0); render(); break;
     /* Ir a la pantalla del sobre. NO cobra ni gasta nada: solo enseña qué trae.
@@ -3387,16 +3599,31 @@ document.addEventListener('click',e=>{
        sin tocar. */
     case 'abrirsobre':{
       const t=d.t, T=TIPOS_SOBRE[t]; if(!T) break;
-      const desde=tmp.desde||'comprar';
+      const desde=tmp.desde||'mios';
+      // Aquí no se cobra nada: el sobre ya estaba pagado. Lo único que se gasta es él.
       const i=S.sobres.findIndex(s=>s.tipo===t);
-      const g=GRATIS.find(x=>x.tipo===t);
-      if(i>=0) S.sobres.splice(i,1);
-      else if(g&&listoGratis(g)){ if(g.espera>0) S.gratis[g.id]=Date.now(); }
-      else if(T.coste>0&&S.divisa>=T.coste) S.divisa-=T.coste;
-      else break;                        // no se puede: no pasa nada, y no se cobra nada
+      if(i<0) break;                     // no queda ninguno: no pasa nada
+      S.sobres.splice(i,1);
       guardar();
-      abrirTanda(abrirSobre(t),t);
-      tmp.ap.desde=desde; break; }
+      const items=abrirSobre(t);
+      /* Antes de enseñar nada se encienden las florituras del color de lo que viene. Es el
+         primer aviso, y llega antes que la carta: la pantalla ya te ha dicho si ha caído
+         algo gordo. Solo después arranca el walkout. */
+      const esc=$('#escena'), caja=document.querySelector('.sobre-toque');
+      const N=NIVEL_APERTURA[nivelDe(items)]||NIVEL_APERTURA.oro;
+      const seguir=()=>{ abrirTanda(items,t); tmp.ap.desde=desde; };
+      if(!esc||!caja){ seguir(); break; }
+      caja.disabled=true;                // un segundo toque mientras enciende no hace nada
+      esc.style.setProperty('--luz',N.luz);
+      esc.style.setProperty('--luz2',N.luz2);
+      esc.classList.add('encendida');
+      const img=caja.querySelector('.sobre-arte');
+      if(img){ img.style.setProperty('--luz',N.luz); img.classList.add('abriendo'); }
+      const pie=caja.querySelector('.sobre-pie');
+      if(pie) pie.textContent='';
+      SONIDO.golpe({t:N.pegada, vol:.18, corte:N.corte});
+      abrirsobre.t=setTimeout(seguir, 850);
+      break; }
     case 'pag':                          // pasar hoja del álbum de la colección
       tmp.pag=(tmp.pag||0)+Number(d.v); window.scrollTo(0,0); render(); break;
     case 'saltaraviso':                  // el aviso siempre se puede saltar
