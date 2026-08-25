@@ -8,21 +8,55 @@
 /* Oswald: condensada y de peso alto, que es por dónde va la tipografía de la UFC.
    Va dentro de la aplicación, no de un servidor de fuentes: el juego tiene que verse
    igual sin conexión y dentro del APK. 40 KB los dos subconjuntos. */
+@font-face{font-family:Saira Condensed;src:url(fuentes/saira-600-latin.woff2) format('woff2');
+  font-weight:600;font-display:swap;unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+2122,U+2212}
+@font-face{font-family:Saira Condensed;src:url(fuentes/saira-600-latin-ext.woff2) format('woff2');
+  font-weight:600;font-display:swap;unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+1E00-1E9F,U+2C60-2C7F,U+A720-A7FF}
+@font-face{font-family:Saira Condensed;src:url(fuentes/saira-700-latin.woff2) format('woff2');
+  font-weight:700;font-display:swap;unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+2122,U+2212}
+@font-face{font-family:Saira Condensed;src:url(fuentes/saira-700-latin-ext.woff2) format('woff2');
+  font-weight:700;font-display:swap;unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+1E00-1E9F,U+2C60-2C7F,U+A720-A7FF}
+@font-face{font-family:Saira Condensed;src:url(fuentes/saira-800-latin.woff2) format('woff2');
+  font-weight:800;font-display:swap;unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+2122,U+2212}
+@font-face{font-family:Saira Condensed;src:url(fuentes/saira-800-latin-ext.woff2) format('woff2');
+  font-weight:800;font-display:swap;unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+1E00-1E9F,U+2C60-2C7F,U+A720-A7FF}
+@font-face{font-family:Barlow;src:url(fuentes/barlow-400-latin.woff2) format('woff2');
+  font-weight:400;font-display:swap;unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+2122,U+2212}
+@font-face{font-family:Barlow;src:url(fuentes/barlow-400-latin-ext.woff2) format('woff2');
+  font-weight:400;font-display:swap;unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+1E00-1E9F,U+2C60-2C7F,U+A720-A7FF}
+@font-face{font-family:Barlow;src:url(fuentes/barlow-600-latin.woff2) format('woff2');
+  font-weight:600;font-display:swap;unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+2122,U+2212}
+@font-face{font-family:Barlow;src:url(fuentes/barlow-600-latin-ext.woff2) format('woff2');
+  font-weight:600;font-display:swap;unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+1E00-1E9F,U+2C60-2C7F,U+A720-A7FF}
+/* Oswald se queda SOLO para la carta: sus porcentajes y sus huecos están medidos contra
+   ella, y cambiarla movería el nombre y las stats de sitio. Fuera de la carta manda
+   Saira Condensed para los títulos y Barlow para el texto. */
 @font-face{font-family:Oswald;src:url(fuentes/oswald-latin.woff2) format('woff2');
-  font-weight:200 700;font-display:swap;
-  unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+2122,U+2212}
+  font-weight:200 700;font-display:swap;unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+2122,U+2212}
 @font-face{font-family:Oswald;src:url(fuentes/oswald-latin-ext.woff2) format('woff2');
-  font-weight:200 700;font-display:swap;
-  unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+1E00-1E9F,U+2C60-2C7F,U+A720-A7FF}
+  font-weight:200 700;font-display:swap;unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+1E00-1E9F,U+2C60-2C7F,U+A720-A7FF}
 :root{
-  --titulo:Oswald,"Roboto Condensed","Avenir Next Condensed","Arial Narrow",system-ui,sans-serif;
-  --bg:#0d1014; --bg2:#141920; --bg3:#1c232c; --line:#2a323d;
-  --txt:#e8edf3; --dim:#8b97a6; --dim2:#5d6874;
-  --acc:#e0483a; --acc2:#ff6b5b; --ok:#3fb96b; --warn:#e8b13a;
-  --plata:#9aa8b5; --oro:#d9a441; --corona:#ffd76a;
+  --titulo:"Saira Condensed","Barlow Condensed","Arial Narrow",system-ui,sans-serif;
+  --texto:Barlow,system-ui,-apple-system,"Segoe UI",sans-serif;
+  --carta:Oswald,"Roboto Condensed","Avenir Next Condensed","Arial Narrow",system-ui,sans-serif;
+  /* La paleta de la arena: negro con rojo sangre y oro. */
+  --bg:#150a0a; --bg2:#231413; --bg3:#34211f; --line:#493531;
+  --txt:#f8f5ee; --dim:#aea298; --dim2:#7d6f68;
+  --acc:#d40c1a; --acc2:#f12e1d; --ok:#5cb572; --warn:#e4b33f;
+  --plata:#b9b2ad; --oro:#eabe4a; --corona:#f7e59f;
+  --oro-suave:#f7e59f;
+  /* El fondo no es un color plano: un foco rojo arriba, como el de encima del octágono. */
+  --arena:radial-gradient(120% 80% at 50% 0%, rgba(88,28,24,.55) 0%, transparent 60%),
+          linear-gradient(180deg,#100606 0%,#050303 100%);
+  /* Y las tarjetas llevan su propio degradado, no un gris liso. */
+  --tarjeta:linear-gradient(160deg,#351c1a 0%,#170c0c 100%);
+  --sombra-tarjeta:0 18px 40px -20px rgba(0,0,0,.9);
+  --brillo-rojo:0 0 30px -6px rgba(212,12,26,.7);
+  --brillo-oro:0 0 24px -6px rgba(234,190,74,.6);
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-body{background:var(--bg);color:var(--txt);font:15px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif;
+body{background:var(--bg) var(--arena) fixed;color:var(--txt);
+  font:15px/1.45 var(--texto);
   overscroll-behavior:none;padding-bottom:64px}
 #app{max-width:760px;margin:0 auto;padding:12px 12px 20px;position:relative;z-index:1}
 h1,h2,h3{font-family:var(--titulo);font-weight:600;letter-spacing:.005em;text-transform:uppercase}
@@ -51,10 +85,13 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
   padding:calc(9px + env(safe-area-inset-top)) calc(12px + env(safe-area-inset-right)) 9px
           calc(12px + env(safe-area-inset-left));
   border-bottom:1px solid var(--line);position:sticky;top:0;z-index:50}
-#top .logo{font-weight:800;font-size:15px;letter-spacing:-.03em;margin-right:auto}
+#top .logo{font-family:var(--titulo);font-weight:800;font-size:19px;letter-spacing:-.01em;
+  text-transform:uppercase;margin-right:auto}
 #top .logo span{color:var(--acc)}
-.res{display:flex;align-items:center;gap:4px;font-size:13px;font-weight:650;
-  background:var(--bg3);padding:5px 9px;border-radius:7px;white-space:nowrap}
+.res{display:flex;align-items:center;gap:5px;font-family:var(--titulo);font-size:14px;
+  font-weight:700;font-variant-numeric:tabular-nums;
+  background:rgba(35,20,19,.9);border:1px solid var(--line);
+  padding:5px 10px;border-radius:11px;white-space:nowrap}
 
 /* Sub-pestañas dentro de una sección. Se apoyan en la misma fila, sin caja: una barra
    más sería otra franja de alto comida a las cartas. */
@@ -68,12 +105,23 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
    un botón dentro. Un botón dentro de una fila que también responde al toque son dos
    blancos para lo mismo, y el jugador nunca sabe cuál toca. */
 .fila{display:flex;align-items:center;gap:11px;width:100%;text-align:left;
-  background:var(--bg2);border:1px solid var(--line);border-radius:11px;
-  padding:11px 12px;margin-bottom:8px}
-.fila:active{transform:scale(.992);filter:brightness(1.12)}
+  background-image:var(--tarjeta);
+  border:1px solid rgba(212,12,26,.25);border-radius:17px;
+  box-shadow:var(--sombra-tarjeta);overflow:hidden;position:relative;
+  padding:11px 12px;margin-bottom:8px;
+  transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease}
+.fila:active{transform:scale(.975);border-color:rgba(234,190,74,.6);box-shadow:var(--brillo-rojo)}
+/* La trama del octágono, tenue, sobre cada tarjeta: es lo que las saca de parecer cajas
+   grises y las mete dentro de la jaula. */
+.fila::before{content:'';position:absolute;inset:0;pointer-events:none;
+  background-image:linear-gradient(60deg, rgba(234,190,74,.08) 1px, transparent 1px),
+                   linear-gradient(-60deg, rgba(234,190,74,.08) 1px, transparent 1px);
+  background-size:46px 80px}
+.fila > *{position:relative;z-index:1}
 .fila .ic{flex:none;font-size:23px;line-height:1}
 .fila .cu{flex:2;min-width:0}
-.fila .cu b{font-family:var(--titulo);letter-spacing:.02em;font-size:15px}
+.fila .cu b{font-family:var(--titulo);letter-spacing:.05em;text-transform:uppercase;
+  font-weight:700;font-size:15px}
 .fila .cu .sub{font-size:11.5px;line-height:1.35}
 .fila .der{flex:none;display:flex;align-items:center;gap:7px;color:var(--dim2)}
 .fila .precio{font-family:var(--titulo);font-weight:700;font-size:14px;color:var(--txt);
@@ -149,11 +197,22 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 .sobre-fila.menu.media .precio{transform:translateX(-40px);padding:5px 14px;font-size:13px}
 .mitades .sobre-fila{flex:1 1 0;min-width:0}
 .sobre-fila .fila.alerta{border-color:var(--acc)}
+
+/* LA TARJETA CON FOTO. La de JUGAR lleva al luchador de fondo, degradado hacia la
+   izquierda para que el texto siga leyéndose encima sin ponerle una caja detrás. */
+.sobre-fila.foto .fila{background-image:var(--tarjeta)}
+.sobre-fila.foto .sobre-art{width:62%;right:0;top:0;bottom:0}
+.sobre-fila.foto .sobre-art img{width:100%;height:100%;object-fit:cover;object-position:center 22%;
+  max-width:none;max-height:none;border-radius:0;filter:none;
+  -webkit-mask-image:linear-gradient(90deg,transparent 0%,#000 42%);
+          mask-image:linear-gradient(90deg,transparent 0%,#000 42%)}
+.sobre-fila.foto .cu b{font-size:26px;letter-spacing:.02em}
+.sobre-fila.foto .cu .sub{font-size:12.5px}
 /* La píldora del precio monta sobre el borde de abajo, centrada en la parte de texto. */
 .sobre-fila .precio{position:absolute;left:50%;bottom:-14px;transform:translateX(-62px);
-  z-index:3;font-family:var(--titulo);font-weight:700;font-size:14px;letter-spacing:.02em;
+  z-index:3;font-family:var(--titulo);font-weight:700;font-size:14px;letter-spacing:.04em;
   background:var(--bg3);border:1px solid var(--line);border-radius:999px;
-  padding:6px 20px;white-space:nowrap;color:var(--txt)}
+  padding:6px 20px;white-space:nowrap;color:var(--txt);box-shadow:var(--sombra-tarjeta)}
 .sobre-fila .fila .der{display:none}
 .sobre-fila.apagada{opacity:.42}
 
@@ -223,11 +282,13 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
   font-size:12px;color:var(--dim)}
 
 /* ── navegación ── */
-#nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:var(--bg2);
+#nav{position:fixed;bottom:0;left:0;right:0;display:flex;
+  background:rgba(21,10,10,.95);backdrop-filter:blur(10px);
   border-top:1px solid var(--line);z-index:50;padding-bottom:env(safe-area-inset-bottom)}
-#nav button{font-family:var(--titulo);letter-spacing:.03em;flex:1;padding:9px 2px 10px;font-size:10.5px;color:var(--dim2);
+#nav button{font-family:var(--titulo);letter-spacing:.05em;text-transform:uppercase;
+  flex:1;padding:9px 2px 10px;font-size:11px;color:var(--dim2);
   display:flex;flex-direction:column;align-items:center;gap:3px;font-weight:600}
-#nav button .ic{font-size:19px;line-height:1}
+#nav button .ic{font-size:22px;line-height:1}
 #nav button.on{color:var(--acc2)}
 #nav .badge{position:absolute;transform:translate(15px,-4px);background:var(--acc);color:#fff;
   border-radius:9px;font-size:9px;padding:1px 5px;font-weight:700}
@@ -244,7 +305,7 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
    sobres y colección, con cartas de 124 px, los números se salían de los rombos y los
    nombres del recuadro. Con una variable y calc() se ve igual en cualquier motor. */
 .carta{position:relative;aspect-ratio:620/877;
-  font-family:var(--titulo);
+  font-family:var(--carta);
   background:#0b0d10 center/100% 100% no-repeat;border-radius:9px;overflow:hidden;
   cursor:pointer;color:#fff;font-size:calc(var(--cw,110px)*.034);line-height:1.1;
   transition:transform .15s,filter .15s}
@@ -1366,8 +1427,8 @@ function vInicio(){
     ${ok?'':`<div class="fila" style="border-color:var(--warn);flex:0 0 auto">
       <span class="ic">⚠️</span><span class="cu"><b>Te faltan divisiones</b>
       <span class="sub">Necesitas una carta alineable en las 11 para poder jugar.</span></span></div>`}
-    ${tarjeta({nav:'jugar', ic:'🥊', t:'JUGAR', d:'En directo, contra un amigo o contra la IA',
-      off:!ok})}
+    ${tarjeta({nav:'jugar', foto:'arte/luchador.webp', t:'JUGAR',
+      d:'En directo, contra un amigo o contra la IA', off:!ok})}
     <div class="mitades">
       ${tarjeta({nav:'draft', ic:'🎲', t:'Draft', d:'Monta un once y juégalo',
         media:true})}
@@ -1387,12 +1448,15 @@ function vInicio(){
 /* LA TARJETA. El mismo patrón que las de la tienda: el texto a la izquierda y el icono
    grande a la derecha, saliéndose de la caja. Una sola función para todos los botones de
    menú, para que no puedan ir separándose unos de otros con el tiempo. */
-function tarjeta({nav,a,t,d,ic,off,alerta,media,pie}){
+function tarjeta({nav,a,t,d,ic,foto,off,alerta,media,pie}){
   const attr=nav?`data-nav="${nav}"`:`data-a="${a}"`;
-  return `<div class="sobre-fila menu ${off?'apagada':''} ${media?'media':''}">
+  const dibujo=foto
+    ? `<span class="sobre-art"><img src="${foto}" alt="" loading="lazy"></span>`
+    : `<span class="sobre-art icono">${ic}</span>`;
+  return `<div class="sobre-fila menu ${foto?'foto':''} ${off?'apagada':''} ${media?'media':''}">
     <button class="fila ${alerta?'alerta':''}" ${off?'disabled':''} ${attr}>
       <span class="cu"><b>${t}</b><span class="sub">${d||''}</span></span>
-      <span class="sobre-art icono">${ic}</span>
+      ${dibujo}
     </button>
     ${pie?`<span class="precio">${pie}</span>`:''}
   </div>`;

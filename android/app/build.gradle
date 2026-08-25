@@ -18,6 +18,7 @@ def copiarJuego = tasks.register('copiarJuego', Copy) {
         include 'fuentes/**'    // la tipografía, para que se vea igual sin conexión
         include 'sonidos/**'    // el anuncio de campeón y top 5
         include 'sobres/**'     // el arte de los tres sobres
+        include 'arte/**'       // el luchador del banner de Jugar
     }
     into assetsJuego
 }

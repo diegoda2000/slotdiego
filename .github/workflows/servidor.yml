@@ -182,13 +182,15 @@ jobs:
         run: |
           mkdir -p ios/juego-assets
           cp juego/juego.html juego/motor.js juego/roster.js juego/servidor.js ios/juego-assets/
-          cp -R juego/marcos juego/banderas juego/fuentes juego/sonidos juego/sobres ios/juego-assets/
+          cp -R juego/marcos juego/banderas juego/fuentes juego/sonidos juego/sobres juego/arte ios/juego-assets/
           test -s ios/juego-assets/servidor.js
           test -s ios/juego-assets/marcos/oro.webp
           test -s ios/juego-assets/banderas/ru.webp
           test -s ios/juego-assets/fuentes/oswald-latin.woff2
           test -s ios/juego-assets/sonidos/its-time.mp3
           test -s ios/juego-assets/sobres/oro.webp
+          test -s ios/juego-assets/arte/luchador.webp
+          test -s ios/juego-assets/fuentes/saira-700-latin.woff2
 
       - name: Generar el proyecto de Xcode
         working-directory: ios
