@@ -55,7 +55,12 @@
   --brillo-oro:0 0 24px -6px rgba(234,190,74,.6);
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-body{background:var(--bg) var(--arena) fixed;color:var(--txt);
+/* Las tres propiedades por separado, NO el atajo: --arena lleva dos degradados separados
+   por coma y `background:` no admite eso. Con el atajo la regla entera era inválida y el
+   fondo se caía a blanco, en el navegador y en el móvil. */
+body{background-color:var(--bg);background-image:var(--arena);
+  background-attachment:fixed;background-repeat:no-repeat;
+  color:var(--txt);
   font:15px/1.45 var(--texto);
   overscroll-behavior:none;padding-bottom:64px}
 #app{max-width:760px;margin:0 auto;padding:12px 12px 20px;position:relative;z-index:1}
@@ -95,11 +100,14 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 
 /* Sub-pestañas dentro de una sección. Se apoyan en la misma fila, sin caja: una barra
    más sería otra franja de alto comida a las cartas. */
-.subtabs{display:flex;gap:26px;justify-content:center;
-  border-bottom:1px solid var(--line);margin:0 0 10px}
-.subtabs button{font-family:var(--titulo);letter-spacing:.04em;text-transform:uppercase;
-  font-size:12.5px;font-weight:650;color:var(--dim2);padding:0 0 7px;border-bottom:2px solid transparent}
-.subtabs button.on{color:var(--txt);border-bottom-color:var(--acc)}
+/* Dos botones a mitad y mitad, como en el diseño: el activo con su borde y su texto en
+   rojo. Un subrayado fino se pierde entre tarjetas del tamaño de las de abajo. */
+.subtabs{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0 0 10px}
+.subtabs button{font-family:var(--titulo);letter-spacing:.05em;text-transform:uppercase;
+  font-size:14px;font-weight:700;color:var(--dim);
+  border:1px solid var(--line);background:rgba(35,20,19,.7);
+  border-radius:999px;padding:11px 8px}
+.subtabs button.on{color:var(--acc2);border-color:var(--acc);background:rgba(212,12,26,.14)}
 
 /* La FILA: el patrón de toda la navegación nueva. La fila entera es el botón — no lleva
    un botón dentro. Un botón dentro de una fila que también responde al toque son dos
@@ -142,8 +150,12 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 /* Las tarjetas se reparten el alto, pero con TOPE: sin él, en una pantalla con pocas
    filas cada una se estira hasta parecer un cartel. Con tope quedan a un tamaño que se
    lee de un vistazo y lo que sobra se convierte en aire, repartido arriba y abajo. */
-.pila{display:flex;flex-direction:column;gap:18px;justify-content:center}
-.pila > *{max-height:172px}
+.pila{display:flex;flex-direction:column;gap:14px;justify-content:center}
+.pila > *{max-height:186px}
+/* El tope es para los MENÚS. Donde lo que hay es UNA cosa que mirar —el sobre antes de
+   abrirlo— no hay nada que topar: que ocupe lo que haya. */
+.pila.libre{gap:0}
+.pila.libre > *{max-height:none}
 .pila > *{flex:1 1 0;min-height:0;margin:0}
 /* Dentro de un bloque estirado, el contenido se centra en vertical. */
 
@@ -159,44 +171,79 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
    que comparar entre ellas, hay que llegar a todas de un vistazo y sin hueco muerto. */
 .pila > .sobre-fila{flex:1 1 0;min-height:0;margin:0}
 .pila > .sobre-fila > .fila{height:100%}
-.sobre-fila .fila{position:relative;align-items:flex-start;overflow:visible;
-  min-height:126px;padding:14px 124px 22px 14px;margin:0;
-  background:linear-gradient(118deg,#18222b 0%,#131a21 46%,#0f1319 100%)}
+.sobre-fila .fila{position:relative;align-items:center;overflow:visible;
+  min-height:126px;padding:14px 108px 14px 116px;margin:0;
+  /* El degradado sale del sistema. Escrito aquí a mano pisaba al de .fila por
+     especificidad, y las tarjetas se quedaban azules mientras el resto era granate. */
+  background-image:var(--tarjeta)}
 .sobre-fila .fila .ic{display:none}
 .sobre-fila .fila .cu b{display:block;font-size:19px;line-height:1.15;margin-bottom:3px}
 .sobre-fila .fila .cu .sub{font-size:12px;line-height:1.4}
 /* El arte, saliéndose de la caja: es lo que hace que el sobre se lea como un objeto y
    no como un icono metido en una celda. */
-.sobre-art{position:absolute;right:9px;top:-11px;bottom:-11px;width:106px;
+.sobre-art{position:absolute;left:4px;top:-11px;bottom:-11px;width:106px;
   pointer-events:none;display:flex;align-items:center;justify-content:center}
 .sobre-art img{max-width:100%;max-height:100%;width:auto;height:auto;
   filter:drop-shadow(0 7px 15px rgba(0,0,0,.65))}
 /* Los botones de menú usan la MISMA tarjeta que los sobres; donde el sobre lleva su arte,
    ellos llevan su icono. Un solo patrón para toda la navegación: si mañana cambia la
    tarjeta, cambian todos a la vez y no se van separando unos de otros. */
-/* LA TARJETA DE MENÚ es la MISMA que la de un sobre: el texto a la izquierda, el dibujo
-   a la derecha saliéndose de la caja, y el dato en una píldora sobre el borde de abajo.
-   Un solo patrón para toda la navegación; donde el sobre lleva su arte y su precio, un
-   botón de menú lleva su icono y su cuenta. */
-.sobre-art.icono{font-size:56px;line-height:1;
-  filter:drop-shadow(0 7px 15px rgba(0,0,0,.6))}
+/* EL TILE, como en el diseño: el nombre arriba a la izquierda, el dibujo centrado en el
+   hueco que sobra, y la cuenta en una píldora montada sobre el borde de abajo. */
+.ico{width:1em;height:1em;display:block;flex:none}
 .sobre-fila.menu{margin:0;height:100%}
-.sobre-fila.menu .fila{height:100%}
-/* Sin píldora no hace falta reservarle sitio abajo: el hueco quedaría vacío y la tarjeta
-   se leería descolgada. */
-.sobre-fila.menu:not(:has(> .precio)) .fila{padding-bottom:13px}
-/* En media tarjeta cabe menos: el dibujo y el nombre bajan de tamaño y el hueco que se
-   le reserva al dibujo se estrecha, para que al texto no le falte sitio. */
-.sobre-fila.menu.media .fila{padding:14px 84px 22px 13px}
-.sobre-fila.menu.media .sobre-art{width:76px;right:6px}
-.sobre-fila.menu.media .sobre-art.icono{font-size:40px}
-.sobre-fila.menu.media .fila .cu b{font-size:16px}
-/* La píldora se centra sobre la MITAD DE TEXTO, no sobre la tarjeta entera: el dibujo
-   ocupa la derecha, y una píldora centrada en la caja quedaría mordida por él. El
-   desplazamiento es la mitad de lo que ocupa el hueco del dibujo. */
-.sobre-fila.menu.media .precio{transform:translateX(-40px);padding:5px 14px;font-size:13px}
+.sobre-fila.menu .fila{flex-direction:column;align-items:stretch;justify-content:flex-start;
+  height:100%;gap:0;padding:13px 14px;border-color:rgba(212,12,26,.55)}
+.sobre-fila.menu .cu{flex:0 0 auto}
+.sobre-fila.menu .cu b{display:block;font-size:17px;line-height:1.1}
+.sobre-fila.menu .cu .sub{display:block;font-size:12px;line-height:1.35;margin-top:1px}
+/* El dibujo se queda con lo que sobre, centrado, y nunca empuja al texto. */
+.sobre-fila.menu .sobre-art{position:static;width:auto;flex:1 1 0;min-height:0;
+  display:flex;align-items:center;justify-content:center;gap:10px;margin-top:6px}
+.sobre-fila.menu .sobre-art.icono{font-size:min(15vw,50px);color:var(--oro);
+  filter:drop-shadow(0 6px 14px rgba(0,0,0,.55))}
+.sobre-fila.menu .sobre-art.icono .ico{stroke-width:1.25}
+.sobre-fila.menu.media .sobre-art.icono{font-size:min(11vw,40px)}
+.sobre-fila.menu.media .sobre-art.icono .ico{stroke-width:1.5}
+.sobre-fila.menu.media .cu b{font-size:15.5px}
+.sobre-fila.menu .precio{transform:translateX(-50%);left:50%;right:auto;bottom:-13px;top:auto}
 .mitades .sobre-fila{flex:1 1 0;min-width:0}
 .sobre-fila .fila.alerta{border-color:var(--acc)}
+.sobre-fila.menu .fila.alerta .sobre-art.icono{color:var(--acc2)}
+.centrado{display:flex;flex-direction:column;align-items:center;justify-content:center}
+.sobre-art .ico.rojo{color:var(--acc2)}
+.sobre-art .ico.suelto{color:var(--oro);width:36px;height:36px;stroke-width:1.5}
+
+/* EL ABANICO: tres cartas, la del medio delante y las otras dos giradas. */
+.abanico{display:flex;align-items:center;justify-content:center;height:100%;min-height:0}
+.abanico img{height:74%;max-height:100%;width:auto;object-fit:contain;
+  filter:drop-shadow(0 6px 14px rgba(0,0,0,.6))}
+.abanico img:first-child{transform:rotate(-10deg);margin-right:-16px}
+.abanico img:nth-child(2){height:100%;position:relative;z-index:2}
+.abanico img:last-child{transform:rotate(10deg);margin-left:-16px}
+
+/* EL BANNER: la foto llena el tile y el nombre va encima, en cursiva, sobre un degradado
+   que oscurece la izquierda para que se lea sin ponerle una caja detrás. */
+.sobre-fila.banner .fila{padding:0;position:relative;overflow:hidden}
+.sobre-fila.banner .sobre-art{position:absolute;inset:0;margin:0;width:auto;gap:0}
+.sobre-fila.banner .sobre-art img{width:100%;height:100%;object-fit:cover;object-position:center 18%;
+  max-width:none;max-height:none;opacity:.9;filter:none}
+.sobre-fila.banner .velo{position:absolute;inset:0;z-index:1;
+  background:linear-gradient(90deg, rgba(16,6,6,.95) 10%, transparent 75%)}
+.sobre-fila.banner .cu{position:absolute;left:18px;top:50%;transform:translateY(-50%);z-index:2}
+.sobre-fila.banner .cu b{font-size:min(14vw,52px);font-style:italic;font-weight:800;
+  letter-spacing:.01em;line-height:1;text-shadow:0 4px 18px rgba(0,0,0,.7)}
+.sobre-fila.banner .cu .sub{display:none}
+
+/* El rótulo dorado en cursiva del SBC. */
+.rotulo-oro{font-family:var(--titulo);font-weight:800;font-style:italic;text-transform:uppercase;
+  font-size:15px;letter-spacing:.02em;margin-top:7px;
+  background-image:linear-gradient(100deg,var(--oro-suave),var(--oro));
+  -webkit-background-clip:text;background-clip:text;color:transparent}
+/* El anillo con el porcentaje de colección. */
+.anillo{display:grid;place-items:center;width:58px;height:58px;border-radius:50%;
+  border:2px solid rgba(234,190,74,.5);background:rgba(5,3,3,.5);
+  box-shadow:var(--brillo-oro);font-family:var(--titulo);font-weight:800;font-size:18px}
 
 /* LA TARJETA CON FOTO. La de JUGAR lleva al luchador de fondo, degradado hacia la
    izquierda para que el texto siga leyéndose encima sin ponerle una caja detrás. */
@@ -209,7 +256,8 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 .sobre-fila.foto .cu b{font-size:26px;letter-spacing:.02em}
 .sobre-fila.foto .cu .sub{font-size:12.5px}
 /* La píldora del precio monta sobre el borde de abajo, centrada en la parte de texto. */
-.sobre-fila .precio{position:absolute;left:50%;bottom:-14px;transform:translateX(-62px);
+.sobre-fila button.precio:active{background:var(--acc);border-color:var(--acc);color:#fff}
+.sobre-fila .precio{position:absolute;right:12px;top:50%;transform:translateY(-50%);
   z-index:3;font-family:var(--titulo);font-weight:700;font-size:14px;letter-spacing:.04em;
   background:var(--bg3);border:1px solid var(--line);border-radius:999px;
   padding:6px 20px;white-space:nowrap;color:var(--txt);box-shadow:var(--sombra-tarjeta)}
@@ -218,7 +266,7 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 
 /* La (i), en la esquina de arriba. Es la única excepción a que la fila entera sea el
    botón, y va FUERA de ella para que tocarla no dispare también la fila. */
-.info{position:absolute;top:7px;right:130px;z-index:4;
+.info{position:absolute;top:8px;right:10px;z-index:4;
   width:21px;height:21px;border-radius:50%;
   display:flex;align-items:center;justify-content:center;
   font-family:var(--titulo);font-weight:700;font-size:11.5px;line-height:1;
@@ -262,7 +310,7 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 .sobre-toque{display:flex;flex-direction:column;align-items:center;justify-content:center;
   gap:14px;width:100%;background:none;border:0;padding:0;margin:0;min-height:0}
 .sobre-toque[disabled]{opacity:.5}
-.sobre-arte{max-width:66%;max-height:100%;width:auto;height:auto;min-height:0;
+.sobre-arte{max-width:82%;max-height:100%;width:auto;height:auto;min-height:0;
   filter:drop-shadow(0 14px 34px rgba(0,0,0,.8));
   transition:transform .55s cubic-bezier(.2,.7,.3,1), filter .55s ease}
 .sobre-toque:active .sobre-arte{transform:scale(.975)}
@@ -809,6 +857,29 @@ function calcularCortePlata(){
    otra cosa. Comparar los dos por cuántos oros dan es comparar mal.
 
    El de ORO es el caro y el único que reparte cartas de arriba de verdad. */
+/* Iconos de Lucide (ISC), los mismos que usa el diseño. Van como trazo dentro de un SVG
+   y no como emoji: el emoji lo dibuja el sistema, cambia de forma en cada móvil y no hay
+   manera de que siga la paleta. Estos heredan currentColor. */
+const ICONOS={
+  dados:'<rect width="12" height="12" x="2" y="10" rx="2" ry="2" /> <path d="m17.92 14 3.5-3.5a2.24 2.24 0 0 0 0-3l-5-4.92a2.24 2.24 0 0 0-3 0L10 6" /> <path d="M6 18h.01" /> <path d="M10 14h.01" /> <path d="M15 6h.01" /> <path d="M18 9h.01" />',
+  birrete:'<path d="M21.42 10.922a1 1 0 0 0-.019-1.838L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.832l8.57 3.908a2 2 0 0 0 1.66 0z" /> <path d="M22 10v6" /> <path d="M6 12.5V16a6 3 0 0 0 12 0v-3.5" />',
+  medalla:'<path d="M7.21 15 2.66 7.14a2 2 0 0 1 .13-2.2L4.4 2.8A2 2 0 0 1 6 2h12a2 2 0 0 1 1.6.8l1.6 2.14a2 2 0 0 1 .14 2.2L16.79 15" /> <path d="M11 12 5.12 2.2" /> <path d="m13 12 5.88-9.8" /> <path d="M8 7h8" /> <circle cx="12" cy="17" r="5" /> <path d="M12 18v-2h-.5" />',
+  pergamino:'<path d="M15 12h-5" /> <path d="M15 8h-5" /> <path d="M19 17V5a2 2 0 0 0-2-2H4" /> <path d="M8 21h12a2 2 0 0 0 2-2v-1a1 1 0 0 0-1-1H11a1 1 0 0 0-1 1v1a2 2 0 1 1-4 0V5a2 2 0 1 0-4 0v2a1 1 0 0 0 1 1h3" />',
+  reciclar:'<path d="M7 19H4.815a1.83 1.83 0 0 1-1.57-.881 1.785 1.785 0 0 1-.004-1.784L7.196 9.5" /> <path d="M11 19h8.203a1.83 1.83 0 0 0 1.556-.89 1.784 1.784 0 0 0 0-1.775l-1.226-2.12" /> <path d="m14 16-3 3 3 3" /> <path d="M8.293 13.596 7.196 9.5 3.1 10.598" /> <path d="m9.344 5.811 1.093-1.892A1.83 1.83 0 0 1 11.985 3a1.784 1.784 0 0 1 1.546.888l3.943 6.843" /> <path d="m13.378 9.633 4.096 1.098 1.097-4.096" />',
+  trueque:'<path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" /> <path d="M3 3v5h5" /> <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" /> <path d="M16 16h5v5" />',
+  engranaje:'<path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915" /> <circle cx="12" cy="12" r="3" />',
+  trofeo:'<path d="M10 14.66V17a1 1 0 0 1-1 1 2 2 0 0 0-2 2v2" /> <path d="M14 14.66V17a1 1 0 0 0 1 1 2 2 0 0 1 2 2v2" /> <path d="M17.916 10H19.5A2.5 2.5 0 0 0 22 7.5V5a1 1 0 0 0-1-1h-3" /> <path d="M4 22h16" /> <path d="M6 9a6 6 0 0 0 12 0V3a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1z" /> <path d="M6.084 10H4.5A2.5 2.5 0 0 1 2 7.5V5a1 1 0 0 1 1-1h3" />',
+  tablilla:'<rect width="8" height="4" x="8" y="2" rx="1" ry="1" /> <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" /> <path d="M12 11h4" /> <path d="M12 16h4" /> <path d="M8 11h.01" /> <path d="M8 16h.01" />',
+  carpeta:'<path d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2" />',
+  gente:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /> <path d="M16 3.128a4 4 0 0 1 0 7.744" /> <path d="M22 21v-2a4 4 0 0 0-3-3.87" /> <circle cx="9" cy="7" r="4" />',
+  robot:'<path d="M12 8V4H8" /> <rect width="16" height="12" x="4" y="8" rx="2" /> <path d="M2 14h2" /> <path d="M20 14h2" /> <path d="M15 13v2" /> <path d="M9 13v2" />',
+  antena:'<path d="M16.247 7.761a6 6 0 0 1 0 8.478" /> <path d="M19.075 4.933a10 10 0 0 1 0 14.134" /> <path d="M4.925 19.067a10 10 0 0 1 0-14.134" /> <path d="M7.753 16.239a6 6 0 0 1 0-8.478" /> <circle cx="12" cy="12" r="2" />',
+  megafono:'<path d="M11 6a13 13 0 0 0 8.4-2.8A1 1 0 0 1 21 4v12a1 1 0 0 1-1.6.8A13 13 0 0 0 11 14H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z" /> <path d="M6 14a12 12 0 0 0 2.4 7.2 2 2 0 0 0 3.2-2.4A8 8 0 0 1 10 14" /> <path d="M8 6v8" />',
+};
+const icono=(n,cls='')=>`<svg class="ico ${cls}" viewBox="0 0 24 24" fill="none"
+  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+  aria-hidden="true">${ICONOS[n]||''}</svg>`;
+
 const TIPOS_SOBRE={
   /* BÁSICO — gratis e ilimitado. Mitad oros y mitad platas, para que cualquiera monte
      un once desde el primer día. Lo que casi nunca da es un rankeado: cuando cae uno es
@@ -1422,38 +1493,31 @@ function ir(v){ pararAviso(); vista=v; tmp={}; window.scrollTo(0,0); render(); }
 function vInicio(){
   const ok=plantillaCompleta();
   const l=logros(), hechos=l.filter(x=>x.hecho).length;
-  const rep=S.coleccion.length-new Set(S.coleccion.map(x=>x.cid)).size;
+  const reto=RETOS.find(r=>!S.retos.includes(r.id));
   return `<div class="pila">
     ${ok?'':`<div class="fila" style="border-color:var(--warn);flex:0 0 auto">
-      <span class="ic">⚠️</span><span class="cu"><b>Te faltan divisiones</b>
+      <span class="cu"><b>Te faltan divisiones</b>
       <span class="sub">Necesitas una carta alineable en las 11 para poder jugar.</span></span></div>`}
-    ${tarjeta({nav:'jugar', foto:'arte/luchador.webp', t:'JUGAR',
-      d:'En directo, contra un amigo o contra la IA', off:!ok})}
+    ${tarjeta({nav:'jugar', t:'Jugar', foto:'arte/luchador.webp', banner:true, off:!ok})}
+    ${tarjeta({nav:'draft', t:'Draft', d:'Elige tu plantilla y compite',
+      dentro:abanico()+icono('dados','suelto')})}
+    ${tarjeta({nav:'retosdetalle', t:'SBC', d:'Retos de construcción',
+      dentro:`<span class="centrado">${icono('pergamino','rojo')}
+        <span class="rotulo-oro">${esc(reto?reto.n:'Todos hechos')}</span></span>`})}
     <div class="mitades">
-      ${tarjeta({nav:'draft', ic:'🎲', t:'Draft', d:'Monta un once y juégalo',
-        media:true})}
-      ${tarjeta({nav:'retosdetalle', ic:'📜', t:'SBC', d:'Entrega cartas, gana premio',
-        media:true})}
-    </div>
-    <div class="mitades">
-      ${tarjeta({nav:'aprende', ic:'🎓', t:'Aprende a jugar',
-        d:S.tutorialHecho?'Reglas y tutorial':'Empieza por aquí',
+      ${tarjeta({nav:'logros', t:'Logros', ic:'medalla', media:true, pie:`${hechos} de ${l.length}`})}
+      ${tarjeta({nav:'aprende', t:'Aprende', d:'Tutorial', ic:'birrete',
         alerta:!S.tutorialHecho, media:true})}
-      ${tarjeta({nav:'logros', ic:'🏅', t:'Logros', d:'Lo que llevas conseguido',
-        media:true, pie:`${hechos} de ${l.length}`})}
     </div>
   </div>`;
 }
 
-/* LA TARJETA. El mismo patrón que las de la tienda: el texto a la izquierda y el icono
-   grande a la derecha, saliéndose de la caja. Una sola función para todos los botones de
-   menú, para que no puedan ir separándose unos de otros con el tiempo. */
-function tarjeta({nav,a,t,d,ic,foto,off,alerta,media,pie}){
+function tarjeta({nav,a,t,d,ic,foto,dentro,off,alerta,media,pie,banner}){
   const attr=nav?`data-nav="${nav}"`:`data-a="${a}"`;
-  const dibujo=foto
-    ? `<span class="sobre-art"><img src="${foto}" alt="" loading="lazy"></span>`
-    : `<span class="sobre-art icono">${ic}</span>`;
-  return `<div class="sobre-fila menu ${foto?'foto':''} ${off?'apagada':''} ${media?'media':''}">
+  const dibujo = banner
+    ? `<span class="velo"></span><span class="sobre-art"><img src="${foto}" alt="" loading="lazy"></span>`
+    : `<span class="sobre-art ${ic?'icono':''}">${dentro||icono(ic)}</span>`;
+  return `<div class="sobre-fila menu ${banner?'banner':''} ${off?'apagada':''} ${media?'media':''}">
     <button class="fila ${alerta?'alerta':''}" ${off?'disabled':''} ${attr}>
       <span class="cu"><b>${t}</b><span class="sub">${d||''}</span></span>
       ${dibujo}
@@ -1461,6 +1525,13 @@ function tarjeta({nav,a,t,d,ic,foto,off,alerta,media,pie}){
     ${pie?`<span class="precio">${pie}</span>`:''}
   </div>`;
 }
+
+/* El abanico de tres cartas del diseño, con los marcos de verdad del juego. */
+const abanico=()=>`<span class="abanico">
+  <img src="arte/carta-plata.webp" alt="" loading="lazy">
+  <img src="arte/carta-oro.webp" alt="" loading="lazy">
+  <img src="arte/carta-plata.webp" alt="" loading="lazy"></span>`;
+
 
 /* Elegir con quién se juega. Antes eran dos botones sueltos en Inicio; ahora Inicio dice
    JUGAR y aquí se decide contra quién, que es la pregunta de verdad. */
@@ -1474,11 +1545,11 @@ function vJugar(){
   const ok=plantillaCompleta();
   return `<div class="pcab"><h2>Jugar</h2></div>
     <div class="pila">
-      ${tarjeta({nav:'directo', ic:'🟢', t:'PvP', d:'Crea una sala y juega en directo',
+      ${tarjeta({nav:'directo', ic:'antena', t:'PvP', d:'Crea una sala y juega en directo',
         off:!ok})}
-      ${tarjeta({nav:'directo', ic:'👥', t:'Contra un amigo', d:'Entra con su código de sala',
+      ${tarjeta({nav:'directo', ic:'gente', t:'Contra un amigo', d:'Entra con su código de sala',
         off:!ok})}
-      ${tarjeta({a:'jugar', ic:'🤖', t:'Contra la IA', d:'Sin conexión, cuando quieras',
+      ${tarjeta({a:'jugar', ic:'robot', t:'Contra la IA', d:'Sin conexión, cuando quieras',
         off:!ok})}
     </div>
     <button class="btn sec" data-nav="inicio">Atrás</button>`;
@@ -1541,33 +1612,26 @@ function vLogros(){
    Todo lo que es "lo mío": las cartas y lo que se hace con ellas. */
 function vClub(){
   const distintas=new Set(S.coleccion.map(x=>x.cid)).size;
-  const rep=S.coleccion.length-distintas;
   const hechos=SETS.filter(x=>S.sets.includes(x.id)).length;
-  const ok=plantillaCompleta();
-  return `<div class="pcab"><h2>Club</h2></div>
-    <div class="pila">
-      ${tarjeta({nav:'plantilla', ic:'📋', t:'Plantilla',
-        d:ok?'Las once, completas':'Te faltan divisiones',
-        pie:`${DIVISIONES.filter(d=>S.plantilla[d.id]).length} de ${DIVISIONES.length}`})}
-      <div class="mitades">
-        ${tarjeta({nav:'coleccion', ic:'🗂️', t:'Colección', d:'Tu álbum, hoja a hoja',
-          media:true, pie:`${distintas} de ${ROSTER.length}`})}
-        ${tarjeta({nav:'sets', ic:'🧩', t:'Sets', d:'Completa y desbloquea',
-          media:true, pie:`${hechos} de ${SETS.length}`})}
-      </div>
-      <div class="mitades">
-        ${tarjeta({nav:'reciclaje', ic:'♻️', t:'Reciclaje',
-          d:rep?`${rep} repetidas`:'Sin repetidas', media:true})}
-        ${tarjeta({nav:'intercambio', ic:'🤝', t:'Intercambio', d:'Cuesta 1 ficha',
-          media:true})}
-      </div>
-      <div class="mitades">
-        ${tarjeta({nav:'ajustes', ic:'⚙️', t:'Ajustes',
-          d:S.mudo?'Sonido apagado':'Sonido encendido', media:true})}
-        ${tarjeta({nav:'redes', ic:'📣', t:'Mis redes', d:'Dónde se cuenta',
-          media:true})}
-      </div>
-    </div>`;
+  const puestas=DIVISIONES.filter(d=>S.plantilla[d.id]).length;
+  return `<div class="pila">
+    ${tarjeta({nav:'plantilla', t:'Plantilla', d:'Tu equipo titular', dentro:abanico(),
+      alerta:plantillaCompleta(), pie:`${puestas} de ${DIVISIONES.length}`})}
+    <div class="mitades">
+      ${tarjeta({nav:'coleccion', t:'Colección', media:true,
+        dentro:`<span class="anillo">${Math.round(distintas/ROSTER.length*100)}%</span>`,
+        pie:`${distintas} de ${ROSTER.length}`})}
+      ${tarjeta({nav:'sets', t:'Sets', ic:'trofeo', media:true, pie:`${hechos} de ${SETS.length}`})}
+    </div>
+    <div class="mitades">
+      ${tarjeta({nav:'reciclaje', t:'Reciclaje', d:'Repetidas por fichas', ic:'reciclar', media:true})}
+      ${tarjeta({nav:'intercambio', t:'Intercambio', d:'Cartas con jugadores', ic:'trueque', media:true})}
+    </div>
+    <div class="mitades">
+      ${tarjeta({nav:'ajustes', t:'Ajustes', ic:'engranaje', media:true})}
+      ${tarjeta({nav:'redes', t:'Mis redes', ic:'megafono', media:true})}
+    </div>
+  </div>`;
 }
 
 /* ── AJUSTES ── detrás del engranaje. */
@@ -1649,11 +1713,10 @@ function vTienda(){
    pagarlo. Se pregunta en tres sitios y tiene que contestar lo mismo en los tres. */
 /* ¿Queda otro de este tipo PARA ABRIR? Solo cuenta lo que ya tienes: comprar es otra
    decisión y se toma en la tienda, no en el resumen de un sobre recién abierto. */
-function puedeOtro(t){
-  if(S.sobres.some(s=>s.tipo===t)) return true;
-  const g=GRATIS.find(x=>x.tipo===t);
-  return !!(g&&listoGratis(g));
-}
+/* ¿Queda otro de este tipo GUARDADO? Solo eso. Comprar se decide en la tienda; ofrecer
+   "abrir otro" porque hay dinero convierte el resumen en un mostrador. */
+function puedeOtro(t){ return S.sobres.some(s=>s.tipo===t); }
+
 
 // El orden es siempre el mismo y sale del coste: básico, plata, oro.
 const ORDEN_TIENDA=()=>Object.keys(TIPOS_SOBRE).sort((a,b)=>TIPOS_SOBRE[a].coste-TIPOS_SOBRE[b].coste);
@@ -1668,6 +1731,8 @@ const ORDEN_TIENDA=()=>Object.keys(TIPOS_SOBRE).sort((a,b)=>TIPOS_SOBRE[a].coste
    lo que se ha ido a buscar. Guardarlo primero para tener que ir a "Mis sobres" a abrirlo
    es un paso de trámite sobre algo que no cuesta nada y que se reclama para abrirlo ya.
    Los de pago sí se guardan: pagar y abrir son dos decisiones distintas. */
+/* Lo que compra es EL PRECIO, no la tarjeta entera: leer la descripción de un sobre de
+   600 no puede costar 600. El precio es un blanco pequeño y aparte, hay que ir a por él. */
 function tiendaComprar(){
   return ORDEN_TIENDA().map(k=>{
     const T=TIPOS_SOBRE[k];
@@ -1676,13 +1741,14 @@ function tiendaComprar(){
     const caro=T.coste>0&&S.divisa<T.coste;
     const off=caro||espera;
     return `<div class="sobre-fila ${off?'apagada':''}">
-      <button class="fila" ${off?'disabled':''} data-a="${T.coste?'comprar':'versobre'}" data-t="${k}">
+      <div class="fila" style="border-color:${k==='plata'?'rgba(212,12,26,.55)':'rgba(234,190,74,.5)'}">
         <span class="cu"><b>${T.n}</b>
           <span class="sub">${T.desc}</span></span>
         <span class="sobre-art"><img src="sobres/${k}.webp" alt="" loading="lazy"></span>
-      </button>
-      <span class="precio" ${espera?`data-reloj="${g.id}"`:''}>${
-        espera?reloj(restaGratis(g)):(T.coste?'🪙 '+T.coste:'GRATIS')}</span>
+      </div>
+      <button class="precio" ${off?'disabled':''} data-a="${T.coste?'comprar':'versobre'}"
+        data-t="${k}" ${espera?`data-reloj="${g.id}"`:''}>${
+        espera?reloj(restaGratis(g)):(T.coste?T.coste+' 🪙':'GRATIS')}</button>
       <button class="info" data-a="probs" data-t="${k}" aria-label="Probabilidades">i</button>
     </div>`;
   }).join('');
@@ -1728,7 +1794,7 @@ function vSobre(){
   const g=GRATIS.find(x=>x.tipo===t), gratisListo=!!(g&&listoGratis(g));
   const puedo=tengo>0||gratisListo;
   return `<div class="pcab"><h2>${T.n}</h2>${tengo>1?`<span class="sub">te quedan ${tengo}</span>`:''}</div>
-    <div class="pila" style="justify-content:center">
+    <div class="pila libre">
       <button class="sobre-toque" data-a="abrirsobre" data-t="${t}" ${puedo?'':'disabled'}>
         <img class="sobre-arte" src="sobres/${t}.webp" alt="">
         <span class="sobre-pie">${puedo?'Toca el sobre para abrirlo':'Ya no te queda ninguno'}</span>
@@ -2110,9 +2176,12 @@ function vApertura(){
              pantalla donde se ve qué trae y cuánto cuesta.
              Solo aparece si de verdad queda otro: uno guardado, el gratis listo, o dinero
              para pagarlo. Si no, solo Atrás. */
-        puedeOtro(a.tipo)
-        ? `<button class="btn mb" data-a="versobre" data-t="${a.tipo}" data-mio="1">Abrir otro ${TIPOS_SOBRE[a.tipo].n}</button>` : ''}
-      <button class="btn sec" data-a="volvertienda">Atrás</button>`;
+        ''}
+      <div class="row" style="gap:8px">
+        <button class="btn sec" data-a="volvertienda" style="flex:1">Atrás</button>
+        ${puedeOtro(a.tipo)
+          ? `<button class="btn" data-a="versobre" data-t="${a.tipo}" data-mio="1" style="flex:1">Abrir otro</button>` : ''}
+      </div>`;
   }
 
   const N=NIVEL_APERTURA[a.nivel]||NIVEL_APERTURA.oro;
