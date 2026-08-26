@@ -285,6 +285,14 @@ en el suelo de su hueco; si el recorte lleva aire transparente al pie, lo que se
 el aire y el peleador vuelve a quedar flotando. Esto no se arregla con CSS y ya costó una
 vuelta: la silueta de prueba tenía 85 px de nada por debajo y parecía un fallo del encaje.
 
+**De dónde salen.** `herramientas/importar-fotos.mjs` las baja de ufcespanol.com, las
+recorta y las deja listas. **Hay que ejecutarla en una máquina con internet normal**: el
+proxy de la sesión de Claude tiene lista blanca —GitHub, npm, PyPI, Google Fonts— y
+deniega con 403 ufc.com, ufcespanol.com, es.ufc.com, espn.com y hasta Wikimedia, así que
+desde ahí no se puede bajar ni una. Primero `--ver` con un peleador, para comprobar que
+la herramienta encuentra la imagen que toca antes de gastar 355 descargas; `--probar` pasa
+un archivo del disco por el recorte, sin red.
+
 `juego/fotos.js` dice qué caras hay y **lo escribe `herramientas/generar-fotos.mjs`**:
 después de añadir o quitar una foto hay que volver a ejecutarlo. Se usa una lista y no un
 `onerror` porque la carta se pinta distinta según haya foto o no —el atributo pasa de estar
