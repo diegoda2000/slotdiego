@@ -28,17 +28,23 @@
   font-weight:600;font-display:swap;unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+2122,U+2212}
 @font-face{font-family:Barlow;src:url(fuentes/barlow-600-latin-ext.woff2) format('woff2');
   font-weight:600;font-display:swap;unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+1E00-1E9F,U+2C60-2C7F,U+A720-A7FF}
-/* Oswald se queda SOLO para la carta: sus porcentajes y sus huecos están medidos contra
-   ella, y cambiarla movería el nombre y las stats de sitio. Fuera de la carta manda
-   Saira Condensed para los títulos y Barlow para el texto. */
-@font-face{font-family:Oswald;src:url(fuentes/oswald-latin.woff2) format('woff2');
-  font-weight:200 700;font-display:swap;unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+2122,U+2212}
-@font-face{font-family:Oswald;src:url(fuentes/oswald-latin-ext.woff2) format('woff2');
-  font-weight:200 700;font-display:swap;unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+1E00-1E9F,U+2C60-2C7F,U+A720-A7FF}
+/* Antonio se queda SOLO para la carta, y está elegida midiendo, no a ojo: los nombres
+   de las stats vienen pintados dentro del marco y lo que escribe el juego tiene que
+   pasar por la misma. Del recorte de esas etiquetas a resolución completa salen tres
+   medidas: van inclinadas 11,4 grados —oblicua sintética, no una itálica dibujada—,
+   el palo mide 0,156 de la altura de caja alta —bold condensada, no black— y la caja
+   alta es el 3,04% del alto de la carta. Contra esas tres, Antonio 700 es la más
+   cercana de las libres: +2,6% de ancho, -3% de grosor, 80,5% de solape de silueta.
+   Barlow Condensed 900 sale un 52% demasiado ancha y Big Shoulders 900 demasiado
+   gorda; las dos estaban descartadas por medida antes de escribir esto. */
+@font-face{font-family:Antonio;src:url(fuentes/antonio-latin.woff2) format('woff2');
+  font-weight:100 700;font-display:swap;unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+2122,U+2212}
+@font-face{font-family:Antonio;src:url(fuentes/antonio-latin-ext.woff2) format('woff2');
+  font-weight:100 700;font-display:swap;unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+1E00-1E9F,U+2C60-2C7F,U+A720-A7FF}
 :root{
   --titulo:"Saira Condensed","Barlow Condensed","Arial Narrow",system-ui,sans-serif;
   --texto:Barlow,system-ui,-apple-system,"Segoe UI",sans-serif;
-  --carta:Oswald,"Roboto Condensed","Avenir Next Condensed","Arial Narrow",system-ui,sans-serif;
+  --carta:Antonio,"Roboto Condensed","Avenir Next Condensed","Arial Narrow",system-ui,sans-serif;
   /* La paleta de la arena: negro con rojo sangre y oro. */
   --bg:#150a0a; --bg2:#231413; --bg3:#34211f; --line:#493531;
   --txt:#f8f5ee; --dim:#aea298; --dim2:#7d6f68;
@@ -389,102 +395,117 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
   -webkit-text-size-adjust:none;text-size-adjust:none;
   transform:scale(var(--k,.15));transform-origin:0 0;pointer-events:none}
 
-/* Los huecos del marco, medidos sobre la propia imagen con un cuentapíxeles. */
+/* Los huecos del marco nuevo, medidos sobre el PNG a resolución completa (1054x1492)
+   con un cuentapíxeles. La proporción del dibujo es 0,7064 y la de la carta 0,7070, así
+   que el mismo porcentaje vale para los dos y ninguna pantalla se mueve de sitio.
 
-/* Pestaña del ranking. Es un paralelogramo inclinado hacia abajo-izquierda: arriba va de
-   x 6,5 a 29,8% y baja con pendiente -1,41% de x por cada 1% de y, así que su esquina
-   inferior izquierda se sale de la carta y queda cortada por el borde.
-   Centrar dentro de la figura real deja el número escorado a la izquierda, porque el ojo
-   ve el hueco recortado, de x 1,9 a 29,8%, cuyo centro está en el 15,9%. Así que se centra
-   como si fuera un rectángulo, tirando a la derecha hasta donde la tinta sigue pisando
-   metal. El límite duro son las cifras a la altura del 13,9%; se deja en el 12,9%, un pelo
-   a la izquierda, que es donde el ojo lo da por centrado. */
-/* El ranking NO lleva el desplazamiento por altura de mayúsculas que sí llevan los
-   números y el nombre. Aquí el hueco no es un rectángulo sino un paralelogramo que se
-   estrecha hacia abajo, así que bajar la cifra la descentra en vez de centrarla: se
-   queda donde la caja la pone. */
-.carta .c-rk{position:absolute;left:7.4%;width:11%;top:2.4%;height:7%;
+   El marco nuevo cambia una cosa de fondo: los nombres de las stats y sus iconos vienen
+   PINTADOS DENTRO del dibujo. El juego ya no los escribe —.c-et se ha ido, y con ella
+   FILAS_STAT y COLS_STAT—: solo pone bandera, ranking, atributo, nombre, récord y los
+   seis números.
+
+   Y cambia el color de la tinta. En el marco viejo casi todo el texto caía sobre metal
+   claro y se escribía en oscuro; aquí el nombre, el ranking y los seis recuadros son
+   huecos NEGROS, así que esos van en claro, y solo el récord —que cae en la banda
+   blanca de abajo— sigue en oscuro. */
+
+/* La inclinación. Las etiquetas del marco van a 11,4 grados, medidos sobre el palo de
+   la I de IQ ajustando una recta a su centro fila a fila: dx/dy = 0,2009. Se reproduce
+   con skewX y no con `font-style:oblique 11.4deg` porque la forma con ángulo no existe
+   en los WebView viejos, y ahí el texto saldría recto al lado de unas etiquetas
+   inclinadas. skewX lo entiende cualquier motor.
+
+   Y el medio punto de subida que va con ella. Centrar con flex centra la CAJA DE LÍNEA,
+   no la tinta: entre la caja de línea y la letra hay el hueco que la fuente reserva para
+   ascendentes y colas, y en Antonio no es simétrico, así que el texto queda bajo dentro
+   de su hueco. La corrección está medida con una sonda —ocho textos distintos, pintados
+   y restados a escala 4—, y sale entre 0,041 y 0,089 em según la cadena, con la media en
+   0,059 y las tres medidas sobre la carta de verdad en 0,054, 0,055 y 0,057. Se usa
+   0,055 em. Va en em y no en porcentaje para que valga igual a cualquier tamaño de letra.
+
+   Esto NO es el desplazamiento de 0,42em que hubo que quitar en su día: aquel salía de
+   una sonda de línea base metida dentro de un flex, que no medía la letra sino otra caja
+   flex. Este sale de pintar y restar píxeles, que es lo único que aquí ha valido. */
+/* Bandera dentro del octágono de arriba a la izquierda: puesta por detrás y asomando
+   por el hueco. Por eso va recortada al octágono y llenándolo, no encajada dentro con
+   aire alrededor.
+
+   Las medidas son las del hueco NEGRO, no las del octágono entero: recorriendo el dibujo
+   por el centro del octágono, el anillo de metal cae en x 6,93-7,21% y 18,60-18,98%, y
+   en y 5,43-5,70% y 14,01-14,21%. Entre anillo y anillo queda x 7,31-18,50% y
+   y 5,76-13,94%, que es lo que llena la bandera. Un punto más y taparía el metal. */
+.carta .c-ban{position:absolute;left:7.31%;width:11.19%;top:5.76%;height:8.18%;
+  overflow:hidden;
+  clip-path:polygon(30% 0,70% 0,100% 30%,100% 70%,70% 100%,30% 100%,0 70%,0 30%)}
+.carta .c-ban img{width:100%;height:100%;object-fit:cover;display:block}
+
+/* Ranking, arriba a la derecha. Quien no tenga ranking lleva SR, para que el hueco no
+   quede vacío. */
+.carta .c-rk{position:absolute;left:79.89%;width:16.03%;top:2.88%;height:9.52%;
   display:flex;align-items:center;justify-content:center;line-height:1;
-  font-weight:700;color:#3a2a09;font-size:calc(var(--cw,110px)*.062);letter-spacing:-.04em;
-  text-shadow:0 .07em 0 rgba(255,255,255,.42), 0 -.04em .03em rgba(0,0,0,.5)}
-.carta.plata .c-rk{color:#23272c;
-  text-shadow:0 .07em 0 rgba(255,255,255,.5), 0 -.04em .03em rgba(0,0,0,.45)}
+  font-weight:700;color:#f3dfa4;font-size:calc(var(--cw,110px)*.055);letter-spacing:-.02em;
+  transform:translateY(-.055em) skewX(-11.4deg)}
+.carta.plata .c-rk{color:#e6ecf2}
 
-.carta .c-mid{position:absolute;left:12%;right:12%;top:15%;height:40%;
+/* La ventana grande. En el dibujo es el hueco de la foto, pero el juego no tiene fotos
+   —no hay derechos de imagen y 398 hincharían la aplicación—, así que la ocupa el
+   atributo, que es lo que de verdad cambia cómo juegas esa carta. */
+.carta .c-mid{position:absolute;left:3.42%;width:62.52%;top:2.68%;height:68.32%;
   display:flex;flex-direction:column;align-items:center;justify-content:center;
-  gap:6%;text-align:center}
-.carta .c-icono{font-size:calc(var(--cw,110px)*.17);line-height:1;
+  gap:5%;text-align:center}
+.carta .c-icono{font-size:calc(var(--cw,110px)*.20);line-height:1;
   filter:drop-shadow(0 2px 6px rgba(0,0,0,.6))}
 .carta .c-rasgo{font-weight:600;letter-spacing:.07em;text-transform:uppercase;
-  font-size:calc(var(--cw,110px)*.027);line-height:1.2;color:var(--warn)}
+  font-size:calc(var(--cw,110px)*.030);line-height:1.2;color:var(--warn)}
 .carta.plata .c-rasgo{color:#cfd6dd}
-/* El récord va en el panel blanco, entre la placa del nombre y las stats. Medida
-   sobre el marco: la franja de y 70,6% a 75,3% está limpia de lado a lado, y las
-   etiquetas de las stats empiezan en el 75,32%, así que cabe con aire. */
-.carta .c-record{position:absolute;left:12%;right:12%;top:71.2%;height:3.6%;
-  display:flex;align-items:center;justify-content:center;line-height:1;
-  color:#3a3d42;font-weight:700;letter-spacing:.05em;
-  font-size:calc(var(--cw,110px)*.028)}
-.carta.plata .c-record{color:#33383e}
 
-/* Placa del nombre: x 25,3–74,2%, y 66,02–70,51%. Centrado en los dos ejes. Lo largo
-   que sea el nombre lo pone tamNombre() en --nom, para llenar la placa sin salirse. */
-/* Ni el nombre ni los números llevan desplazamiento: el centrado del navegador ya los
-   deja donde toca. Lo comprueba herramientas/medir-carta.mjs, que no calcula nada —
-   dibuja la carta a tamaño natural y mira en qué píxeles cae la tinta. Tal como está:
-   el nombre ocupa del 66,99% al 70,41% y su placa va del 66,02% al 70,51%. */
-.carta .c-nom{position:absolute;left:25.3%;right:25.8%;top:66.02%;height:4.49%;
+/* Barra del nombre: x 5,31-72,49%, y 72,12-82,31%. Hueco negro, letra clara. Lo largo
+   que sea el nombre lo pone tamNombre() en --nom, para llenar la barra sin salirse. */
+.carta .c-nom{position:absolute;left:5.12%;width:66.61%;top:72.32%;height:9.52%;
   display:flex;align-items:center;justify-content:center;line-height:1;
-  color:#2e2107;font-weight:700;font-size:calc(var(--cw,110px)*var(--nom,.045));
-  overflow:hidden;white-space:nowrap;padding:0 1.5%;
-  text-shadow:0 .07em 0 rgba(255,255,255,.45), 0 -.04em .03em rgba(0,0,0,.45)}
-.carta.plata .c-nom{color:#1a1e22;
-  text-shadow:0 .07em 0 rgba(255,255,255,.55), 0 -.04em .03em rgba(0,0,0,.4)}
+  color:#f6ecd2;font-weight:700;font-size:calc(var(--cw,110px)*var(--nom,.045));
+  overflow:hidden;white-space:nowrap;padding:0 2%;
+  transform:translateY(-.055em) skewX(-11.4deg)}
+.carta.plata .c-nom{color:#eef2f6}
+
+/* Récord, en la banda blanca de abajo: x 5,88-93,93%, y 83,45-94,64%. Única tinta
+   oscura de la carta, porque es la única que cae sobre claro. La sigla de la división
+   se va al polígono del borde de abajo, justo debajo del récord.
+
+   El polígono no está centrado en la carta: recorriéndolo por su fila más ancha va de
+   x 42,60 a 53,80%, o sea centrado en el 48,20% y no en el 50%. Y su cara plana —el oro
+   de dentro del bisel, leído por la columna central— va de y 95,51 a 98,93%. La sigla se
+   centra en esa cara, no en el contorno: centrarla en el contorno la deja alta, porque la
+   mitad de abajo del polígono es un pico que se estrecha. */
+.carta .c-record{position:absolute;left:5.98%;width:87.85%;top:83.45%;height:11.25%;
+  display:flex;align-items:center;justify-content:center;line-height:1;
+  color:#23201c;font-weight:700;letter-spacing:.04em;
+  font-size:calc(var(--cw,110px)*.046);font-variant-numeric:tabular-nums;
+  transform:translateY(-.055em) skewX(-11.4deg)}
+.carta .c-peso{position:absolute;left:42.60%;width:11.20%;top:95.76%;height:3.24%;
+  display:flex;align-items:center;justify-content:center;line-height:1;
+  color:#000;font-weight:700;letter-spacing:.03em;
+  font-size:calc(var(--cw,110px)*.032);
+  transform:translateY(-.055em) skewX(-11.4deg)}
 
 /* El reflejo. Una franja de luz cruzada por encima, que es lo que hace que el texto
    parezca parte del metal y no una pegatina puesta encima. */
-/* El reflejo va pegado al hueco del marco, no al texto. */
 .carta .brillo{position:absolute;inset:0;pointer-events:none;border-radius:inherit;
   background:linear-gradient(104deg,
     rgba(255,255,255,0) 26%, rgba(255,255,255,.34) 41%,
     rgba(255,255,255,.10) 52%, rgba(255,255,255,0) 66%)}
 
-/* El número va dentro del rombo, centrado; el nombre de la stat, centrado sobre su
-   línea y apoyado en ella. */
-/* Los tres rombos de la izquierda están, en el dibujo del marco, en el 76,05-78,22%,
-   82,33-84,49% y 88,71-90,88% de la altura. Las cifras caen dentro de los tres sin tocar
-   nada: 76,17-78,16 en el primero. */
-.carta .c-num{position:absolute;height:2.17%;display:flex;align-items:center;
-  justify-content:center;line-height:1;color:#2b1f07;font-weight:700;
-  font-size:calc(var(--cw,110px)*.036);font-variant-numeric:tabular-nums}
-.carta.plata .c-num{color:#15181c}
-.carta .c-num.pen{color:#7a1109}
-.carta .c-num.up{color:#0f4a22}
-.carta .c-et{position:absolute;height:2.9%;display:flex;align-items:flex-end;
-  justify-content:center;line-height:1;color:#3a3d42;font-weight:600;
-  letter-spacing:.03em;font-size:calc(var(--cw,110px)*.042)}
-
-/* Bandera y peso, centrados en el hueco libre del panel blanco (y 91–97%). */
-/* Bandera y peso. Centrar el par como un bloque los deja torcidos: la bandera es más
-   ancha que "HW", así que el hueco entre las dos cae a la derecha del eje de la carta
-   y la bandera se ve escorada. Con dos mitades iguales, la frontera entre columnas
-   ES el eje: la bandera se pega a él por la izquierda y el peso por la derecha, y sale
-   simétrico con cualquier sigla, desde "HW" hasta "WFLW". */
-.carta .c-pie{position:absolute;left:10%;right:10%;top:92%;height:4.4%;
-  display:grid;grid-template-columns:1fr 1fr;align-items:center;column-gap:5%;
-  color:#2b2e33;font-weight:700;letter-spacing:.08em;line-height:1;
-  font-size:calc(var(--cw,110px)*.031)}
-/* El alto va en em, no en porcentaje: dentro de una rejilla el porcentaje se resuelve
-   contra una fila que aún no tiene altura definida y la bandera se dispara. En em queda
-   además emparejada con la altura de las letras del peso, que es como debe leerse. */
-.carta .c-pie .bnd{height:1.45em;width:auto;display:block;border-radius:1px;
-  justify-self:end;box-shadow:0 0 0 .5px rgba(0,0,0,.35)}
-/* Las letras del peso, a la misma altura que la bandera: el factor sale de medir,
-   no de la ratio teórica de la fuente: se midió la tinta con las métricas del propio
-   motor de texto y salió 1,74 em, no los 2 em que daba la cuenta a ojo. */
-.carta .c-pie .peso{justify-self:start;font-size:1.74em;line-height:1}
-/* Sin bandera —un país que no tenemos— el peso se queda centrado y no de lado. */
-.carta .c-pie.sinbandera{display:flex;justify-content:center}
+/* Los seis números, cada uno dentro de su recuadro negro, al lado del nombre de su stat
+   —que lo pinta el marco—. Todos los recuadros comparten la columna x 85,39-93,74%; lo
+   único que cambia es la altura, y va en el atributo style desde ALTURAS_STAT. */
+.carta .c-num{position:absolute;left:85.39%;width:8.16%;height:4.15%;
+  display:flex;align-items:center;justify-content:center;line-height:1;
+  color:#f6ecd2;font-weight:700;
+  font-size:calc(var(--cw,110px)*.040);font-variant-numeric:tabular-nums;
+  transform:translateY(-.055em) skewX(-11.4deg)}
+.carta.plata .c-num{color:#eef2f6}
+.carta .c-num.pen{color:#ff8a7a}
+.carta .c-num.up{color:#8ee6a6}
 
 /* Boca abajo: la del rival mientras no se resuelve el duelo. */
 .carta.tapada{display:grid;place-items:center;font-size:44px;font-weight:800;color:#46525f;
@@ -524,24 +545,22 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
   font-size:11px;color:var(--luz)}
 
 /* De partida, todo lo que se destapa después está oculto. */
-.carta.revelando .c-pie .bnd,
-.carta.revelando .c-pie .peso,
+.carta.revelando .c-ban,
+.carta.revelando .c-peso,
 .carta.revelando .c-record,
 .carta.revelando .c-rk,
 .carta.revelando .c-mid,
 .carta.revelando .c-nom,
-.carta.revelando .c-num,
-.carta.revelando .c-et{opacity:0;visibility:hidden}
+.carta.revelando .c-num{opacity:0;visibility:hidden}
 
 /* Y cada clase enciende su parte. */
-.carta.ve-pais   .c-pie .bnd,
-.carta.ve-peso   .c-pie .peso,
+.carta.ve-pais   .c-ban,
+.carta.ve-peso   .c-peso,
 .carta.ve-record .c-record,
 .carta.ve-rk     .c-rk,
 .carta.ve-todo   .c-mid,
 .carta.ve-todo   .c-nom,
-.carta.ve-todo   .c-num,
-.carta.ve-todo   .c-et{opacity:1;visibility:visible;animation:aparece .5s ease both}
+.carta.ve-todo   .c-num{opacity:1;visibility:visible;animation:aparece .5s ease both}
 /* Desvanecido puro: solo opacidad. Cualquier salto o cambio de tamaño aquí se lee como
    un parpadeo de la carta, que es justo lo contrario de lo que tiene que parecer —el
    dato apareciendo de la nada, como un desvanecido al revés. */
@@ -585,9 +604,9 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 
 /* Quien pide menos movimiento en su móvil no tiene por qué tragarse nada de esto. */
 @media (prefers-reduced-motion: reduce){
-  .carta.ve-pais .c-pie .bnd,.carta.ve-peso .c-pie .peso,.carta.ve-record .c-record,
+  .carta.ve-pais .c-ban,.carta.ve-peso .c-peso,.carta.ve-record .c-record,
   .carta.ve-rk .c-rk,.carta.ve-todo .c-mid,.carta.ve-todo .c-nom,
-  .carta.ve-todo .c-num,.carta.ve-todo .c-et{animation-duration:.01ms}
+  .carta.ve-todo .c-num{animation-duration:.01ms}
   .aviso .apertura-carta::before{animation:none;opacity:1}
   .suelta .destello::after,.suelta .apertura-carta.n-corona .destello::before{animation:none;opacity:0}
 }
@@ -1310,23 +1329,13 @@ const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',
    va colocado encima en porcentajes medidos sobre ese marco. La ventana grande de arriba
    no lleva foto —no hay derechos de imagen y 398 fotos hincharían la aplicación— así que
    la ocupa el atributo, que es lo que de verdad cambia cómo juegas esa carta. */
-/* Las seis casillas de stat, medidas sobre el marco con un cuentapíxeles y no a ojo:
-   el rombo donde va el número y el tramo de línea donde va el nombre de la stat.
+/* Los seis recuadros negros, medidos sobre el PNG del marco a resolución completa. Van
+   todos en la misma columna —x 85,39-93,74%, que lo pone el CSS— y en el mismo orden que
+   STATS: GOLPEO, LUCHA, SUELO, CARDIO, DUREZA, IQ. Aquí solo va la altura de cada uno.
 
-   `rombo` es la caja SEGURA del rombo, la parte donde es macizo en toda su altura: como
-   está inclinado, su rectángulo interior es más estrecho que su ancho aparente, y usar
-   el aparente hacía que los números se salieran por el filo. */
-/* Las tres alturas salen de medir el propio dibujo del marco columna a columna: los
-   rombos ocupan 76,05-78,22%, 82,33-84,49% y 88,71-90,88%. */
-const FILAS_STAT = [
-  {rombo:'76.05%', linea:'75.32%'},
-  {rombo:'82.33%', linea:'81.55%'},
-  {rombo:'88.71%', linea:'87.92%'},
-];
-const COLS_STAT = [
-  {rombo:'17.2%,5.2%',  linea:'24.2%,21.2%'},
-  {rombo:'56.1%,5.2%',  linea:'63.1%,20.9%'},
-];
+   Ya no hay pareja de "rombo" y "línea": el nombre de la stat lo trae pintado el marco,
+   así que el juego pone el número y nada más. */
+const ALTURAS_STAT = ['17.36%','26.21%','35.66%','45.04%','54.36%','63.47%'];
 
 function cartaHTML(c,o={}){
   if(!c) return `<div class="carta oculta">?</div>`;
@@ -1335,10 +1344,7 @@ function cartaHTML(c,o={}){
 
   const st=STATS.map((s,i)=>{
     const base=c.stats[s.id], d=aj[s.id]||0, v=base+d;
-    const f=FILAS_STAT[i>>1], col=COLS_STAT[i&1];
-    const [rx,rw]=col.rombo.split(','), [lx,lw]=col.linea.split(',');
-    return `<div class="c-num ${d<0?'pen':d>0?'up':''}" style="left:${rx};width:${rw};top:${f.rombo}">${v}</div>
-      <div class="c-et" style="left:${lx};width:${lw};top:${f.linea}">${s.n}</div>`;
+    return `<div class="c-num ${d<0?'pen':d>0?'up':''}" style="top:${ALTURAS_STAT[i]}">${v}</div>`;
   }).join('');
 
   const r=c.rasgos[0];
@@ -1357,12 +1363,10 @@ function cartaHTML(c,o={}){
       ${r?`<div class="c-rasgo">${RASGOS[r.tipo].n}${r.plus?'+':''}${r.stat?' · '+r.stat.toUpperCase():''}</div>`:''}
     </div>
     <div class="c-record">${esc(c.record||'')}</div>
+    <div class="c-peso">${SIGLA_DIV[c.division]}</div>
     <div class="c-nom" style="--nom:${tamNombre(c.nombre)}">${esc(c.nombre)}<i class="brillo"></i></div>
     ${st}
-    <div class="c-pie${bnd?'':' sinbandera'}">
-      ${bnd?`<img class="bnd" src="${bnd}" alt="${esc(c.pais)}" loading="lazy">`:''}
-      <span class="peso">${SIGLA_DIV[c.division]}</span>
-    </div>
+    ${bnd?`<div class="c-ban"><img src="${bnd}" alt="${esc(c.pais)}" loading="lazy"></div>`:''}
    </div>
   </div>`;
 }

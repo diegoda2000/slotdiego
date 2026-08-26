@@ -6,7 +6,7 @@
    también en píxeles sobre juego/marcos/oro.webp.
 
    Existe porque los atajos fallaron. Medir la caja del elemento no sirve: la caja de línea
-   de Oswald reserva sitio bajo la base para las colas de las letras, así que un texto puede
+   de la fuente reserva sitio bajo la base para las colas de las letras, así que un texto puede
    estar centrado en su caja y torcido dentro del hueco. Y medir con las métricas del canvas
    tampoco: en la rejilla las cartas van a 90-100 px, y ahí Chromium redondea a píxeles
    enteros —una fuente de 3,3 px devuelve una altura de 3, un 25% de error—. Dando por
@@ -19,13 +19,19 @@ import fs from 'fs';
 import path from 'path';
 import zlib from 'zlib';
 
-/* Los huecos del marco, leídos de oro.webp (620x877) recorriendo cada columna y anotando
-   dónde el dorado del hueco se separa del marfil del marco. */
+/* Los huecos del marco nuevo, leídos del PNG a resolución completa (1054x1492) recorriendo
+   cada columna y anotando dónde el negro del hueco se separa del metal o del marfil.
+
+   Los seis recuadros de stat van uno debajo de otro en la misma columna, y entre uno y el
+   siguiente quedan 4,3 puntos de carta: más que el margen de 1,5 con el que busca banda(),
+   así que ninguna búsqueda se cuela en el número de al lado. */
 const HUECOS = {
-  '.c-rk':     { x: [0.075, 0.185], filas: [[1.82, 11.97]] },
-  '.c-nom':    { x: [0.260, 0.740], filas: [[66.02, 70.51]] },
-  '.c-record': { x: [0.130, 0.870], filas: [[70.60, 75.30]] },
-  '.c-num':    { x: [0.180, 0.216], filas: [[76.05, 78.22], [82.33, 84.49], [88.71, 90.88]] },
+  '.c-rk':     { x: [0.7989, 0.9592], filas: [[2.88, 12.40]] },
+  '.c-nom':    { x: [0.0512, 0.7173], filas: [[72.32, 81.84]] },
+  '.c-record': { x: [0.0598, 0.9383], filas: [[83.45, 94.70]] },
+  '.c-peso':   { x: [0.4260, 0.5380], filas: [[95.51, 98.93]] },
+  '.c-num':    { x: [0.8539, 0.9355], filas: [[17.36, 21.51], [26.21, 30.36], [35.66, 39.75],
+                                              [45.04, 49.13], [54.36, 58.45], [63.47, 67.56]] },
 };
 
 const exe = process.env.CHROMIUM_PATH || '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
@@ -47,7 +53,7 @@ await pag.waitForTimeout(600);
 const carta = await pag.evaluate(() => {
   const est = document.createElement('style');
   // Sin sombras ni reflejos: lo que se mide tiene que ser la letra, no su relieve.
-  est.textContent = '.carta .c-nom,.carta .c-rk,.carta .c-record,.carta .c-num{text-shadow:none !important}'
+  est.textContent = '.carta .c-nom,.carta .c-rk,.carta .c-record,.carta .c-peso,.carta .c-num{text-shadow:none !important}'
                   + '.carta .brillo{display:none !important}';
   document.head.appendChild(est);
   const jaula = document.createElement('div');

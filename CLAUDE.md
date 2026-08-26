@@ -45,6 +45,7 @@ juego/test-humo.mjs     suite principal (1.174 líneas)
 juego/test-online.mjs   partida completa entre dos navegadores
 juego/{arte,marcos,sobres,banderas,fuentes,sonidos}/   recursos
 herramientas/           utilidades de un solo uso (medir, importar, corregir)
+originales/marcos/      los PNG de los marcos a resolución completa, FUERA del APK
 servidor/               Worker de Cloudflare para las partidas en directo
 android/ ios/           envoltorios nativos
 docs/                   GDD, decisiones descartadas, base de datos, interfaz
@@ -64,7 +65,8 @@ banquillo, mercado de jugadores ni simulador de combate por asaltos sin un argum
 
 ```bash
 node juego/test-humo.mjs        # suite completa
-node juego/test-humo.mjs 6      # solo el caso 6
+node juego/test-humo.mjs 6      # la suite completa, pero con 6 partidas en vez de 20
+                                # (el número es process.argv[2] = N_PARTIDAS, NO un caso)
 node juego/test-online.mjs      # dos navegadores, partida entera
 node herramientas/medir-carta.mjs   # mide la carta pintando y comparando píxeles
 ```
@@ -104,7 +106,16 @@ medición fiable es pintar con el texto y sin él y restar. Eso hace
 Un `inline-block` de altura cero metido en un contenedor `display:flex` se convierte en
 otro elemento flex y devuelve una posición que no tiene que ver con el texto. Hay que
 envolver el texto primero. Por esto se metió un desplazamiento de 0,42em que estaba mal;
-ya se quitó. **Ningún texto de la carta lleva desplazamiento vertical.**
+ya se quitó.
+
+**Ojo, que esto ha cambiado:** con el marco nuevo y Antonio, los textos de la carta SÍ
+llevan un desplazamiento vertical, de **0,055 em**, dentro del mismo `transform` que la
+inclinación. No es el de 0,42em resucitado. Aquel salía de la sonda mala; éste sale de
+pintar ocho textos distintos a escala 4, restarlos del fondo y mirar dónde cae la tinta:
+0,041–0,089 em según la cadena, media 0,059, y 0,054 / 0,055 / 0,057 en las tres medidas
+hechas sobre la carta de verdad. Sin él, centrar con flex centra la caja de línea y no la
+letra, y todo queda medio punto bajo dentro de su hueco. **No lo quites sin volver a
+medir con `herramientas/medir-carta.mjs`.**
 
 ### CSS que parece válido y no lo es
 `background: var(--bg) var(--arena) fixed` no funciona porque `--arena` contiene dos
@@ -152,8 +163,9 @@ Reglas duras de la interfaz:
         linear-gradient(180deg,#100606 0%,#050303 100%);
 --tarjeta:linear-gradient(160deg,#351c1a 0%,#170c0c 100%);
 ```
-Tres tipografías: `--titulo` Saira Condensed, `--texto` Barlow, `--carta` Oswald (solo la
-carta). Van servidas desde `juego/fuentes/`, no desde Google.
+Tres tipografías: `--titulo` Saira Condensed, `--texto` Barlow, `--carta` Antonio (solo la
+carta). Van servidas desde `juego/fuentes/`, no desde Google. Oswald se fue con el marco
+viejo: sus archivos ya no están.
 
 ### Sonido
 Sonidos del sobre sintetizados con Web Audio. El locutor ("It's time!",
@@ -191,58 +203,70 @@ Cuando añadas un tipo de recurso nuevo, hay que copiarlo en **dos** sitios:
 
 ---
 
-## Trabajo pendiente: el diseño nuevo de la carta
+## El diseño nuevo de la carta: HECHO
 
-**Estado: sin empezar, y bloqueado.** El usuario pasó dos marcos nuevos (oro y plata) y el
-contenedor se reinició antes de copiarlos al repositorio. **Se han perdido y hay que
-pedírselos otra vez.** Los que hay en `juego/marcos/` son los **viejos** (seis filas de
-stats en la banda blanca de abajo).
+Los marcos llegaron y está montado. Los PNG a resolución completa que pasó el usuario
+están en **`originales/marcos/`** —fuera de `juego/`, porque `build.gradle` y
+`servidor.yml` empaquetan `marcos/**` y esos dos PNG pesan cinco megas—. `juego/marcos/`
+lleva la versión a 620x877 en WebP. **Si hay que volver a medir algo del marco, se mide
+sobre el PNG de `originales/`, no sobre el WebP.**
 
-Lo que pidió, textualmente:
+Lo que pinta el juego ahora: bandera, ranking, atributo, nombre, récord, división y los
+seis números. Los nombres de las stats y sus iconos **vienen dibujados dentro del marco**,
+así que `.c-et`, `FILAS_STAT` y `COLS_STAT` ya no existen. No los reintroduzcas.
 
-> La fuente debe ser exactamente la misma que tienen los modelos, donde pone el nombre de
-> las stats. La nacionalidad ahora va dentro del octágono de arriba a la izquierda, como si
-> estuviera puesta por detrás y se dejara ver por ese hueco. El ranking arriba a la derecha;
-> los que no tengan ranking pondrán **SR**, para que esa parte no quede vacía. En la zona
-> blanca de abajo, el récord del peleador. Las stats van dentro de los recuadros negros al
-> lado del nombre de cada una.
-
-### Medidas ya tomadas del marco de oro (1054×1492, proporción 0,7064 — casi idéntica a la actual 620/877 = 0,7070, así que **ninguna pantalla necesita cambiar**)
+### Los huecos, medidos sobre el PNG (1054x1492) y no sacados de la tabla vieja
 
 | Hueco | x | y |
 |---|---|---|
-| Foto | 3,42 – 65,94% | 2,68 – 71% |
-| Nacionalidad (octágono) | 7,59 – 18,60% | 5,90 – 14,21% |
-| Ranking | 79,32 – 96,02% | 2,95 – 12,60% |
-| Barra del nombre | 5,31 – 72,49% | 72,12 – 82,31% |
-| Récord (zona blanca) | 5,88 – 93,93% | 83,45 – 94,64% |
-| Recuadro GOLPEO | 85,39 – 93,74% | 17,43 – 21,98% |
-| Recuadro LUCHA | 85,39 – 93,74% | 26,27 – 30,83% |
-| Recuadro SUELO | 85,39 – 93,74% | 35,66 – 39,95% |
-| Recuadro CARDIO | 85,39 – 93,74% | 45,04 – 49,60% |
-| Recuadro DUREZA | 85,39 – 93,74% | 54,42 – 58,98% |
-| Recuadro IQ | 85,39 – 93,74% | 63,54 – 67,83% |
+| Octágono de la bandera (hueco negro) | 7,31 – 18,50% | 5,76 – 13,94% |
+| Ranking | 79,89 – 95,92% | 2,88 – 12,40% |
+| Ventana grande (el atributo) | 3,42 – 65,94% | 2,68 – 71% |
+| Barra del nombre | 5,12 – 71,73% | 72,32 – 81,84% |
+| Banda blanca (el récord) | 5,98 – 93,83% | 83,45 – 96,58% |
+| Polígono del borde (la división) | 42,60 – 53,80% | cara plana 95,51 – 98,93% |
+| Recuadros de stat | 85,39 – 93,55% | 17,36 / 26,21 / 35,66 / 45,04 / 54,36 / 63,47%, alto 4,15% |
 
-**Consecuencia estructural:** los nombres de las stats (GOLPEO, LUCHA…) y sus iconos van
-**pintados en el propio marco**, así que el juego ya no los dibuja — **`.c-et` desaparece**,
-y con ella `FILAS_STAT` y `COLS_STAT` tal como están hoy. El juego pinta solo: bandera,
-ranking (o "SR"), foto, nombre, récord y los seis números.
+Dos cosas que no son lo que parecen: **el polígono de abajo no está centrado en la carta**
+—va de 42,60 a 53,80%, o sea centrado en el 48,20%—, y la sigla de la división se centra
+en su **cara plana**, no en el contorno, porque la mitad de abajo es un pico que se
+estrecha y centrar en el contorno la deja alta.
 
-### La fuente
-La comparación de "GOLPEO" contra un recorte de la etiqueta real dejó dos candidatas:
-**Big Shoulders Display 900** (O rectangular con esquinas cortadas y G con espolón — la más
-parecida) y **Barlow Condensed 900 itálica**. La puntuación por silueta salió empatada
-(40–48%) porque el recorte es de solo 103×41px. La proporción de la etiqueta del marco es
-2,512; Barlow Condensed mide 2,278 y Big Shoulders 2,967. **Hace falta un recorte de más
-resolución para cerrarlo.**
+### La tinta
+El marco viejo tenía casi todo el texto sobre metal claro y se escribía oscuro. Aquí el
+nombre, el ranking y los seis recuadros son **huecos negros**: esos van en claro. Solo el
+récord (banda blanca) y la división (polígono dorado o plateado) van en oscuro, y la
+división en negro puro porque lo pidió así el usuario.
 
-### Orden de trabajo cuando lleguen los marcos
-1. Copiarlos a `juego/marcos/` a 620×877 **inmediatamente**, y commitear.
-2. Cerrar la fuente con un recorte grande de la etiqueta.
-3. Reescribir el marcado y el CSS de la carta a los huecos de la tabla; quitar `.c-et`.
-4. Verificar con `node herramientas/medir-carta.mjs` y `node juego/test-humo.mjs 6`.
+### La fuente: Antonio
+Elegida midiendo el recorte de las etiquetas del marco a resolución completa, no a ojo.
+Tres medidas de la referencia: inclinación **11,4°** (oblicua sintética, no itálica
+dibujada), palo/altura de caja alta **0,156** (bold condensada, **no** black) y caja alta
+al 3,04% del alto de la carta. Contra eso, Antonio 700 es la más cercana de las libres:
++2,6% de ancho, −3% de grosor, 80,5% de solape de silueta. **Quedan descartadas por medida
+Barlow Condensed 900 (52% demasiado ancha) y Big Shoulders 900 (demasiado gorda)**, que
+eran las dos candidatas que se manejaban antes; League Gothic y Bebas Neue quedaron a un
+punto de Antonio.
 
----
+La inclinación se reproduce con `skewX(-11.4deg)` y **no** con `font-style:oblique 11.4deg`:
+la forma con ángulo no existe en los WebView viejos y ahí el texto saldría recto al lado
+de unas etiquetas inclinadas.
+
+### Cómo se verifica
+```bash
+node herramientas/medir-carta.mjs   # los diez textos, uno a uno, contra su hueco
+node juego/test-humo.mjs            # la suite entera
+```
+`medir-carta.mjs` lleva los huecos de la tabla de arriba dentro. Si mueves un texto,
+mueve también su hueco ahí, o la herramienta deja de decir la verdad.
+
+### Lo que quedó sin tocar y hay que decidir algún día
+- **La ventana grande es el hueco de la FOTO en el dibujo**, pero el juego no tiene fotos
+  (ni derechos de imagen, ni ganas de meter 398 imágenes en el APK), así que la sigue
+  ocupando el atributo. Si algún día hay fotos, el hueco ya está medido.
+- **`.c-copias` se pinta y no tiene CSS en ninguna parte.** Ya estaba así antes de este
+  trabajo; no se ha tocado. Cuando salga una carta repetida, el "×2" cae suelto arriba a
+  la izquierda del lienzo.
 
 ## Trato con el usuario
 

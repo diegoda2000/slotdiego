@@ -88,17 +88,23 @@ function etiquetaEstatus(c){
   // Texto y no emoji: un 🏆 a este tamaño no se lee, y cada sistema lo dibuja distinto.
   if(c.rk===0) return '#C';
   if(c.rk) return '#'+c.rk;
-  return '';
+  // Sin ranking va '#SR', no vacío: el hueco del marco es un octágono con fondo negro y
+  // dejarlo en blanco se lee como una carta a medio pintar, no como un peleador sin
+  // clasificar. Lleva almohadilla como los demás para que las tres etiquetas —#C, #11 y
+  // #SR— se lean como la misma cosa y no como un texto suelto colado en el hueco.
+  return '#SR';
 }
 
-/* Cuánto puede medir el nombre para llenar la placa sin salirse.
+/* Cuánto puede medir el nombre para llenar la barra sin salirse.
 
-   La placa deja unos 45 puntos de ancho de carta por dentro, y Oswald gasta algo menos
-   de medio punto por letra. Con eso sale el tamaño que llena el hueco, y se le pone un
-   techo para que "Bo Nickal" no acabe con letras de cartel de feria. */
+   La barra del marco nuevo va de x 5,31 a 72,49% y se le quita un 2% de aire a cada
+   lado: quedan 63,2 puntos de ancho de carta por dentro. Antonio 700 gasta 0,406 puntos
+   por letra de media sobre los nombres del plantel, y 0,455 en el peor —"Khamzat
+   Chimaev"—, así que la cuenta usa 0,46 y no la media: con la media el nombre más ancho
+   se saldría. El techo evita que "Bo Nickal" acabe con letras de cartel de feria. */
 function tamNombre(nombre){
   const largo=Math.max(nombre.length,6);
-  return (Math.min(5.1, 45/(largo*0.47))/100).toFixed(4);   // fracción del ancho de la carta
+  return (Math.min(9.5, 63.2/(largo*0.46))/100).toFixed(4);  // fracción del ancho de la carta
 }
 const ORDEN_ESTATUS = ESTATUS.map(e=>e.id);
 
