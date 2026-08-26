@@ -11,8 +11,13 @@ compite en dos divisiones tiene dos cartas y una sola cara.
 - **WebP con canal alfa.**
 - **420x620 px** va sobrado: en la pantalla más grande del juego la ventana de la carta no
   pasa de 390 px de ancho.
-- Encuadre de medio cuerpo, mirando de frente. Se apoyan en el suelo de la ventana, así
-  que lo que se corta es la cintura, no la cabeza.
+- Encuadre de medio cuerpo, mirando de frente.
+- **El cuerpo tiene que llegar al borde de ABAJO del archivo, sin un solo píxel
+  transparente por debajo.** El juego apoya la imagen en el borde de abajo de su hueco,
+  que queda tapado por la placa del nombre: así el peleador sale de detrás de la placa. Si
+  la imagen lleva aire transparente al pie, ese aire se apoya en la placa y el peleador se
+  queda flotando por encima, con el corte a la vista. Recórtala pegada al cuerpo.
+- Por los lados sí puede sobrar: la imagen se ajusta a lo ancho del hueco y se centra.
 
 ## Cómo se llaman
 

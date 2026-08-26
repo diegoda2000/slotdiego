@@ -280,6 +280,11 @@ Se apoyan abajo y **la imagen se corta por debajo del borde de arriba de la plac
 nombre** —72,60% en el oro, 72,85% en el plata—, no en el borde de la ventana. Cortándola
 en la ventana el peleador queda colgado en el aire; así sale de detrás de la placa.
 
+**Y el cuerpo tiene que llegar al borde de abajo del ARCHIVO.** El juego apoya la imagen
+en el suelo de su hueco; si el recorte lleva aire transparente al pie, lo que se apoya es
+el aire y el peleador vuelve a quedar flotando. Esto no se arregla con CSS y ya costó una
+vuelta: la silueta de prueba tenía 85 px de nada por debajo y parecía un fallo del encaje.
+
 `juego/fotos.js` dice qué caras hay y **lo escribe `herramientas/generar-fotos.mjs`**:
 después de añadir o quitar una foto hay que volver a ejecutarlo. Se usa una lista y no un
 `onerror` porque la carta se pinta distinta según haya foto o no —el atributo pasa de estar
