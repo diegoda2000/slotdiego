@@ -12,8 +12,10 @@ def copiarJuego = tasks.register('copiarJuego', Copy) {
         include 'juego.html'
         include 'motor.js'
         include 'roster.js'     // el catálogo de peleadores
+        include 'fotos.js'      // qué peleadores tienen foto
         include 'servidor.js'   // lleva dentro la dirección del servidor de directo
         include 'marcos/**'     // los marcos de las cartas, oro y plata
+        include 'fotos/**'      // las caras de los peleadores, recortadas
         include 'banderas/**'   // las 57 banderas
         include 'fuentes/**'    // la tipografía, para que se vea igual sin conexión
         include 'sonidos/**'    // el anuncio de campeón y top 5

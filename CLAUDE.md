@@ -43,7 +43,8 @@ juego/roster.js         plantel de peleadores generado (419 líneas)
 juego/servidor.js       una línea con la URL del servidor. LA ESCRIBE EL FLUJO, no tú
 juego/test-humo.mjs     suite principal (1.174 líneas)
 juego/test-online.mjs   partida completa entre dos navegadores
-juego/{arte,marcos,sobres,banderas,fuentes,sonidos}/   recursos
+juego/fotos.js          qué peleadores tienen foto. LA ESCRIBE LA HERRAMIENTA, no tú
+juego/{arte,marcos,sobres,banderas,fuentes,sonidos,fotos}/   recursos
 herramientas/           utilidades de un solo uso (medir, importar, corregir)
 originales/marcos/      los PNG de los marcos a resolución completa, FUERA del APK
 servidor/               Worker de Cloudflare para las partidas en directo
@@ -260,13 +261,40 @@ node juego/test-humo.mjs            # la suite entera
 `medir-carta.mjs` lleva los huecos de la tabla de arriba dentro. Si mueves un texto,
 mueve también su hueco ahí, o la herramienta deja de decir la verdad.
 
+### La carta no tiene fondo
+El marco es un PNG con la carta **recortada**: alrededor del metal lleva de 14 a 55 px
+transparentes, según por dónde se mire, porque el contorno no es un rectángulo —esquinas
+cortadas y una muesca arriba en medio—. `.carta` **no lleva color de fondo ni
+border-radius**: si se le ponen, ese margen se rellena y la carta se ve pegada sobre un
+rectángulo gris. `overflow:hidden` se queda, para que un texto mal medido no se salga.
+
+### Las fotos de los peleadores
+Van en `juego/fotos/<persona>.webp`, **una por peleador y no por carta** —402 cartas, 355
+peleadores, y quien pelea en dos divisiones tiene dos cartas y una cara—.
+
+**Recortadas y con transparencia.** El peleador va superpuesto ENCIMA del fondo de
+hexágonos del marco, que se sigue viendo por detrás y alrededor; una foto rectangular con
+su fondo taparía el dibujo. Por eso el encaje es `object-fit:contain` y no `cover`.
+
+Se apoyan abajo y **la imagen se corta por debajo del borde de arriba de la placa del
+nombre** —72,60% en el oro, 72,85% en el plata—, no en el borde de la ventana. Cortándola
+en la ventana el peleador queda colgado en el aire; así sale de detrás de la placa.
+
+`juego/fotos.js` dice qué caras hay y **lo escribe `herramientas/generar-fotos.mjs`**:
+después de añadir o quitar una foto hay que volver a ejecutarlo. Se usa una lista y no un
+`onerror` porque la carta se pinta distinta según haya foto o no —el atributo pasa de estar
+en medio de la ventana a ser una chapa abajo— y descubrirlo después de pintar es un salto
+que se ve; además, doce cartas sin foto serían doce peticiones fallidas por pantalla.
+
+Al añadir fotos hay que tocar **tres** sitios de empaquetado, no dos: `build.gradle`
+(`fotos/**` y `fotos.js`) y `servidor.yml` (la carpeta y el archivo).
+
 ### Lo que quedó sin tocar y hay que decidir algún día
-- **La ventana grande es el hueco de la FOTO en el dibujo**, pero el juego no tiene fotos
-  (ni derechos de imagen, ni ganas de meter 398 imágenes en el APK), así que la sigue
-  ocupando el atributo. Si algún día hay fotos, el hueco ya está medido.
 - **`.c-copias` se pinta y no tiene CSS en ninguna parte.** Ya estaba así antes de este
   trabajo; no se ha tocado. Cuando salga una carta repetida, el "×2" cae suelto arriba a
   la izquierda del lienzo.
+- **No hay ninguna foto todavía.** El mecanismo está montado y probado con siluetas de
+  relleno, que se borraron: no se deja una cara falsa puesta a un peleador real.
 
 ## Trato con el usuario
 

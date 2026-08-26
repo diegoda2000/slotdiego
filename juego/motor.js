@@ -440,6 +440,20 @@ const PAIS_SUELTO = { 'Inglaterra':'gb-eng', 'Escocia':'gb-sct' };
 /* Devuelve el archivo de la bandera. Son imágenes y no emojis a propósito: el emoji de
    bandera lo dibuja cada sistema a su manera —y Windows directamente no lo dibuja, pone
    las dos letras— así que la misma carta se vería distinta en cada móvil. */
+/* La foto del peleador, si la hay.
+
+   Va por PERSONA y no por carta: hay 402 cartas para 355 peleadores, y quien compite en
+   dos divisiones tiene dos cartas y una sola cara.
+
+   Se pregunta a la lista de fotos.js en vez de intentar cargar la imagen y ver si falla,
+   porque la carta se pinta distinta según haya foto o no —el atributo pasa de estar en
+   medio de la ventana a ser una chapa abajo—, y descubrirlo después de pintar es un salto
+   que se ve. Sin fotos.js cargado no hay fotos y la carta se pinta como siempre. */
+function fotoSrc(persona){
+  const hay = typeof FOTOS !== 'undefined' && FOTOS;
+  return (hay && persona && FOTOS.has(persona)) ? 'fotos/'+persona+'.webp' : '';
+}
+
 function banderaSrc(pais){
   const cod=PAIS_SUELTO[pais]||(PAIS_ISO[pais]||'').toLowerCase();
   return cod?('banderas/'+cod+'.webp'):'';
@@ -456,7 +470,7 @@ const SIGLA_DIV = {
   f2:'BW', f1:'FLW', f0:'SW',
 };
 
-const MOTOR={especialistaDisponible, tamNombre, banderaSrc, PAIS_ISO, SIGLA_DIV, etiquetaEstatus, veteranoDisponible, ultimoDuelo, defendiendo, ESTATUS, EST, ORDEN_ESTATUS, TRAMOS, tramoDe, ordenar, comparar, sortearDuelo, REÑIDO, DIVISIONES, DIV, contiguas, vecinas, STATS, SID, SUBSTATS, RAREZAS, ORDEN_RAREZA, RASGOS, mulberry32, RNG, ri, pick, shuffle, clamp, ROSTER, generarRoster, alineables, rasgoTxt, MARGENES, nuevaPartida, terminarVetos, librePara, valorCarta, aplicarPenalizacion, penaliza, enviarAlDuelo, cambiosPosibles, hacerCambio, rasgoDe, camaleonesPosibles, resolverDuelo, resolverDesempate};
+const MOTOR={especialistaDisponible, tamNombre, banderaSrc, fotoSrc, PAIS_ISO, SIGLA_DIV, etiquetaEstatus, veteranoDisponible, ultimoDuelo, defendiendo, ESTATUS, EST, ORDEN_ESTATUS, TRAMOS, tramoDe, ordenar, comparar, sortearDuelo, REÑIDO, DIVISIONES, DIV, contiguas, vecinas, STATS, SID, SUBSTATS, RAREZAS, ORDEN_RAREZA, RASGOS, mulberry32, RNG, ri, pick, shuffle, clamp, ROSTER, generarRoster, alineables, rasgoTxt, MARGENES, nuevaPartida, terminarVetos, librePara, valorCarta, aplicarPenalizacion, penaliza, enviarAlDuelo, cambiosPosibles, hacerCambio, rasgoDe, camaleonesPosibles, resolverDuelo, resolverDesempate};
 raiz.MOTOR=MOTOR;
 // También sueltas en el global: el juego las usa por su nombre, sin prefijo.
 for(const k of Object.keys(MOTOR)) if(!(k in raiz)) raiz[k]=MOTOR[k];

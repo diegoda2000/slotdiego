@@ -181,10 +181,12 @@ jobs:
       - name: Meter el juego dentro de la aplicación
         run: |
           mkdir -p ios/juego-assets
-          cp juego/juego.html juego/motor.js juego/roster.js juego/servidor.js ios/juego-assets/
+          cp juego/juego.html juego/motor.js juego/roster.js juego/fotos.js juego/servidor.js ios/juego-assets/
           cp -R juego/marcos juego/banderas juego/fuentes juego/sonidos juego/sobres juego/arte ios/juego-assets/
+          cp -R juego/fotos ios/juego-assets/
           test -s ios/juego-assets/servidor.js
           test -s ios/juego-assets/marcos/oro.webp
+          test -s ios/juego-assets/fotos.js
           test -s ios/juego-assets/banderas/ru.webp
           test -s ios/juego-assets/fuentes/antonio-latin.woff2
           test -s ios/juego-assets/sonidos/its-time.mp3
