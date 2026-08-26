@@ -446,9 +446,14 @@ function banderaSrc(pais){
 }
 
 /* Sigla de la división, al estilo de las tarjetas de la UFC. */
+/* Las femeninas van SIN la W de delante, por petición expresa: el polígono del borde es
+   estrecho y "WFLW" es la sigla más larga que hay.
+   AVISO, que esto tiene un precio y no es cosmético: sin la W, la mosca femenina y la
+   masculina ponen las dos FLW, y las dos de gallo ponen las dos BW. En la carta ya no se
+   distingue de qué división es un peleador de esas cuatro. */
 const SIGLA_DIV = {
   m7:'HW', m6:'LHW', m5:'MW', m4:'WW', m3:'LW', m2:'FW', m1:'BW', m0:'FLW',
-  f2:'WBW', f1:'WFLW', f0:'WSW',
+  f2:'BW', f1:'FLW', f0:'SW',
 };
 
 const MOTOR={especialistaDisponible, tamNombre, banderaSrc, PAIS_ISO, SIGLA_DIV, etiquetaEstatus, veteranoDisponible, ultimoDuelo, defendiendo, ESTATUS, EST, ORDEN_ESTATUS, TRAMOS, tramoDe, ordenar, comparar, sortearDuelo, REÑIDO, DIVISIONES, DIV, contiguas, vecinas, STATS, SID, SUBSTATS, RAREZAS, ORDEN_RAREZA, RASGOS, mulberry32, RNG, ri, pick, shuffle, clamp, ROSTER, generarRoster, alineables, rasgoTxt, MARGENES, nuevaPartida, terminarVetos, librePara, valorCarta, aplicarPenalizacion, penaliza, enviarAlDuelo, cambiosPosibles, hacerCambio, rasgoDe, camaleonesPosibles, resolverDuelo, resolverDesempate};

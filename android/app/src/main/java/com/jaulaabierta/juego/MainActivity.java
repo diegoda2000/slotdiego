@@ -67,20 +67,43 @@ public class MainActivity extends Activity {
             }
         });
 
-        setContentView(web, new ViewGroup.LayoutParams(
+        /* Desde Android 15 la aplicación se dibuja de borde a borde por defecto, así que
+         * la barra de estado —la hora, la batería— y la de gestos se quedan ENCIMA del
+         * juego. Se le pide al sistema cuánto ocupan y se aparta el contenido ese tanto.
+         * Se pregunta en vez de calcularlo porque cada móvil tiene lo suyo: muesca,
+         * agujero, barra de gestos o botones.
+         *
+         * Tres detalles, y los tres hacían falta para que esto funcionara de verdad:
+         *
+         * 1. El relleno NO va en el WebView sino en un FrameLayout que lo envuelve. Un
+         *    WebView con relleno lo aplica a su propio lienzo de desplazamiento, no a la
+         *    ventana: el contenido seguía empezando arriba del todo y la barra de estado
+         *    seguía encima de la cabecera. Apartando el contenedor, el WebView entero se
+         *    coloca ya dentro de la zona buena y el juego ni se entera.
+         *
+         * 2. Hay que pedir el reparto a mano con requestApplyInsets(). El sistema reparte
+         *    las medidas una sola vez al colocar la ventana, y si para entonces todavía no
+         *    hay quien escuche, no se vuelve a repartir solo: el oyente se queda puesto y
+         *    no lo llaman nunca.
+         *
+         * 3. El color de detrás de las barras lo pone el fondo de la ventana (@color/fondo),
+         *    porque android:statusBarColor y navigationBarColor ya no se miran en API 35.
+         *
+         * En iPhone esto no hace falta: WKWebView sí reparte las medidas al CSS, y el juego
+         * las lee con env(safe-area-inset-*). */
+        final android.widget.FrameLayout raiz = new android.widget.FrameLayout(this);
+        raiz.addView(web, new ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        setContentView(raiz, new ViewGroup.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
-        /* Desde Android 15 la aplicación se dibuja de borde a borde por defecto, así que
-         * la barra de estado —la hora, la batería— se queda ENCIMA de la cabecera del
-         * juego. Se le pide al sistema cuánto ocupan sus barras y se aparta el WebView
-         * ese tanto. Se pregunta en vez de calcularlo porque cada móvil tiene lo suyo:
-         * muesca, agujero, barra de gestos o botones. */
-        ViewCompat.setOnApplyWindowInsetsListener(web, (v, ventana) -> {
+        ViewCompat.setOnApplyWindowInsetsListener(raiz, (v, ventana) -> {
             Insets barras = ventana.getInsets(
                     WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout());
             v.setPadding(barras.left, barras.top, barras.right, barras.bottom);
             return WindowInsetsCompat.CONSUMED;
         });
+        ViewCompat.requestApplyInsets(raiz);
 
         if (estado == null) web.loadUrl(INICIO);
         else web.restoreState(estado);

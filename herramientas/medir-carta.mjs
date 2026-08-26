@@ -19,19 +19,35 @@ import fs from 'fs';
 import path from 'path';
 import zlib from 'zlib';
 
-/* Los huecos del marco nuevo, leídos del PNG a resolución completa (1054x1492) recorriendo
-   cada columna y anotando dónde el negro del hueco se separa del metal o del marfil.
+/* Los huecos de los DOS marcos, leídos de sus PNG a resolución completa recorriendo cada
+   columna y anotando dónde el negro del hueco se separa del metal o del marfil.
+
+   Hay dos tablas y no una porque los dos dibujos no están alineados entre sí: el de plata
+   es otro render —1050x1489 frente a 1054x1492— y lleva los recuadros de stat casi medio
+   punto a la derecha, la barra del nombre un cuarto de punto abajo y el polígono del borde
+   0,43 abajo. Midiendo solo el oro, como se hizo al principio, las platas pasaban la
+   comprobación con todo ligeramente descolocado. Se miden las dos.
 
    Los seis recuadros de stat van uno debajo de otro en la misma columna, y entre uno y el
    siguiente quedan 4,3 puntos de carta: más que el margen de 1,5 con el que busca banda(),
    así que ninguna búsqueda se cuela en el número de al lado. */
-const HUECOS = {
-  '.c-rk':     { x: [0.7989, 0.9592], filas: [[2.88, 12.40]] },
-  '.c-nom':    { x: [0.0512, 0.7173], filas: [[72.32, 81.84]] },
-  '.c-record': { x: [0.0598, 0.9383], filas: [[83.45, 94.70]] },
-  '.c-peso':   { x: [0.4260, 0.5380], filas: [[95.51, 98.93]] },
-  '.c-num':    { x: [0.8539, 0.9355], filas: [[17.36, 21.51], [26.21, 30.36], [35.66, 39.75],
-                                              [45.04, 49.13], [54.36, 58.45], [63.47, 67.56]] },
+const MARCOS = {
+  oro: {
+    '.c-rk':     { x: [0.7989, 0.9592], filas: [[2.88, 12.40]] },
+    '.c-nom':    { x: [0.0512, 0.7173], filas: [[72.32, 81.84]] },
+    '.c-record': { x: [0.0598, 0.9383], filas: [[83.45, 94.70]] },
+    '.c-peso':   { x: [0.4260, 0.5380], filas: [[95.51, 98.93]] },
+    '.c-num':    { x: [0.8539, 0.9355], filas: [[17.36, 21.51], [26.21, 30.36], [35.66, 39.75],
+                                                [45.04, 49.13], [54.36, 58.45], [63.47, 67.56]] },
+  },
+  plata: {
+    '.c-rk':     { x: [0.8029, 0.9638], filas: [[2.75, 12.29]] },
+    '.c-nom':    { x: [0.0514, 0.7210], filas: [[72.60, 82.07]] },
+    '.c-record': { x: [0.0598, 0.9383], filas: [[83.45, 94.70]] },
+    '.c-peso':   { x: [0.4279, 0.5399], filas: [[95.97, 99.33]] },
+    '.c-num':    { x: [0.8581, 0.9400], filas: [[17.33, 21.42], [26.26, 30.36], [35.66, 39.83],
+                                                [45.13, 49.23], [54.53, 58.63], [63.67, 67.76]] },
+  },
 };
 
 const exe = process.env.CHROMIUM_PATH || '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
@@ -43,14 +59,6 @@ await pag.goto('file://' + path.resolve('juego/juego.html'));
 await pag.waitForFunction(() => typeof window.ROSTER !== 'undefined');
 
 await pag.evaluate(() => {
-  // una carta de oro CON puesto, para que salga también la pestaña del ranking
-  const l = ROSTER.filter(c => c.rareza === 'oro' && c.rk).slice(0, 40);
-  S.coleccion = l.map((c, i) => ({ iid: 'm' + i, cid: c.id }));
-  ir('coleccion'); render();
-});
-await pag.waitForTimeout(600);
-
-const carta = await pag.evaluate(() => {
   const est = document.createElement('style');
   // Sin sombras ni reflejos: lo que se mide tiene que ser la letra, no su relieve.
   est.textContent = '.carta .c-nom,.carta .c-rk,.carta .c-record,.carta .c-peso,.carta .c-num{text-shadow:none !important}'
@@ -59,46 +67,55 @@ const carta = await pag.evaluate(() => {
   const jaula = document.createElement('div');
   jaula.id = 'jaula';
   jaula.style.cssText = 'position:fixed;left:20px;top:20px;width:620px;z-index:9999';
-  const c = document.querySelector('.grid .carta').cloneNode(true);
-  c.style.setProperty('--k', '1');       // el lienzo, a tamaño natural
-  jaula.appendChild(c); document.body.appendChild(jaula);
-  return { nombre: c.querySelector('.c-nom').textContent, rk: c.querySelector('.c-rk').textContent };
+  document.body.appendChild(jaula);
 });
-console.log(`Carta medida: ${carta.rk} ${carta.nombre}\n`);
 
 const foto = async () => descodificar(await pag.locator('#jaula .carta').screenshot());
-const con = await foto();
-
-/* Se apaga UN elemento cada vez, no todos a la vez: la franja del récord toca por arriba
-   con la placa del nombre y por los lados con los rombos, y apagándolos juntos la
-   diferencia salía de un texto que no era el que se estaba midiendo. */
-const sin = {};
-for (const sel of Object.keys(HUECOS)) {
-  const est = await pag.evaluateHandle(s => {
-    const e = document.createElement('style');
-    e.textContent = `#jaula ${s}{visibility:hidden !important}`;
-    document.head.appendChild(e); return e;
-  }, sel);
-  sin[sel] = await foto();
-  await est.evaluate(e => e.remove());
-}
-await nav.close();
-
 const sig = n => (n >= 0 ? '+' : '') + n.toFixed(2);
 let fuera = 0;
-for (const [sel, { x, filas }] of Object.entries(HUECOS)) {
-  filas.forEach(([arriba, abajo], i) => {
-    const t = banda(con, sin[sel], x, [arriba - 1.5, abajo + 1.5]);
-    const et = `${sel}${filas.length > 1 ? ' ' + (i + 1) : ''}`;
-    if (!t) { console.log(`  ${et.padEnd(14)} sin tinta`); return; }
-    const ha = t[0] - arriba, hb = abajo - t[1];
-    const bien = ha >= -0.05 && hb >= -0.05;
-    if (!bien) fuera++;
-    console.log(`  ${et.padEnd(14)} tinta ${t[0].toFixed(2).padStart(6)}-${t[1].toFixed(2)}` +
-      `   hueco ${arriba.toFixed(2).padStart(6)}-${abajo.toFixed(2)}` +
-      `   holgura ${sig(ha)} / ${sig(hb)}   ${bien ? 'DENTRO' : 'FUERA'}`);
-  });
+
+for (const [marco, HUECOS] of Object.entries(MARCOS)) {
+  /* La sigla más larga que hay, para que el polígono se mida en su peor caso, y con
+     puesto para que salga también la pestaña del ranking. */
+  const carta = await pag.evaluate(m => {
+    const largo = (c) => SIGLA_DIV[c.division].length;
+    const l = ROSTER.filter(c => c.rareza === m).sort((a, b) =>
+      (largo(b) - largo(a)) || ((b.rk !== undefined) - (a.rk !== undefined)));
+    const c = l.find(x => x.rk !== undefined && x.rk !== null) || l[0];
+    const j = document.getElementById('jaula');
+    j.innerHTML = cartaHTML(c);
+    j.querySelector('.carta').style.setProperty('--k', '1');
+    return { nombre: c.nombre, rk: j.querySelector('.c-rk').textContent,
+             peso: j.querySelector('.c-peso').textContent };
+  }, marco);
+  console.log(`\n── ${marco.toUpperCase()} ──  ${carta.rk} ${carta.nombre} (${carta.peso})`);
+  const con = await foto();
+
+  /* Se apaga UN elemento cada vez, no todos a la vez: la franja del récord toca por arriba
+     con la placa del nombre y por los lados con los recuadros, y apagándolos juntos la
+     diferencia salía de un texto que no era el que se estaba midiendo. */
+  for (const [sel, { x, filas }] of Object.entries(HUECOS)) {
+    const est = await pag.evaluateHandle(s => {
+      const e = document.createElement('style');
+      e.textContent = `#jaula ${s}{visibility:hidden !important}`;
+      document.head.appendChild(e); return e;
+    }, sel);
+    const sin = await foto();
+    await est.evaluate(e => e.remove());
+    filas.forEach(([arriba, abajo], i) => {
+      const t = banda(con, sin, x, [arriba - 1.5, abajo + 1.5]);
+      const et = `${sel}${filas.length > 1 ? ' ' + (i + 1) : ''}`;
+      if (!t) { console.log(`  ${et.padEnd(14)} sin tinta`); return; }
+      const ha = t[0] - arriba, hb = abajo - t[1];
+      const bien = ha >= -0.05 && hb >= -0.05;
+      if (!bien) fuera++;
+      console.log(`  ${et.padEnd(14)} tinta ${t[0].toFixed(2).padStart(6)}-${t[1].toFixed(2)}` +
+        `   hueco ${arriba.toFixed(2).padStart(6)}-${abajo.toFixed(2)}` +
+        `   holgura ${sig(ha)} / ${sig(hb)}   ${bien ? 'DENTRO' : 'FUERA'}`);
+    });
+  }
 }
+await nav.close();
 console.log(fuera === 0 ? '\nTodo dentro de su hueco.\n' : `\n${fuera} TEXTOS FUERA DE SU HUECO\n`);
 process.exit(fuera === 0 ? 0 : 1);
 

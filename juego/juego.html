@@ -68,7 +68,11 @@ body{background-color:var(--bg);background-image:var(--arena);
   background-attachment:fixed;background-repeat:no-repeat;
   color:var(--txt);
   font:15px/1.45 var(--texto);
-  overscroll-behavior:none;padding-bottom:64px}
+  /* El hueco para la barra de navegación incluye el área segura del móvil. La barra
+     lleva padding-bottom:env(safe-area-inset-bottom) para no quedar debajo de la raya
+     de gestos, así que mide más de 64: reservando solo 64 el final de cada pantalla se
+     metía por debajo de la barra. */
+  overscroll-behavior:none;padding-bottom:calc(64px + env(safe-area-inset-bottom))}
 #app{max-width:760px;margin:0 auto;padding:12px 12px 20px;position:relative;z-index:1}
 h1,h2,h3{font-family:var(--titulo);font-weight:600;letter-spacing:.005em;text-transform:uppercase}
 h2{font-size:19px;margin-bottom:2px}
@@ -158,7 +162,8 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
    lee de un vistazo y lo que sobra se convierte en aire, repartido arriba y abajo. */
 .pila{display:flex;flex-direction:column;gap:14px;justify-content:center}
 .pila > *{max-height:186px}
-.pila.tienda{gap:14px}
+.pila.tienda{display:grid;grid-template-rows:repeat(var(--filas,3),1fr);
+  gap:14px;align-content:start}
 /* El tope es para los MENÚS. Donde lo que hay es UNA cosa que mirar —el sobre antes de
    abrirlo— no hay nada que topar: que ocupe lo que haya. */
 .pila.libre{gap:0}
@@ -445,7 +450,7 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
   display:flex;align-items:center;justify-content:center;line-height:1;
   font-weight:700;color:#f3dfa4;font-size:calc(var(--cw,110px)*.055);letter-spacing:-.02em;
   transform:translateY(-.055em) skewX(-11.4deg)}
-.carta.plata .c-rk{color:#e6ecf2}
+.carta.plata .c-rk{color:#e6ecf2;left:80.29%;width:16.09%;top:2.75%;height:9.54%}
 
 /* La ventana grande. En el dibujo es el hueco de la foto, pero el juego no tiene fotos
    —no hay derechos de imagen y 398 hincharían la aplicación—, así que la ocupa el
@@ -466,7 +471,7 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
   color:#f6ecd2;font-weight:700;font-size:calc(var(--cw,110px)*var(--nom,.045));
   overflow:hidden;white-space:nowrap;padding:0 2%;
   transform:translateY(-.055em) skewX(-11.4deg)}
-.carta.plata .c-nom{color:#eef2f6}
+.carta.plata .c-nom{color:#eef2f6;left:5.14%;width:66.96%;top:72.60%;height:9.47%}
 
 /* Récord, en la banda blanca de abajo: x 5,88-93,93%, y 83,45-94,64%. Única tinta
    oscura de la carta, porque es la única que cae sobre claro. La sigla de la división
@@ -482,11 +487,15 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
   color:#23201c;font-weight:700;letter-spacing:.04em;
   font-size:calc(var(--cw,110px)*.046);font-variant-numeric:tabular-nums;
   transform:translateY(-.055em) skewX(-11.4deg)}
-.carta .c-peso{position:absolute;left:42.60%;width:11.20%;top:95.76%;height:3.24%;
+.carta .c-peso{position:absolute;left:42.60%;width:11.20%;top:95.26%;height:3.24%;
   display:flex;align-items:center;justify-content:center;line-height:1;
   color:#000;font-weight:700;letter-spacing:.03em;
   font-size:calc(var(--cw,110px)*.032);
   transform:translateY(-.055em) skewX(-11.4deg)}
+/* El polígono del plata está 0,43 más abajo y 0,19 más a la derecha que el del oro.
+   Los bordes de los dos se localizaron igual, por el pico de gradiente de la fila que
+   cruza la cara: oro 43,26-52,94% y plata 43,43-53,14%. */
+.carta.plata .c-peso{left:42.79%;top:95.69%}
 
 /* El reflejo. Una franja de luz cruzada por encima, que es lo que hace que el texto
    parezca parte del metal y no una pegatina puesta encima. */
@@ -503,7 +512,7 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
   color:#f6ecd2;font-weight:700;
   font-size:calc(var(--cw,110px)*.040);font-variant-numeric:tabular-nums;
   transform:translateY(-.055em) skewX(-11.4deg)}
-.carta.plata .c-num{color:#eef2f6}
+.carta.plata .c-num{color:#eef2f6;left:85.81%;width:8.19%;height:4.10%}
 .carta .c-num.pen{color:#ff8a7a}
 .carta .c-num.up{color:#8ee6a6}
 
@@ -617,7 +626,7 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 /* Rejillas que caben en pantalla: el número de columnas lo fija cada pantalla y el
    ancho total lo calcula ajustarRejillas() midiendo el hueco que queda. */
 .grid.fit{grid-template-columns:repeat(var(--cols,3),1fr);gap:6px;
-  max-width:var(--rejilla,100%);margin:0 auto}
+  max-width:var(--rejilla,100%);margin:0 auto;align-content:space-between}
 .grid.fit .pie-carta{margin-top:1px;font-size:8px;line-height:1.1;text-align:center;
   color:var(--dim2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .grid.fit>div{display:flex;flex-direction:column;min-width:0}
@@ -693,7 +702,7 @@ th{color:var(--dim2);font-size:11px;text-transform:uppercase;letter-spacing:.04e
    columnas y cada carta ocupa dos, así que colocando la penúltima en la columna 2 la
    pareja de abajo queda centrada sin trucos ni huecos falsos. */
 .pgrid{display:grid;grid-template-columns:repeat(6,1fr);gap:5px;
-  max-width:var(--rejilla,100%);margin:0 auto}
+  max-width:var(--rejilla,100%);margin:0 auto;align-content:space-between}
 .pgrid .pslot{grid-column:span 2;display:flex;flex-direction:column}
 .pgrid .pslot:nth-last-child(2){grid-column:2/span 2}
 .pgrid .pnom{margin-top:1px;font-size:8px;line-height:1.1}
@@ -1335,7 +1344,16 @@ const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',
 
    Ya no hay pareja de "rombo" y "línea": el nombre de la stat lo trae pintado el marco,
    así que el juego pone el número y nada más. */
-const ALTURAS_STAT = ['17.36%','26.21%','35.66%','45.04%','54.36%','63.47%'];
+/* Y una tabla por marco, no una sola. El dibujo de plata NO es el de oro repintado: es
+   otro render, de 1050x1489 en vez de 1054x1492, y sus huecos están corridos respecto a
+   los del oro —los recuadros de stat casi medio punto a la derecha, la barra del nombre
+   un cuarto abajo, el polígono del borde 0,43 abajo—. Con una sola tabla, medida sobre el
+   oro, las platas salían con todo ligeramente descolocado, y donde más se veía era en el
+   polígono: como el texto casi lo llena, medio punto ahí se nota. */
+const ALTURAS_STAT = {
+  oro:  ['17.36%','26.21%','35.66%','45.04%','54.36%','63.47%'],
+  plata:['17.33%','26.26%','35.66%','45.13%','54.53%','63.67%'],
+};
 
 function cartaHTML(c,o={}){
   if(!c) return `<div class="carta oculta">?</div>`;
@@ -1344,7 +1362,7 @@ function cartaHTML(c,o={}){
 
   const st=STATS.map((s,i)=>{
     const base=c.stats[s.id], d=aj[s.id]||0, v=base+d;
-    return `<div class="c-num ${d<0?'pen':d>0?'up':''}" style="top:${ALTURAS_STAT[i]}">${v}</div>`;
+    return `<div class="c-num ${d<0?'pen':d>0?'up':''}" style="top:${(ALTURAS_STAT[c.rareza]||ALTURAS_STAT.oro)[i]}">${v}</div>`;
   }).join('');
 
   const r=c.rasgos[0];
@@ -1395,7 +1413,9 @@ function render(){
   const sinNav = vista==='partida'||vista==='online';
   $('#nav').innerHTML = sinNav?'':navHTML();
   $('#nav').style.display = sinNav?'none':'flex';
-  document.body.style.paddingBottom = sinNav?'12px':'64px';
+  document.body.style.paddingBottom = sinNav
+    ? 'calc(12px + env(safe-area-inset-bottom))'
+    : 'calc(64px + env(safe-area-inset-bottom))';
   const f={inicio:vInicio,tienda:vTienda,club:vClub,
     sobre:vSobre,apertura:vApertura,
     jugar:vJugar,aprende:vAprende,logros:vLogros,reglas:vReglas,draft:vDraft,
@@ -1459,6 +1479,14 @@ function ajustarRejillas(){
     const tope=(g.parentElement.clientWidth-HUECO*(cols-1))/cols;
     ancho=Math.max(46, Math.min(ancho, tope));
     g.style.setProperty('--rejilla', (ancho*cols+HUECO*(cols-1)).toFixed(1)+'px');
+    /* Y la rejilla se queda el hueco ENTERO, aunque las cartas no puedan crecer más.
+       Cuando el que se agota es el ANCHO —tres columnas en un móvil estrecho— la carta
+       deja de crecer y antes sobraba alto por debajo: la rejilla terminaba a media
+       pantalla y el botón de abajo se quedaba flotando en mitad de la nada, con un
+       agujero detrás. Fijando el alto, lo que sobra se reparte entre las filas
+       (align-content:space-between en el CSS) y lo que va después de la rejilla cae
+       donde tiene que caer, abajo del todo. */
+    g.style.height=alto.toFixed(1)+'px';
   }
 }
 
@@ -1714,7 +1742,13 @@ function vTienda(){
     </div>`;
   // Las tres se reparten el alto de la pantalla, como en el diseño: miden todas lo mismo
   // y se comparan de un vistazo sin dejar media pantalla vacía debajo.
-  return cab + `<div class="pila tienda">${sub==='mios'?tiendaMios():tiendaComprar()}</div>`;
+  /* --filas es SIEMPRE el número de tipos de sobre que hay, no el número de filas que se
+     estén pintando. En "Mis sobres" puede haber una sola fila, y con flex:1 esa fila se
+     estiraba hasta llenar la pantalla entera: el mismo sobre se veía enorme en una
+     pestaña y pequeño en la otra. Con la rejilla de alto fijo, una fila ocupa lo que
+     ocupa una fila, esté sola o acompañada. */
+  return cab + `<div class="pila tienda" style="--filas:${ORDEN_TIENDA().length}">${
+    sub==='mios'?tiendaMios():tiendaComprar()}</div>`;
 }
 
 /* ¿Se puede abrir otro de este tipo? Uno guardado, el gratis disponible, o dinero para
@@ -2236,13 +2270,12 @@ function vApertura(){
 }
 
 /* ── COLECCIÓN ── */
+/* SIN FILTROS. Eran tres filas de chips —estatus, alineables y las once divisiones— y se
+   comían 250 px de alto, que en la colección es media hoja del álbum: las cartas salían a
+   200 px cuando podían salir a 260. Aquí mirar las cartas ES el juego, así que el alto se
+   lo quedan las cartas. Se pasa de hoja con las flechas de abajo. */
 function vColeccion(){
-  const f=tmp.filtro||{};
   let l=S.coleccion.map(x=>({x,c:PORID[x.cid]}));
-  if(f.div) l=l.filter(o=>o.c.division===f.div);
-  if(f.rar) l=l.filter(o=>o.c.estatus===f.rar);
-  if(f.al==='si') l=l.filter(o=>o.c.alineable);
-  if(f.al==='no') l=l.filter(o=>!o.c.alineable);
   l.sort((a,b)=>comparar(a.c,b.c));      // siempre de mejor a peor
   const total=ROSTER.length, distintas=new Set(S.coleccion.map(x=>x.cid)).size;
 
@@ -2264,17 +2297,6 @@ function vColeccion(){
   return `<div class="pcab"><h2>Colección</h2>
       <span class="sub">${distintas} de ${total} distintas · ${S.coleccion.length} en total</span></div>
     <div class="bar mb"><div style="width:${distintas/total*100}%"></div></div>
-    <div class="chips mb">
-      <span class="chip ${!f.rar?'on':''}" data-f="rar" data-v="">Todas</span>
-      ${ORDEN_ESTATUS.map(r=>`<span class="chip ${f.rar===r?'on':''}" data-f="rar" data-v="${r}">${EST[r].n}</span>`).join('')}
-      <span class="chip ${!f.al?'on':''}" data-f="al" data-v="">Todo</span>
-      <span class="chip ${f.al==='si'?'on':''}" data-f="al" data-v="si">Alineables</span>
-      <span class="chip ${f.al==='no'?'on':''}" data-f="al" data-v="no">Colección</span>
-    </div>
-    <div class="chips mb">
-      <span class="chip ${!f.div?'on':''}" data-f="div" data-v="">Todas</span>
-      ${DIVISIONES.map(d=>`<span class="chip ${f.div===d.id?'on':''}" data-f="div" data-v="${d.id}">${d.n}</span>`).join('')}
-    </div>
     ${l.length?`
       <div class="grid fit" style="--cols:3" data-fit="3,4">${hoja.map(o=>
         cartaHTML(o.c,{attr:`data-carta="${o.x.iid}"`})).join('')}</div>
@@ -2283,7 +2305,7 @@ function vColeccion(){
         <span class="pag">HOJA ${tmp.pag+1} DE ${pags}</span>
         <button class="btn gho sm" data-a="pag" data-v="1" ${tmp.pag<pags-1?'':'disabled'}>›</button>
       </div>`
-      :'<div class="card-panel sub">Nada con esos filtros.</div>'}`;
+      :'<div class="card-panel sub">Todavía no tienes ninguna carta. Abre un sobre.</div>'}`;
 }
 
 function detalleCarta(iid){
@@ -3456,14 +3478,11 @@ function avisoCodigo(r){
 function cerrarOv(){ const o=$('#ov'); if(o) o.remove(); }
 
 document.addEventListener('click',e=>{
-  const t=e.target.closest('[data-nav],[data-a],[data-f],[data-carta],[data-slot],[data-poner],[data-rec],[data-rol],[data-veto],[data-dsel],[data-ssel],[data-cambio],[data-camaleon],[data-incomodo],[data-especialista],[data-eleccion],[data-pido],[data-ofrezco],[data-vetstat]');
+  const t=e.target.closest('[data-nav],[data-a],[data-carta],[data-slot],[data-poner],[data-rec],[data-rol],[data-veto],[data-dsel],[data-ssel],[data-cambio],[data-camaleon],[data-incomodo],[data-especialista],[data-eleccion],[data-pido],[data-ofrezco],[data-vetstat]');
   if(!t) return;
   const d=t.dataset;
 
   if(d.nav){ cerrarOv(); ir(d.nav); return; }
-  // Cambiar de filtro devuelve a la primera hoja del álbum: si no, te quedas mirando
-  // una hoja vacía porque la selección nueva tiene menos cartas que la anterior.
-  if(d.f!==undefined){ tmp.filtro={...(tmp.filtro||{})}; tmp.filtro[d.f]=d.v||null; tmp.pag=0; render(); return; }
   if(d.carta){ detalleCarta(d.carta); return; }
   if(d.slot&&vista==='plantilla'){ elegirParaSlot(d.slot); return; }
   if(d.poner){ S.plantilla[d.div]=d.poner; guardar(); cerrarOv(); render(); return; }
