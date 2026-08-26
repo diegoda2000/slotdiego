@@ -296,7 +296,6 @@ const tienda = await page.evaluate(() => {
     acciones: precios.map(b => b.dataset.a),
     // el precio es un BOTÓN y la tarjeta no: tocar el nombre no compra
     precioEsBoton: precios.every(b => b.tagName === 'BUTTON'),
-    tarjetaNoCompra: tarjetas.every(t => !t.querySelector('.fila').dataset.a),
     gratis: tarjetas.find(t => t.querySelector('.precio').dataset.t === 'basico')
       .querySelector('.precio').textContent.trim(),
     precios: precios.map(b => b.textContent.trim()),
@@ -310,8 +309,8 @@ const tienda = await page.evaluate(() => {
 });
 comprobar(tienda.orden.join(',') === 'basico,plata,oro',
   `las filas van básico, plata y oro (${tienda.orden.join(', ')})`);
-comprobar(tienda.precioEsBoton && tienda.tarjetaNoCompra,
-  'lo que compra es el precio, no la tarjeta: tocar el nombre no gasta nada');
+comprobar(tienda.precioEsBoton,
+  'la tarjeta y su precio hacen lo mismo, para no tener que buscar dónde tocar');
 comprobar(tienda.acciones.join(',') === 'versobre,comprar,comprar',
   `el gratis va al sobre y los de pago se compran (${tienda.acciones.join(', ')})`);
 comprobar(/gratis/i.test(tienda.gratis),
@@ -426,14 +425,15 @@ comprobar(!inicioLimpio.plantilla, 'Inicio no lleva el estado de la plantilla: e
 comprobar(!inicioLimpio.margenes, 'ni la tabla de márgenes, que vive en Reglas');
 
 /* COMPRAR Y ABRIR SON DOS DECISIONES DISTINTAS, y se toman en dos sitios distintos.
-   La fila de Comprar paga y mete el sobre en "Mis sobres". La pantalla del sobre no cobra
-   nada: el sobre ya es tuyo cuando llegas, y lo único que se puede hacer ahí es abrirlo. */
+   Comprar cobra —tras confirmar— y mete el sobre en "Mis sobres". La pantalla del sobre no
+   cobra nada: el sobre ya es tuyo cuando llegas, y lo único que se hace ahí es abrirlo. */
 const compra = await page.evaluate(() => {
   window.__antes = { coleccion: S.coleccion.slice(), plantilla: { ...S.plantilla } };
   S.divisa = 2000; S.sobres = []; S.gratis = {}; S.coleccion = [];
   ir('tienda');
   const antes = { div: S.divisa, sobres: S.sobres.length };
   document.querySelector('.precio[data-a="comprar"][data-t="oro"]').click();
+  document.querySelector('[data-a="confirmarcompra"]').click();   // pagar pide un sí
   return { antes, tras: { div: S.divisa, sobres: S.sobres.length, sub: tmp.sub, vista },
            cartas: S.coleccion.length };
 });
@@ -464,6 +464,42 @@ comprobar(abrir.tras.div === 1400 && abrir.tras.sobres === 0,
   `abrir gasta el sobre y NO el dinero (${abrir.tras.div} monedas intactas)`);
 comprobar(abrir.tras.vista === 'apertura',
   'y tras encenderse las florituras arranca el walkout');
+
+/* Pagar pide un sí. Lo que protege de gastar 600 sin querer ya no es el tamaño del
+   blanco, sino la confirmación — y por eso la tarjeta entera puede volver a valer.
+   El gratis y abrir lo que ya tienes NO preguntan: no gastan nada, y preguntarlo sería
+   un trámite delante de algo que no tiene consecuencia. */
+const confirma = await page.evaluate(() => {
+  const hayOv = () => !!document.querySelector('[data-a="confirmarcompra"]');
+  S.divisa = 2000; S.sobres = []; S.gratis = {}; S.coleccion = []; ir('tienda');
+  document.querySelector('.fila[data-a="comprar"][data-t="oro"]').click();
+  const tarjeta = { pregunta: hayOv(), div: S.divisa, sobres: S.sobres.length };
+  document.querySelector('[data-a="cerrarov"]').click();
+  const cancelado = { div: S.divisa, sobres: S.sobres.length };
+  document.querySelector('.precio[data-a="comprar"][data-t="oro"]').click();
+  const desdeElPrecio = hayOv();
+  document.querySelector('[data-a="confirmarcompra"]').click();
+  const comprado = { div: S.divisa, sobres: S.sobres.length, sub: tmp.sub };
+  ir('tienda');
+  document.querySelector('.fila[data-t="basico"]').click();
+  const gratis = { vista, pregunta: hayOv() };
+  ir('tienda'); tmp.sub = 'mios'; render();
+  document.querySelector('.fila[data-a="versobre"][data-t="oro"]').click();
+  const abrir = { vista, pregunta: hayOv() };
+  return { tarjeta, cancelado, desdeElPrecio, comprado, gratis, abrir };
+});
+comprobar(confirma.tarjeta.pregunta && confirma.tarjeta.div === 2000 && confirma.tarjeta.sobres === 0,
+  'tocar la tarjeta de un sobre de pago pregunta antes, y no cobra nada todavía');
+comprobar(confirma.cancelado.div === 2000 && confirma.cancelado.sobres === 0,
+  'cancelar no cobra ni deja sobre');
+comprobar(confirma.desdeElPrecio, 'y el precio hace exactamente lo mismo que la tarjeta');
+comprobar(confirma.comprado.div === 1400 && confirma.comprado.sobres === 1,
+  `confirmando sí se cobra y aparece el sobre (${confirma.comprado.div} monedas)`);
+comprobar(confirma.comprado.sub === 'mios', 'y salta a "Mis sobres", que es donde ha aparecido');
+comprobar(!confirma.gratis.pregunta && confirma.gratis.vista === 'sobre',
+  'el gratis no pregunta: no hay nada que confirmar');
+comprobar(!confirma.abrir.pregunta && confirma.abrir.vista === 'sobre',
+  'y abrir uno del inventario tampoco');
 
 /* Sin fichas: la fila se lee entera, no responde y no da error. */
 const pobre = await page.evaluate(() => {

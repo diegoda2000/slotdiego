@@ -1721,6 +1721,19 @@ function vTienda(){
    "abrir otro" porque hay dinero convierte el resumen en un mostrador. */
 function puedeOtro(t){ return S.sobres.some(s=>s.tipo===t); }
 
+/* Cobrar y guardar el sobre. En una función y no en el manejador porque ahora se llega
+   por dos caminos —el gratis directo y la compra confirmada— y el cobro tiene que ser
+   exactamente el mismo por los dos. */
+function hacerCompra(t){
+  const T=TIPOS_SOBRE[t]; if(!T) return;
+  const g=GRATIS.find(x=>x.tipo===t);
+  if(g&&listoGratis(g)){ if(g.espera>0) S.gratis[g.id]=Date.now(); }
+  else if(T.coste>0&&S.divisa>=T.coste) S.divisa-=T.coste;
+  else return;                           // no llega: no pasa nada y no se cobra nada
+  S.sobres.push({tipo:t});
+  guardar(); tmp.sub='mios'; window.scrollTo(0,0); render();
+}
+
 
 // El orden es siempre el mismo y sale del coste: básico, plata, oro.
 const ORDEN_TIENDA=()=>Object.keys(TIPOS_SOBRE).sort((a,b)=>TIPOS_SOBRE[a].coste-TIPOS_SOBRE[b].coste);
@@ -1735,8 +1748,10 @@ const ORDEN_TIENDA=()=>Object.keys(TIPOS_SOBRE).sort((a,b)=>TIPOS_SOBRE[a].coste
    lo que se ha ido a buscar. Guardarlo primero para tener que ir a "Mis sobres" a abrirlo
    es un paso de trámite sobre algo que no cuesta nada y que se reclama para abrirlo ya.
    Los de pago sí se guardan: pagar y abrir son dos decisiones distintas. */
-/* Lo que compra es EL PRECIO, no la tarjeta entera: leer la descripción de un sobre de
-   600 no puede costar 600. El precio es un blanco pequeño y aparte, hay que ir a por él. */
+/* La tarjeta entera y su precio hacen lo mismo, para que no haya que buscar dónde tocar.
+   Lo que protege de gastar 600 sin querer ya no es el tamaño del blanco, sino la
+   confirmación: pagar pide un sí. El gratis y abrir lo que ya tienes no lo piden, porque
+   no gastan nada y pedirlo sería un trámite. */
 function tiendaComprar(){
   return ORDEN_TIENDA().map(k=>{
     const T=TIPOS_SOBRE[k];
@@ -1745,11 +1760,12 @@ function tiendaComprar(){
     const caro=T.coste>0&&S.divisa<T.coste;
     const off=caro||espera;
     return `<div class="sobre-fila ${off?'apagada':''}">
-      <div class="fila" style="border-color:${k==='plata'?'rgba(212,12,26,.55)':'rgba(234,190,74,.5)'}">
+      <button class="fila" ${off?'disabled':''} data-a="${T.coste?'comprar':'versobre'}" data-t="${k}"
+        style="border-color:${k==='plata'?'rgba(212,12,26,.55)':'rgba(234,190,74,.5)'}">
         <span class="cu"><b>${T.n}</b>
           <span class="sub">${T.desc}</span></span>
         <span class="sobre-art"><img src="sobres/${k}.webp" alt="" loading="lazy"></span>
-      </div>
+      </button>
       <button class="precio" ${off?'disabled':''} data-a="${T.coste?'comprar':'versobre'}"
         data-t="${k}" ${espera?`data-reloj="${g.id}"`:''}>${
         espera?reloj(restaGratis(g)):(T.coste?T.coste+' 🪙':'GRATIS')}</button>
@@ -3616,14 +3632,23 @@ document.addEventListener('click',e=>{
     /* Comprar: se paga aquí y el sobre entra en "Mis sobres". No se abre solo — abrirlo
        es otra decisión y se toma en su pantalla. Después salta a "Mis sobres", que es
        donde acaba de aparecer, para que se vea que la compra ha surtido efecto. */
+    /* Comprar pide un sí antes de cobrar. Solo cuando cuesta: el gratis se reclama sin
+       preguntar, porque no hay nada que confirmar. */
     case 'comprar':{
       const T=TIPOS_SOBRE[d.t]; if(!T) break;
-      const g=GRATIS.find(x=>x.tipo===d.t);
-      if(g&&listoGratis(g)){ if(g.espera>0) S.gratis[g.id]=Date.now(); }
-      else if(T.coste>0&&S.divisa>=T.coste) S.divisa-=T.coste;
-      else break;                        // no llega: no pasa nada y no se cobra nada
-      S.sobres.push({tipo:d.t});
-      guardar(); tmp.sub='mios'; window.scrollTo(0,0); render(); break; }
+      if(T.coste>0&&S.divisa<T.coste) break;      // no llega: ni se pregunta ni se cobra
+      if(!T.coste){ hacerCompra(d.t); break; }
+      ov(`<div class="center">
+        <img src="sobres/${d.t}.webp" alt="" style="height:120px;margin-bottom:10px">
+        <h3>${T.n}</h3>
+        <div class="sub mb">¿Seguro que quieres gastar <b>🪙 ${T.coste}</b> en un ${T.n.toLowerCase()}?
+          Te quedarían 🪙 ${S.divisa-T.coste}.</div>
+        <button class="btn" data-a="confirmarcompra" data-t="${d.t}" style="width:100%">
+          Sí, comprar</button>
+        <button class="btn gho" data-a="cerrarov" style="width:100%;margin-top:8px">Cancelar</button>
+      </div>`);
+      break; }
+    case 'confirmarcompra': cerrarOv(); hacerCompra(d.t); break;
     case 'probs':                        // la (i) de la esquina de un sobre
       ovProbabilidades(d.t); break;
     case 'sub':                          // cambiar de sub-pestaña dentro de la Tienda
