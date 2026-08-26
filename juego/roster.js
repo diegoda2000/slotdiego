@@ -5,7 +5,7 @@
    se pierde en la siguiente importación.
 
    402 cartas · 355 peleadores
-   campeon 12 · top5 55 · top15 55 · oro 67 · top10 55 · plata 158
+   campeon 13 · top5 55 · top15 55 · oro 66 · top10 55 · plata 158
    atributos: especialista 36 · veterano 49 · camaleon 19 · incomodo 8 · camaleon+ 2
 
    El campo `suma` es la suma de las seis stats. Solo ordena empates dentro de un mismo
@@ -206,7 +206,7 @@ raiz.ROSTER_DATOS=[
 {"id":"u190","persona":"michael-chandler","nombre":"Michael Chandler","division":"m3","rareza":"plata","estatus":"plata","rk":null,"pais":"Estados Unidos","suma":468,"record":"23-11-0","dobleDiv":false,"stats":{"golpeo":80,"lucha":77,"suelo":78,"cardio":76,"dureza":77,"iq":80},"rasgos":[]},
 {"id":"u191","persona":"joel-alvarez","nombre":"Joel Alvarez","division":"m3","rareza":"plata","estatus":"plata","rk":null,"pais":"España","suma":457,"record":"23-5-0","dobleDiv":true,"stats":{"golpeo":82,"lucha":71,"suelo":82,"cardio":68,"dureza":76,"iq":78},"rasgos":[]},
 {"id":"u192","persona":"mitch-ramirez","nombre":"Mitch Ramirez","division":"m3","rareza":"plata","estatus":"plata","rk":null,"pais":"Estados Unidos","suma":453,"record":"8-4-0","dobleDiv":false,"stats":{"golpeo":81,"lucha":72,"suelo":75,"cardio":77,"dureza":69,"iq":79},"rasgos":[]},
-{"id":"u193","persona":"ilia-topuria","nombre":"Ilia Topuria","division":"m2","rareza":"oro","estatus":"oro","rk":null,"pais":"España","suma":510,"record":"17-1-0","dobleDiv":true,"stats":{"golpeo":88,"lucha":86,"suelo":82,"cardio":79,"dureza":88,"iq":87},"rasgos":[{"tipo":"camaleon","plus":false}]},
+{"id":"u193","persona":"ilia-topuria","nombre":"Ilia Topuria","division":"m2","rareza":"oro","estatus":"campeon","rk":0,"pais":"España","suma":510,"record":"17-1-0","dobleDiv":true,"stats":{"golpeo":88,"lucha":86,"suelo":82,"cardio":79,"dureza":88,"iq":87},"rasgos":[{"tipo":"camaleon","plus":false}]},
 {"id":"u194","persona":"arnold-allen","nombre":"Arnold Allen","division":"m2","rareza":"oro","estatus":"top10","rk":7,"pais":"Inglaterra","suma":505,"record":"21-4-0","dobleDiv":false,"stats":{"golpeo":81,"lucha":84,"suelo":79,"cardio":87,"dureza":87,"iq":87},"rasgos":[]},
 {"id":"u195","persona":"nathaniel-wood","nombre":"Nathaniel Wood","division":"m2","rareza":"oro","estatus":"oro","rk":null,"pais":"Inglaterra","suma":504,"record":"23-6-0","dobleDiv":true,"stats":{"golpeo":82,"lucha":84,"suelo":84,"cardio":85,"dureza":85,"iq":84},"rasgos":[{"tipo":"veterano","plus":false}]},
 {"id":"u196","persona":"movsar-evloev","nombre":"Movsar Evloev","division":"m2","rareza":"oro","estatus":"top5","rk":1,"pais":"Rusia","suma":501,"record":"20-0-0","dobleDiv":false,"stats":{"golpeo":81,"lucha":85,"suelo":74,"cardio":87,"dureza":88,"iq":86},"rasgos":[]},

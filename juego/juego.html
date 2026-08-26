@@ -152,6 +152,7 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
    lee de un vistazo y lo que sobra se convierte en aire, repartido arriba y abajo. */
 .pila{display:flex;flex-direction:column;gap:14px;justify-content:center}
 .pila > *{max-height:186px}
+.pila.tienda{gap:14px}
 /* El tope es para los MENÚS. Donde lo que hay es UNA cosa que mirar —el sobre antes de
    abrirlo— no hay nada que topar: que ocupe lo que haya. */
 .pila.libre{gap:0}
@@ -166,13 +167,16 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 
    No se estiran a pantalla completa. Son una LISTA: se comparan entre ellas de un
    vistazo, y para eso tienen que caber varias a la vez y medir todas lo mismo. */
-.sobre-fila{position:relative;margin:0 0 30px;flex:0 0 auto}
+.sobre-fila{position:relative;margin:0 0 14px;flex:0 0 auto}
+/* En la pila de la tienda las tarjetas se estiran y el margen lo pone el hueco. */
+.pila.tienda > .sobre-fila{flex:1 1 0;min-height:0;margin:0;max-height:none}
+.pila.tienda > .sobre-fila > .fila{height:100%}
 /* En una pila —Inicio, Jugar, Club— las tarjetas SÍ se reparten el alto: ahí no hay nada
    que comparar entre ellas, hay que llegar a todas de un vistazo y sin hueco muerto. */
 .pila > .sobre-fila{flex:1 1 0;min-height:0;margin:0}
 .pila > .sobre-fila > .fila{height:100%}
 .sobre-fila .fila{position:relative;align-items:center;overflow:visible;
-  min-height:126px;padding:14px 108px 14px 116px;margin:0;
+  min-height:112px;padding:14px 104px 14px 108px;margin:0;
   /* El degradado sale del sistema. Escrito aquí a mano pisaba al de .fila por
      especificidad, y las tarjetas se quedaban azules mientras el resto era granate. */
   background-image:var(--tarjeta)}
@@ -181,7 +185,7 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 .sobre-fila .fila .cu .sub{font-size:12px;line-height:1.4}
 /* El arte, saliéndose de la caja: es lo que hace que el sobre se lea como un objeto y
    no como un icono metido en una celda. */
-.sobre-art{position:absolute;left:4px;top:-11px;bottom:-11px;width:106px;
+.sobre-art{position:absolute;left:8px;top:6px;bottom:6px;width:92px;
   pointer-events:none;display:flex;align-items:center;justify-content:center}
 .sobre-art img{max-width:100%;max-height:100%;width:auto;height:auto;
   filter:drop-shadow(0 7px 15px rgba(0,0,0,.65))}
@@ -1704,9 +1708,9 @@ function vTienda(){
       <button data-a="sub" data-v="comprar" class="${sub==='comprar'?'on':''}">Comprar</button>
       <button data-a="sub" data-v="mios" class="${sub==='mios'?'on':''}">Mis sobres${S.sobres.length?` (${S.sobres.length})`:''}</button>
     </div>`;
-  // La tienda es una LISTA, no una pila estirada: las tarjetas miden todas lo mismo y
-  // se comparan de un vistazo, que es para lo que sirve una lista.
-  return cab + (sub==='mios'?tiendaMios():tiendaComprar());
+  // Las tres se reparten el alto de la pantalla, como en el diseño: miden todas lo mismo
+  // y se comparan de un vistazo sin dejar media pantalla vacía debajo.
+  return cab + `<div class="pila tienda">${sub==='mios'?tiendaMios():tiendaComprar()}</div>`;
 }
 
 /* ¿Se puede abrir otro de este tipo? Uno guardado, el gratis disponible, o dinero para

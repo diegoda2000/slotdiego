@@ -337,6 +337,13 @@ dominante.
 
 ### 2.6 Reglas de carta
 
+[R5] **El que se lleva el título a otra división sigue siendo campeón en la que dejó.** Ilia
+Topuria dejó vacante el de peso pluma para subir a ligero sin haberlo perdido nunca, así que su
+carta de pluma es de campeón. La corona la pierde quien la pierde peleando, no quien se cambia de
+báscula. Puede haber entonces dos cartas de campeón en una misma división —la del que se fue y la
+del que ocupó el hueco—, y es correcto: son dos cosas distintas.
+
+
 - Cada carta pertenece a una división
 - **Solo las cartas de UFC son alineables.** Las de otras promotoras existen como cartas de
   colección: valen para sets, reciclaje e intercambio, pero no se pueden poner en la plantilla

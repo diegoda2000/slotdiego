@@ -536,7 +536,7 @@ Con esto **las 11 divisiones tienen sus 15 puestos y su campeón completos**, si
 
 | Peleador | País | Rk | GOL | LUC | SUE | CAR | DUR | IQ | Atributo | Récord |
 |---|---|---|---|---|---|---|---|---|---|---|
-| **Ilia Topuria** ◆ | España | — | 88 | 86 | 82 | 79 | 88 | 87 | Camaleón | 17-1-0 |
+| **Ilia Topuria** ◆ | España | C | 88 | 86 | 82 | 79 | 88 | 87 | Camaleón | 17-1-0 |
 | **Arnold Allen** | Inglaterra | 7 | 81 | 84 | 79 | 87 | 87 | 87 | — | 21-4-0 |
 | **Nathaniel Wood** ◆ | Inglaterra | — | 82 | 84 | 84 | 85 | 85 | 84 | Veterano | 23-6-0 |
 | **Movsar Evloev** | Rusia | 1 | 81 | 85 | 74 | 87 | 88 | 86 | — | 20-0-0 |

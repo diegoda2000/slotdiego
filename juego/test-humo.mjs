@@ -286,30 +286,32 @@ const tienda = await page.evaluate(() => {
   ir('tienda');
   // se listan por la tarjeta, no por la acción: el gratis lleva "versobre" y los de pago
   // "comprar", justamente porque el gratis no pasa por el inventario
+  /* Ahora el botón es EL PRECIO, no la tarjeta: leer lo que trae un sobre de 600 no puede
+     costar 600. Así que se lista por tarjeta y el dato se saca de su precio. */
   const tarjetas = [...document.querySelectorAll('.sobre-fila')];
-  const filas = tarjetas.map(t => t.querySelector('.fila'));
-  const conPrecio = f => f.closest('.sobre-fila').querySelector('.precio').textContent.trim();
+  const precios = tarjetas.map(t => t.querySelector('.precio'));
   return {
     sub: tmp.sub || 'comprar',
-    orden: filas.map(f => f.dataset.t),
-    acciones: filas.map(f => f.dataset.a),
-    // ninguna fila lleva un botón dentro: la fila ENTERA es el botón
-    botonesDentro: filas.reduce((n, f) => n + f.querySelectorAll('button,[data-a]').length, 0),
-    // el gratis lleva su etiqueta donde los otros llevan el precio
-    gratis: conPrecio(filas.find(f => f.dataset.t === 'basico')),
-    precios: filas.map(conPrecio),
+    orden: precios.map(b => b.dataset.t),
+    acciones: precios.map(b => b.dataset.a),
+    // el precio es un BOTÓN y la tarjeta no: tocar el nombre no compra
+    precioEsBoton: precios.every(b => b.tagName === 'BUTTON'),
+    tarjetaNoCompra: tarjetas.every(t => !t.querySelector('.fila').dataset.a),
+    gratis: tarjetas.find(t => t.querySelector('.precio').dataset.t === 'basico')
+      .querySelector('.precio').textContent.trim(),
+    precios: precios.map(b => b.textContent.trim()),
     // "Mis sobres" vacío lo dice y enlaza a Comprar
-    vacio: (() => { tmp.sub = 'mios'; render();
+    vacio: (() => { const antes = S.sobres; S.sobres = []; tmp.sub = 'mios'; render();
       const t = document.querySelector('#app').textContent;
       const enlace = !!document.querySelector('.btn[data-a="sub"][data-v="comprar"]');
-      tmp.sub = 'comprar'; render();
+      S.sobres = antes; tmp.sub = 'comprar'; render();
       return { dice: /no tienes ning/i.test(t), enlace }; })(),
   };
 });
 comprobar(tienda.orden.join(',') === 'basico,plata,oro',
   `las filas van básico, plata y oro (${tienda.orden.join(', ')})`);
-comprobar(tienda.botonesDentro === 0,
-  'la fila entera es el botón: no hay ningún Reclamar ni Abrir dentro');
+comprobar(tienda.precioEsBoton && tienda.tarjetaNoCompra,
+  'lo que compra es el precio, no la tarjeta: tocar el nombre no gasta nada');
 comprobar(tienda.acciones.join(',') === 'versobre,comprar,comprar',
   `el gratis va al sobre y los de pago se compran (${tienda.acciones.join(', ')})`);
 comprobar(/gratis/i.test(tienda.gratis),
@@ -323,7 +325,7 @@ comprobar(tienda.vacio.dice && tienda.vacio.enlace,
 const NIVEL_CORONA_LUZ = await page.evaluate(() => NIVEL_APERTURA.corona.luz);
 const laI = await page.evaluate(() => {
   S.divisa = 1000; S.sobres = []; ir('tienda');
-  const fila = document.querySelector('[data-a="comprar"][data-t="oro"]');
+  const fila = document.querySelector('.sobre-fila:has(.precio[data-t="oro"]) .fila');
   const enLaFila = /%/.test(fila.textContent);
   const i = document.querySelectorAll('.info').length;
   // la (i) está FUERA de la fila, para que tocarla no dispare también la fila
@@ -414,7 +416,11 @@ const inicioLimpio = await page.evaluate(() => {
   ir('inicio');
   const t = document.querySelector('#app').textContent;
   vista = guardado.vista; tmp = guardado.tmp; render();
-  return { plantilla: /TU PLANTILLA|rankeados/i.test(t), margenes: /Finish|Decisión/i.test(t) };
+  /* Lo que no puede estar en Inicio es el MARCADOR de la plantilla —el recuento de
+     rankeados y el "n/11"—, no la palabra: el subtítulo del Draft dice "elige tu
+     plantilla y compite" y es del propio diseño. */
+  return { plantilla: /rankeados|\d+\s*\/\s*11/i.test(t) || !!document.querySelector('#app [data-nav="plantilla"]'),
+           margenes: /Finish|Decisión/i.test(t) };
 });
 comprobar(!inicioLimpio.plantilla, 'Inicio no lleva el estado de la plantilla: eso vive en Club');
 comprobar(!inicioLimpio.margenes, 'ni la tabla de márgenes, que vive en Reglas');
@@ -427,7 +433,7 @@ const compra = await page.evaluate(() => {
   S.divisa = 2000; S.sobres = []; S.gratis = {}; S.coleccion = [];
   ir('tienda');
   const antes = { div: S.divisa, sobres: S.sobres.length };
-  document.querySelector('[data-a="comprar"][data-t="oro"]').click();
+  document.querySelector('.precio[data-a="comprar"][data-t="oro"]').click();
   return { antes, tras: { div: S.divisa, sobres: S.sobres.length, sub: tmp.sub, vista },
            cartas: S.coleccion.length };
 });
@@ -462,13 +468,13 @@ comprobar(abrir.tras.vista === 'apertura',
 /* Sin fichas: la fila se lee entera, no responde y no da error. */
 const pobre = await page.evaluate(() => {
   S.divisa = 0; S.sobres = []; S.gratis = { g1: Date.now() }; ir('tienda');
-  const f = document.querySelector('[data-a="comprar"][data-t="oro"]');
+  const f = document.querySelector('.precio[data-t="oro"]');
   const fuera = f.closest('.sobre-fila');
   const antes = { div: S.divisa, cartas: S.coleccion.length, vista };
   f.click();
   return { apagada: fuera.classList.contains('apagada'), desactivada: f.disabled,
-    precio: fuera.querySelector('.precio').textContent.trim(),
-    nombre: /oro/i.test(f.textContent),
+    precio: f.textContent.trim(),
+    nombre: /oro/i.test(fuera.textContent),
     sigueIgual: vista === antes.vista && S.divisa === antes.div && S.coleccion.length === antes.cartas };
 });
 comprobar(pobre.apagada && pobre.desactivada, 'sin fichas, la fila sale apagada y no responde');
