@@ -1764,10 +1764,15 @@ function tiendaMios(){
   if(!lista.length) return `<div class="card-panel sub" style="flex:0 0 auto">
     No tienes ningún sobre guardado.
     <div style="margin-top:9px"><button class="btn sm" data-a="sub" data-v="comprar">Ir a Comprar</button></div></div>`;
+  /* Misma tarjeta que en Comprar, con su borde por tipo. Lo que cambia es dónde se toca,
+     y cambia por un motivo: en Comprar el botón es el precio, porque comprar cuesta
+     dinero y no puede dispararse al leer. Aquí no cuesta nada —el sobre ya es tuyo y solo
+     lleva a abrirlo—, así que vale la tarjeta entera y el ×N es lo que es, una cuenta. */
   return lista.map(t=>{
     const T=TIPOS_SOBRE[t];
     return `<div class="sobre-fila">
-      <button class="fila" data-a="versobre" data-t="${t}" data-mio="1">
+      <button class="fila" data-a="versobre" data-t="${t}" data-mio="1"
+        style="border-color:${t==='plata'?'rgba(212,12,26,.55)':'rgba(234,190,74,.5)'}">
         <span class="cu"><b>${T.n}</b>
           <span class="sub">${T.desc}</span></span>
         <span class="sobre-art"><img src="sobres/${t}.webp" alt="" loading="lazy"></span>
@@ -1778,13 +1783,6 @@ function tiendaMios(){
   }).join('');
 }
 
-/* ── LA PANTALLA DEL SOBRE ──
-   El mismo sitio para el gratis, para el comprado y para el del inventario. Enseña el
-   sobre, qué trae y sus probabilidades, y no hace nada más hasta que se toca ENCIMA DEL
-   SOBRE.
-
-   Las fichas se descuentan en ese toque y no al entrar: entrar a mirar qué trae un sobre
-   de oro no puede costar 600. Salir de aquí sin abrir no cobra nada y no gasta el sobre. */
 /* ── LA PANTALLA DEL SOBRE ──
    Aquí NO se compra: el sobre ya es tuyo cuando llegas. Lo único que se puede hacer es
    abrirlo, y por eso lo único que se puede tocar es el sobre.
