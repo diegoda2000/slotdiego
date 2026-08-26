@@ -473,6 +473,10 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
    recorte sea exacto: al ir por dentro, lo que asoma por las esquinas es el propio fondo
    del marco.
 
+   La caja de la foto ES el hueco, borde con borde: oro x 3,89-67,08%, plata 3,81-67,33%.
+   Sin margen de cortesía por dentro, que dejaba un filo de fondo a la izquierda y hacía
+   que la imagen no pareciera centrada en su hueco.
+
    La foto va RECORTADA y con transparencia, no es un rectángulo: el peleador se pega
    ENCIMA del fondo de hexágonos del marco, que se sigue viendo por detrás y alrededor.
    Por eso el encaje es `contain` y no `cover` —recortar a un peleador ya recortado sería
@@ -492,31 +496,21 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
    El recorte entero se queda además como red de seguridad: si algún día entra una foto
    rectangular o más grande de la cuenta, se queda dentro del hueco en vez de pisar el
    metal de los lados. */
-.carta .c-foto{position:absolute;left:4.29%;width:62.39%;top:3.08%;height:69.52%;
+.carta .c-foto{position:absolute;left:3.89%;width:63.19%;top:2.68%;height:69.92%;
   object-fit:contain;object-position:50% 100%;pointer-events:none;
   clip-path:polygon(3.6% 0,96.4% 0,100% 2.3%,100% 100%,0 100%,0 2.3%)}
-.carta.plata .c-foto{left:4.21%;width:62.72%;top:2.95%;height:69.90%}
+.carta.plata .c-foto{left:3.81%;width:63.52%;top:2.55%;height:70.30%}
 
 /* El atributo. Sin foto se queda donde estaba, en medio de la ventana y en grande, que es
-   lo único que hay ahí. Con foto se convierte en una chapa a lo ancho del pie de la
-   ventana, sobre un degradado a negro para que se lea encima de cualquier imagen. La caja
-   es la misma en los dos casos, así que la carta no cambia de forma al cargar la foto.
+   lo único que hay ahí.
 
-   Y si el peleador no tiene atributo, con foto no se pinta nada: el guante genérico
-   encima de una cara es ruido. Sin foto sí, porque si no la ventana queda vacía.
-
-   El degradado de la chapa es flojo a propósito: no está para tapar el fondo sino para
-   que la letra se lea tanto sobre los hexágonos como sobre el cuerpo del peleador. */
+   CON FOTO NO SE PINTA. Estuvo un rato como chapa al pie de la ventana, encima del
+   peleador, y sobraba: la ventana es para la cara y meterle una etiqueta delante la
+   ensucia. El atributo se sigue viendo entero al abrir la carta. */
 .carta .c-mid{position:absolute;left:3.42%;width:62.52%;top:2.68%;height:68.32%;
   display:flex;flex-direction:column;align-items:center;justify-content:center;
   gap:5%;text-align:center}
-.carta.confoto .c-mid{left:4.29%;width:62.39%;top:64.4%;height:6.3%;
-  flex-direction:row;gap:3.5%;justify-content:center;
-  background:linear-gradient(180deg,rgba(0,0,0,0) 0%,rgba(0,0,0,.42) 45%,rgba(0,0,0,.62) 100%)}
-.carta.plata.confoto .c-mid{left:4.21%;width:62.72%;top:64.6%}
-.carta.confoto .c-icono{font-size:calc(var(--cw,110px)*.045);filter:none}
-.carta.confoto .c-rasgo{font-size:calc(var(--cw,110px)*.026);letter-spacing:.05em}
-.carta.confoto .c-mid.sinrasgo{display:none}
+.carta.confoto .c-mid{display:none}
 .carta .c-icono{font-size:calc(var(--cw,110px)*.20);line-height:1;
   filter:drop-shadow(0 2px 6px rgba(0,0,0,.6))}
 .carta .c-rasgo{font-weight:600;letter-spacing:.07em;text-transform:uppercase;
