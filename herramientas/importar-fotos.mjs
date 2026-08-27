@@ -301,9 +301,48 @@ function prepararImagen({ b64, tipo, ANCHO, PROPORCION, CALIDAD, espejo }) {
       if (W / H > PROPORCION) {                 // sobra ancho: se quita a los dos lados
         sw = Math.round(H * PROPORCION);
         sx = Math.round((W - sw) / 2);
-      } else {                                  // sobra alto: se quita por arriba
+      } else if (W / H > 0.60) {                // sobra un poco de alto: se quita por arriba
         sh = Math.round(W / PROPORCION);
         sy = H - sh;
+      } else {
+        /* ARCHIVO DE CUERPO ENTERO, DE LA CABEZA A LOS PIES.
+
+           El derivado athlete_bio_full_body de la UFC ya viene cortado por el muslo, y es
+           el que se usa en las 351 restantes. Pero cuando la UFC no ha generado ese
+           derivado —solo lo tiene de la foto que enseña la ficha— hay que pedir el archivo
+           original, y ese es la toma entera, mucho más alta que ancha.
+
+           Recortarla como las otras, quitando por arriba, deja en la carta un par de
+           piernas: pasó con Ankalaev y se vio a la primera. Así que aquí se corta al
+           revés, desde la cabeza hacia abajo, quedándose con el 70% del cuerpo, que es
+           donde cae el muslo y donde corta la UFC en su derivado. La silueta solo sirve
+           para saber dónde empieza la cabeza y dónde acaban los pies; el tamaño lo sigue
+           mandando el hueco de la carta, no la postura. */
+        const lienzo = document.createElement('canvas');
+        lienzo.width = W; lienzo.height = H;
+        const gg = lienzo.getContext('2d');
+        gg.drawImage(img, 0, 0);
+        const px = gg.getImageData(0, 0, W, H).data;
+        let arriba = -1, abajo = -1, izq = W, der = -1;
+        for (let y = 0; y < H; y++) {
+          let hay = false;
+          for (let x = 0; x < W; x++) {
+            if (px[(y * W + x) * 4 + 3] > 32) {
+              hay = true;
+              if (x < izq) izq = x;
+              if (x > der) der = x;
+            }
+          }
+          if (hay) { if (arriba < 0) arriba = y; abajo = y; }
+        }
+        if (arriba < 0) return resolve(null);
+        sh = Math.min(H - arriba, Math.round((abajo - arriba + 1) * 0.70));
+        sy = arriba;
+        sw = Math.min(W, Math.round(sh * PROPORCION));
+        if (sw < Math.round(sh * PROPORCION)) {        // la imagen no da de ancho
+          sh = Math.round(sw / PROPORCION);
+        }
+        sx = Math.max(0, Math.min(W - sw, Math.round((izq + der) / 2 - sw / 2)));
       }
       const sal = document.createElement('canvas');
       sal.width = ANCHO; sal.height = Math.round(ANCHO / PROPORCION);
