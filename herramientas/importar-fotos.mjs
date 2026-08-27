@@ -243,43 +243,41 @@ function prepararImagen({ b64, tipo, ANCHO, PROPORCION, CALIDAD }) {
     const img = new Image();
     img.onerror = () => resolve(null);
     img.onload = () => {
-      const c = document.createElement('canvas');
-      c.width = img.naturalWidth; c.height = img.naturalHeight;
-      const g = c.getContext('2d');
-      g.drawImage(img, 0, 0);
-      const d = g.getImageData(0, 0, c.width, c.height).data;
+      const W = img.naturalWidth, H = img.naturalHeight;
+      if (!W || !H) return resolve(null);
 
-      // Caja de lo que no es transparente. Umbral 12 y no 0: los bordes suavizados de un
-      // recorte dejan un halo casi invisible que, contado como tinta, no recorta nada.
-      let x0 = c.width, y0 = c.height, x1 = -1, y1 = -1;
-      for (let y = 0; y < c.height; y++)
-        for (let x = 0; x < c.width; x++)
-          if (d[(y * c.width + x) * 4 + 3] > 12) {
-            if (x < x0) x0 = x; if (x > x1) x1 = x;
-            if (y < y0) y0 = y; if (y > y1) y1 = y;
-          }
-      if (x1 < 0) return resolve(null);          // toda transparente
+      /* SE RESPETA EL ENCUADRE DE LA FOTO, NO SE RECORTA A LA SILUETA.
 
-      const an = x1 - x0 + 1;
-      const alt = Math.round(an / PROPORCION);   // el alto que pide el hueco de la carta
+         Antes se buscaba la caja de lo que no es transparente y se escalaba ESA hasta
+         llenar el ancho de la carta. Suena bien y estaba mal: la caja depende de la
+         postura. A un peleador con los brazos pegados al cuerpo la silueta le sale
+         estrecha, así que se agrandaba hasta que la cabeza no cabía y salía cortada por
+         arriba; a uno con los brazos abiertos le salía ancha y se encogía hasta parecer
+         de otra colección. El resultado era que cada carta tenía su propio zoom.
+
+         Las fotos oficiales ya vienen encuadradas igual entre sí —460x700, mismo plano,
+         mismo estudio—, y su proporción, 0,657, es casi la del hueco de la carta, 0,6529.
+         Así que lo que hay que hacer es ajustar el ENCUADRE ENTERO al hueco y no tocar
+         nada más: se recorta lo que sobra por los lados, a partes iguales para no
+         descentrar al peleador, o por ARRIBA si sobra alto, nunca por abajo, porque abajo
+         es donde el cuerpo tiene que llegar al cartel del nombre.
+
+         Con esto el zoom es el mismo en las 355 y la única diferencia entre una carta y
+         otra es el peleador. */
+      let sx = 0, sy = 0, sw = W, sh = H;
+      if (W / H > PROPORCION) {                 // sobra ancho: se quita a los dos lados
+        sw = Math.round(H * PROPORCION);
+        sx = Math.round((W - sw) / 2);
+      } else {                                  // sobra alto: se quita por arriba
+        sh = Math.round(W / PROPORCION);
+        sy = H - sh;
+      }
       const sal = document.createElement('canvas');
       sal.width = ANCHO; sal.height = Math.round(ANCHO / PROPORCION);
-      const s = sal.getContext('2d');
-      const k = ANCHO / an;
-
-      /* Se conserva SIEMPRE la parte de arriba —la cabeza— y se corta o se rellena por
-         abajo... no: por abajo nunca se rellena, que es lo que dejaría al peleador
-         flotando. Si el cuerpo es más alto que el encuadre, se corta por abajo y el
-         corte cae justo en el borde de la imagen. Si es más bajo, se rellena por ARRIBA
-         y el cuerpo sigue tocando el borde de abajo. */
-      if (y1 - y0 + 1 >= alt) {
-        s.drawImage(img, x0, y0, an, alt, 0, 0, ANCHO, sal.height);
-      } else {
-        const altoCuerpo = y1 - y0 + 1;
-        s.drawImage(img, x0, y0, an, altoCuerpo, 0, sal.height - altoCuerpo * k, ANCHO, altoCuerpo * k);
-      }
+      sal.getContext('2d').drawImage(img, sx, sy, sw, sh, 0, 0, sal.width, sal.height);
       resolve(sal.toDataURL('image/webp', CALIDAD));
     };
     img.src = `data:${tipo};base64,${b64}`;
   });
 }
+

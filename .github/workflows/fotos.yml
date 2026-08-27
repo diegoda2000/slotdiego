@@ -27,6 +27,7 @@ on:
     paths:
       - '.github/workflows/fotos.yml'
       - 'docs/fotos-urls.json'
+      - 'herramientas/importar-fotos.mjs'
 
 permissions:
   contents: write
