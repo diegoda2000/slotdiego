@@ -55,6 +55,7 @@ const AGENTE = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.
 const args = process.argv.slice(2);
 const soloVer = args.includes('--ver');
 const probar  = args.includes('--probar');   // pasa un archivo local por el recorte
+const lote    = args.includes('--lote');     // pasa una carpeta entera, sin red
 const pedidos = args.filter(a => !a.startsWith('--'));
 
 /* El Chromium que trae el contenedor no está donde lo busca Playwright, igual que en
@@ -62,6 +63,38 @@ const pedidos = args.filter(a => !a.startsWith('--'));
    tenga instalado, que es lo que pasará en una máquina normal. */
 const exe = process.env.CHROMIUM_PATH || '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
 const arranque = fs.existsSync(exe) ? { executablePath: exe } : {};
+
+/* Modo lote: coge una carpeta de imágenes ya descargadas y las pasa todas por el recorte
+   en UNA sola sesión de navegador. Con --probar se abre y se cierra un Chromium por
+   imagen, que para dos son dos segundos y para doscientas son siete minutos de arrancar
+   y apagar. El nombre de salida es el mismo de entrada con extensión .webp, así que la
+   carpeta de origen tiene que venir ya nombrada por el slug del peleador.
+
+     node herramientas/importar-fotos.mjs --lote <carpeta-origen> <carpeta-destino>
+*/
+if (lote) {
+  const [orig, dest] = pedidos;
+  if (!orig || !dest) { console.log('uso: --lote <origen> <destino>'); process.exit(1); }
+  fs.mkdirSync(dest, { recursive: true });
+  const navL = await chromium.launch(arranque);
+  const pg = await navL.newPage();
+  const fichas = fs.readdirSync(orig).filter(f => /\.(webp|png|avif|jpe?g)$/i.test(f));
+  let ok = 0; const malas = [];
+  for (const f of fichas) {
+    const b64 = fs.readFileSync(path.join(orig, f)).toString('base64');
+    const tipo = { webp:'image/webp', avif:'image/avif', jpg:'image/jpeg', jpeg:'image/jpeg' }
+                 [(f.split('.').pop()||'').toLowerCase()] || 'image/png';
+    const out = await pg.evaluate(prepararImagen, { b64, tipo, ANCHO, PROPORCION, CALIDAD });
+    if (!out) { malas.push(f); continue; }
+    const nombre = f.replace(/\.(webp|png|avif|jpe?g)$/i, '') + '.webp';
+    fs.writeFileSync(path.join(dest, nombre), Buffer.from(out.split(',')[1], 'base64'));
+    ok++;
+  }
+  await navL.close();
+  console.log(`${ok} recortadas de ${fichas.length}`);
+  if (malas.length) console.log('sin recortar (vacías o sin transparencia):\n  ' + malas.join('\n  '));
+  process.exit(0);
+}
 
 /* Modo prueba: coge una imagen del disco, la pasa por el mismo recorte que las
    descargadas y la escribe al lado con el sufijo -recortada. Sirve para comprobar el

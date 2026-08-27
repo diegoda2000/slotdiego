@@ -43,6 +43,16 @@ id del roster: `m0` mosca, `m1` gallo, `m2` pluma, `m3` ligero, `m4` wélter, `m
 Hace falta porque la foto oficial de Topuria es con el cinturón de campeón de pluma, y en
 su carta de ligero, donde no es campeón, ese cinturón sobra.
 
+## De dónde salieron las que hay
+
+Las 193 que hay vienen del repositorio público `victor-lillo/octagon-api`
+(`public/fighters/`), que mantiene un espejo de los cut-outs oficiales de la UFC en
+WebP 460x700 con alfa, ya nombrados por el mismo slug que usa el roster. Se bajaron con
+`git clone` y se pasaron por `herramientas/importar-fotos.mjs --lote`.
+
+No se guardan los originales de 460x700 en este repositorio: son 15 MB, están en el sitio
+de donde salieron, y lo que hace falta para el juego es la versión recortada de 360 px.
+
 ## Después de añadir o quitar fotos
 
     node herramientas/generar-fotos.mjs
