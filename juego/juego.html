@@ -100,14 +100,15 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
   padding:calc(9px + env(safe-area-inset-top)) calc(12px + env(safe-area-inset-right)) 9px
           calc(12px + env(safe-area-inset-left));
   border-bottom:1px solid var(--line);position:sticky;top:0;z-index:50}
-/* El logotipo. Va con la tipografía de los botones —la misma var(--titulo)— y con los
-   colores dichos por el dueño: las dos P en el rojo de la paleta, el 4 en el plata y el
-   .CG en blanco y más pequeño. */
-#top .logo{font-family:var(--titulo);font-weight:800;font-size:19px;letter-spacing:-.01em;
-  text-transform:uppercase;margin-right:auto;display:flex;align-items:baseline}
+/* El logotipo. Va con la tipografía de los botones —la misma var(--titulo)—, en cursiva
+   como el JUGAR del botón grande, y con los colores dichos por el dueño: las dos P en el
+   rojo de la paleta, el 4 en el plata y el .CG en blanco y más pequeño. */
+#top .logo{font-family:var(--titulo);font-weight:800;font-size:19px;letter-spacing:.01em;
+  font-style:italic;text-transform:uppercase;margin-right:auto;
+  display:flex;align-items:baseline}
 #top .logo b{color:var(--acc)}
-#top .logo em{font-style:normal;color:var(--plata)}
-#top .logo i{font-style:normal;color:#fff;font-size:.66em;letter-spacing:.02em}
+#top .logo em{color:var(--plata)}
+#top .logo i{color:#fff;font-size:.66em;letter-spacing:.02em}
 .res{display:flex;align-items:center;gap:5px;font-family:var(--titulo);font-size:14px;
   font-weight:700;font-variant-numeric:tabular-nums;
   background:rgba(35,20,19,.9);border:1px solid var(--line);
