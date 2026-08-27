@@ -1,4 +1,4 @@
-<title>P4P Cards</title>
+<title>Jaula Abierta</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <style>
 /* ═══════════════════════════════════════════════════════════════
@@ -103,11 +103,6 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 #top .logo{font-family:var(--titulo);font-weight:800;font-size:19px;letter-spacing:-.01em;
   text-transform:uppercase;margin-right:auto}
 #top .logo span{color:var(--acc)}
-/* El logotipo: P4P con el 4 en rojo —que es la marca, y la que va sola en el icono de la
-   aplicación— y CARDS detrás, más pequeño y espaciado, para que se lea como un rótulo y
-   no como dos palabras del mismo tamaño. */
-#top .logo i{font-style:normal;font-size:.6em;letter-spacing:.18em;color:var(--oro);
-  margin-left:.28em;position:relative;top:-.11em;text-transform:uppercase}
 .res{display:flex;align-items:center;gap:5px;font-family:var(--titulo);font-size:14px;
   font-weight:700;font-variant-numeric:tabular-nums;
   background:rgba(35,20,19,.9);border:1px solid var(--line);
@@ -805,7 +800,7 @@ th{color:var(--dim2);font-size:11px;text-transform:uppercase;letter-spacing:.04e
 </style>
 
 <div id="top">
-  <div class="logo">P<span>4</span>P <i>Cards</i></div>
+  <div class="logo">JAULA <span>ABIERTA</span></div>
   <div class="res" id="r-div">🪙 <span>0</span></div>
   <div class="res" id="r-fic">🎟️ <span>0</span></div>
 </div>
@@ -3579,7 +3574,7 @@ document.addEventListener('click',e=>{
   switch(d.a){
     case 'jugar': empezarPartida(null); break;
     case 'compartircodigo':{
-      const txt=`Únete a mi partida de P4P Cards con el código ${SALA?SALA.codigo:''}`;
+      const txt=`Únete a mi partida de Jaula Abierta con el código ${SALA?SALA.codigo:''}`;
       // El menú de compartir del sistema. En el APK va por el puente de Android,
       // porque navigator.share no existe en un WebView normal.
       if(window.Android&&window.Android.compartir){ window.Android.compartir(txt); break; }

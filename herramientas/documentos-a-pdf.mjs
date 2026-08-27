@@ -84,7 +84,7 @@ for (const [src, nombre, clase] of DOCS) {
   const html = `<!doctype html><html lang="es"><head><meta charset="utf-8">
     <title>${nombre}</title><style>${ESTILO}</style></head>
     <body class="${clase}">${cuerpo}
-    <div class="pie">P4P Cards · ${path.basename(src)} · generado el ${hoy}</div>
+    <div class="pie">Jaula Abierta · ${path.basename(src)} · generado el ${hoy}</div>
     </body></html>`;
   const pg = await nav.newPage();
   await pg.setContent(html, { waitUntil: 'load' });

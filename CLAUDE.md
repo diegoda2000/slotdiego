@@ -1,4 +1,4 @@
-# P4P Cards — memoria del proyecto
+# Jaula Abierta — memoria del proyecto
 
 Juego móvil de cartas de MMA (estilo Pacybits/FUT) con plantel real de UFC: abrir sobres,
 montar una plantilla de 11 peleadores (uno por división) y pelear online. Los duelos se
@@ -10,16 +10,6 @@ disculpas. Los nombres de funciones, variables y archivos también van en españ
 ---
 
 ## Lo primero que hay que saber
-
-0. **El juego se llama P4P Cards.** El nombre cambió desde "Jaula Abierta" y se cambió
-   solo donde lo ve el jugador: el título de la página, el logotipo de la cabecera, el
-   nombre de la aplicación en Android y iOS, los archivos `p4p-cards.apk` / `.ipa`, el
-   título de la publicación y el mensaje de invitación. **Lo que NO se tocó, y no se toca,
-   son los identificadores**: el paquete de Android `com.jaulaabierta.juego`, el destino
-   de Xcode `JaulaAbierta`, el nombre del worker `jaula-abierta` —cambiarlo mueve la
-   dirección del servidor y deja tirados los APK ya instalados— y sobre todo la clave de
-   guardado `KEY='jaula-abierta-v1'`, que si se cambia le borra la colección a todo el
-   mundo. Que se llamen así no es un descuido.
 
 1. **El repositorio es público.** Nunca escribas credenciales en un archivo. El usuario
    ha pegado en el chat su `CLOUDFLARE_API_TOKEN` y su `CLOUDFLARE_ACCOUNT_ID` y ha

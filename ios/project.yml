@@ -22,7 +22,7 @@ targets:
     info:
       path: JaulaAbierta/Info.plist
       properties:
-        CFBundleDisplayName: P4P Cards
+        CFBundleDisplayName: Jaula Abierta
         CFBundleShortVersionString: "1.0"
         CFBundleVersion: "1"
         UILaunchStoryboardName: ""
