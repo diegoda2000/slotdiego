@@ -331,13 +331,16 @@ en la baraja parece en blanco y negro. **No se arregla subiendo la saturación**
 sigue siendo otra sesión y a ×2,2 la piel se vuelve rosa. Se arregla **pidiendo la toma
 posterior**, la de después de firmar, que casi siempre existe en otra carpeta de s3. Así se
 cambiaron seis. La saturación media de las 351 es 0,42; por debajo de 0,23 conviene mirar
-si hay una toma más nueva. El único que se queda apagado es Josh Hokit, que no tiene otra.
+si hay una toma más nueva. Josh Hokit también tenía una, de enero de 2026, aunque la de abril de ese año
+no exista: **si una carpeta no contesta, prueba las otras fechas antes de rendirte.**
 
 **Y la UFC tiene siluetas negras de relleno** (`SHADOW_Fighter_fullLength_RED.png`,
 `womens-silhouette-RED-corner.png`) para quien todavía no tiene foto. Se bajan sin
 protestar y son un borrón con forma de persona encima de un peleador real. `esSilueta()`
-las descarta. Tres se colaron y se quitaron: Brando Pericic, Louie Sutherland y Michelle
-Montague se quedan sin foto, que para eso el juego lo contempla.
+las descarta. Tres se colaron —Brando Pericic, Louie Sutherland y Michelle Montague— y no
+era que no tuvieran foto: era que la ficha de la que salió la URL se scrapeó antes de que
+la UFC les hiciera la sesión. **Cuando una URL devuelva la silueta, busca una carpeta de
+s3 más nueva antes de dar al peleador por perdido.**
 
 **De dónde salen.** `herramientas/importar-fotos.mjs` las baja de ufcespanol.com, las
 recorta y las deja listas. **Hay que ejecutarla en una máquina con internet normal**: el
@@ -360,9 +363,6 @@ Al añadir fotos hay que tocar **tres** sitios de empaquetado, no dos: `build.gr
 - **`.c-copias` se pinta y no tiene CSS en ninguna parte.** Ya estaba así antes de este
   trabajo; no se ha tocado. Cuando salga una carta repetida, el "×2" cae suelto arriba a
   la izquierda del lienzo.
-- **Faltan cuatro fotos y ninguna va a llegar.** Xiong Jing Nan (abajo), y Brando Pericic,
-  Louie Sutherland y Michelle Montague, de los que la UFC solo publica su silueta negra de
-  relleno.
 - **Falta la foto de `xiong-jing-nan`, y va a seguir faltando.** Xiong Jing Nan es
   campeona de ONE Championship y nunca ha peleado en la UFC, así que no existe un recorte
   suyo con este encuadre. Las otras 354 están. **No le pongas una foto de otro sitio**: el
