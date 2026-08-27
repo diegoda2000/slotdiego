@@ -321,7 +321,6 @@ comprobar(tienda.vacio.dice && tienda.vacio.enlace,
 /* Las probabilidades no van en la fila: van detrás de la (i) de la esquina. En la fila
    eran dos líneas de números que nadie lee al pasar y que la engordan; quien las quiere
    las quiere con sitio para leerlas. */
-const NIVEL_CORONA_LUZ = await page.evaluate(() => NIVEL_APERTURA.corona.luz);
 const laI = await page.evaluate(() => {
   S.divisa = 1000; S.sobres = []; ir('tienda');
   const fila = document.querySelector('.sobre-fila:has(.precio[data-t="oro"]) .fila');
@@ -345,44 +344,32 @@ comprobar(laI.i === 3 && laI.dentroDeLaFila === 0,
 comprobar(laI.abrio, 'y tocarla saca las probabilidades');
 comprobar(laI.sigueEnTienda, 'sin salir de la tienda ni comprar nada');
 
-/* Las florituras del fondo se encienden con el COLOR DEL NIVEL en el momento de abrir, y
-   antes de que se vea una sola carta. Es el primer aviso de que ha caído algo gordo. */
+/* La pantalla del sobre es el sobre sobre un fondo liso, y del toque se pasa al walkout
+   sin escala intermedia. Antes cruzaban la pantalla unos arcos que se encendían del color
+   del nivel y contaban lo que venía antes de ver la carta; se quitaron, y con ellos el
+   compás de 850 ms que existía para enseñarlos. Lo que queda es que el toque bloquea el
+   sobre y que en menos de medio segundo ya se está en el walkout. */
 const flor = await page.evaluate(async () => {
-  const prueba = async estatus => {
-    // el sobre ya comprado: aquí solo se abre
-    S.divisa = 9000; S.sobres = [{ tipo: 'oro' }]; ir('tienda'); tmp.sub = 'mios'; render();
-    document.querySelector('[data-a="versobre"][data-t="oro"]').click();
-    const esc = document.querySelector('#escena');
-    const caja = document.querySelector('.sobre-toque');
-    const apagadaAntes = !esc.classList.contains('encendida');
-    const dibujo = esc.querySelectorAll('.floritura svg path').length;
-    const real = abrirSobre;
-    const c = ROSTER.find(x => x.estatus === estatus);
-    abrirSobre = () => [{ iid: 'f' + Math.random(), cid: c.id }];
-    document.querySelector('[data-a="abrirsobre"]').click();
-    const r = { apagadaAntes, dibujo,
-      encendida: esc.classList.contains('encendida'),
-      luz: esc.style.getPropertyValue('--luz'),
-      bloqueada: caja.disabled,
-      // y todavía NO se ha pasado al walkout: el aviso llega antes que la carta
-      sigueEnElSobre: vista === 'sobre' };
-    abrirSobre = real;
-    await new Promise(x => setTimeout(x, 950));
-    pararAviso();
-    return r;
-  };
-  return { corona: await prueba('campeon'), oro: await prueba('oro') };
+  S.divisa = 9000; S.sobres = [{ tipo: 'oro' }]; ir('tienda'); tmp.sub = 'mios'; render();
+  document.querySelector('[data-a="versobre"][data-t="oro"]').click();
+  const esc = document.querySelector('#escena');
+  const caja = document.querySelector('.sobre-toque');
+  const fondoPuesto = esc.classList.contains('puesta');
+  const trazos = esc.querySelectorAll('svg path').length;
+  document.querySelector('[data-a="abrirsobre"]').click();
+  const alInstante = { bloqueada: caja.disabled, vista };
+  await new Promise(x => setTimeout(x, 500));
+  const trasMedioSegundo = vista;
+  pararAviso();
+  return { fondoPuesto, trazos, alInstante, trasMedioSegundo };
 });
-comprobar(flor.corona.dibujo >= 8,
-  `el fondo de la pantalla del sobre lleva sus florituras (${flor.corona.dibujo} trazos)`);
-comprobar(flor.corona.apagadaAntes, 'apagadas mientras se mira el sobre');
-comprobar(flor.corona.encendida && flor.corona.luz === NIVEL_CORONA_LUZ,
-  `y se encienden del color del nivel al abrir (campeón: ${flor.corona.luz})`);
-comprobar(flor.oro.luz && flor.oro.luz !== flor.corona.luz,
-  `con un color distinto según lo que toque (oro: ${flor.oro.luz})`);
-comprobar(flor.corona.sigueEnElSobre,
-  'y el aviso llega antes que la carta: todavía no ha empezado el walkout');
-comprobar(flor.corona.bloqueada, 'un segundo toque mientras enciende no hace nada');
+comprobar(flor.fondoPuesto, 'la pantalla del sobre pone su fondo');
+comprobar(flor.trazos === 0,
+  `y ya no lleva florituras dibujadas encima (${flor.trazos} trazos)`);
+comprobar(flor.alInstante.bloqueada, 'el toque bloquea el sobre, un segundo toque no hace nada');
+comprobar(flor.trasMedioSegundo === 'apertura',
+  `y en medio segundo ya se está en el walkout (${flor.trasMedioSegundo})`);
+
 const arte = await page.evaluate(() => window.__arte || []);
 comprobar(arte.length === 3 && arte.every(a => /^sobres\/.+\.webp$/.test(a)),
   `cada sobre lleva su arte propio (${arte.join(', ')})`);

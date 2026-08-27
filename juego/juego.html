@@ -294,32 +294,14 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
   padding:26px 14px;margin-bottom:10px}
 .sobre-toque:active{transform:scale(.985);filter:brightness(1.15)}
 .sobre-toque[disabled]{opacity:.45}
-/* LA ESCENA DEL SOBRE. Ocupa la PANTALLA ENTERA, por detrás de todo: el sobre flota
-   encima, sin caja que lo encierre. Meterlo en un recuadro lo convertía en una ilustración
-   dentro de una ficha; así es el sitio donde estás.
+/* LA PANTALLA DEL SOBRE.
 
-   Los trazos van apagados mientras se mira el sobre y se encienden con el color del nivel
-   en el momento de abrirlo. Ese es el primer aviso: antes de ver una sola carta, la
-   pantalla ya te ha dicho lo que viene.
-
-   Van en SVG dibujado aquí mismo, sin archivo: un fondo así en PNG serían cientos de kB
-   por cada color, y aquí basta con cambiarle el trazo al mismo dibujo. */
+   El sobre se mira sobre un fondo liso y oscuro, y ya está. Antes cruzaban la pantalla
+   unos arcos que se encendían del color del nivel al abrir; se han quitado. */
 .escena{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;
   background:radial-gradient(120% 90% at 50% 44%, #12181f 0%, #0a0d11 68%);
   opacity:0;transition:opacity .3s ease}
-.escena:not(:empty){opacity:1}
-.escena .floritura{position:absolute;inset:0;
-  color:#1c242e;                        /* apagado: apenas se intuye */
-  transition:color .45s ease, filter .45s ease}
-.escena .floritura svg{width:100%;height:100%;display:block}
-/* Se enciende LA REJA, no la pantalla. El color va al trazo y el brillo es el halo del
-   propio trazo; el fondo se queda negro. Un resplandor de fondo teñía la pantalla entera
-   y se comía el sobre, que es lo que hay que mirar. */
-/* El brillo va PEGADO al trazo. Con un halo ancho, la luz rellena los huecos de la malla
-   y la pantalla entera se tiñe: entonces ya no es una reja encendida, es un filtro de
-   color encima de todo, y el sobre —que es lo que hay que mirar— desaparece. */
-.escena.encendida .floritura{color:var(--luz,#ffd24a);
-  filter:drop-shadow(0 0 3px var(--luz,#ffd24a))}
+.escena.puesta{opacity:1}
 
 /* El sobre: sin caja, solo él. */
 .sobre-toque{display:flex;flex-direction:column;align-items:center;justify-content:center;
@@ -329,17 +311,12 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
   filter:drop-shadow(0 14px 34px rgba(0,0,0,.8));
   transition:transform .55s cubic-bezier(.2,.7,.3,1), filter .55s ease}
 .sobre-toque:active .sobre-arte{transform:scale(.975)}
-/* Al abrir, el sobre NO se escala. Escalarlo lo promociona a una capa aparte y ahí el
-   navegador lo compone con su alfa de borde: el fondo se colaba por dentro del sobre y
-   parecía que las florituras pasaran por delante. Sin transform, el sobre tapa lo que
-   tiene detrás, que es lo único que se le pide. */
-.sobre-arte.abriendo{filter:drop-shadow(0 14px 34px rgba(0,0,0,.8)) brightness(1.08)}
 .sobre-pie{font-family:var(--titulo);letter-spacing:.06em;text-transform:uppercase;
   font-size:12px;color:var(--dim)}
 /* En la pantalla del sobre la (i) va arriba a la derecha, sobre la escena. */
 .info-suelta{position:absolute;right:14px;top:92px}
 @media (prefers-reduced-motion:reduce){
-  .escena .floritura,.sobre-arte{transition-duration:.01ms}
+  .escena,.sobre-arte{transition-duration:.01ms}
 }
 .sobre-pie{font-family:var(--titulo);letter-spacing:.06em;text-transform:uppercase;
   font-size:12px;color:var(--dim)}
@@ -1506,8 +1483,8 @@ function render(){
   /* La escena del sobre va FUERA de #app, para poder ocupar la pantalla entera por
      detrás de todo. Se pinta solo donde hace falta y se borra al salir. */
   const esc=$('#escena');
-  if(vista==='sobre'){ if(!esc.firstChild) esc.innerHTML=`<span class="floritura">${FLORITURAS}</span>`; }
-  else { esc.innerHTML=''; esc.className='escena'; esc.removeAttribute('style'); }
+  if(vista==='sobre') esc.classList.add('puesta');
+  else { esc.className='escena'; esc.removeAttribute('style'); }
   $('#app').innerHTML=f();
   $('#app').classList.remove('flash'); void $('#app').offsetWidth; $('#app').classList.add('flash');
   ajustarRejillas();    // antes de medir: cambia lo anchas que son las cartas
@@ -1940,35 +1917,6 @@ function vSobre(){
     <button class="btn sec" data-a="volvertienda">Atrás</button>`;
 }
 
-/* El dibujo de las florituras: arcos largos que cruzan la escena y unas cuñas rectas.
-   Se pinta con currentColor, así que el color lo pone el CSS y basta con cambiar una
-   variable para que pasen de apagadas a encendidas del color del nivel. */
-/* EL FONDO DE LA PANTALLA DEL SOBRE.
-
-   Arcos dibujados, nada más: un SVG de unas pocas líneas que se pinta con currentColor,
-   así que el color lo pone el CSS y basta con cambiar una variable para que pase de
-   apagado a encendido del color del nivel. Sin archivos, sin texturas y sin máscaras.
-
-   Se probó antes con la reja de un octágono, con la textura sacada de una foto. Se veía
-   bien y falló por otro lado: el sobre lleva transparencia en sus zonas negras y la reja
-   se colaba a través de él. Un fondo que atraviesa lo que tiene delante no es un fondo. */
-const FLORITURAS=`<svg viewBox="0 0 400 860" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
-  <g fill="none" stroke="currentColor" stroke-linecap="round">
-    <path d="M-80 235 Q 200 95 480 235"  stroke-width="2.4"/>
-    <path d="M-80 268 Q 200 128 480 268" stroke-width="1.2" opacity=".6"/>
-    <path d="M-80 300 Q 200 170 480 300" stroke-width=".9"  opacity=".3"/>
-    <path d="M-80 625 Q 200 765 480 625" stroke-width="2.4"/>
-    <path d="M-80 592 Q 200 732 480 592" stroke-width="1.2" opacity=".6"/>
-    <path d="M-80 560 Q 200 690 480 560" stroke-width=".9"  opacity=".3"/>
-    <path d="M-40 -20 L 96 200 L -40 420" stroke-width="1.8" opacity=".8"/>
-    <path d="M440 -20 L 304 200 L 440 420" stroke-width="1.8" opacity=".8"/>
-    <path d="M-40 880 L 96 660 L -40 440" stroke-width="1.8" opacity=".8"/>
-    <path d="M440 880 L 304 660 L 440 440" stroke-width="1.8" opacity=".8"/>
-    <path d="M28 430 L 150 430"  stroke-width="1.4" opacity=".45"/>
-    <path d="M250 430 L 372 430" stroke-width="1.4" opacity=".45"/>
-  </g>
-</svg>`;
-
 /* Las probabilidades, cuando se piden. Aquí sí caben enteras y con sitio para leerlas. */
 function ovProbabilidades(t){
   const T=TIPOS_SOBRE[t]; if(!T) return;
@@ -2171,7 +2119,7 @@ const NIVEL_APERTURA={
    son ocho toques de trámite. */
 /* El nivel de una tanda lo marca su MEJOR carta, que es la primera: la lista viene ya
    ordenada de mejor a peor. Estaba metido dentro de abrirTanda y ahora hace falta antes,
-   para saber de qué color encender las florituras. */
+   para saber de qué color va el resplandor del walkout y a qué suena el golpe. */
 function nivelDe(items){
   const mejor=items.length?PORID[items[0].cid]:null;
   if(!mejor) return 'plata';
@@ -3797,23 +3745,22 @@ document.addEventListener('click',e=>{
       else break;                        // no queda ninguno: no pasa nada
       guardar();
       const items=abrirSobre(t);
-      /* Antes de enseñar nada se encienden las florituras del color de lo que viene. Es el
-         primer aviso, y llega antes que la carta: la pantalla ya te ha dicho si ha caído
-         algo gordo. Solo después arranca el walkout. */
-      const esc=$('#escena'), caja=document.querySelector('.sobre-toque');
+      /* Del toque al walkout, sin escala intermedia. Antes había un compás de 850 ms en el
+         que se encendían del color del nivel unos arcos de fondo, y eso te contaba lo que
+         venía antes de ver la carta. Los arcos se han quitado, y con ellos el compás: lo
+         único que queda entre el dedo y el walkout es el golpe, que sí sigue sonando
+         distinto según lo que toque. */
+      const caja=document.querySelector('.sobre-toque');
       const N=NIVEL_APERTURA[nivelDe(items)]||NIVEL_APERTURA.oro;
       const seguir=()=>{ abrirTanda(items,t); tmp.ap.desde=desde; };
-      if(!esc||!caja){ seguir(); break; }
-      caja.disabled=true;                // un segundo toque mientras enciende no hace nada
-      esc.style.setProperty('--luz',N.luz);
-      esc.style.setProperty('--luz2',N.luz2);
-      esc.classList.add('encendida');
-      const img=caja.querySelector('.sobre-arte');
-      if(img){ img.style.setProperty('--luz',N.luz); img.classList.add('abriendo'); }
+      SONIDO.golpe({t:N.pegada, vol:.18, corte:N.corte});
+      if(!caja){ seguir(); break; }
+      caja.disabled=true;                // un segundo toque mientras arranca no hace nada
       const pie=caja.querySelector('.sobre-pie');
       if(pie) pie.textContent='';
-      SONIDO.golpe({t:N.pegada, vol:.18, corte:N.corte});
-      abrirsobre.t=setTimeout(seguir, 850);
+      /* Un cuarto de segundo, lo justo para que el toque se vea y el golpe entre antes de
+         que cambie la pantalla. Menos que esto y el sobre desaparece bajo el dedo. */
+      abrirsobre.t=setTimeout(seguir, 240);
       break; }
     case 'pag':                          // pasar hoja del álbum de la colección
       tmp.pag=(tmp.pag||0)+Number(d.v); window.scrollTo(0,0); render(); break;

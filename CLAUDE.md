@@ -179,10 +179,14 @@ Sonidos del sobre sintetizados con Web Audio. El locutor ("It's time!",
 recronometrada al clip. Se reproduce con `<audio>`, no con Web Audio, porque en `file://`
 no se puede leer el archivo con `fetch()`.
 
-### Fondo del octágono
-Máscara SVG (`mask-image`) sobre un div de color. Las rejas se iluminan **solo ellas**, no
-la pantalla entera, van **por detrás** del sobre, ocupan el fondo completo y **no se
-repiten**: una sola imagen ampliada, como una marca de neumático en el barro.
+### La pantalla del sobre
+El sobre sobre un fondo liso y oscuro, y nada más. **Las florituras se quitaron**: eran
+unos arcos en SVG que cruzaban la pantalla y se encendían del color del nivel al abrir, y
+con ellos se fue el compás de 850 ms que existía solo para enseñarlos. Del toque al
+walkout hay ahora 240 ms, lo justo para que se vea el toque y entre el golpe. Antes de los
+arcos hubo una reja de octágono con textura de foto, que falló porque el sobre lleva
+transparencia en sus zonas negras y la reja se colaba a través de él. **No lo intentes otra
+vez**: lo que el usuario quiere ahí es el sobre solo.
 
 ---
 
