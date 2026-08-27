@@ -325,6 +325,28 @@ una lista que empieza por la `_L_` y deja la `_R_` de reserva: si la `_L_` no ex
 `importar-fotos.mjs` baja la `_R_` y **esa sí la voltea al vuelo**, que un logo pequeño al
 revés molesta menos que un peleador mirando al otro lado.
 
+**El cinturón tiene que cuadrar con el plantel.** La UFC fotografía al campeón con el
+cinturón, y esa foto se queda puesta aunque pierda el título. En la carta de quien en
+`roster.js` no es `campeon`, un cinturón es mentira. Se cambiaron seis —Ankalaev, Du
+Plessis, Della Maddalena, Dvalishvili, Pantoja y Zhang Weili— pidiendo la toma sin
+cinturón, que suele ser más nueva o más vieja pero existe. **Pantoja y Zhang Weili se
+quedan con el suyo**: llevan años siendo campeones y la UFC no publica de ellos ninguna
+otra, y una carta con cinturón se lee mejor que una carta sin foto.
+
+Y hay dos que son campeones en una división y no en la otra: **Ilia Topuria** (pluma sí,
+ligero no) y **Valentina Shevchenko** (mosca sí, gallo no). Para esas dos cartas está
+`juego/fotos/<persona>-<división>.webp`, que `fotoSrc()` mira antes que la de la persona.
+Es el único sitio donde se usa ese mecanismo, y `generar-fotos.mjs` valida el nombre
+contra las cartas del plantel para no darlo por sobrante.
+
+**El derivado sin firma solo existe si la UFC lo ha generado**, o sea si es la foto que
+enseña la ficha. Para una toma que no es la de la ficha hay que pedir el **archivo
+original**, sin estilo —seis rutas posibles, están en `formas()`—, y **ese es la toma
+entera, de la cabeza a los pies**, no el recorte por el muslo del derivado. Recortado como
+los demás deja en la carta un par de piernas; pasó con Ankalaev. Por eso `prepararImagen()`
+tiene una rama para cuando la proporción es de cuerpo entero: corta desde la cabeza hacia
+abajo y se queda con el 70% del cuerpo, que es por donde corta la UFC.
+
 **Y hay dos sesiones de fotos distintas.** La de la Contender Series —luz fría, pantalón
 negro liso, guantes azules de la DWCS— sale apagada al lado de la del estudio de la UFC, y
 en la baraja parece en blanco y negro. **No se arregla subiendo la saturación**: a ×1,6
