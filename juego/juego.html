@@ -473,9 +473,21 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
    recorte sea exacto: al ir por dentro, lo que asoma por las esquinas es el propio fondo
    del marco.
 
-   La caja de la foto ES el hueco, borde con borde: oro x 3,89-67,08%, plata 3,81-67,33%.
-   Sin margen de cortesía por dentro, que dejaba un filo de fondo a la izquierda y hacía
-   que la imagen no pareciera centrada en su hueco.
+   LA CAJA NO ES TAN ANCHA COMO EL HUECO, Y NO ES UN DESCUIDO. El cartel del nombre
+   tiene las esquinas cortadas en diagonal: su borde de arriba solo es plano entre el
+   8,06% y el 68% —en el plata, entre el 7,81% y otro tanto—, y a los lados de eso baja en
+   chaflán. La foto llegaba hasta el filo del hueco, el 3,89%, así que sus dos esquinas de
+   abajo quedaban por fuera de esa parte plana: el brazo del peleador se cortaba en recto
+   y debajo no había cartel donde apoyarse. Se veía flotando.
+
+   Así que la caja se estrecha hasta que sus dos bordes caen dentro del tramo plano, y se
+   estrecha lo mismo por los dos lados para que siga centrada en el hueco: el centro de la
+   foto y el del hueco son el mismo, 35,49% en el oro y 35,57% en el plata.
+
+   Y al estrecharse, encoge: la caja mantiene la proporción de la imagen (0,6529), así que
+   al quitarle ancho pierde alto por abajo... no, por arriba, porque abajo está clavada al
+   cartel. El peleador entra más pequeño y con la cabeza algo más baja, que es justo lo
+   que se pedía.
 
    La foto va RECORTADA y con transparencia, no es un rectángulo: el peleador se pega
    ENCIMA del fondo de hexágonos del marco, que se sigue viendo por detrás y alrededor.
@@ -501,10 +513,10 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
    El recorte entero se queda además como red de seguridad: si algún día entra una foto
    rectangular o más grande de la cuenta, se queda dentro del hueco en vez de pisar el
    metal de los lados. */
-.carta .c-foto{position:absolute;left:3.89%;width:63.19%;top:2.68%;height:68.43%;
+.carta .c-foto{position:absolute;left:8.07%;width:54.85%;top:11.71%;height:59.40%;
   object-fit:contain;object-position:50% 100%;pointer-events:none;
   clip-path:polygon(3.6% 0,96.4% 0,100% 2.3%,100% 100%,0 100%,0 2.3%)}
-.carta.plata .c-foto{left:3.81%;width:63.52%;top:2.55%;height:68.77%}
+.carta.plata .c-foto{left:7.81%;width:55.52%;top:11.21%;height:60.11%}
 
 /* El atributo. Sin foto se queda donde estaba, en medio de la ventana y en grande, que es
    lo único que hay ahí.

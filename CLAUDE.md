@@ -280,6 +280,15 @@ Se apoyan abajo y **la imagen se corta por debajo del borde de arriba de la plac
 nombre** —72,60% en el oro, 72,85% en el plata—, no en el borde de la ventana. Cortándola
 en la ventana el peleador queda colgado en el aire; así sale de detrás de la placa.
 
+**La caja de la foto es más estrecha que el hueco, y no es un descuido.** El cartel del
+nombre tiene las esquinas cortadas en diagonal: su borde de arriba solo es plano entre el
+8,06% y el 68% en el oro, y entre el 7,81% y otro tanto en el plata. Llegando la foto
+hasta el filo del hueco (3,89%), sus dos esquinas de abajo quedaban fuera de ese tramo
+plano y el brazo del peleador se cortaba en recto sin cartel debajo: se veía flotando. La
+caja se estrecha lo mismo por los dos lados para que siga centrada en el hueco, y al
+estrechar pierde alto por arriba, porque abajo está clavada al cartel. Por eso el peleador
+entra algo más pequeño y con la cabeza más baja.
+
 **Y el cuerpo tiene que llegar al borde de abajo del ARCHIVO.** El juego apoya la imagen
 en el suelo de su hueco; si el recorte lleva aire transparente al pie, lo que se apoya es
 el aire y el peleador vuelve a quedar flotando. Esto no se arregla con CSS y ya costó una
