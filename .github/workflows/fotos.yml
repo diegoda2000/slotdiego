@@ -15,6 +15,15 @@ name: Fotos
 # que las quince de campeón con cinturón, que vinieron por otro camino, se quedan como
 # están. Con "rehacer" en true se vuelven a bajar todas.
 
+# Se dispara de dos maneras. A mano con workflow_dispatch, que es lo suyo, PERO eso solo
+# aparece cuando el archivo está en la rama principal: GitHub no registra un
+# workflow_dispatch que solo existe en una rama de trabajo. Mientras el diseño de la
+# carta viva en su rama, la forma de lanzarlo es empujar este mismo archivo.
+#
+# El disparador por empujón mira SOLO a este archivo. Si mirara a juego/fotos/ se
+# llamaría a sí mismo al commitear las fotos; da igual —un commit hecho con GITHUB_TOKEN
+# no dispara flujos, que es de lo que ya se aprovecha servidor.yml—, pero apuntar a lo
+# que el propio flujo escribe es pedirlo.
 on:
   workflow_dispatch:
     inputs:
@@ -22,6 +31,11 @@ on:
         description: 'Volver a bajar TODAS, incluidas las que ya están'
         type: boolean
         default: false
+  push:
+    branches:
+      - 'claude/**'
+    paths:
+      - '.github/workflows/fotos.yml'
 
 permissions:
   contents: write
