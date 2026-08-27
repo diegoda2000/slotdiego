@@ -119,7 +119,15 @@ if (probar) {
 const roster = fs.readFileSync('juego/roster.js', 'utf8');
 const NOMBRE = {};
 for (const m of roster.matchAll(/"persona":"([^"]+)","nombre":"([^"]+)"/g)) NOMBRE[m[1]] = m[2];
-const personas = pedidos.length ? pedidos : Object.keys(NOMBRE).sort();
+/* Por defecto solo se baja lo que falta. Repetir las 197 que ya están es media hora de
+   descargas para acabar con los mismos archivos, y en un runner de GitHub eso es media
+   hora de minutos gastados. Con --rehacer se bajan todas otra vez. */
+const rehacer = args.includes('--rehacer');
+const todas = pedidos.length ? pedidos : Object.keys(NOMBRE).sort();
+const personas = rehacer ? todas
+  : todas.filter(p => !fs.existsSync(path.join(DIR, p + '.webp')));
+if (!rehacer && !soloVer)
+  console.log(`${todas.length - personas.length} ya están; se bajan ${personas.length}.`);
 
 fs.mkdirSync(DIR, { recursive: true });
 const nav = await chromium.launch(arranque);

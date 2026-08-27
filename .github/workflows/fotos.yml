@@ -1,0 +1,82 @@
+name: Fotos
+
+# Baja las caras de los peleadores de ufcespanol.com y las commitea.
+#
+# ESTE FLUJO EXISTE POR UNA RAZÓN CONCRETA: el entorno donde se desarrolla sale por un
+# proxy con lista blanca que deniega ufc.com, ufcespanol.com, es.ufc.com, espn.com y su
+# CDN con un 403. Desde ahí no se puede bajar ni una foto. Los runners de GitHub sí
+# tienen salida normal, así que la descarga se hace aquí. Es el mismo motivo por el que
+# apk.yml construye el APK en un runner y no en local.
+#
+# Se dispara a mano —no en cada empujón— porque son 158 descargas y no cambia nada del
+# juego que se pueda romper: si falla, sigue habiendo las fotos que ya estaban.
+#
+# Por defecto solo baja LO QUE FALTA. Las que ya están en juego/fotos/ no se tocan, así
+# que las quince de campeón con cinturón, que vinieron por otro camino, se quedan como
+# están. Con "rehacer" en true se vuelven a bajar todas.
+
+on:
+  workflow_dispatch:
+    inputs:
+      rehacer:
+        description: 'Volver a bajar TODAS, incluidas las que ya están'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+  fotos:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # Playwright con su Chromium: la herramienta recorta y comprime dentro del
+      # navegador, que es lo que evita meter una librería de imágenes.
+      - name: Instalar Playwright
+        run: |
+          npm install playwright
+          npx playwright install --with-deps chromium
+
+      - name: Bajar las fotos
+        run: node herramientas/importar-fotos.mjs ${{ inputs.rehacer && '--rehacer' || '' }}
+
+      - name: Reescribir la lista
+        run: node herramientas/generar-fotos.mjs
+
+      - name: Comprobar que la carta sigue cuadrando
+        run: |
+          npx playwright install --with-deps chromium
+          node herramientas/medir-carta.mjs
+
+      - name: Commitear lo que haya bajado
+        run: |
+          git config user.name  'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          if git diff --quiet -- juego/fotos juego/fotos.js; then
+            echo 'No ha entrado ninguna foto nueva.'
+            exit 0
+          fi
+          n=$(git status --porcelain juego/fotos | grep -c '\.webp$' || true)
+          git add juego/fotos juego/fotos.js
+          git commit -m "Bajar ${n} fotos de peleadores desde ufcespanol.com
+
+          Bajadas en un runner de GitHub porque el entorno de desarrollo sale
+          por un proxy que deniega ufc.com con un 403. Recortadas al hueco de
+          la carta por herramientas/importar-fotos.mjs."
+          git push
+
+      - name: Lo que no ha encontrado
+        if: always()
+        run: |
+          if [ -f /tmp/fotos-sin-encontrar.txt ]; then
+            echo '### Sin resolver' >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            cat /tmp/fotos-sin-encontrar.txt >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          fi
