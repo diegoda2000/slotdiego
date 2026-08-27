@@ -49,6 +49,29 @@ jobs:
           npm install playwright
           npx playwright install --with-deps chromium
 
+      # PASO TEMPORAL. Xiong Jing Nan es la única que falta y nunca ha peleado en la UFC:
+      # es campeona de ONE Championship. Esto mira si ONE publica un recorte suyo con
+      # fondo transparente, que es lo único que valdría. Se quita en cuanto conteste.
+      - name: Mirar si ONE Championship publica su recorte
+        continue-on-error: true
+        run: |
+          node -e "
+            const AG='Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
+            (async () => {
+              for (const u of ['https://www.onefc.com/athletes/xiong-jing-nan/',
+                               'https://www.onefc.com/es/athletes/xiong-jing-nan/']) {
+                try {
+                  const r = await fetch(u, { headers: { 'User-Agent': AG } });
+                  console.log(u, r.status);
+                  if (!r.ok) continue;
+                  const h = await r.text();
+                  const m = [...h.matchAll(/https:[^\"' ]+\.(?:png|webp)/g)].map(x => x[0]);
+                  console.log([...new Set(m)].slice(0, 60).join('\n'));
+                } catch (e) { console.log(u, 'ERROR', e.message); }
+              }
+            })();
+          "
+
       - name: Bajar las fotos
         run: node herramientas/importar-fotos.mjs --urls docs/fotos-urls.json
 
