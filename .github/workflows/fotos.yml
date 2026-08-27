@@ -57,6 +57,21 @@ jobs:
           npm install playwright
           npx playwright install --with-deps chromium
 
+      # Qué contesta cada dominio y qué forma tiene la ficha. La primera pasada bajó cero
+      # de 158 y cada intento tardó 30 ms: eso no es "la ficha no tiene foto", es que la
+      # navegación falla al instante. Antes de volver a intentarlo, se mira.
+      - name: Ver qué contesta la web
+        run: |
+          for base in https://www.ufc.com https://www.ufcespanol.com https://es.ufc.com; do
+            for slug in jon-jones aaron-pico; do
+              code=$(curl -sS -o /tmp/f.html -w '%{http_code}' -L --max-time 25                 -A 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36'                 "$base/athlete/$slug" || echo error)
+              n=$(grep -o 'athlete_bio_full_body' /tmp/f.html | wc -l)
+              img=$(grep -o 'https://[^"]*athlete[^"]*full_body[^"]*' /tmp/f.html | head -1)
+              echo "$base/athlete/$slug -> $code   coincidencias full_body: $n"
+              [ -n "$img" ] && echo "    $img"
+            done
+          done
+
       - name: Bajar las fotos
         run: node herramientas/importar-fotos.mjs ${{ inputs.rehacer && '--rehacer' || '' }}
 
