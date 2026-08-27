@@ -325,6 +325,14 @@ una lista que empieza por la `_L_` y deja la `_R_` de reserva: si la `_L_` no ex
 `importar-fotos.mjs` baja la `_R_` y **esa sí la voltea al vuelo**, que un logo pequeño al
 revés molesta menos que un peleador mirando al otro lado.
 
+**Y hay dos sesiones de fotos distintas.** La de la Contender Series —luz fría, pantalón
+negro liso, guantes azules de la DWCS— sale apagada al lado de la del estudio de la UFC, y
+en la baraja parece en blanco y negro. **No se arregla subiendo la saturación**: a ×1,6
+sigue siendo otra sesión y a ×2,2 la piel se vuelve rosa. Se arregla **pidiendo la toma
+posterior**, la de después de firmar, que casi siempre existe en otra carpeta de s3. Así se
+cambiaron seis. La saturación media de las 351 es 0,42; por debajo de 0,23 conviene mirar
+si hay una toma más nueva. El único que se queda apagado es Josh Hokit, que no tiene otra.
+
 **Y la UFC tiene siluetas negras de relleno** (`SHADOW_Fighter_fullLength_RED.png`,
 `womens-silhouette-RED-corner.png`) para quien todavía no tiene foto. Se bajan sin
 protestar y son un borrón con forma de persona encima de un peleador real. `esSilueta()`
