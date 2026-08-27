@@ -26,7 +26,7 @@
       dibujo). Si el peleador sale de cuerpo entero, corta por abajo y se queda con la
       mitad de arriba: en la carta se ve de cintura para arriba, que es como se ve en
       las de la UFC. Si sale más corto, rellena por ARRIBA, nunca por abajo.
-   3. La deja a 420 px de ancho en WebP con transparencia.
+   3. La deja a 360 px de ancho en WebP con transparencia.
 
    El recorte y el redimensionado se hacen con el Chromium de Playwright, que ya es
    dependencia de este repositorio por medir-carta.mjs. Las imágenes van al navegador
@@ -42,7 +42,12 @@ import path from 'path';
 
 const BASE   = process.env.UFC_BASE || 'https://www.ufcespanol.com';
 const DIR    = 'juego/fotos';
-const ANCHO  = 420;
+/* 360 px de ancho y calidad 0,75. La carta más grande que pinta el juego ronda los 400 px,
+   y ahí la ventana de la foto mide 220: con 360 va sobrada. A 420 y calidad 0,86 —como
+   empezó— salían de 57 KB, y 355 de esas son 20 MB dentro del APK. Así se quedan en 36 KB
+   y el total en 12,6 MB. */
+const ANCHO  = 360;
+const CALIDAD = 0.75;
 const PROPORCION = 0.6529;          // el hueco del marco: 391,8 / 600,1
 const AGENTE = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 '
              + '(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
@@ -67,11 +72,12 @@ if (probar) {
   const nav0 = await chromium.launch(arranque);
   const pg = await nav0.newPage();
   const b64 = fs.readFileSync(orig).toString('base64');
-  const tipo = orig.endsWith('.webp') ? 'image/webp' : 'image/png';
-  const out = await pg.evaluate(prepararImagen, { b64, tipo, ANCHO, PROPORCION });
+  const tipo = { webp:'image/webp', avif:'image/avif', jpg:'image/jpeg', jpeg:'image/jpeg' }
+               [(orig.split('.').pop()||'').toLowerCase()] || 'image/png';
+  const out = await pg.evaluate(prepararImagen, { b64, tipo, ANCHO, PROPORCION, CALIDAD });
   await nav0.close();
   if (!out) { console.log('la imagen sale vacía'); process.exit(1); }
-  const destino = orig.replace(/\.(png|webp|jpg|jpeg)$/i, '') + '-recortada.webp';
+  const destino = orig.replace(/\.(png|webp|avif|jpg|jpeg)$/i, '') + '-recortada.webp';
   fs.writeFileSync(destino, Buffer.from(out.split(',')[1], 'base64'));
   console.log('escrita', destino);
   process.exit(0);
@@ -101,7 +107,7 @@ for (const persona of personas) {
     const b64 = Buffer.from(await resp.arrayBuffer()).toString('base64');
     const tipo = (resp.headers.get('content-type') || 'image/png').split(';')[0];
 
-    const dataUrl = await obrador.evaluate(prepararImagen, { b64, tipo, ANCHO, PROPORCION });
+    const dataUrl = await obrador.evaluate(prepararImagen, { b64, tipo, ANCHO, PROPORCION, CALIDAD });
     if (!dataUrl) { fallos.push(`${persona}\t(la imagen sale vacía o sin transparencia)`); seguir(persona, 'imagen vacía'); continue; }
 
     fs.writeFileSync(path.join(DIR, persona + '.webp'), Buffer.from(dataUrl.split(',')[1], 'base64'));
@@ -154,7 +160,7 @@ async function buscarFoto(persona) {
 }
 
 /* Recorta, encuadra y comprime. Va entero dentro del navegador. */
-function prepararImagen({ b64, tipo, ANCHO, PROPORCION }) {
+function prepararImagen({ b64, tipo, ANCHO, PROPORCION, CALIDAD }) {
   return new Promise(resolve => {
     const img = new Image();
     img.onerror = () => resolve(null);
@@ -194,7 +200,7 @@ function prepararImagen({ b64, tipo, ANCHO, PROPORCION }) {
         const altoCuerpo = y1 - y0 + 1;
         s.drawImage(img, x0, y0, an, altoCuerpo, 0, sal.height - altoCuerpo * k, ANCHO, altoCuerpo * k);
       }
-      resolve(sal.toDataURL('image/webp', 0.86));
+      resolve(sal.toDataURL('image/webp', CALIDAD));
     };
     img.src = `data:${tipo};base64,${b64}`;
   });

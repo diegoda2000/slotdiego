@@ -30,6 +30,19 @@ minúsculas, sin acentos y con guiones. Por ejemplo:
 
 La lista entera sale de `juego/roster.js`.
 
+### Una foto distinta para una carta concreta
+
+Si un peleador compite en dos divisiones y no quieres la misma cara en las dos, añade
+`<persona>-<division>.webp` y esa gana sobre la general para esa carta. La división es el
+id del roster: `m0` mosca, `m1` gallo, `m2` pluma, `m3` ligero, `m4` wélter, `m5` medio,
+`m6` semipesado, `m7` pesado, `f0` paja, `f1` mosca F, `f2` gallo F.
+
+    ilia-topuria.webp        la de siempre, vale para su carta de pluma
+    ilia-topuria-m3.webp     solo para su carta de ligero
+
+Hace falta porque la foto oficial de Topuria es con el cinturón de campeón de pluma, y en
+su carta de ligero, donde no es campeón, ese cinturón sobra.
+
 ## Después de añadir o quitar fotos
 
     node herramientas/generar-fotos.mjs

@@ -1438,7 +1438,7 @@ function cartaHTML(c,o={}){
 
   const r=c.rasgos[0];
   const bnd=banderaSrc(c.pais);
-  const foto=fotoSrc(c.persona);
+  const foto=fotoSrc(c.persona, c.division);
   const nCop=o.copias&&o.copias>1?`<div class="c-copias">×${o.copias}</div>`:'';
   /* Destapado por partes, para la apertura de sobres. Las clases se acumulan: con
      've-record' puesta ya están puestas también 've-pais' y 've-peso'. Se hace con

@@ -445,13 +445,21 @@ const PAIS_SUELTO = { 'Inglaterra':'gb-eng', 'Escocia':'gb-sct' };
    Va por PERSONA y no por carta: hay 402 cartas para 355 peleadores, y quien compite en
    dos divisiones tiene dos cartas y una sola cara.
 
+   PERO SE PUEDE AFINAR POR CARTA. Si existe `<persona>-<division>.webp`, esa gana sobre la
+   general. Hace falta porque un peleador de dos divisiones no sale igual en las dos: Ilia
+   Topuria es campeón de pluma y en la foto oficial sale con el cinturón, y esa foto en su
+   carta de ligero —donde no es campeón— está de más. Con el sufijo, la de ligero puede ser
+   otra sin tocar la de pluma.
+
    Se pregunta a la lista de fotos.js en vez de intentar cargar la imagen y ver si falla,
    porque la carta se pinta distinta según haya foto o no —el atributo pasa de estar en
    medio de la ventana a ser una chapa abajo—, y descubrirlo después de pintar es un salto
    que se ve. Sin fotos.js cargado no hay fotos y la carta se pinta como siempre. */
-function fotoSrc(persona){
+function fotoSrc(persona, division){
   const hay = typeof FOTOS !== 'undefined' && FOTOS;
-  return (hay && persona && FOTOS.has(persona)) ? 'fotos/'+persona+'.webp' : '';
+  if(!hay || !persona) return '';
+  if(division && FOTOS.has(persona+'-'+division)) return 'fotos/'+persona+'-'+division+'.webp';
+  return FOTOS.has(persona) ? 'fotos/'+persona+'.webp' : '';
 }
 
 function banderaSrc(pais){
