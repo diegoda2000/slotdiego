@@ -1,41 +1,32 @@
 name: Fotos
 
-# Baja las caras de los peleadores de ufcespanol.com y las commitea.
+# Baja las caras de los peleadores y las commitea.
 #
-# ESTE FLUJO EXISTE POR UNA RAZÓN CONCRETA: el entorno donde se desarrolla sale por un
-# proxy con lista blanca que deniega ufc.com, ufcespanol.com, es.ufc.com, espn.com y su
-# CDN con un 403. Desde ahí no se puede bajar ni una foto. Los runners de GitHub sí
-# tienen salida normal, así que la descarga se hace aquí. Es el mismo motivo por el que
-# apk.yml construye el APK en un runner y no en local.
+# POR QUÉ AQUÍ Y NO EN LOCAL: el entorno de desarrollo sale por un proxy con lista
+# blanca que deniega ufc.com con un 403. Es el mismo motivo por el que apk.yml
+# construye el APK en un runner.
 #
-# Se dispara a mano —no en cada empujón— porque son 158 descargas y no cambia nada del
-# juego que se pueda romper: si falla, sigue habiendo las fotos que ya estaban.
+# POR QUÉ POR URL Y NO ABRIENDO LA FICHA: ufc.com contesta 403 también desde los
+# runners de GitHub —bloquea IPs de datacenter—, probado con curl y con navegador,
+# y ufcespanol.com igual; es.ufc.com ni resuelve. Abrir la ficha de cada peleador no
+# funciona desde ninguna máquina de las que hay. Pero la ficha solo servía para
+# averiguar la URL del archivo, y esa ya se conoce: está en docs/fotos-urls.json.
+# Pedir el archivo es una petición de imagen y no de página.
 #
-# Por defecto solo baja LO QUE FALTA. Las que ya están en juego/fotos/ no se tocan, así
-# que las quince de campeón con cinturón, que vinieron por otro camino, se quedan como
-# están. Con "rehacer" en true se vuelven a bajar todas.
+# Solo baja lo que falta: los que ya tienen su .webp no se tocan, así que las quince
+# de campeón con cinturón se quedan como están.
+#
+# Se dispara empujando este archivo. workflow_dispatch solo aparece cuando el flujo
+# está en la rama principal, y mientras esto viva en una rama de trabajo no lo está.
 
-# Se dispara de dos maneras. A mano con workflow_dispatch, que es lo suyo, PERO eso solo
-# aparece cuando el archivo está en la rama principal: GitHub no registra un
-# workflow_dispatch que solo existe en una rama de trabajo. Mientras el diseño de la
-# carta viva en su rama, la forma de lanzarlo es empujar este mismo archivo.
-#
-# El disparador por empujón mira SOLO a este archivo. Si mirara a juego/fotos/ se
-# llamaría a sí mismo al commitear las fotos; da igual —un commit hecho con GITHUB_TOKEN
-# no dispara flujos, que es de lo que ya se aprovecha servidor.yml—, pero apuntar a lo
-# que el propio flujo escribe es pedirlo.
 on:
   workflow_dispatch:
-    inputs:
-      rehacer:
-        description: 'Volver a bajar TODAS, incluidas las que ya están'
-        type: boolean
-        default: false
   push:
     branches:
       - 'claude/**'
     paths:
       - '.github/workflows/fotos.yml'
+      - 'docs/fotos-urls.json'
 
 permissions:
   contents: write
@@ -50,38 +41,21 @@ jobs:
         with:
           node-version: '22'
 
-      # Playwright con su Chromium: la herramienta recorta y comprime dentro del
-      # navegador, que es lo que evita meter una librería de imágenes.
+      # El recorte y la compresión se hacen dentro del navegador, que es lo que evita
+      # meter una librería de imágenes en el repositorio.
       - name: Instalar Playwright
         run: |
           npm install playwright
           npx playwright install --with-deps chromium
 
-      # Qué contesta cada dominio y qué forma tiene la ficha. La primera pasada bajó cero
-      # de 158 y cada intento tardó 30 ms: eso no es "la ficha no tiene foto", es que la
-      # navegación falla al instante. Antes de volver a intentarlo, se mira.
-      - name: Ver qué contesta la web
-        run: |
-          for base in https://www.ufc.com https://www.ufcespanol.com https://es.ufc.com; do
-            for slug in jon-jones aaron-pico; do
-              code=$(curl -sS -o /tmp/f.html -w '%{http_code}' -L --max-time 25                 -A 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36'                 "$base/athlete/$slug" || echo error)
-              n=$(grep -o 'athlete_bio_full_body' /tmp/f.html | wc -l)
-              img=$(grep -o 'https://[^"]*athlete[^"]*full_body[^"]*' /tmp/f.html | head -1)
-              echo "$base/athlete/$slug -> $code   coincidencias full_body: $n"
-              [ -n "$img" ] && echo "    $img"
-            done
-          done
-
       - name: Bajar las fotos
-        run: node herramientas/importar-fotos.mjs ${{ inputs.rehacer && '--rehacer' || '' }}
+        run: node herramientas/importar-fotos.mjs --urls docs/fotos-urls.json
 
       - name: Reescribir la lista
         run: node herramientas/generar-fotos.mjs
 
       - name: Comprobar que la carta sigue cuadrando
-        run: |
-          npx playwright install --with-deps chromium
-          node herramientas/medir-carta.mjs
+        run: node herramientas/medir-carta.mjs
 
       - name: Commitear lo que haya bajado
         run: |
@@ -91,16 +65,17 @@ jobs:
             echo 'No ha entrado ninguna foto nueva.'
             exit 0
           fi
-          n=$(git status --porcelain juego/fotos | grep -c '\.webp$' || true)
+          n=$(git status --porcelain juego/fotos | grep -c 'webp$' || true)
           git add juego/fotos juego/fotos.js
-          git commit -m "Bajar ${n} fotos de peleadores desde ufcespanol.com
+          git commit -m "Bajar ${n} fotos de peleadores
 
-          Bajadas en un runner de GitHub porque el entorno de desarrollo sale
-          por un proxy que deniega ufc.com con un 403. Recortadas al hueco de
-          la carta por herramientas/importar-fotos.mjs."
+          Bajadas en un runner de GitHub y por su URL directa: ufc.com contesta
+          403 a las IPs de datacenter, así que la ficha no se puede abrir desde
+          ninguna máquina de las que hay. Recortadas al hueco de la carta por
+          herramientas/importar-fotos.mjs."
           git push
 
-      - name: Lo que no ha encontrado
+      - name: Lo que no ha entrado
         if: always()
         run: |
           if [ -f /tmp/fotos-sin-encontrar.txt ]; then
