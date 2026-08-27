@@ -82,18 +82,33 @@ if (desdeUrls) {
   const navU = await chromium.launch(arranque);
   const pg = await navU.newPage();
   let ok = 0; const malas = [];
-  for (const [persona, url] of Object.entries(mapa)) {
+  for (const [persona, entrada] of Object.entries(mapa)) {
     if (fs.existsSync(path.join(DIR, persona + '.webp'))) continue;
-    try {
-      const r = await fetch(url, { headers: { 'User-Agent': AGENTE, Referer: 'https://www.ufc.com/' } });
-      if (!r.ok) { malas.push(`${persona}\t${r.status}`); console.log(`  ✗ ${persona} — ${r.status}`); continue; }
-      const b64 = Buffer.from(await r.arrayBuffer()).toString('base64');
-      const tipo = (r.headers.get('content-type') || 'image/png').split(';')[0];
-      const out = await pg.evaluate(prepararImagen, { b64, tipo, ANCHO, PROPORCION, CALIDAD });
-      if (!out) { malas.push(`${persona}\tvacía`); console.log(`  ✗ ${persona} — imagen vacía`); continue; }
-      fs.writeFileSync(path.join(DIR, persona + '.webp'), Buffer.from(out.split(',')[1], 'base64'));
-      ok++; console.log(`  ✓ ${persona}`);
-    } catch (e) { malas.push(`${persona}\t${e.message}`); console.log(`  ✗ ${persona} — ${e.message}`); }
+    /* De algunos peleadores solo se conoce la RUTA del archivo en s3, no la firma
+       (?itok=) del estilo athlete_bio_full_body, que Drupal calcula con una clave del
+       sitio y no se puede reconstruir. Para esos la entrada es una lista de formas del
+       mismo archivo —el CDN y ufc.com, con estilo y sin él— y se prueban en orden hasta
+       que una conteste con una imagen. */
+    const candidatas = Array.isArray(entrada) ? entrada : [entrada];
+    let hecha = false, ultimo = '';
+    for (const url of candidatas) {
+      try {
+        const r = await fetch(url, { headers: { 'User-Agent': AGENTE, Referer: 'https://www.ufc.com/' } });
+        if (!r.ok) { ultimo = String(r.status); continue; }
+        const b64 = Buffer.from(await r.arrayBuffer()).toString('base64');
+        const tipo = (r.headers.get('content-type') || 'image/png').split(';')[0];
+        const out = await pg.evaluate(prepararImagen, { b64, tipo, ANCHO, PROPORCION, CALIDAD });
+        if (!out) { ultimo = 'imagen vacía'; continue; }
+        fs.writeFileSync(path.join(DIR, persona + '.webp'), Buffer.from(out.d.split(',')[1], 'base64'));
+        ok++; hecha = true;
+        /* El tamaño de origen se enseña siempre: las oficiales vienen todas a 460x700,
+           así que una que salga con otra medida avisa de que el encuadre no es el mismo
+           y hay que mirarla antes de darla por buena. */
+        console.log(`  ✓ ${persona} — ${out.W}x${out.H}${candidatas.length > 1 ? '  ' + url : ''}`);
+        break;
+      } catch (e) { ultimo = e.message; }
+    }
+    if (!hecha) { malas.push(`${persona}\t${ultimo}`); console.log(`  ✗ ${persona} — ${ultimo}`); }
   }
   await navU.close();
   console.log(`\n${ok} bajadas de ${Object.keys(mapa).length}`);
@@ -124,7 +139,7 @@ if (lote) {
     const out = await pg.evaluate(prepararImagen, { b64, tipo, ANCHO, PROPORCION, CALIDAD });
     if (!out) { malas.push(f); continue; }
     const nombre = f.replace(/\.(webp|png|avif|jpe?g)$/i, '') + '.webp';
-    fs.writeFileSync(path.join(dest, nombre), Buffer.from(out.split(',')[1], 'base64'));
+    fs.writeFileSync(path.join(dest, nombre), Buffer.from(out.d.split(',')[1], 'base64'));
     ok++;
   }
   await navL.close();
@@ -148,8 +163,8 @@ if (probar) {
   await nav0.close();
   if (!out) { console.log('la imagen sale vacía'); process.exit(1); }
   const destino = orig.replace(/\.(png|webp|avif|jpg|jpeg)$/i, '') + '-recortada.webp';
-  fs.writeFileSync(destino, Buffer.from(out.split(',')[1], 'base64'));
-  console.log('escrita', destino);
+  fs.writeFileSync(destino, Buffer.from(out.d.split(',')[1], 'base64'));
+  console.log(`escrita ${destino} (origen ${out.W}x${out.H})`);
   process.exit(0);
 }
 
@@ -185,12 +200,12 @@ for (const persona of personas) {
     const b64 = Buffer.from(await resp.arrayBuffer()).toString('base64');
     const tipo = (resp.headers.get('content-type') || 'image/png').split(';')[0];
 
-    const dataUrl = await obrador.evaluate(prepararImagen, { b64, tipo, ANCHO, PROPORCION, CALIDAD });
-    if (!dataUrl) { fallos.push(`${persona}\t(la imagen sale vacía o sin transparencia)`); seguir(persona, 'imagen vacía'); continue; }
+    const out = await obrador.evaluate(prepararImagen, { b64, tipo, ANCHO, PROPORCION, CALIDAD });
+    if (!out) { fallos.push(`${persona}\t(la imagen sale vacía o sin transparencia)`); seguir(persona, 'imagen vacía'); continue; }
 
-    fs.writeFileSync(path.join(DIR, persona + '.webp'), Buffer.from(dataUrl.split(',')[1], 'base64'));
+    fs.writeFileSync(path.join(DIR, persona + '.webp'), Buffer.from(out.d.split(',')[1], 'base64'));
     hechas++;
-    console.log(`  ✓ ${persona}`);
+    console.log(`  ✓ ${persona} — ${out.W}x${out.H}`);
   } catch (e) {
     fallos.push(`${persona}\t(${e.message})`);
     seguir(persona, e.message);
@@ -275,7 +290,7 @@ function prepararImagen({ b64, tipo, ANCHO, PROPORCION, CALIDAD }) {
       const sal = document.createElement('canvas');
       sal.width = ANCHO; sal.height = Math.round(ANCHO / PROPORCION);
       sal.getContext('2d').drawImage(img, sx, sy, sw, sh, 0, 0, sal.width, sal.height);
-      resolve(sal.toDataURL('image/webp', CALIDAD));
+      resolve({ d: sal.toDataURL('image/webp', CALIDAD), W, H });
     };
     img.src = `data:${tipo};base64,${b64}`;
   });

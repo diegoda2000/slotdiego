@@ -151,6 +151,11 @@ Reglas duras de la interfaz:
 - **El cromo no puede crecer.** Verificado: colección 247px, plantilla 103px,
   reciclaje 418px — idénticos antes y después de la reestructuración.
 - **Nada se compra, se abre ni se gasta sin un toque explícito.**
+- **En la apertura del sobre, la foto del peleador es LO ÚLTIMO que aparece.** Antes se
+  veía desde el primer fotograma y la revelación destapaba datos de alguien a quien ya
+  le estabas viendo la cara. El orden es nacionalidad → peso → récord → ranking →
+  nombre y stats → foto. Con anuncio los momentos van indexados por número de pasos
+  (`MOMENTOS_ANUNCIO`), seis con foto y cinco sin ella, para que siga cuadrando con el clip.
 - `tarjeta({nav,a,t,d,ic,foto,dentro,off,alerta,media,pie,banner})` pinta **todos** los
   botones de menú. La etiqueta solo la llevan Plantilla, Colección, Sets y Logros.
 - **La función de código de plantilla se eliminó por completo.** No la reintroduzcas.

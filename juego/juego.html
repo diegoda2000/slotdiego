@@ -616,14 +616,20 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 /* ── El aviso, la carta llenándose ──
    Todo pasa DENTRO de la carta: no hay panel aparte. Se pinta el marco entero y se
    destapa por partes, cada una en su hueco. Las clases se acumulan desde JS —ve-pais,
-   ve-peso, ve-record, ve-rk, ve-todo— en vez de usar un selector por nivel, porque así
-   funciona en cualquier motor, incluidos los WebView viejos. */
+   ve-peso, ve-record, ve-rk, ve-todo, ve-foto— en vez de usar un selector por nivel,
+   porque así funciona en cualquier motor, incluidos los WebView viejos.
+
+   LA FOTO ES SIEMPRE LA ÚLTIMA. Antes se veía desde el primer fotograma, así que la
+   revelación iba destapando datos de alguien a quien ya le estabas viendo la cara: el
+   ranking dejaba de ser una sorpresa porque el peleador ya estaba ahí. Ahora entra
+   después de las stats, que es el remate. */
 .aviso{gap:12px}
 .aviso .apertura-carta{filter:drop-shadow(0 0 30px color-mix(in srgb,var(--luz) 55%,transparent))}
 .aviso .aviso-et{font-family:var(--titulo);letter-spacing:.1em;text-transform:uppercase;
   font-size:11px;color:var(--luz)}
 
 /* De partida, todo lo que se destapa después está oculto. */
+.carta.revelando .c-foto,
 .carta.revelando .c-ban,
 .carta.revelando .c-peso,
 .carta.revelando .c-record,
@@ -639,7 +645,8 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 .carta.ve-rk     .c-rk,
 .carta.ve-todo   .c-mid,
 .carta.ve-todo   .c-nom,
-.carta.ve-todo   .c-num{opacity:1;visibility:visible;animation:aparece .5s ease both}
+.carta.ve-todo   .c-num,
+.carta.ve-foto   .c-foto{opacity:1;visibility:visible;animation:aparece .5s ease both}
 /* Desvanecido puro: solo opacidad. Cualquier salto o cambio de tamaño aquí se lee como
    un parpadeo de la carta, que es justo lo contrario de lo que tiene que parecer —el
    dato apareciendo de la nada, como un desvanecido al revés. */
@@ -685,7 +692,7 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 @media (prefers-reduced-motion: reduce){
   .carta.ve-pais .c-ban,.carta.ve-peso .c-peso,.carta.ve-record .c-record,
   .carta.ve-rk .c-rk,.carta.ve-todo .c-mid,.carta.ve-todo .c-nom,
-  .carta.ve-todo .c-num{animation-duration:.01ms}
+  .carta.ve-todo .c-num,.carta.ve-foto .c-foto{animation-duration:.01ms}
   .aviso .apertura-carta::before{animation:none;opacity:1}
   .suelta .destello::after,.suelta .apertura-carta.n-corona .destello::before{animation:none;opacity:0}
 }
@@ -2119,6 +2126,11 @@ const SONIDO={
 /* Lo que dura el anuncio, medido sobre el propio archivo. Los momentos de la
    revelación de abajo están puestos contra él. */
 const ANUNCIO_MS=8890;
+/* Los momentos de la revelación con anuncio, por número de pasos. */
+const MOMENTOS_ANUNCIO={
+  5:[900,2100,3400,4900,6500,ANUNCIO_MS],
+  6:[900,2100,3400,4900,6300,7600,ANUNCIO_MS],
+};
 
 // El temporizador del encendido del sobre, para poder cortarlo si el jugador se va.
 function abrirsobre(){}
@@ -2130,13 +2142,15 @@ const NIVEL_APERTURA={
   /* Campeón y top 5 llevan el anuncio, y entonces manda el clip: la carta se llena a su
      ritmo y no al revés. Los momentos están puestos sobre la propia forma del audio —
      la voz entra a los 0,9 s, y entre el 5,7 y el 6,4 hay un valle antes del tramo
-     final, que es donde entra el peleador con sus stats. */
+     final—, y van indexados por cuántos pasos tiene la revelación: seis cuando el
+     peleador tiene foto, cinco cuando no. Con foto, las stats se adelantan al final del
+     valle y la CARA entra en el tramo final, que es el remate del clip. */
   corona:{n:'corona', paso:700, hz:[150,760], pegada:0.34, corte:2600,
           luz:'#ffd24a', luz2:'#ff4a3d',
-          anuncio:true, momentos:[900,2100,3400,4900,6500,ANUNCIO_MS]},
+          anuncio:true, momentos:MOMENTOS_ANUNCIO},
   top5  :{n:'top5',   paso:560, hz:[150,620], pegada:0.28, corte:2100,
           luz:'#ffcf3f', luz2:'#e8a021',
-          anuncio:true, momentos:[900,2100,3400,4900,6500,ANUNCIO_MS]},
+          anuncio:true, momentos:MOMENTOS_ANUNCIO},
   top10 :{n:'top10',  paso:430, hz:[160,500], pegada:0.22, corte:1700,
           luz:'#dfe6ee', luz2:'#9fb4c8'},
   top15 :{n:'top15',  paso:430, hz:[160,440], pegada:0.19, corte:1500,
@@ -2177,9 +2191,9 @@ function abrirTanda(items,tipo){
 }
 
 /* El aviso: la carta se destapa por partes, y en un orden que va de lo que menos
-   dice a lo que más — nacionalidad, peso, récord, ranking, y al final la foto con
-   las stats. Cada dato que cae estrecha el cerco: cuando ya sabes que es un pesado
-   invicto, el ranking es la última carta boca abajo.
+   dice a lo que más — nacionalidad, peso, récord, ranking, nombre y stats, y la FOTO
+   al final del todo. Cada dato que cae estrecha el cerco: cuando ya sabes que es un
+   pesado invicto, el ranking es la última carta boca abajo.
 
    El color de todo el bloque va del nivel que viene, así que además de los datos
    la pantalla te está diciendo desde el principio si viene algo bueno. Es a
@@ -2194,7 +2208,7 @@ function abrirTanda(items,tipo){
    sonara en cada sobre dejaría de significar que ha caído algo gordo. Y se sigue
    pudiendo saltar, que corta el anuncio con un fundido. */
 function pasosAviso(c){
-  // Nacionalidad, peso, récord, ranking, y al final la foto con las stats. Cada uno
+  // Nacionalidad, peso, récord, ranking, nombre y stats, y la cara al final. Cada uno
   // aparece EN SU SITIO de la carta, no en una lista aparte: lo que se está viendo
   // es la carta llenándose.
   const p=[
@@ -2205,14 +2219,21 @@ function pasosAviso(c){
   // El ranking solo si lo tiene. En una carta sin rankear no hay nada que destapar,
   // y una pestaña vacía encendiéndose sería peor: parecería que falla algo.
   if(c.rk===0||c.rk) p.push({k:'rk', et:'Ranking', gordo:true});
-  p.push({k:'todo', et:'El peleador', gordo:true});
+  p.push({k:'todo', et:'Nombre y stats', gordo:true});
+  /* La foto, la última, y por el mismo motivo que el ranking: solo si la hay. A un
+     peleador sin foto un paso de más le dejaría la carta quieta medio segundo al final,
+     justo en el remate, y parecería que se ha colgado. */
+  if(fotoSrc(c.persona, c.division)) p.push({k:'foto', et:'El peleador', gordo:true});
   return p;
 }
 /* Cuándo sale cada paso, en milisegundos desde que arranca la revelación. La lista tiene
    un valor más que pasos: el último es cuándo se suelta la carta. */
 function momentosAviso(N,n){
   if(N.anuncio){
-    if(N.momentos&&N.momentos.length===n+1) return N.momentos;
+    /* Los momentos van por número de pasos: con foto son seis y sin ella cinco, y las
+       dos listas están puestas sobre la misma forma del audio. */
+    const m=N.momentos&&N.momentos[n];
+    if(m&&m.length===n+1) return m;
     /* Reparto de emergencia. Si algún día cambian los pasos y la lista de momentos se
        queda corta, lo importante es que el anuncio y la revelación sigan acabando a la
        vez; descuadrados quedan mucho peor que mal repartidos. */
