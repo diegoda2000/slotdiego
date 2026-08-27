@@ -92,12 +92,17 @@ if (desdeUrls) {
     const candidatas = Array.isArray(entrada) ? entrada : [entrada];
     let hecha = false, ultimo = '';
     for (const url of candidatas) {
+      /* La UFC pone su propia silueta negra a quien no tiene foto todavía. Es una imagen
+         válida y se bajaría sin protestar, pero es un borrón negro con forma de persona
+         puesto sobre un peleador de verdad. Fuera. */
+      if (esSilueta(url)) { ultimo = 'la UFC solo tiene su silueta de relleno'; continue; }
       try {
         const r = await fetch(url, { headers: { 'User-Agent': AGENTE, Referer: 'https://www.ufc.com/' } });
         if (!r.ok) { ultimo = String(r.status); continue; }
         const b64 = Buffer.from(await r.arrayBuffer()).toString('base64');
         const tipo = (r.headers.get('content-type') || 'image/png').split(';')[0];
-        const out = await pg.evaluate(prepararImagen, { b64, tipo, ANCHO, PROPORCION, CALIDAD });
+        const out = await pg.evaluate(prepararImagen,
+          { b64, tipo, ANCHO, PROPORCION, CALIDAD, espejo: miraAlOtroLado(url) });
         if (!out) { ultimo = 'imagen vacía'; continue; }
         fs.writeFileSync(path.join(DIR, persona + '.webp'), Buffer.from(out.d.split(',')[1], 'base64'));
         ok++; hecha = true;
@@ -200,7 +205,8 @@ for (const persona of personas) {
     const b64 = Buffer.from(await resp.arrayBuffer()).toString('base64');
     const tipo = (resp.headers.get('content-type') || 'image/png').split(';')[0];
 
-    const out = await obrador.evaluate(prepararImagen, { b64, tipo, ANCHO, PROPORCION, CALIDAD });
+    const out = await obrador.evaluate(prepararImagen,
+      { b64, tipo, ANCHO, PROPORCION, CALIDAD, espejo: miraAlOtroLado(url) });
     if (!out) { fallos.push(`${persona}\t(la imagen sale vacía o sin transparencia)`); seguir(persona, 'imagen vacía'); continue; }
 
     fs.writeFileSync(path.join(DIR, persona + '.webp'), Buffer.from(out.d.split(',')[1], 'base64'));
@@ -253,7 +259,19 @@ async function buscarFoto(persona) {
 }
 
 /* Recorta, encuadra y comprime. Va entero dentro del navegador. */
-function prepararImagen({ b64, tipo, ANCHO, PROPORCION, CALIDAD }) {
+/* El nombre del archivo de la UFC dice a qué lado mira: MORONO_ALEX_L_03-08.png va a la
+   esquina izquierda del cartel y TOPURIA_ILIA_L_BELT_10-26.png también. Los _R_ miran al
+   contrario y hay que voltearlos. */
+function miraAlOtroLado(url) {
+  const base = decodeURIComponent(url.split('?')[0]).split('/').pop();
+  return /_R(?:_BELT)?[_.]/.test(base);
+}
+/* Las siluetas de relleno de la UFC, para quien todavía no tiene foto. */
+function esSilueta(url) {
+  return /SHADOW_Fighter|silhouette/i.test(url);
+}
+
+function prepararImagen({ b64, tipo, ANCHO, PROPORCION, CALIDAD, espejo }) {
   return new Promise(resolve => {
     const img = new Image();
     img.onerror = () => resolve(null);
@@ -289,7 +307,17 @@ function prepararImagen({ b64, tipo, ANCHO, PROPORCION, CALIDAD }) {
       }
       const sal = document.createElement('canvas');
       sal.width = ANCHO; sal.height = Math.round(ANCHO / PROPORCION);
-      sal.getContext('2d').drawImage(img, sx, sy, sw, sh, 0, 0, sal.width, sal.height);
+      const g = sal.getContext('2d');
+      /* TODOS MIRANDO AL MISMO LADO.
+
+         La UFC fotografía a cada peleador dos veces, una para cada esquina del cartel, y
+         nombra los archivos _L_ y _R_ según a qué lado van. En el _R_ el peleador está
+         girado hacia el otro lado. Mezclados en la baraja se ve enseguida: unos miran a un
+         sitio y otros al contrario. De 354 fotos, 289 son _L_, así que ese es el lado
+         bueno y las _R_ se voltean. No es un retoque de la foto: es la misma imagen vista
+         desde el otro lado, que es exactamente lo que la UFC hace con sus dos tomas. */
+      if (espejo) { g.translate(sal.width, 0); g.scale(-1, 1); }
+      g.drawImage(img, sx, sy, sw, sh, 0, 0, sal.width, sal.height);
       resolve({ d: sal.toDataURL('image/webp', CALIDAD), W, H });
     };
     img.src = `data:${tipo};base64,${b64}`;

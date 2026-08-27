@@ -311,6 +311,26 @@ orden hasta que una conteste. Ojo con el nombre: la UFC no lo escribe siempre ig
 —`ROSAS_JR_RAUL`, no `ROSAS_RAUL_JR`— y el archivo **sin** sufijo `_R_`/`_L_` es el
 retrato, un recorte de cabeza que metería una carta con otro encuadre.
 
+**Todos miran al mismo lado, y no se consigue volteando.** La UFC fotografía a cada
+peleador dos veces, una para cada esquina del cartel, y nombra los archivos `_L_` y `_R_`.
+En la toma `_R_` el peleador está girado al contrario, y mezclados en la baraja se ve
+enseguida. De 351 fotos, 289 vienen de una toma `_L_`, así que ese es el lado bueno.
+
+**Las dos tomas son dos fotos distintas, no una espejada**: en las dos el logo de la UFC
+del pantalón se lee bien. Por eso voltear la `_R_` con un espejo **no vale**: deja el logo
+al revés —se lee "JFU"—, y en la carta se nota. Se probó y se descartó. Lo que se hace es
+**pedir la toma `_L_` del mismo peleador**, que está en la misma carpeta de s3 y el mismo
+día, con `_L_` en vez de `_R_`. Por eso esos diecisiete llevan en `docs/fotos-urls.json`
+una lista que empieza por la `_L_` y deja la `_R_` de reserva: si la `_L_` no existiera,
+`importar-fotos.mjs` baja la `_R_` y **esa sí la voltea al vuelo**, que un logo pequeño al
+revés molesta menos que un peleador mirando al otro lado.
+
+**Y la UFC tiene siluetas negras de relleno** (`SHADOW_Fighter_fullLength_RED.png`,
+`womens-silhouette-RED-corner.png`) para quien todavía no tiene foto. Se bajan sin
+protestar y son un borrón con forma de persona encima de un peleador real. `esSilueta()`
+las descarta. Tres se colaron y se quitaron: Brando Pericic, Louie Sutherland y Michelle
+Montague se quedan sin foto, que para eso el juego lo contempla.
+
 **De dónde salen.** `herramientas/importar-fotos.mjs` las baja de ufcespanol.com, las
 recorta y las deja listas. **Hay que ejecutarla en una máquina con internet normal**: el
 proxy de la sesión de Claude tiene lista blanca —GitHub, npm, PyPI, Google Fonts— y
@@ -332,6 +352,9 @@ Al añadir fotos hay que tocar **tres** sitios de empaquetado, no dos: `build.gr
 - **`.c-copias` se pinta y no tiene CSS en ninguna parte.** Ya estaba así antes de este
   trabajo; no se ha tocado. Cuando salga una carta repetida, el "×2" cae suelto arriba a
   la izquierda del lienzo.
+- **Faltan cuatro fotos y ninguna va a llegar.** Xiong Jing Nan (abajo), y Brando Pericic,
+  Louie Sutherland y Michelle Montague, de los que la UFC solo publica su silueta negra de
+  relleno.
 - **Falta la foto de `xiong-jing-nan`, y va a seguir faltando.** Xiong Jing Nan es
   campeona de ONE Championship y nunca ha peleado en la UFC, así que no existe un recorte
   suyo con este encuadre. Las otras 354 están. **No le pongas una foto de otro sitio**: el
