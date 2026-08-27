@@ -333,11 +333,22 @@ cinturón, que suele ser más nueva o más vieja pero existe. **Pantoja y Zhang 
 quedan con el suyo**: llevan años siendo campeones y la UFC no publica de ellos ninguna
 otra, y una carta con cinturón se lee mejor que una carta sin foto.
 
-Y hay dos que son campeones en una división y no en la otra: **Ilia Topuria** (pluma sí,
-ligero no) y **Valentina Shevchenko** (mosca sí, gallo no). Para esas dos cartas está
-`juego/fotos/<persona>-<división>.webp`, que `fotoSrc()` mira antes que la de la persona.
-Es el único sitio donde se usa ese mecanismo, y `generar-fotos.mjs` valida el nombre
-contra las cartas del plantel para no darlo por sobrante.
+Y hay quien lleva cinturón en una carta y no en las otras. Para eso está
+`juego/fotos/<persona>-<división>.webp`, que `fotoSrc()` mira antes que la de la persona;
+`generar-fotos.mjs` valida el nombre contra las cartas del plantel para no darlo por
+sobrante. Se usa en tres sitios:
+
+| Carta | Foto | Por qué |
+|---|---|---|
+| `ilia-topuria-m3` | sin cinturón | campeón en pluma, no en ligero |
+| `valentina-shevchenko-f2` | sin cinturón | campeona en mosca, no en gallo |
+| `alex-pereira-m6` | **con** cinturón | **lo pidió el usuario** |
+
+**Ojo con la de Pereira, que no sale de la regla de arriba y no es un descuido.** En
+`roster.js` el campeón de semipesado es Carlos Ulberg y Pereira está de #3, así que por la
+regla no debería llevarlo. El usuario pidió expresamente que en la de semipesado saliera
+con cinturón y en las de pesado y medio sin él. **Se le avisó de que el plantel dice otra
+cosa y aun así lo quiere así: no lo "arregles".**
 
 **El derivado sin firma solo existe si la UFC lo ha generado**, o sea si es la foto que
 enseña la ficha. Para una toma que no es la de la ficha hay que pedir el **archivo
