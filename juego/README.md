@@ -1,4 +1,4 @@
-# Jaula Abierta — prototipo jugable
+# P4P.CG — prototipo jugable
 
 Prototipo del juego de cartas de MMA descrito en [`../docs/GDD.md`](../docs/GDD.md).
 Sirve para responder la única pregunta que importa ahora: **¿la fórmula funciona?**

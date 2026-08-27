@@ -1,4 +1,4 @@
-# Jaula Abierta — memoria del proyecto
+# P4P.CG — memoria del proyecto
 
 Juego móvil de cartas de MMA (estilo Pacybits/FUT) con plantel real de UFC: abrir sobres,
 montar una plantilla de 11 peleadores (uno por división) y pelear online. Los duelos se
@@ -10,6 +10,16 @@ disculpas. Los nombres de funciones, variables y archivos también van en españ
 ---
 
 ## Lo primero que hay que saber
+
+0. **El juego se llama P4P.CG.** El logotipo son las dos P en `--acc`, el 4 en `--plata` y
+   el `.CG` en blanco y más pequeño, con la tipografía de los botones (`--titulo`). Lo
+   eligió y lo especificó el dueño; no se retoca. El nombre se cambió **solo donde lo ve
+   el jugador**: título de la página, cabecera, nombre de la aplicación, los archivos
+   `p4p-cg.apk` / `.ipa`, el título de la publicación y el mensaje de invitación. **Los
+   identificadores NO se tocan**: el paquete `com.jaulaabierta.juego`, el destino de Xcode,
+   el nombre del worker —cambiarlo mueve la dirección del servidor— y sobre todo la clave
+   de guardado `KEY='jaula-abierta-v1'`, que si se cambia le borra la colección a todo el
+   mundo. Que sigan diciendo "jaula" no es un descuido.
 
 1. **El repositorio es público.** Nunca escribas credenciales en un archivo. El usuario
    ha pegado en el chat su `CLOUDFLARE_API_TOKEN` y su `CLOUDFLARE_ACCOUNT_ID` y ha
