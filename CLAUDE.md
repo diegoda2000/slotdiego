@@ -299,6 +299,18 @@ en el suelo de su hueco; si el recorte lleva aire transparente al pie, lo que se
 el aire y el peleador vuelve a quedar flotando. Esto no se arregla con CSS y ya costó una
 vuelta: la silueta de prueba tenía 85 px de nada por debajo y parecía un fallo del encaje.
 
+**Están las 354 de 355.** Pesan 8,4 MB, todas a 360x551 desde un origen de 460x700.
+
+**La firma del estilo no hace falta.** Las URLs de la UFC llevan `?itok=`, que Drupal
+calcula con una clave del sitio y no se puede reconstruir. Da igual: el CDN
+`dmxg5wxfqgb4u.cloudfront.net` sirve `/styles/athlete_bio_full_body/<ruta en s3>` **sin
+firma** y devuelve exactamente el mismo archivo, 460x700. Así que basta con conocer la
+ruta del archivo, que aparece en cualquier volcado de la web. Por eso las entradas de
+`docs/fotos-urls.json` pueden ser **una URL o una lista de candidatas**: se prueban en
+orden hasta que una conteste. Ojo con el nombre: la UFC no lo escribe siempre igual
+—`ROSAS_JR_RAUL`, no `ROSAS_RAUL_JR`— y el archivo **sin** sufijo `_R_`/`_L_` es el
+retrato, un recorte de cabeza que metería una carta con otro encuadre.
+
 **De dónde salen.** `herramientas/importar-fotos.mjs` las baja de ufcespanol.com, las
 recorta y las deja listas. **Hay que ejecutarla en una máquina con internet normal**: el
 proxy de la sesión de Claude tiene lista blanca —GitHub, npm, PyPI, Google Fonts— y
@@ -320,8 +332,11 @@ Al añadir fotos hay que tocar **tres** sitios de empaquetado, no dos: `build.gr
 - **`.c-copias` se pinta y no tiene CSS en ninguna parte.** Ya estaba así antes de este
   trabajo; no se ha tocado. Cuando salga una carta repetida, el "×2" cae suelto arriba a
   la izquierda del lienzo.
-- **No hay ninguna foto todavía.** El mecanismo está montado y probado con siluetas de
-  relleno, que se borraron: no se deja una cara falsa puesta a un peleador real.
+- **Falta la foto de `xiong-jing-nan`, y va a seguir faltando.** Xiong Jing Nan es
+  campeona de ONE Championship y nunca ha peleado en la UFC, así que no existe un recorte
+  suyo con este encuadre. Las otras 354 están. **No le pongas una foto de otro sitio**: el
+  plano sería distinto y se notaría en la baraja. Su carta se pinta sin foto, que para eso
+  el juego lo contempla —el atributo pasa a ser una chapa abajo—.
 
 ## Trato con el usuario
 
