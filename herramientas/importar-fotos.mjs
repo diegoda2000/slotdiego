@@ -56,6 +56,7 @@ const args = process.argv.slice(2);
 const soloVer = args.includes('--ver');
 const probar  = args.includes('--probar');   // pasa un archivo local por el recorte
 const lote    = args.includes('--lote');     // pasa una carpeta entera, sin red
+const desdeUrls = args.includes('--urls');   // baja de una lista de URLs ya conocida
 const pedidos = args.filter(a => !a.startsWith('--'));
 
 /* El Chromium que trae el contenedor no está donde lo busca Playwright, igual que en
@@ -63,6 +64,42 @@ const pedidos = args.filter(a => !a.startsWith('--'));
    tenga instalado, que es lo que pasará en una máquina normal. */
 const exe = process.env.CHROMIUM_PATH || '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
 const arranque = fs.existsSync(exe) ? { executablePath: exe } : {};
+
+/* Modo URLs: baja de una lista <peleador> -> <url de la imagen> y recorta.
+
+   Existe porque ufc.com contesta 403 a las IPs de datacenter —lo hace también con los
+   runners de GitHub, no solo con el proxy de desarrollo—, así que abrir la ficha de cada
+   peleador para sacar de ahí la foto no funciona desde ninguna máquina de las que hay a
+   mano. Las URLs ya están: salen de fichas scrapeadas en su día, y apuntan directamente
+   al archivo en /images/styles/athlete_bio_full_body/. Pedir el archivo es una petición
+   de imagen, no de página, y eso sí suele pasar.
+
+     node herramientas/importar-fotos.mjs --urls docs/fotos-urls.json
+*/
+if (desdeUrls) {
+  const mapa = JSON.parse(fs.readFileSync(pedidos[0] || 'docs/fotos-urls.json', 'utf8'));
+  fs.mkdirSync(DIR, { recursive: true });
+  const navU = await chromium.launch(arranque);
+  const pg = await navU.newPage();
+  let ok = 0; const malas = [];
+  for (const [persona, url] of Object.entries(mapa)) {
+    if (fs.existsSync(path.join(DIR, persona + '.webp'))) continue;
+    try {
+      const r = await fetch(url, { headers: { 'User-Agent': AGENTE, Referer: 'https://www.ufc.com/' } });
+      if (!r.ok) { malas.push(`${persona}\t${r.status}`); console.log(`  ✗ ${persona} — ${r.status}`); continue; }
+      const b64 = Buffer.from(await r.arrayBuffer()).toString('base64');
+      const tipo = (r.headers.get('content-type') || 'image/png').split(';')[0];
+      const out = await pg.evaluate(prepararImagen, { b64, tipo, ANCHO, PROPORCION, CALIDAD });
+      if (!out) { malas.push(`${persona}\tvacía`); console.log(`  ✗ ${persona} — imagen vacía`); continue; }
+      fs.writeFileSync(path.join(DIR, persona + '.webp'), Buffer.from(out.split(',')[1], 'base64'));
+      ok++; console.log(`  ✓ ${persona}`);
+    } catch (e) { malas.push(`${persona}\t${e.message}`); console.log(`  ✗ ${persona} — ${e.message}`); }
+  }
+  await navU.close();
+  console.log(`\n${ok} bajadas de ${Object.keys(mapa).length}`);
+  if (malas.length) fs.writeFileSync('/tmp/fotos-sin-encontrar.txt', malas.join('\n') + '\n');
+  process.exit(0);
+}
 
 /* Modo lote: coge una carpeta de imágenes ya descargadas y las pasa todas por el recorte
    en UNA sola sesión de navegador. Con --probar se abre y se cierra un Chromium por
