@@ -2,4 +2,7 @@
 <resources>
     <color name="fondo">#0D1014</color>
     <color name="acento">#E0483A</color>
+    <!-- El fondo del icono va con el negro cálido del juego, no con el frío del
+         arranque: el icono se ve al lado de otros y ahí sí se nota. -->
+    <color name="icono">#150A0A</color>
 </resources>

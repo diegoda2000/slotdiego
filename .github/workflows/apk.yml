@@ -51,12 +51,12 @@ jobs:
       - name: Renombrar
         run: |
           mkdir -p salida
-          cp android/app/build/outputs/apk/debug/app-debug.apk salida/jaula-abierta.apk
+          cp android/app/build/outputs/apk/debug/app-debug.apk salida/p4p-cards.apk
           ls -lh salida/
 
       - name: Guardar como artefacto de la ejecución
         uses: actions/upload-artifact@v4
         with:
-          name: jaula-abierta-apk
-          path: salida/jaula-abierta.apk
+          name: p4p-cards-apk
+          path: salida/p4p-cards.apk
           if-no-files-found: error

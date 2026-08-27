@@ -210,13 +210,13 @@ jobs:
             CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO build
           mkdir -p Payload
           cp -R build/Build/Products/Release-iphoneos/JaulaAbierta.app Payload/
-          zip -qry jaula-abierta.ipa Payload
-          ls -l jaula-abierta.ipa
+          zip -qry p4p-cards.ipa Payload
+          ls -l p4p-cards.ipa
 
       - uses: actions/upload-artifact@v4
         with:
           name: ios
-          path: ios/jaula-abierta.ipa
+          path: ios/p4p-cards.ipa
 
   # ── La descarga, con las dos ────────────────────────────────────────────────
   publicar:
@@ -234,11 +234,11 @@ jobs:
           URL: ${{ needs.desplegar.outputs.url }}
         run: |
           mkdir -p salida
-          cp descargas/android/app-debug.apk salida/jaula-abierta.apk
+          cp descargas/android/app-debug.apk salida/p4p-cards.apk
           # Si la de iPhone ha fallado no se cancela la publicación: el APK sigue
           # sirviendo, y quedarse sin descarga por eso sería peor.
-          if [ -f descargas/ios/jaula-abierta.ipa ]; then
-            cp descargas/ios/jaula-abierta.ipa salida/
+          if [ -f descargas/ios/p4p-cards.ipa ]; then
+            cp descargas/ios/p4p-cards.ipa salida/
             IPA="listo"
           else
             IPA="no ha salido en esta vuelta"
@@ -246,9 +246,9 @@ jobs:
           {
             echo "Prototipo jugable, Android e iPhone."
             echo ""
-            echo "**Android** — descarga \`jaula-abierta.apk\` y ábrelo. Nada que configurar."
+            echo "**Android** — descarga \`p4p-cards.apk\` y ábrelo. Nada que configurar."
             echo ""
-            echo "**iPhone** — \`jaula-abierta.ipa\` ($IPA) va **sin firmar**: Apple no deja"
+            echo "**iPhone** — \`p4p-cards.ipa\` ($IPA) va **sin firmar**: Apple no deja"
             echo "instalarlo tocándolo. Se instala desde un ordenador con Sideloadly o AltStore,"
             echo "firmándolo con tu propio Apple ID. Con cuenta gratuita caduca a los 7 días."
             echo "Está explicado en \`ios/COMO-FUNCIONA.md\`."
@@ -258,7 +258,7 @@ jobs:
           } > notas.md
           gh release delete apk-latest --yes --cleanup-tag || true
           gh release create apk-latest salida/* \
-            --title "Jaula Abierta — versión de prueba" \
+            --title "P4P Cards — versión de prueba" \
             --notes-file notas.md \
             --prerelease
 
