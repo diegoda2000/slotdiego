@@ -128,7 +128,10 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
    cabecera es marrón oscuro—, así que aquí solo hay que darle alto y separación. */
 /* El logo se queda en píxeles y no en em: si fuera en em, agrandar el nombre agrandaría
    también el dibujo y con él toda la cabecera. */
-#top .logo .marca{height:35px;width:auto;margin-right:3px}
+/* El margen es NEGATIVO: la P va en cursiva y su pie se echa a la izquierda, así que con
+   una separación de cero el hueco se sigue viendo grande. Con -3 el pie de la P entra
+   bajo el canto del dibujo y el conjunto se lee pegado, sin llegar a tocarse. */
+#top .logo .marca{height:35px;width:auto;margin-right:-3px}
 .res{display:flex;align-items:center;gap:5px;font-family:var(--titulo);font-size:14px;
   font-weight:700;font-variant-numeric:tabular-nums;
   background:rgba(35,20,19,.9);border:1px solid var(--line);
