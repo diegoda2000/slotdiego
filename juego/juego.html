@@ -71,17 +71,14 @@
 /* Las tres propiedades por separado, NO el atajo: --arena lleva dos degradados separados
    por coma y `background:` no admite eso. Con el atajo la regla entera era inválida y el
    fondo se caía a blanco, en el navegador y en el móvil. */
-/* EL FONDO. Debajo del todo va la foto de la jaula, apagada por
-   herramientas/preparar-fondo.mjs, y encima el foco rojo de --arena, que es lo que la
-   ata a la paleta del juego. El orden importa: en background-image la primera capa es la
-   de arriba. Va fija, así que no se desplaza con el contenido.
+/* EL FONDO ES LA FOTO DE LA JAULA, Y NADA MÁS. Va fija, así que no se desplaza con el
+   contenido, y a cover para llenar cualquier pantalla.
 
-   Cuidado al tocar esto: no se puede escribir en una sola propiedad —el atajo
-   `background: var(--bg) var(--arena) fixed` deja la página en blanco, porque --arena son
-   dos degradados separados por coma—. Por eso va partido. */
+   Encima llevaba el foco rojo de --arena y el dueño lo quitó: la quiere tal cual. El
+   color de fondo se queda solo por debajo, para lo que tarde en cargar la imagen. */
 body{background-color:var(--bg);
-  background-image:var(--arena),url(arte/fondo.webp);
-  background-size:auto,cover;background-position:center,center;
+  background-image:url(arte/fondo.webp);
+  background-size:cover;background-position:center;
   background-attachment:fixed;background-repeat:no-repeat;
   color:var(--txt);
   font:15px/1.45 var(--texto);

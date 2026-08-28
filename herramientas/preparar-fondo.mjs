@@ -1,18 +1,13 @@
 /* Deja la foto de la jaula lista para usarla de fondo de pantalla: la recorta a vertical,
    la apaga y la guarda en juego/arte/fondo.webp.
 
-   POR QUÉ HAY QUE TOCARLA. La foto que pasó el dueño es apaisada, tiene la luz azul de la
-   grada al fondo y el suelo blanco abajo. Puesta tal cual, detrás de texto blanco y de
-   peleadores recortados, se los come: un fondo con vida propia no es un fondo. Así que
-   aquí se hacen tres cosas, y las tres a la baja:
+   LA FOTO VA COMO ESTÁ. Aquí solo se recorta a 9:19,5 —la proporción de un móvil de hoy—
+   y se baja de tamaño. Ni se apaga ni se destiñe: el dueño la quiere tal cual, sin el
+   velo rojo que llevaba el fondo antes. Se intentó teñirla hacia la paleta y quitarle el
+   azul de la grada, y lo tumbó; no vuelvas a hacerlo sin que te lo pida.
 
-   1. Se recorta a 9:19,5, que es la proporción de un móvil de hoy. La malla es uniforme,
-      así que da igual por dónde se corte; se coge la parte de arriba, que es la que tiene
-      menos suelo blanco.
-   2. Se le quita el 80% del color. El azul de la grada pelea con la paleta del juego, que
-      es negro, rojo y oro, y dos temperaturas a la vez se ven sucias.
-   3. Se baja al 62% de luz y se calienta un poco -más rojo, menos azul-, para que caiga
-      del lado del negro cálido del juego y no del negro azulado de la foto.
+   La malla es uniforme, así que da igual por dónde se corte: se coge la parte de arriba,
+   que es la que tiene menos suelo blanco.
 
    Uso:  node herramientas/preparar-fondo.mjs [ancho] [calidad]
          (por defecto 810 px de ancho y 0,72 de calidad)
@@ -46,15 +41,6 @@ const preparar = ({ b64, ANCHO, PROPORCION, CALIDAD }) => new Promise(res => {
     const g = c.getContext('2d');
     g.drawImage(img, sx, sy, sw, sh, 0, 0, c.width, c.height);
 
-    const d = g.getImageData(0, 0, c.width, c.height), p = d.data;
-    const GRIS = 0.80, LUZ = 0.62;
-    for (let i = 0; i < p.length; i += 4) {
-      const l = 0.2126 * p[i] + 0.7152 * p[i + 1] + 0.0722 * p[i + 2];
-      p[i]     = Math.min(255, (l * GRIS + p[i]     * (1 - GRIS)) * LUZ * 1.12);
-      p[i + 1] = Math.min(255, (l * GRIS + p[i + 1] * (1 - GRIS)) * LUZ * 0.94);
-      p[i + 2] = Math.min(255, (l * GRIS + p[i + 2] * (1 - GRIS)) * LUZ * 0.86);
-    }
-    g.putImageData(d, 0, 0);
     res({ d: c.toDataURL('image/webp', CALIDAD), W, H, w: c.width, h: c.height });
   };
   img.src = 'data:image/jpeg;base64,' + b64;
