@@ -83,9 +83,11 @@ const preparar = ({ b64, ALTO, CALIDAD }) => new Promise(res => {
    va SOLO el negro que rodea al dibujo —el que toca el borde— y el de dentro de las
    cartas, que no está conectado con él, se queda.
 
-   El conjunto se deja dentro del círculo de 66 dp que Android garantiza que no recorta.
-   Sale más pequeño de lo que cabría en el cuadrado, y es a propósito: un icono con dibujo
-   Y nombre tiene dos extremos que perder, y perder medio nombre es peor que sobrar aire. */
+   EL CONJUNTO SE SALE DEL CÍRCULO SEGURO, y es a propósito porque lo pidió el dueño: con
+   un dibujo Y un nombre, quedarse dentro de los 66 dp que Android garantiza dejaba el
+   icono ocupando media casilla. Así llena, y lo que se pierde en las máscaras redondas
+   —Pixel— es la punta de las cartas, que ahí es casi todo negro. El bloque va un poco por
+   encima del centro justo para eso: que si se recorta algo, no sea el pie del nombre. */
 const recortarFondo = ({ b64 }) => new Promise(res => {
   const img = new Image();
   img.onerror = () => res(null);
@@ -142,20 +144,22 @@ const componerIcono = ({ b64, LADO, FONDO }) => new Promise(res => {
     const g = c.getContext('2d');
     if (FONDO) { g.fillStyle = FONDO; g.fillRect(0, 0, LADO, LADO); }
 
-    const anchoDibujo = Math.round(LADO * 0.44);
+    const anchoDibujo = Math.round(LADO * 0.60);
     const altoDibujo = Math.round(anchoDibujo * img.naturalHeight / img.naturalWidth);
-    const hueco = Math.round(LADO * 0.035);
+    const hueco = Math.round(LADO * 0.03);
 
     // El nombre, escrito por trozos para poder darle un color a cada uno.
-    const tam = Math.round(LADO * 0.135), chico = Math.round(tam * 0.58);
+    const tam = Math.round(LADO * 0.175), chico = Math.round(tam * 0.58);
     const trozos = [['P', '#d40c1a', tam], ['4', '#a59e9f', tam], ['P', '#d40c1a', tam],
                     ['.CG', '#ffffff', chico]];
     const fuente = t => `italic 800 ${t}px "Saira Condensed", sans-serif`;
     let anchoTexto = 0;
     for (const [t, , z] of trozos) { g.font = fuente(z); anchoTexto += g.measureText(t).width; }
 
+    /* El bloque se sube un pelín del centro: si alguna máscara recorta, que se lleve la
+       punta de las cartas —que ahí es casi todo negro— y no el pie del nombre. */
     const total = altoDibujo + hueco + tam;
-    let y = Math.round((LADO - total) / 2);
+    let y = Math.round((LADO - total) / 2) - Math.round(LADO * 0.02);
     g.drawImage(img, Math.round((LADO - anchoDibujo) / 2), y, anchoDibujo, altoDibujo);
 
     g.textBaseline = 'alphabetic';
