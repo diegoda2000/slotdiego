@@ -83,11 +83,14 @@ const preparar = ({ b64, ALTO, CALIDAD }) => new Promise(res => {
    va SOLO el negro que rodea al dibujo —el que toca el borde— y el de dentro de las
    cartas, que no está conectado con él, se queda.
 
-   EL CONJUNTO SE SALE DEL CÍRCULO SEGURO, y es a propósito porque lo pidió el dueño: con
-   un dibujo Y un nombre, quedarse dentro de los 66 dp que Android garantiza dejaba el
-   icono ocupando media casilla. Así llena, y lo que se pierde en las máscaras redondas
-   —Pixel— es la punta de las cartas, que ahí es casi todo negro. El bloque va un poco por
-   encima del centro justo para eso: que si se recorta algo, no sea el pie del nombre. */
+   EL TAMAÑO NO SE ELIGE A OJO, SE CALCULA. De los 108 dp que mide una capa de icono
+   adaptativo, el sistema solo enseña los 72 dp centrales, y de esos solo garantiza el
+   círculo de 66. O sea: lo que de verdad se ve es el 61% del lienzo, no el lienzo. Se
+   intentó llenarlo más y en el móvil del dueño salió el nombre cortado por la mitad.
+
+   Así que se compone el bloque a un tamaño cualquiera, se mide, y se escala entero hasta
+   que su media diagonal cabe en ese círculo. Con eso el icono es todo lo grande que puede
+   ser sin perder nada, lo enseñe el launcher redondo, cuadrado o con forma de gota. */
 const recortarFondo = ({ b64 }) => new Promise(res => {
   const img = new Image();
   img.onerror = () => res(null);
@@ -134,42 +137,60 @@ const recortarFondo = ({ b64 }) => new Promise(res => {
   img.src = 'data:image/png;base64,' + b64;
 });
 
-const componerIcono = ({ b64, LADO, FONDO }) => new Promise(res => {
+const componerIcono = ({ b64, LADO, FONDO, SEGURO }) => new Promise(res => {
   const img = new Image();
   img.onerror = () => res(null);
   img.onload = async () => {
     await document.fonts.load('italic 800 100px "Saira Condensed"');
+
+    /* Se compone primero a un tamaño de trabajo cualquiera para poder medir el bloque. */
+    const U = 1000;
+    const anchoDibujo = U * 0.86;
+    const altoDibujo = anchoDibujo * img.naturalHeight / img.naturalWidth;
+    const hueco = U * 0.05;
+    const tam = U * 0.25, chico = tam * 0.58;
+    const trozos = [['P', '#d40c1a', tam], ['4', '#a59e9f', tam], ['P', '#d40c1a', tam],
+                    ['.CG', '#ffffff', chico]];
+    const fuente = t => `italic 800 ${t}px "Saira Condensed", sans-serif`;
+
     const c = document.createElement('canvas');
     c.width = c.height = LADO;
     const g = c.getContext('2d');
     if (FONDO) { g.fillStyle = FONDO; g.fillRect(0, 0, LADO, LADO); }
 
-    const anchoDibujo = Math.round(LADO * 0.60);
-    const altoDibujo = Math.round(anchoDibujo * img.naturalHeight / img.naturalWidth);
-    const hueco = Math.round(LADO * 0.03);
-
-    // El nombre, escrito por trozos para poder darle un color a cada uno.
-    const tam = Math.round(LADO * 0.175), chico = Math.round(tam * 0.58);
-    const trozos = [['P', '#d40c1a', tam], ['4', '#a59e9f', tam], ['P', '#d40c1a', tam],
-                    ['.CG', '#ffffff', chico]];
-    const fuente = t => `italic 800 ${t}px "Saira Condensed", sans-serif`;
     let anchoTexto = 0;
     for (const [t, , z] of trozos) { g.font = fuente(z); anchoTexto += g.measureText(t).width; }
 
-    /* El bloque se sube un pelín del centro: si alguna máscara recorta, que se lleve la
-       punta de las cartas —que ahí es casi todo negro— y no el pie del nombre. */
-    const total = altoDibujo + hueco + tam;
-    let y = Math.round((LADO - total) / 2) - Math.round(LADO * 0.02);
-    g.drawImage(img, Math.round((LADO - anchoDibujo) / 2), y, anchoDibujo, altoDibujo);
+    /* La cursiva se sale por la derecha de lo que mide measureText, y la caja alta no llega
+       al alto de la fuente. Se mide de verdad: alto = de lo alto de la caja alta a la línea
+       base, más un pelo por si acaso. */
+    g.font = fuente(tam);
+    const m = g.measureText('P');
+    const altoTexto = (m.actualBoundingBoxAscent || tam * 0.72);
 
+    const ancho = Math.max(anchoDibujo, anchoTexto);
+    const alto = altoDibujo + hueco + altoTexto;
+
+    /* El escalado: la media diagonal del bloque tiene que caber en el círculo seguro. */
+    const radio = (LADO * SEGURO) / 2;
+    const k = radio / Math.hypot(ancho / 2, alto / 2);
+
+    const cx = LADO / 2, cy = LADO / 2;
+    g.save();
+    g.translate(cx, cy);
+    g.scale(k, k);
+    g.translate(-ancho / 2, -alto / 2);          // esquina de arriba a la izquierda del bloque
+
+    g.drawImage(img, (ancho - anchoDibujo) / 2, 0, anchoDibujo, altoDibujo);
     g.textBaseline = 'alphabetic';
-    let x = Math.round((LADO - anchoTexto) / 2);
-    const base = y + altoDibujo + hueco + tam;
+    let x = (ancho - anchoTexto) / 2;
+    const base = altoDibujo + hueco + altoTexto;
     for (const [t, color, z] of trozos) {
       g.font = fuente(z); g.fillStyle = color;
       g.fillText(t, x, base);
       x += g.measureText(t).width;
     }
+    g.restore();
     res(c.toDataURL('image/png'));
   };
   img.src = 'data:image/png;base64,' + b64;
@@ -185,10 +206,12 @@ const IOS = 'ios/JaulaAbierta/Assets.xcassets/AppIcon.appiconset/icono-1024.png'
 const suelto = await pag.evaluate(recortarFondo, { b64: bruto });
 if (!suelto) { await nav.close(); console.log('el recorte sale vacío'); process.exit(1); }
 const s64 = suelto.split(',')[1];
-const png = await pag.evaluate(componerIcono, { b64: s64, LADO: 432, FONDO: null });
+/* 0,61 = los 66 dp que Android garantiza, de los 108 que mide la capa. */
+const png = await pag.evaluate(componerIcono, { b64: s64, LADO: 432, FONDO: null, SEGURO: 0.61 });
 /* El de iPhone va aplanado sobre negro y no porque quiera: Apple no admite transparencia
    en el icono de una aplicación, y si se la mandas la rellena ella. */
-const ipng = await pag.evaluate(componerIcono, { b64: s64, LADO: 1024, FONDO: '#000000' });
+/* El de iPhone no lo recorta nadie, así que ahí el bloque puede llenar de verdad. */
+const ipng = await pag.evaluate(componerIcono, { b64: s64, LADO: 1024, FONDO: '#000000', SEGURO: 0.92 });
 await nav.close();
 
 for (const [ruta, datos] of [[AND, png], [IOS, ipng]]) {
