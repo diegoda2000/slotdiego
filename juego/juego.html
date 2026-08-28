@@ -109,6 +109,10 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 #top .logo b{color:var(--acc)}
 #top .logo em{color:var(--plata)}
 #top .logo i{color:#fff;font-size:.66em;letter-spacing:.02em}
+/* El logo, a la izquierda del nombre. Va con el negro ya quitado —lo hace
+   herramientas/preparar-logo.mjs, que el original es un cuadrado sobre negro puro y la
+   cabecera es marrón oscuro—, así que aquí solo hay que darle alto y separación. */
+#top .logo .marca{height:1.85em;width:auto;margin-right:.34em;align-self:center}
 .res{display:flex;align-items:center;gap:5px;font-family:var(--titulo);font-size:14px;
   font-weight:700;font-variant-numeric:tabular-nums;
   background:rgba(35,20,19,.9);border:1px solid var(--line);
@@ -806,7 +810,7 @@ th{color:var(--dim2);font-size:11px;text-transform:uppercase;letter-spacing:.04e
 </style>
 
 <div id="top">
-  <div class="logo"><b>P</b><em>4</em><b>P</b><i>.CG</i></div>
+  <div class="logo"><img class="marca" src="arte/logo.webp" alt=""><b>P</b><em>4</em><b>P</b><i>.CG</i></div>
   <div class="res" id="r-div">🪙 <span>0</span></div>
   <div class="res" id="r-fic">🎟️ <span>0</span></div>
 </div>
