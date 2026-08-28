@@ -20,7 +20,7 @@ import fs from 'fs';
 /* Cada uno a la altura que necesita: la de JUGAR ocupa el alto de un banner y la de
    Logros la mitad de un tile, así que no hacen falta los mismos píxeles. */
 const TRABAJOS = [
-  { de: 'originales/botones/conor.png', a: 'juego/arte/jugar.webp', alto: 560 },
+  { de: 'originales/botones/conor.png', a: 'juego/arte/jugar.webp', alto: 640 },
   { de: 'originales/botones/islam.png', a: 'juego/arte/islam.webp', alto: 520 },
 ];
 const CALIDAD = 0.86;
