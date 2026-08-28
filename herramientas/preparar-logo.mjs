@@ -37,6 +37,10 @@ const CALIDAD = 0.92;
 const exe = process.env.CHROMIUM_PATH || '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
 const nav = await chromium.launch(fs.existsSync(exe) ? { executablePath: exe } : {});
 const pag = await nav.newPage();
+/* Se abre el juego para tener sus @font-face: el nombre del icono se escribe con la misma
+   Saira Condensed que la cabecera, y en una página en blanco no existiría. */
+await pag.goto('file://' + path.resolve('juego/juego.html'));
+await pag.evaluate(() => document.fonts.ready);
 
 const preparar = ({ b64, ALTO, CALIDAD }) => new Promise(res => {
   const img = new Image();
@@ -71,35 +75,97 @@ const preparar = ({ b64, ALTO, CALIDAD }) => new Promise(res => {
   img.src = 'data:image/png;base64,' + b64;
 });
 
-/* El icono de Android. 432 px es el tamaño de una capa de icono adaptativo a xxxhdpi
-   —108 dp—, y por eso el archivo va en drawable-xxxhdpi: puesto en drawable a secas el
-   sistema lo tomaría por mdpi y lo ampliaría cuatro veces. El dibujo se deja al 65% del
-   lienzo, que es lo que sobrevive a cualquier máscara; lo que se salga de ahí es negro
-   del fondo de la carta y no se echa en falta. */
-const iconoAndroid = ({ b64, LADO, PARTE }) => new Promise(res => {
+/* EL ICONO DE LA APLICACIÓN: el logo recortado, SIN FONDO, y el nombre debajo.
+
+   Recortar el negro no se puede hacer por umbral ni deshaciendo la premultiplicación: el
+   cuerpo de las cartas también es negro y se volvería transparente con él. Lo que se hace
+   es un relleno por inundación desde los cuatro bordes sobre lo que es casi negro. Así se
+   va SOLO el negro que rodea al dibujo —el que toca el borde— y el de dentro de las
+   cartas, que no está conectado con él, se queda.
+
+   El conjunto se deja dentro del círculo de 66 dp que Android garantiza que no recorta.
+   Sale más pequeño de lo que cabría en el cuadrado, y es a propósito: un icono con dibujo
+   Y nombre tiene dos extremos que perder, y perder medio nombre es peor que sobrar aire. */
+const recortarFondo = ({ b64 }) => new Promise(res => {
   const img = new Image();
   img.onerror = () => res(null);
   img.onload = () => {
+    const W = img.naturalWidth, H = img.naturalHeight;
     const c = document.createElement('canvas');
-    c.width = c.height = LADO;
+    c.width = W; c.height = H;
     const g = c.getContext('2d');
-    const w = Math.round(LADO * PARTE), h = Math.round(w * img.naturalHeight / img.naturalWidth);
-    g.drawImage(img, Math.round((LADO - w) / 2), Math.round((LADO - h) / 2), w, h);
-    res(c.toDataURL('image/png'));
+    g.drawImage(img, 0, 0);
+    const d = g.getImageData(0, 0, W, H), p = d.data;
+
+    const fuera = new Uint8Array(W * H);
+    const pila = [];
+    const casiNegro = n => Math.max(p[n * 4], p[n * 4 + 1], p[n * 4 + 2]) <= 18;
+    const mete = n => { if (!fuera[n] && casiNegro(n)) { fuera[n] = 1; pila.push(n); } };
+    for (let x = 0; x < W; x++) { mete(x); mete((H - 1) * W + x); }
+    for (let y = 0; y < H; y++) { mete(y * W); mete(y * W + W - 1); }
+    while (pila.length) {
+      const n = pila.pop(), x = n % W, y = (n / W) | 0;
+      if (x > 0) mete(n - 1);
+      if (x < W - 1) mete(n + 1);
+      if (y > 0) mete(n - W);
+      if (y < H - 1) mete(n + W);
+    }
+
+    let minx = W, maxx = -1, miny = H, maxy = -1;
+    for (let n = 0; n < W * H; n++) {
+      if (fuera[n]) { p[n * 4 + 3] = 0; continue; }
+      const x = n % W, y = (n / W) | 0;
+      if (x < minx) minx = x;
+      if (x > maxx) maxx = x;
+      if (y < miny) miny = y;
+      if (y > maxy) maxy = y;
+    }
+    if (maxx < 0) return res(null);
+    g.putImageData(d, 0, 0);
+
+    const sw = maxx - minx + 1, sh = maxy - miny + 1;
+    const sal = document.createElement('canvas');
+    sal.width = sw; sal.height = sh;
+    sal.getContext('2d').drawImage(c, minx, miny, sw, sh, 0, 0, sw, sh);
+    res(sal.toDataURL('image/png'));
   };
-  img.src = 'data:image/webp;base64,' + b64;
+  img.src = 'data:image/png;base64,' + b64;
 });
 
-/* El de iPhone: el cuadrado entero, sin recortar y sin transparencia. */
-const iconoIOS = ({ b64, LADO }) => new Promise(res => {
+const componerIcono = ({ b64, LADO, FONDO }) => new Promise(res => {
   const img = new Image();
   img.onerror = () => res(null);
-  img.onload = () => {
+  img.onload = async () => {
+    await document.fonts.load('italic 800 100px "Saira Condensed"');
     const c = document.createElement('canvas');
     c.width = c.height = LADO;
     const g = c.getContext('2d');
-    g.fillStyle = '#000'; g.fillRect(0, 0, LADO, LADO);
-    g.drawImage(img, 0, 0, LADO, LADO);
+    if (FONDO) { g.fillStyle = FONDO; g.fillRect(0, 0, LADO, LADO); }
+
+    const anchoDibujo = Math.round(LADO * 0.44);
+    const altoDibujo = Math.round(anchoDibujo * img.naturalHeight / img.naturalWidth);
+    const hueco = Math.round(LADO * 0.035);
+
+    // El nombre, escrito por trozos para poder darle un color a cada uno.
+    const tam = Math.round(LADO * 0.135), chico = Math.round(tam * 0.58);
+    const trozos = [['P', '#d40c1a', tam], ['4', '#a59e9f', tam], ['P', '#d40c1a', tam],
+                    ['.CG', '#ffffff', chico]];
+    const fuente = t => `italic 800 ${t}px "Saira Condensed", sans-serif`;
+    let anchoTexto = 0;
+    for (const [t, , z] of trozos) { g.font = fuente(z); anchoTexto += g.measureText(t).width; }
+
+    const total = altoDibujo + hueco + tam;
+    let y = Math.round((LADO - total) / 2);
+    g.drawImage(img, Math.round((LADO - anchoDibujo) / 2), y, anchoDibujo, altoDibujo);
+
+    g.textBaseline = 'alphabetic';
+    let x = Math.round((LADO - anchoTexto) / 2);
+    const base = y + altoDibujo + hueco + tam;
+    for (const [t, color, z] of trozos) {
+      g.font = fuente(z); g.fillStyle = color;
+      g.fillText(t, x, base);
+      x += g.measureText(t).width;
+    }
     res(c.toDataURL('image/png'));
   };
   img.src = 'data:image/png;base64,' + b64;
@@ -112,9 +178,13 @@ fs.writeFileSync(DESTINO, Buffer.from(out.d.split(',')[1], 'base64'));
 
 const AND = 'android/app/src/main/res/drawable-xxxhdpi/ic_launcher_foreground.png';
 const IOS = 'ios/JaulaAbierta/Assets.xcassets/AppIcon.appiconset/icono-1024.png';
-const recortado = fs.readFileSync(DESTINO).toString('base64');
-const png = await pag.evaluate(iconoAndroid, { b64: recortado, LADO: 432, PARTE: 0.65 });
-const ipng = await pag.evaluate(iconoIOS, { b64: bruto, LADO: 1024 });
+const suelto = await pag.evaluate(recortarFondo, { b64: bruto });
+if (!suelto) { await nav.close(); console.log('el recorte sale vacío'); process.exit(1); }
+const s64 = suelto.split(',')[1];
+const png = await pag.evaluate(componerIcono, { b64: s64, LADO: 432, FONDO: null });
+/* El de iPhone va aplanado sobre negro y no porque quiera: Apple no admite transparencia
+   en el icono de una aplicación, y si se la mandas la rellena ella. */
+const ipng = await pag.evaluate(componerIcono, { b64: s64, LADO: 1024, FONDO: '#000000' });
 await nav.close();
 
 for (const [ruta, datos] of [[AND, png], [IOS, ipng]]) {

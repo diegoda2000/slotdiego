@@ -2,7 +2,4 @@
 <resources>
     <color name="fondo">#0D1014</color>
     <color name="acento">#E0483A</color>
-    <!-- El fondo del icono adaptativo: el mismo negro puro sobre el que está dibujado
-         el logotipo, para que no se vea el canto de la imagen contra el fondo. -->
-    <color name="icono">#000000</color>
 </resources>
