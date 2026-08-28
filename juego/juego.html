@@ -105,13 +105,17 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
    rojo de la paleta, el 4 en el plata y el .CG en blanco y más pequeño. */
 #top .logo{font-family:var(--titulo);font-weight:800;font-size:25px;letter-spacing:.01em;
   font-style:italic;text-transform:uppercase;margin-right:auto;
-  display:flex;align-items:center}
-/* EL QUE BAJA ES EL NOMBRE, NO EL LOGO. El logo se queda centrado en la cabecera; el
-   nombre se apoya abajo y se mete 5 px en el relleno inferior, que deja una separación
-   corta con el borde en vez de pegarse a él. Van en un span propio para que el P4P y el
-   .CG, que tienen tamaños distintos, sigan compartiendo línea base entre ellos. */
-#top .logo .txt{display:flex;align-items:baseline;align-self:flex-end;
-  position:relative;top:5px}
+  display:flex;align-items:flex-end;
+  /* El bloque entero se apoya abajo, y se sube 4 px del borde: separación corta, no
+     pegado. */
+  align-self:flex-end;margin-bottom:-5px}
+/* EL PIE DEL NOMBRE, A LA MISMA LÍNEA QUE EL PIE DEL LOGO. Con align-items:flex-end no
+   basta: lo que se alinea es la caja del texto, y esa caja reserva sitio bajo la línea
+   base para las colas de las letras, así que los pies de las letras quedan por encima del
+   canto del dibujo. Los 10 px son ese hueco, medido pintando y mirando dónde acaba la
+   tinta, no calculado. El span propio existe para poder moverlo solo a él y para que el
+   P4P y el .CG, que tienen tamaños distintos, compartan línea base entre ellos. */
+#top .logo .txt{display:flex;align-items:baseline;position:relative;top:10px}
 #top .logo b{color:var(--acc)}
 #top .logo em{color:var(--plata)}
 #top .logo i{color:#fff;font-size:.66em;letter-spacing:.02em}
