@@ -105,10 +105,13 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
    rojo de la paleta, el 4 en el plata y el .CG en blanco y más pequeño. */
 #top .logo{font-family:var(--titulo);font-weight:800;font-size:25px;letter-spacing:.01em;
   font-style:italic;text-transform:uppercase;margin-right:auto;
-  display:flex;align-items:flex-end;
-  /* Pegado al pie de la cabecera: se baja al borde comiéndose los 9 px de relleno de
-     abajo, sin salirse de la línea. */
-  align-self:flex-end;margin-bottom:-9px}
+  display:flex;align-items:center}
+/* EL QUE BAJA ES EL NOMBRE, NO EL LOGO. El logo se queda centrado en la cabecera; el
+   nombre se apoya abajo y se mete 5 px en el relleno inferior, que deja una separación
+   corta con el borde en vez de pegarse a él. Van en un span propio para que el P4P y el
+   .CG, que tienen tamaños distintos, sigan compartiendo línea base entre ellos. */
+#top .logo .txt{display:flex;align-items:baseline;align-self:flex-end;
+  position:relative;top:5px}
 #top .logo b{color:var(--acc)}
 #top .logo em{color:var(--plata)}
 #top .logo i{color:#fff;font-size:.66em;letter-spacing:.02em}
@@ -815,7 +818,7 @@ th{color:var(--dim2);font-size:11px;text-transform:uppercase;letter-spacing:.04e
 </style>
 
 <div id="top">
-  <div class="logo"><img class="marca" src="arte/logo.webp" alt=""><b>P</b><em>4</em><b>P</b><i>.CG</i></div>
+  <div class="logo"><img class="marca" src="arte/logo.webp" alt=""><span class="txt"><b>P</b><em>4</em><b>P</b><i>.CG</i></span></div>
   <div class="res" id="r-div">🪙 <span>0</span></div>
   <div class="res" id="r-fic">🎟️ <span>0</span></div>
 </div>
