@@ -191,7 +191,7 @@ jobs:
           test -s ios/juego-assets/fuentes/antonio-latin.woff2
           test -s ios/juego-assets/sonidos/its-time.mp3
           test -s ios/juego-assets/sobres/oro.webp
-          test -s ios/juego-assets/arte/luchador.webp
+          test -s ios/juego-assets/arte/jugar.webp
           test -s ios/juego-assets/fuentes/saira-700-latin.woff2
 
       - name: Generar el proyecto de Xcode

@@ -280,14 +280,18 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 .abanico img:nth-child(2){height:100%;position:relative;z-index:2}
 .abanico img:last-child{transform:rotate(10deg);margin-left:-16px}
 
-/* EL BANNER: la foto llena el tile y el nombre va encima, en cursiva, sobre un degradado
-   que oscurece la izquierda para que se lea sin ponerle una caja detrás. */
+/* EL BANNER: el peleador recortado a la derecha y el nombre a la izquierda, en cursiva.
+
+   El peleador va SUELTO, con su transparencia, y por detrás se ve el fondo general del
+   juego a través de la tarjeta. Nada de object-fit:cover, que estiraría un recorte, ni
+   velo negro por encima, que taparía justo lo que se quiere enseñar. Se apoya abajo y a
+   la derecha, y arranca en el 38% para dejarle sitio al nombre. */
 .sobre-fila.banner .fila{padding:0;position:relative;overflow:hidden}
-.sobre-fila.banner .sobre-art{position:absolute;inset:0;margin:0;width:auto;gap:0}
-.sobre-fila.banner .sobre-art img{width:100%;height:100%;object-fit:cover;object-position:center 30%;
-  max-width:none;max-height:none;opacity:.9;filter:none}
-.sobre-fila.banner .velo{position:absolute;inset:0;z-index:1;
-  background:linear-gradient(90deg, rgba(16,6,6,.95) 10%, transparent 75%)}
+.sobre-fila.banner .sobre-art{position:absolute;top:6px;right:10px;bottom:0;left:38%;
+  margin:0;width:auto;gap:0}
+.sobre-fila.banner .sobre-art img{width:100%;height:100%;object-fit:contain;
+  object-position:bottom right;max-width:none;max-height:none;
+  filter:drop-shadow(0 8px 20px rgba(0,0,0,.7))}
 .sobre-fila.banner .cu{position:absolute;left:18px;top:50%;transform:translateY(-50%);z-index:2}
 .sobre-fila.banner .cu b{font-size:min(14vw,52px);font-style:italic;font-weight:800;
   letter-spacing:.01em;line-height:1;text-shadow:0 4px 18px rgba(0,0,0,.7)}
@@ -1634,14 +1638,14 @@ function vInicio(){
     ${ok?'':`<div class="fila" style="border-color:var(--warn);flex:0 0 auto">
       <span class="cu"><b>Te faltan divisiones</b>
       <span class="sub">Necesitas una carta alineable en las 11 para poder jugar.</span></span></div>`}
-    ${tarjeta({nav:'jugar', t:'Jugar', foto:'arte/luchador.webp', banner:true, off:!ok})}
+    ${tarjeta({nav:'jugar', t:'Jugar', foto:'arte/jugar.webp', banner:true, off:!ok})}
     ${tarjeta({nav:'draft', t:'Draft', d:'Elige tu plantilla y compite',
       dentro:abanico()+icono('dados','suelto')})}
     ${tarjeta({nav:'retosdetalle', t:'SBC', d:'Retos de construcción',
       dentro:`<span class="centrado">${icono('pergamino','rojo')}
         <span class="rotulo-oro">${esc(reto?reto.n:'Todos hechos')}</span></span>`})}
     <div class="mitades">
-      ${tarjeta({nav:'logros', t:'Logros', ic:'medalla', media:true, pie:`${hechos} de ${l.length}`})}
+      ${tarjeta({nav:'logros', t:'Logros', foto:'arte/islam.webp', media:true, pie:`${hechos} de ${l.length}`})}
       ${tarjeta({nav:'aprende', t:'Aprende', d:'Tutorial', ic:'birrete',
         alerta:!S.tutorialHecho, media:true})}
     </div>
@@ -1650,8 +1654,12 @@ function vInicio(){
 
 function tarjeta({nav,a,t,d,ic,foto,dentro,off,alerta,media,pie,banner}){
   const attr=nav?`data-nav="${nav}"`:`data-a="${a}"`;
+  /* Tres formas de llenar el hueco del dibujo: el banner -la foto de fondo a sangre-, un
+     peleador recortado centrado como estaba el icono, o el icono de siempre. */
   const dibujo = banner
-    ? `<span class="velo"></span><span class="sobre-art"><img src="${foto}" alt="" loading="lazy"></span>`
+    ? `<span class="sobre-art"><img src="${foto}" alt="" loading="lazy"></span>`
+    : foto
+    ? `<span class="sobre-art"><img src="${foto}" alt="" loading="lazy"></span>`
     : `<span class="sobre-art ${ic?'icono':''}">${dentro||icono(ic)}</span>`;
   return `<div class="sobre-fila menu ${banner?'banner':''} ${off?'apagada':''} ${media?'media':''}">
     <button class="fila ${alerta?'alerta':''}" ${off?'disabled':''} ${attr}>
