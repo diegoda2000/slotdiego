@@ -103,16 +103,21 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 /* El logotipo. Va con la tipografía de los botones —la misma var(--titulo)—, en cursiva
    como el JUGAR del botón grande, y con los colores dichos por el dueño: las dos P en el
    rojo de la paleta, el 4 en el plata y el .CG en blanco y más pequeño. */
-#top .logo{font-family:var(--titulo);font-weight:800;font-size:19px;letter-spacing:.01em;
+#top .logo{font-family:var(--titulo);font-weight:800;font-size:25px;letter-spacing:.01em;
   font-style:italic;text-transform:uppercase;margin-right:auto;
-  display:flex;align-items:baseline}
+  display:flex;align-items:flex-end;
+  /* Pegado al pie de la cabecera: se baja al borde comiéndose los 9 px de relleno de
+     abajo, sin salirse de la línea. */
+  align-self:flex-end;margin-bottom:-9px}
 #top .logo b{color:var(--acc)}
 #top .logo em{color:var(--plata)}
 #top .logo i{color:#fff;font-size:.66em;letter-spacing:.02em}
 /* El logo, a la izquierda del nombre. Va con el negro ya quitado —lo hace
    herramientas/preparar-logo.mjs, que el original es un cuadrado sobre negro puro y la
    cabecera es marrón oscuro—, así que aquí solo hay que darle alto y separación. */
-#top .logo .marca{height:1.85em;width:auto;margin-right:.34em;align-self:center}
+/* El logo se queda en píxeles y no en em: si fuera en em, agrandar el nombre agrandaría
+   también el dibujo y con él toda la cabecera. */
+#top .logo .marca{height:35px;width:auto;margin-right:7px}
 .res{display:flex;align-items:center;gap:5px;font-family:var(--titulo);font-size:14px;
   font-weight:700;font-variant-numeric:tabular-nums;
   background:rgba(35,20,19,.9);border:1px solid var(--line);
