@@ -52,10 +52,17 @@
   --plata:#b9b2ad; --oro:#eabe4a; --corona:#f7e59f;
   --oro-suave:#f7e59f;
   /* El fondo no es un color plano: un foco rojo arriba, como el de encima del octágono. */
+  /* El foco rojo de encima del octágono y, debajo, el velo que apaga la foto de la jaula.
+     El velo ES TRANSLÚCIDO a propósito: cuando era negro opaco tapaba la foto entera y no
+     se veía nada de lo que hay detrás. Lo que apaga la foto es esto, no el archivo, para
+     poder subirlo o bajarlo sin volver a generar la imagen. */
   --arena:radial-gradient(120% 80% at 50% 0%, rgba(88,28,24,.55) 0%, transparent 60%),
-          linear-gradient(180deg,#100606 0%,#050303 100%);
+          linear-gradient(180deg,rgba(16,6,6,.62) 0%,rgba(5,3,3,.80) 100%);
   /* Y las tarjetas llevan su propio degradado, no un gris liso. */
-  --tarjeta:linear-gradient(160deg,#351c1a 0%,#170c0c 100%);
+  /* Las tarjetas van TRANSLÚCIDAS. Opacas tapaban el fondo entero y la pantalla se leía
+     como una lista de cajas; con el fondo detrás, la jaula se ve entre fila y fila y por
+     debajo de cada una. El degradado sigue siendo el mismo, solo que con alfa. */
+  --tarjeta:linear-gradient(160deg,rgba(53,28,26,.80) 0%,rgba(23,12,12,.86) 100%);
   --sombra-tarjeta:0 18px 40px -20px rgba(0,0,0,.9);
   --brillo-rojo:0 0 30px -6px rgba(212,12,26,.7);
   --brillo-oro:0 0 24px -6px rgba(234,190,74,.6);
@@ -64,7 +71,17 @@
 /* Las tres propiedades por separado, NO el atajo: --arena lleva dos degradados separados
    por coma y `background:` no admite eso. Con el atajo la regla entera era inválida y el
    fondo se caía a blanco, en el navegador y en el móvil. */
-body{background-color:var(--bg);background-image:var(--arena);
+/* EL FONDO. Debajo del todo va la foto de la jaula, apagada por
+   herramientas/preparar-fondo.mjs, y encima el foco rojo de --arena, que es lo que la
+   ata a la paleta del juego. El orden importa: en background-image la primera capa es la
+   de arriba. Va fija, así que no se desplaza con el contenido.
+
+   Cuidado al tocar esto: no se puede escribir en una sola propiedad —el atajo
+   `background: var(--bg) var(--arena) fixed` deja la página en blanco, porque --arena son
+   dos degradados separados por coma—. Por eso va partido. */
+body{background-color:var(--bg);
+  background-image:var(--arena),url(arte/fondo.webp);
+  background-size:auto,cover;background-position:center,center;
   background-attachment:fixed;background-repeat:no-repeat;
   color:var(--txt);
   font:15px/1.45 var(--texto);
