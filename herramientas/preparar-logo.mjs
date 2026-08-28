@@ -1,4 +1,8 @@
-/* Deja el logotipo listo para la cabecera: lo recorta y lo guarda en juego/arte/logo.webp.
+/* Deja el logotipo listo para todo lo que lo usa:
+
+     juego/arte/logo.webp                                 el de la cabecera del juego
+     android/.../drawable-xxxhdpi/ic_launcher_foreground.png   el icono de Android
+     ios/JaulaAbierta/Assets.xcassets/.../icono-1024.png       el icono de iPhone
 
    QUÉ HACE. El archivo que pasó el dueño es un cuadrado de 1254x1254 con las cartas en
    medio y mucho margen negro alrededor. Aquí se le quita ese margen —buscando hasta dónde
@@ -12,11 +16,18 @@
    pasa lo mismo por otro camino. El dibujo está hecho sobre negro y sobre negro se queda:
    la cabecera es casi negra y el recorte ajustado deja poco margen a la vista.
 
+   LOS DOS ICONOS. El de Android es un icono adaptativo: el sistema le recorta la forma
+   que quiera —círculo, cuadrado redondeado, gota— así que el dibujo va centrado y sin
+   llegar a los bordes, sobre una capa de fondo negra que es la que rellena lo que quede.
+   El de iPhone no se recorta ni admite transparencia, así que ahí va el cuadrado entero
+   tal cual, con su negro.
+
    Uso:  node herramientas/preparar-logo.mjs [alto-en-px]
-         (por defecto 96 px de alto, que es 3x del tamaño al que se pinta)
+         (por defecto 96 px de alto, que es 3x del tamaño al que se pinta la cabecera)
 */
 import { chromium } from 'playwright';
 import fs from 'fs';
+import path from 'path';
 
 const ORIGEN = 'originales/logo/logo.png';
 const DESTINO = 'juego/arte/logo.webp';
@@ -60,12 +71,61 @@ const preparar = ({ b64, ALTO, CALIDAD }) => new Promise(res => {
   img.src = 'data:image/png;base64,' + b64;
 });
 
-const out = await pag.evaluate(preparar,
-  { b64: fs.readFileSync(ORIGEN).toString('base64'), ALTO, CALIDAD });
-await nav.close();
-if (!out) { console.log('el logotipo sale vacío'); process.exit(1); }
+/* El icono de Android. 432 px es el tamaño de una capa de icono adaptativo a xxxhdpi
+   —108 dp—, y por eso el archivo va en drawable-xxxhdpi: puesto en drawable a secas el
+   sistema lo tomaría por mdpi y lo ampliaría cuatro veces. El dibujo se deja al 65% del
+   lienzo, que es lo que sobrevive a cualquier máscara; lo que se salga de ahí es negro
+   del fondo de la carta y no se echa en falta. */
+const iconoAndroid = ({ b64, LADO, PARTE }) => new Promise(res => {
+  const img = new Image();
+  img.onerror = () => res(null);
+  img.onload = () => {
+    const c = document.createElement('canvas');
+    c.width = c.height = LADO;
+    const g = c.getContext('2d');
+    const w = Math.round(LADO * PARTE), h = Math.round(w * img.naturalHeight / img.naturalWidth);
+    g.drawImage(img, Math.round((LADO - w) / 2), Math.round((LADO - h) / 2), w, h);
+    res(c.toDataURL('image/png'));
+  };
+  img.src = 'data:image/webp;base64,' + b64;
+});
 
+/* El de iPhone: el cuadrado entero, sin recortar y sin transparencia. */
+const iconoIOS = ({ b64, LADO }) => new Promise(res => {
+  const img = new Image();
+  img.onerror = () => res(null);
+  img.onload = () => {
+    const c = document.createElement('canvas');
+    c.width = c.height = LADO;
+    const g = c.getContext('2d');
+    g.fillStyle = '#000'; g.fillRect(0, 0, LADO, LADO);
+    g.drawImage(img, 0, 0, LADO, LADO);
+    res(c.toDataURL('image/png'));
+  };
+  img.src = 'data:image/png;base64,' + b64;
+});
+
+const bruto = fs.readFileSync(ORIGEN).toString('base64');
+const out = await pag.evaluate(preparar, { b64: bruto, ALTO, CALIDAD });
+if (!out) { await nav.close(); console.log('el logotipo sale vacío'); process.exit(1); }
 fs.writeFileSync(DESTINO, Buffer.from(out.d.split(',')[1], 'base64'));
+
+const AND = 'android/app/src/main/res/drawable-xxxhdpi/ic_launcher_foreground.png';
+const IOS = 'ios/JaulaAbierta/Assets.xcassets/AppIcon.appiconset/icono-1024.png';
+const recortado = fs.readFileSync(DESTINO).toString('base64');
+const png = await pag.evaluate(iconoAndroid, { b64: recortado, LADO: 432, PARTE: 0.65 });
+const ipng = await pag.evaluate(iconoIOS, { b64: bruto, LADO: 1024 });
+await nav.close();
+
+for (const [ruta, datos] of [[AND, png], [IOS, ipng]]) {
+  if (!datos) { console.log('no ha salido', ruta); process.exit(1); }
+  fs.mkdirSync(path.dirname(ruta), { recursive: true });
+  fs.writeFileSync(ruta, Buffer.from(datos.split(',')[1], 'base64'));
+}
+
+const kB = f => Math.round(fs.statSync(f).size / 1024) + ' kB';
 console.log(`${ORIGEN}  ${out.W}x${out.H}`);
-console.log(`  recortado a ${out.sw}x${out.sh} y guardado en ${DESTINO} a ${out.w}x${out.h}` +
-  `, ${Math.round(fs.statSync(DESTINO).size / 1024)} kB`);
+console.log(`  recortado a ${out.sw}x${out.sh}`);
+console.log(`  cabecera  ${DESTINO}  ${out.w}x${out.h}  ${kB(DESTINO)}`);
+console.log(`  Android   ${AND}  432x432  ${kB(AND)}`);
+console.log(`  iPhone    ${IOS}  1024x1024  ${kB(IOS)}`);
