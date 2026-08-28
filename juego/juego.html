@@ -117,14 +117,18 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
    P4P y el .CG, que tienen tamaños distintos, compartan línea base entre ellos. */
 #top .logo .txt{display:flex;align-items:baseline;position:relative;top:10px}
 #top .logo b{color:var(--acc)}
-#top .logo em{color:var(--plata)}
-#top .logo i{color:#fff;font-size:.66em;letter-spacing:.02em}
+/* El 4 va del gris del propio logo y no de --plata: --plata (#b9b2ad) es un gris cálido,
+   tira a beige, y al lado del dibujo cantaba. Este #a59e9f sale de medir el logotipo —los
+   píxeles sin color y con algo de luz— y quedarse con su cuartil alto, que es el metal de
+   los nudillos del guante. --plata no se toca, que la usan las cartas. */
+#top .logo em{color:#a59e9f}
+#top .logo i{color:#fff;font-size:.58em;letter-spacing:.02em}
 /* El logo, a la izquierda del nombre. Va con el negro ya quitado —lo hace
    herramientas/preparar-logo.mjs, que el original es un cuadrado sobre negro puro y la
    cabecera es marrón oscuro—, así que aquí solo hay que darle alto y separación. */
 /* El logo se queda en píxeles y no en em: si fuera en em, agrandar el nombre agrandaría
    también el dibujo y con él toda la cabecera. */
-#top .logo .marca{height:35px;width:auto;margin-right:7px}
+#top .logo .marca{height:35px;width:auto;margin-right:3px}
 .res{display:flex;align-items:center;gap:5px;font-family:var(--titulo);font-size:14px;
   font-weight:700;font-variant-numeric:tabular-nums;
   background:rgba(35,20,19,.9);border:1px solid var(--line);
