@@ -235,7 +235,8 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
      especificidad, y las tarjetas se quedaban azules mientras el resto era granate. */
   background-image:var(--tarjeta)}
 .sobre-fila .fila .ic{display:none}
-.sobre-fila .fila .cu b{display:block;font-size:19px;line-height:1.15;margin-bottom:3px}
+.sobre-fila .fila .cu b{display:block;font-size:21px;line-height:1.15;margin-bottom:3px;
+  font-style:italic}
 .sobre-fila .fila .cu .sub{font-size:12px;line-height:1.4}
 /* El arte, saliéndose de la caja: es lo que hace que el sobre se lea como un objeto y
    no como un icono metido en una celda. */
@@ -253,7 +254,9 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 .sobre-fila.menu .fila{flex-direction:column;align-items:stretch;justify-content:flex-start;
   height:100%;gap:0;padding:13px 14px;border-color:rgba(212,12,26,.55)}
 .sobre-fila.menu .cu{flex:0 0 auto}
-.sobre-fila.menu .cu b{display:block;font-size:17px;line-height:1.1}
+/* En cursiva y algo más grandes que el resto de la interfaz, como el JUGAR del banner,
+   pero muy lejos de su tamaño: ese es el botón principal y tiene que seguir mandando. */
+.sobre-fila.menu .cu b{display:block;font-size:21px;line-height:1.1;font-style:italic}
 .sobre-fila.menu .cu .sub{display:block;font-size:12px;line-height:1.35;margin-top:1px}
 /* El dibujo se queda con lo que sobre, centrado, y nunca empuja al texto. */
 .sobre-fila.menu .sobre-art{position:static;width:auto;flex:1 1 0;min-height:0;
@@ -269,7 +272,7 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
   object-fit:contain;object-position:bottom center}
 .sobre-fila.menu.media .sobre-art.icono{font-size:min(11vw,40px)}
 .sobre-fila.menu.media .sobre-art.icono .ico{stroke-width:1.5}
-.sobre-fila.menu.media .cu b{font-size:15.5px}
+.sobre-fila.menu.media .cu b{font-size:19px}
 .sobre-fila.menu .precio{transform:translateX(-50%);left:50%;right:auto;bottom:-13px;top:auto}
 .mitades .sobre-fila{flex:1 1 0;min-width:0}
 .sobre-fila .fila.alerta{border-color:var(--acc)}
