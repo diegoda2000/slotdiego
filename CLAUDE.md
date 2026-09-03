@@ -111,6 +111,11 @@ avisa si una clave de las listas no corresponde a ningún peleador. **Pero todav
 las tres cartas**: eso es la migración, y es lo que cambia el identificador y rompe lo
 guardado.
 
+**LA MIGRACIÓN ESPERA A LA INTERFAZ, y lo decidió él.** Se hacen las dos a la vez. El
+motivo: adaptar el álbum, los sets y el reciclaje de AHORA a tres escalones —85 sitios en
+`juego.html` y 41 en la suite— es trabajo que se tira, porque esa interfaz se va a rehacer
+entera. Así que no empieces la migración por tu cuenta: va con el rediseño.
+
 **EL LOGO NUEVO YA ESTÁ.** Es un octógono negro con el P4P.CG en blanco y oro; lo pasó
 en `originales/logo-v2/logo.png`, con fondo blanco, y `herramientas/preparar-logo-v2.mjs`
 le quita el fondo y saca el icono de Android y el de iPhone. **El icono de la aplicación ya
@@ -140,6 +145,11 @@ medida, es esto:
 
 **Ya no hay rojo.** La paleta de ahora gira sobre `--acc:#d40c1a`, así que el rediseño de
 la interfaz es también un cambio de color de arriba abajo. Sin empezar.
+
+**LO ÚNICO QUE BLOQUEA AHORA MISMO: no está definida la interfaz nueva.** Todo lo demás
+está decidido o hecho. Se le ha pedido un boceto de la pantalla de inicio —con la carta
+funcionó a la primera— o, si lo prefiere hablado: qué pantallas hay y cuáles desaparecen,
+qué es lo primero que ve el jugador y qué se queda fuera de lo que hay hoy.
 
 **Lo que queda de lo anterior, y está esperando a que él lo diga:**
 
