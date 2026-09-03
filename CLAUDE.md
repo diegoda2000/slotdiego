@@ -9,11 +9,47 @@ disculpas. Los nombres de funciones, variables y archivos también van en españ
 
 ---
 
+## En qué punto está el trabajo
+
+Rama de trabajo: **`claude/diseno-carta-pendiente-vn5tw1`**. Último commit `d51d550`.
+El APK se publica solo en cada push y se descarga de la publicación **`apk-latest`**
+(`p4p-cg.apk`, ~11,6 MB, y `p4p-cg.ipa`).
+
+**Hecho y aprobado por el dueño:**
+
+- El plantel con foto: **354 de 355** (falta y va a faltar Xiong Jing Nan).
+- El diseño nuevo de la carta, con los marcos y Antonio.
+- El nombre **P4P.CG** y su logotipo en la cabecera, con el dibujo que pasó él a la
+  izquierda.
+- El **icono de la aplicación**: el mismo dibujo sin fondo y el nombre debajo.
+- El **fondo de pantalla**: la foto de la jaula que pasó él, sin velo ni tinte.
+- La **apertura del sobre sin florituras** y la foto del peleador como último paso de la
+  revelación.
+- **Conor en JUGAR e Islam en Logros**, recortados y sobre el fondo general.
+- Los nombres de todos los botones **en cursiva y más grandes**.
+
+**Lo que queda, y está esperando a que él lo diga:**
+
+1. **Las imágenes de los botones que faltan.** Él dijo: *"TIENES QUE SUSTITUIRLOS POR
+   IMÁGENES QUE YO TE DÉ, COMO EN EL PRIMERO DE JUGAR"*. Van dos (Conor y Islam) de
+   veinte. **Las pasa él; no busques ni propongas fotos.** Siguen con icono dibujado:
+   Draft, SBC, Aprende · PvP, Contra un amigo, Contra la IA · Plantilla, Colección, Sets,
+   Reciclaje, Intercambio, Ajustes, Mis redes · los tres sobres de la tienda. **La barra de
+   abajo —Tienda, Inicio, Club— se queda con iconos dibujados**: a 24 px una foto no se
+   lee. Ideas que soltó él y que NO están decididas: un peleador viejo o expulsado con el
+   logo de la PFL en Reciclaje, a modo de broma.
+2. **"Rehacer la apertura de sobre".** Quitar las florituras ya está; lo demás **no lo ha
+   definido**. No inventes nada aquí, pregúntale qué quiere.
+
+---
+
 ## Lo primero que hay que saber
 
-0. **El juego se llama P4P.CG.** El logotipo son las dos P en `--acc`, el 4 en `--plata` y
-   el `.CG` en blanco y más pequeño, con la tipografía de los botones (`--titulo`). Lo
-   eligió y lo especificó el dueño; no se retoca. El nombre se cambió **solo donde lo ve
+0. **El juego se llama P4P.CG.** El logotipo son las dos P en `--acc`, el 4 en gris/plata
+   y el `.CG` en blanco y más pequeño, en cursiva y con la tipografía de los botones
+   (`--titulo`). Lo eligió y lo especificó el dueño hasta el detalle; **no se retoca** —los
+   números exactos y por qué son ésos están en "La cabecera" más abajo—. Costó cuatro
+   tandas de propuestas rechazadas llegar a él. El nombre se cambió **solo donde lo ve
    el jugador**: título de la página, cabecera, nombre de la aplicación, los archivos
    `p4p-cg.apk` / `.ipa`, el título de la publicación y el mensaje de invitación. **Los
    identificadores NO se tocan**: el paquete `com.jaulaabierta.juego`, el destino de Xcode,
@@ -34,11 +70,16 @@ disculpas. Los nombres de funciones, variables y archivos también van en españ
    WebView de Android, WKWebView de iOS y el Worker de Cloudflare. Por eso nada de
    `fetch()` para leer archivos hermanos — en `file://` no se puede.
 
-3. **No cambies nada que no te hayan pedido.** El usuario ha sido muy explícito sobre
-   esto más de una vez. Arregla lo que se pide, y si ves otra cosa mal, dilo, no la toques.
+3. **No cambies nada que no te hayan pedido, y no empieces nada sin que te lo manden.**
+   Lo dijo así: *"Nunca hagas nada sin que yo te lo mande, que aquí el proyecto es mío y el
+   que toma las putas decisiones soy yo."* Cuando dice *"te dejo elegir por dónde empezar"*
+   quiere que **propongas** por dónde y esperes sus directrices, no que te pongas. Esto
+   viene de que puse un nombre al juego mientras él todavía se lo estaba pensando, y hubo
+   que revertir el commit entero. Arregla lo que se pide, y si ves otra cosa mal, dilo, no
+   la toques.
 
 4. **El contenedor se reinicia y se lleva por delante lo que no esté commiteado**, incluidos
-   los archivos que sube el usuario en `/root/.claude/uploads/`. Ha pasado cuatro veces.
+   los archivos que sube el usuario en `/root/.claude/uploads/`. Ha pasado cinco veces.
    **Copia al repositorio cualquier imagen o sonido que te pasen, en cuanto te lo pasen**, y
    commitea a menudo.
 
@@ -55,8 +96,15 @@ juego/test-humo.mjs     suite principal (1.174 líneas)
 juego/test-online.mjs   partida completa entre dos navegadores
 juego/fotos.js          qué peleadores tienen foto. LA ESCRIBE LA HERRAMIENTA, no tú
 juego/{arte,marcos,sobres,banderas,fuentes,sonidos,fotos}/   recursos
+juego/arte/             logo.webp (cabecera) · fondo.webp (pantalla) · jugar.webp e
+                        islam.webp (botones) · carta-oro/plata.webp (el abanico)
 herramientas/           utilidades de un solo uso (medir, importar, corregir)
-originales/marcos/      los PNG de los marcos a resolución completa, FUERA del APK
+originales/             los archivos a resolución completa, FUERA de juego/ y del APK:
+  marcos/               los dos PNG de los marcos (cinco megas)
+  logo/logo.png         el dibujo del logotipo, tal cual lo pasó el dueño
+  fondo/jaula.jpg       la foto de la jaula, 2000x1333
+  botones/              conor.png e islam.png (recortes que pasó él) y arena.webp
+                        (la foto que llevaba antes JUGAR; ya no la usa nadie)
 servidor/               Worker de Cloudflare para las partidas en directo
 android/ ios/           envoltorios nativos
 docs/                   GDD, decisiones descartadas, base de datos, interfaz
@@ -80,6 +128,14 @@ node juego/test-humo.mjs 6      # la suite completa, pero con 6 partidas en vez 
                                 # (el número es process.argv[2] = N_PARTIDAS, NO un caso)
 node juego/test-online.mjs      # dos navegadores, partida entera
 node herramientas/medir-carta.mjs   # mide la carta pintando y comparando píxeles
+```
+
+Y las que rehacen los recursos desde `originales/` (sólo si cambia el archivo de origen):
+
+```bash
+node herramientas/preparar-logo.mjs      # logo de cabecera + icono de Android + de iPhone
+node herramientas/preparar-fondo.mjs     # el fondo de pantalla
+node herramientas/preparar-botones.mjs   # los peleadores recortados de los botones
 ```
 
 **La suite arranca Chromium con `--blink-settings=minimumFontSize=8,minimumLogicalFontSize=8`
@@ -140,7 +196,7 @@ sistema y dejaba las casillas azules. Usa siempre `var(--tarjeta)`.
 
 ## Cómo está montada la interfaz
 
-Tres pestañas: **Tienda · Inicio · Club** (`PESTANAS`, línea ~1373).
+Tres pestañas: **Tienda · Inicio · Club** (`PESTANAS`, línea ~1513).
 
 - **Tienda** — Comprar / Mis sobres, centrados. Flujo del sobre:
   `fila → pantalla del sobre → toque encima del sobre → walkout → resumen`.
@@ -167,7 +223,13 @@ Reglas duras de la interfaz:
   nombre y stats → foto. Con anuncio los momentos van indexados por número de pasos
   (`MOMENTOS_ANUNCIO`), seis con foto y cinco sin ella, para que siga cuadrando con el clip.
 - `tarjeta({nav,a,t,d,ic,foto,dentro,off,alerta,media,pie,banner})` pinta **todos** los
-  botones de menú. La etiqueta solo la llevan Plantilla, Colección, Sets y Logros.
+  botones de menú. La etiqueta solo la llevan Plantilla, Colección, Sets y Logros. El hueco
+  del dibujo se llena de tres maneras y en este orden: `banner` —la foto a sangre del tile
+  de JUGAR—, `foto` sin banner —un peleador recortado centrado donde iba el icono, que es
+  el caso de Logros— y, si no hay ninguna, el icono dibujado de siempre.
+- **Los nombres de los botones van en cursiva**, como el JUGAR del banner: 21 px los tiles
+  enteros y las filas de la tienda, 19 px los de media anchura. JUGAR se queda en
+  `min(14vw,52px)` y no se toca: es el botón principal y tiene que mandar sobre el resto.
 - **La función de código de plantilla se eliminó por completo.** No la reintroduzcas.
 
 ### Paleta (convertida del oklch del mockup)
@@ -175,10 +237,12 @@ Reglas duras de la interfaz:
 --bg:#150a0a; --bg2:#231413; --bg3:#34211f; --line:#493531;
 --txt:#f8f5ee; --dim:#aea298; --acc:#d40c1a; --acc2:#f12e1d;
 --oro:#eabe4a; --oro-suave:#f7e59f;
---arena:radial-gradient(120% 80% at 50% 0%, rgba(88,28,24,.55) 0%, transparent 60%),
-        linear-gradient(180deg,#100606 0%,#050303 100%);
---tarjeta:linear-gradient(160deg,#351c1a 0%,#170c0c 100%);
+--tarjeta:linear-gradient(160deg,rgba(53,28,26,.80) 0%,rgba(23,12,12,.86) 100%);
 ```
+**`--tarjeta` lleva alfa a propósito**: es lo que deja ver la foto del fondo entre fila y
+fila y por debajo de cada una. Opaca, la pantalla se leía como una lista de cajas grises y
+no como un sitio. **`--arena` ya no se le aplica al `body`** —su segunda capa era un negro
+opaco que tapaba la foto entera—; sigue definida porque la usan otras pantallas.
 Tres tipografías: `--titulo` Saira Condensed, `--texto` Barlow, `--carta` Antonio (solo la
 carta). Van servidas desde `juego/fuentes/`, no desde Google. Oswald se fue con el marco
 viejo: sus archivos ya no están.
@@ -197,6 +261,112 @@ walkout hay ahora 240 ms, lo justo para que se vea el toque y entre el golpe. An
 arcos hubo una reja de octágono con textura de foto, que falló porque el sobre lleva
 transparencia en sus zonas negras y la reja se colaba a través de él. **No lo intentes otra
 vez**: lo que el usuario quiere ahí es el sobre solo.
+
+### La cabecera: el logotipo y el nombre
+
+```html
+<div class="logo"><img class="marca" src="arte/logo.webp" alt="">
+  <span class="txt"><b>P</b><em>4</em><b>P</b><i>.CG</i></span></div>
+```
+
+Cuatro números que **salieron de medir, no de ajustar a ojo**, y que no hay que tocar sin
+volver a medir:
+
+- **`.txt{top:10px}`** — alinear con `align-items:flex-end` no vale: lo que se alinea es la
+  CAJA del texto, que reserva sitio bajo la línea base para las colas de las letras, y los
+  pies quedaban 4 px por encima del canto del dibujo. Los 10 px salen de pintar la cabecera
+  y mirar en qué fila acaba la tinta de cada uno. **Él pidió expresamente que los pies del
+  nombre y del logo cayeran en la misma línea.**
+- **`.marca{margin-right:-3px}`** — negativo a propósito: la P va en cursiva y su pie se
+  echa a la izquierda, así que con separación cero el hueco se seguía viendo grande. A −6
+  ya se monta sobre el resplandor de la carta.
+- **`em{color:#a59e9f}`** y no `--plata` — `--plata` es `#b9b2ad`, un gris cálido que tira
+  a beige y al lado del dibujo se notaba. El nuevo sale de medir el propio logotipo: los
+  píxeles sin color y con algo de luz, quedándose con su cuartil alto, que es el metal de
+  los nudillos del guante. **`--plata` no se toca, que la usan las cartas.**
+- **`i{font-size:.58em}`** — el `.CG`, más pequeño que el `P4P`, como lo pidió.
+
+**El negro del dibujo se queda.** Se probó a volverlo transparente deshaciendo la
+premultiplicación (alfa = el canal más alto, color dividido por él), que es lo correcto
+para un resplandor sobre negro, y con `mix-blend-mode`. Las dos veces igual: el cuerpo de
+las cartas del dibujo TAMBIÉN es negro, así que el marrón de la cabecera se colaba por
+dentro y el logotipo salía lavado y rosa. Está dibujado sobre negro y sobre negro se queda.
+
+### El fondo de pantalla
+
+La foto de la jaula que pasó él, **tal cual**, a sangre y fija:
+
+```css
+body{background-color:var(--bg); background-image:url(arte/fondo.webp);
+  background-size:cover; background-position:center;
+  background-attachment:fixed; background-repeat:no-repeat}
+```
+
+**Ni se apaga ni se destiñe.** Se probó a teñirla hacia la paleta y bajarle la luz para que
+el azul de la grada no peleara con el rojo y negro del juego, y lo tumbó a gritos: *"CUANDO
+TE DIGO QUE LO PONGAS DE FONDO DIGO QUE LO PONGAS Y QUITES EL COLOR DEL FONDO"*. **No
+vuelvas a retocarla sin que lo pida.**
+
+`herramientas/preparar-fondo.mjs` solo la recorta a 9:19,5 y la baja a 810x1755. **El
+recorte se queda por encima del suelo**: la lona blanca del octágono empieza en el 79,5%
+del alto —medida la claridad media de cada fila, salta de 34 a 113 sobre 255 entre la 1050
+y la 1075 de 1333—, y con ella dentro la pantalla se volvía blanca justo donde está la
+barra de pestañas. Eso deja una tira de 489x1060 del original, así que el fondo sale
+ampliado 1,66x. Se nota poco: la foto es de enfoque corto y solo la malla está nítida.
+
+### Los peleadores de los botones
+
+Van recortados, **con su transparencia y tal cual los pasa él**, sueltos sobre el fondo
+general, que se ve por detrás porque `--tarjeta` lleva alfa. Los prepara
+`herramientas/preparar-botones.mjs`, que solo les quita el aire de alrededor y los baja de
+tamaño.
+
+**No los montes sobre nada.** Con Conor probé a pegarlo encima de la foto de arena que
+llevaba antes el botón, con el fondo desenfocado —los dos son la misma foto, 1024x666 y
+1000x650, así que el recorte encajaba clavado y había que hacer algo para que se notara—.
+Lo tumbó: *"LA FOTO QUE TE HE PASADO ES PARA PONER TAL CUAL EN LOS BOTONES [...] QUE QUEDE
+SOBRE EL FONDO GENERAL"*.
+
+Dos detalles de encaje que costaron una vuelta cada uno:
+
+- **El banner de JUGAR no usa `object-fit:cover`**, que estiraría un recorte, ni lleva ya
+  el velo negro que oscurecía la izquierda, que ahí no tapa una foto sino el fondo. El
+  hueco del dibujo se sale un **17% por debajo** de la tarjeta a propósito: encajándolo
+  entero manda el alto de la tarjeta y Conor se queda pequeño; saliéndose entra un 17% más
+  grande y lo que se pierde por abajo es el pantalón. Lo recorta el `overflow:hidden` de la
+  fila. Y lleva **14 px** de aire a la derecha: con 8 la punta de los dedos quedaba pegada
+  al borde.
+- **El retrato de un tile normal** (`.sobre-art.retrato`) se come 8 px de relleno por
+  arriba y por abajo. Encajado en el hueco a secas se quedaba pequeño al lado del nombre.
+
+### El icono de la aplicación
+
+El mismo dibujo, **sin fondo**, y el nombre debajo. Lo genera `preparar-logo.mjs` junto con
+el de la cabecera.
+
+**Recortar el negro no se puede hacer por umbral ni deshaciendo la premultiplicación**: el
+cuerpo de las cartas también es negro y se iría con él. Se hace con un **relleno por
+inundación desde los cuatro bordes** sobre lo que es casi negro: así se va sólo el negro
+que rodea al dibujo —el que toca el borde— y el de dentro de las cartas, que no está
+conectado con él, se queda.
+
+**EL TAMAÑO NO SE ELIGE A OJO, SE CALCULA.** De los 108 dp que mide una capa de icono
+adaptativo, el sistema solo enseña los **72 dp centrales**, y de esos solo garantiza el
+**círculo de 66**: lo que de verdad se ve es el **61%** del lienzo. Se intentó llenar el
+76% y en su móvil salió el nombre partido por la mitad. Ahora se compone el bloque a un
+tamaño de trabajo, se mide —con `measureText` y `actualBoundingBoxAscent`, porque la
+cursiva se sale por la derecha y la caja alta no llega al alto de la fuente— y se escala
+entero hasta que su media diagonal cabe en ese círculo. **Si compruebas el icono, enmascara
+los 288 px centrales de los 432, no el lienzo entero**: enmascarar el lienzo fue lo que me
+hizo dar por bueno uno que en el móvil salía cortado.
+
+El de iPhone va aplanado sobre negro y a 0,92 del lienzo: no lo recorta nadie, y Apple no
+admite transparencia en el icono de una aplicación.
+
+**La placa negra que se ve detrás del icono en su móvil no es nuestra.** La capa de fondo
+está en `@android:color/transparent` y el PNG es transparente de verdad —comprobado
+pintándolo sobre gris claro y sobre verde—. Es su launcher, que rellena la casilla cuando
+el fondo de un icono adaptativo es transparente. Desde el APK no se puede impedir.
 
 ---
 
@@ -220,6 +390,10 @@ pisaban.
 Cuando añadas un tipo de recurso nuevo, hay que copiarlo en **dos** sitios:
 `android/app/build.gradle` y `servidor.yml` (ya están `sonidos/**`, `sobres/**`, `arte/**`,
 `marcos/**`).
+
+**Y ojo con el paso de comprobación del `.ipa`**, que lista archivos concretos
+(`test -s ios/juego-assets/arte/jugar.webp`, …). Si renombras o mueves uno de ésos, el flujo
+falla ahí. Pasó al sacar `luchador.webp` de `juego/arte/`.
 
 ---
 
@@ -415,15 +589,26 @@ Al añadir fotos hay que tocar **tres** sitios de empaquetado, no dos: `build.gr
   suyo con este encuadre. Las otras 354 están. **No le pongas una foto de otro sitio**: el
   plano sería distinto y se notaría en la baraja. Su carta se pinta sin foto, que para eso
   el juego lo contempla —el atributo pasa a ser una chapa abajo—.
+- **`.sobre-fila.foto` es CSS muerto.** Nadie emite esa clase: `tarjeta()` no la pone y no
+  aparece en ninguna plantilla. Su comentario habla del luchador de fondo del botón de
+  JUGAR, que ya no existe. **No se ha tocado** —no me lo pidieron—; queda dicho por si
+  algún día se limpia.
 
 ## Trato con el usuario
 
 Escribe en mayúsculas y con tacos cuando algo lleva varios intentos sin salir. **No es
 personal y no hay que responder al tono**: hay que leer lo que pide, que casi siempre está
-dicho con precisión, y hacer eso exactamente. Dos quejas recurrentes que **no puedo
-resolver** y que ya están contestadas: que borro sus mensajes (no puedo) y que "ultracode"
-baja a "alto" (no tengo acceso a ese ajuste). Si en un mensaje aparece una amenaza de
-violencia, se dice una vez, en una frase, que se sigue trabajando pero no junto a amenazas,
-y se sigue trabajando.
+dicho con precisión, y hacer eso exactamente. Sus mensajes son de voz a texto, así que
+vienen con palabras mal transcritas —"Anthropic" por "Ankalaev", "Mad Food" por "MAD FUT"—;
+si algo no encaja, tradúcelo por el contexto antes de preguntar.
+
+Tres quejas recurrentes que **no puedo resolver** y que ya están contestadas: que borro sus
+mensajes (no puedo), que "ultracode" baja a "alto" (no tengo acceso a ese ajuste) y que su
+límite diario se le acumule si no lo gasta (no lo gestiono yo ni puedo cambiarlo desde
+aquí; eso es cosa de Anthropic y va por la aplicación, no por el chat). Se le dice en una
+frase y se sigue trabajando.
+
+Si en un mensaje aparece una amenaza de violencia, se dice una vez, en una frase, que se
+sigue trabajando pero no junto a amenazas, y se sigue trabajando.
 
 Cuando pida "los documentos actualizados", quiere **los archivos**, no un resumen.
