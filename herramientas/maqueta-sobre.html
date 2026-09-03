@@ -3,12 +3,15 @@
 <title>Maqueta de la apertura del sobre</title>
 <!-- MAQUETA, no es el juego.
 
-     EL RASGADO. No es cortar el PNG en dos trozos y apartar uno. La rasgadura AVANZA:
-     hay una línea de dientes generada una vez, y en cada fotograma sólo está abierta
-     hasta donde ha llegado. Lo que queda por delante sigue pegado. La solapa, además,
-     se levanta girando sobre el punto exacto donde va la rasgadura en ese momento, que
-     es lo que hace una bolsa de verdad: la esquina se despega primero y el desgarro
-     corre hacia el otro lado.
+     EL RASGADO. No es cortar el PNG en dos trozos y apartar uno. La rasgadura AVANZA y
+     lo hace A TIRONES: hay una línea de dientes generada una vez, y en cada fotograma
+     sólo está abierta hasta donde ha llegado; lo que queda por delante sigue pegado. Va
+     por tirones desiguales con su pausa detrás, porque de un tirón seguido parece una
+     cremallera. La solapa gira sobre el punto exacto donde va la rasgadura en ese
+     momento y SE DOBLA HACIA DONDE ÉSTA AVANZA, no hacia abajo.
+
+     Y al acabar los dos trozos SE VAN DE LA PANTALLA: la solapa sale despedida girando
+     y el cuerpo se desploma acelerando. Un trozo de plástico no se desvanece.
 
      Eso obliga a recalcular el recorte en cada fotograma —el polígono cambia de número
      de vértices—, así que va con requestAnimationFrame y no con una transición de CSS,
@@ -43,6 +46,13 @@ body{margin:0;background:#0a0708;overflow:hidden;
 #sobre .parte{position:absolute;inset:0;
   background:url(../originales/sobres-v2/1-basico.png) center/100% 100% no-repeat;
   filter:drop-shadow(0 26px 60px rgba(0,0,0,.85))}
+/* EL FORRO. Al doblarse del todo, la solapa pasa de los 90 grados y lo que se ve es su
+   CARA DE DENTRO, no la impresa. Como del archivo sólo tenemos la de fuera, se le echa
+   encima este velo mate según va pasando de canto: sin él se vería el dibujo espejado,
+   que es justo lo que delata el truco. Va recortado por el clip-path del padre. */
+#sobre .alto::after{content:'';position:absolute;inset:0;pointer-events:none;
+  opacity:var(--forro,0);
+  background:linear-gradient(178deg,#15161a 0%,#26282e 38%,#0f1013 74%,#1b1d22 100%)}
 
 #sobre .lustre{position:absolute;inset:0;pointer-events:none;overflow:hidden;
   -webkit-mask-image:url(../originales/sobres-v2/1-basico.png);
@@ -55,11 +65,18 @@ body{margin:0;background:#0a0708;overflow:hidden;
                 100%{transform:translateX(420%) rotate(8deg)}}
 #sobre.rasgando .lustre{opacity:0;transition:opacity .2s}
 
-/* Cuando la rasgadura llega al final, la solapa ya suelta se va y el cuerpo cae. */
-#sobre.suelta .alto{animation:vuela .46s cubic-bezier(.35,.05,.6,1) forwards}
-@keyframes vuela{to{transform:translate3d(26%,-56%,0) rotate(34deg);opacity:0}}
-#sobre.suelta .bajo{animation:cae .8s cubic-bezier(.4,0,.7,1) .16s forwards}
-@keyframes cae{to{transform:translate3d(0,38%,0) rotate(2deg);opacity:0}}
+/* Cuando la rasgadura llega al final los dos trozos SE VAN DE LA PANTALLA. Nada de
+   desvanecerse: un trozo de plástico no se evapora, se cae. La solapa sale despedida
+   girando y el cuerpo se desploma acelerando —la curva es de gravedad, empieza lento y
+   acaba rápido— hasta salirse por abajo. */
+#sobre.suelta .alto{animation:vuela .72s cubic-bezier(.28,.4,.5,1) forwards}
+@keyframes vuela{
+  55% {transform:translate3d(58%,-34%,0) rotate(74deg) scale(.94)}
+  100%{transform:translate3d(112%,26%,0) rotate(168deg) scale(.86)}}
+#sobre.suelta .bajo{animation:cae .78s cubic-bezier(.42,0,1,1) .12s forwards}
+@keyframes cae{
+  30% {transform:translate3d(2%,14%,0) rotate(3deg)}
+  100%{transform:translate3d(9%,132%,0) rotate(13deg)}}
 
 /* ── EL MONTÓN ─────────────────────────────────────────────────────────────
    Todas las cartas viven en el mismo sitio; lo único que cambia es su puesto en la
@@ -222,8 +239,10 @@ const CORTE = 11.5;                 // % del alto: justo bajo la banda de pliegu
 const N = 34;
 const DIENTES = Array.from({length: N + 1}, (_, i) => {
   const x = 100 * i / N;
-  // Alternos y desiguales: un peine regular no parece un desgarro.
-  const v = (i % 2 ? -1 : 1) * (0.75 + 0.55 * Math.abs(Math.sin(i * 2.7)));
+  /* Alternos y desiguales: un peine regular no parece un desgarro. Y GRANDES: con
+     dientes de un punto porcentual, a tamaño de móvil son dos píxeles y el borde se lee
+     como un corte de tijera. */
+  const v = (i % 2 ? -1 : 1) * (1.5 + 1.3 * Math.abs(Math.sin(i * 2.7)));
   return { x, y: CORTE + v };
 });
 
@@ -252,15 +271,21 @@ function pintaRasgadura(p) {
   const r = recortes(p);
   alto.style.clipPath = r.alto;
   bajo.style.clipPath = r.bajo;
-  /* La solapa se levanta girando sobre el punto donde ESTÁ el desgarro: la esquina se
-     despega primero y el giro crece según avanza. El pliegue del plástico se sugiere
-     con un poco de skew. */
+  /* La solapa gira sobre el punto donde ESTÁ el desgarro, que se va moviendo con él. */
   alto.style.transformOrigin = `${(p * 100).toFixed(2)}% ${r.punta.y.toFixed(2)}%`;
-  /* El giro crece casi desde el principio: si va con p al cuadrado, a media rasgadura
-     son cuatro grados y no se ve nada. Con esto la esquina ya está despegada cuando el
-     desgarro va por la mitad, que es lo que se ve al abrir una bolsa. */
-  alto.style.transform = `rotate(${(-34 * Math.pow(p, .85)).toFixed(2)}deg) `
-    + `skewX(${(-6 * p).toFixed(2)}deg) translateY(${(-1.6 * p).toFixed(2)}%)`;
+  /* Y GIRA HACIA DONDE VA EL CORTE, no hacia abajo. Con la bisagra a la derecha del
+     trozo ya suelto, un giro en el sentido del reloj le levanta el extremo libre y se
+     lo lleva por encima hacia el mismo lado al que corre la rasgadura: es doblar la
+     tapa, que es lo que hace la mano. Al revés colgaría hacia abajo, que es justo lo
+     que no queremos.
+     Y se dobla DEL TODO: llega a 172 grados, o sea que acaba tumbada al otro lado de la
+     bisagra, como la tapa de una lata doblada hacia atrás. Pasados los 90 lo que se ve
+     es su cara de dentro, y de eso se encarga el forro de arriba. */
+  const giro = 172 * Math.pow(p, .8);
+  alto.style.transform = `rotate(${giro.toFixed(2)}deg) `
+    + `skewX(${(-7 * p).toFixed(2)}deg) translateX(${(2.5 * p).toFixed(2)}%)`;
+  // El forro entra justo cuando pasa de canto, no antes.
+  alto.style.setProperty('--forro', Math.max(0, Math.min(1, (giro - 86) / 34)).toFixed(3));
   /* El cuerpo acusa el tirón y se inclina un pelo hacia el otro lado. */
   bajo.style.transform = `rotate(${(0.9 * p).toFixed(2)}deg)`;
 }
@@ -328,23 +353,41 @@ function rasgar() {
   setTimeout(() => sobre.classList.remove('toque'), 140);
   sobre.classList.add('rasgando');
 
-  const DUR = 900, t0 = performance.now();
-  (function paso(t) {
-    const u = Math.min(1, (t - t0) / DUR);
-    // Cuesta arrancar y luego corre: es como se abre una bolsa de verdad.
-    const p = u < .32 ? (u / .32) * .16 : .16 + .84 * Math.pow((u - .32) / .68, .75);
-    pintaRasgadura(p);
-    if (u < 1) requestAnimationFrame(paso); else soltar();
-  })(t0);
+  /* A TIRONES, que es como se rompe una bolsa: pega un tirón grande, se para, otro más
+     corto, se para, y el último la abre del todo. De un tirón seguido parece una
+     cremallera, no un desgarro. Cada tirón lleva su tramo, su duración y la pausa que
+     va detrás; los tramos son desiguales a propósito. */
+  const TIRONES = [
+    { hasta: .26, dura: 170, pausa: 110 },
+    { hasta: .41, dura: 110, pausa:  85 },
+    { hasta: .70, dura: 190, pausa:  95 },
+    { hasta: .82, dura:  90, pausa:  70 },
+    { hasta: 1,   dura: 175, pausa:   0 },
+  ];
+  let n = 0, desde = 0;
+  (function tiron() {
+    const t = TIRONES[n], t0 = performance.now();
+    (function paso(ahora) {
+      const u = Math.min(1, (ahora - t0) / t.dura);
+      // Cada tirón sale seco y frena al final, como cuando cede el plástico.
+      pintaRasgadura(desde + (t.hasta - desde) * (1 - Math.pow(1 - u, 2.4)));
+      if (u < 1) return requestAnimationFrame(paso);
+      desde = t.hasta;
+      if (++n < TIRONES.length) setTimeout(tiron, t.pausa);
+      else soltar();
+    })(t0);
+  })();
 }
 
 function soltar() {
   sobre.classList.add('suelta');
+  /* Las cartas esperan 360 ms: si suben antes, tapan justo el momento en el que la
+     solapa sale despedida y el cuerpo empieza a caer, que es lo que hay que ver. */
   setTimeout(() => {
     monton.classList.add('sale');
     pila.forEach(el => el.classList.remove('dentro'));
-    setTimeout(() => { sobre.style.display = 'none'; fase = 'tapada'; avisa(); }, 620);
-  }, 170);
+    setTimeout(() => { sobre.style.display = 'none'; fase = 'tapada'; avisa(); }, 700);
+  }, 360);
 }
 
 function avisa() {
