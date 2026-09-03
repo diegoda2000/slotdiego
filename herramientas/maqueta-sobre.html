@@ -1,20 +1,24 @@
 <!doctype html><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Maqueta de la apertura del sobre</title>
-<!-- MAQUETA, no es el juego. Es la apertura tal como la pidió el dueño:
+<!-- MAQUETA, no es el juego.
 
-       toca el sobre → la parte de arriba se rasga por el dentado y sale volando
-       → el montón de cartas sube desde dentro del cuerpo → se revelan una a una
-       → y la última se queda BOCA ABAJO, que es la que puede ser la buena.
+     EL RASGADO. No es cortar el PNG en dos trozos y apartar uno. La rasgadura AVANZA:
+     hay una línea de dientes generada una vez, y en cada fotograma sólo está abierta
+     hasta donde ha llegado. Lo que queda por delante sigue pegado. La solapa, además,
+     se levanta girando sobre el punto exacto donde va la rasgadura en ese momento, que
+     es lo que hace una bolsa de verdad: la esquina se despega primero y el desgarro
+     corre hacia el otro lado.
 
-     Sin librerías: sólo transform y opacity, que es lo único que va fino en el WebView
-     de un móvil. Nada de width/height/top animados, que obligan a recalcular la página
-     en cada fotograma.
+     Eso obliga a recalcular el recorte en cada fotograma —el polígono cambia de número
+     de vértices—, así que va con requestAnimationFrame y no con una transición de CSS,
+     que no sabe interpolar dos polígonos con distinta cantidad de puntos.
 
-     EL RASGADO NO ES UNA IMAGEN RECORTADA. El sobre se pinta DOS VECES, la misma
-     imagen, y cada copia se recorta con un clip-path que comparte la misma línea de
-     dientes: la de arriba se queda con lo de encima de la línea y la de abajo con lo de
-     debajo. Así el corte encaja diente con diente y no hace falta preparar archivos. -->
+     LAS CARTAS. Salen TODAS BOCA ABAJO en un montón. Se toca y la de arriba se da la
+     vuelta EN SU SITIO; se toca otra vez y esa se va al FONDO DEL MONTÓN, dejando
+     arriba la siguiente, todavía boca abajo. Ninguna se va a ninguna parte.
+
+     Sólo transform y opacity, que es lo único que va fino en el WebView de un móvil. -->
 <style>
 @font-face{font-family:Saira Condensed;src:url(../juego/fuentes/saira-700-latin.woff2) format('woff2');font-weight:700}
 @font-face{font-family:Saira Condensed;src:url(../juego/fuentes/saira-800-latin.woff2) format('woff2');font-weight:800}
@@ -32,17 +36,14 @@ body{margin:0;background:#0a0708;overflow:hidden;
 
 #escena{position:fixed;inset:0;display:grid;place-items:center;perspective:1400px}
 
-/* ── EL SOBRE ────────────────────────────────────────────────────────────────
-   Dos copias de la misma imagen, cada una recortada por su lado de la línea de
-   dientes. --corte es dónde cae esa línea, en % del alto del sobre. */
-#sobre{position:relative;width:min(64vw,calc(58vh * 1024 / 1536));aspect-ratio:1024/1536;
-  cursor:pointer;transition:transform .18s ease}
-#sobre.toque{transform:scale(.97)}
-#sobre .parte{position:absolute;inset:0;background:url(../originales/sobres-v2/1-basico.png)
-  center/100% 100% no-repeat;
+/* ── EL SOBRE ──────────────────────────────────────────────────────────────── */
+#sobre{position:relative;width:min(80vw,calc(66vh * 1024 / 1536));aspect-ratio:1024/1536;
+  cursor:pointer;transition:transform .16s ease}
+#sobre.toque{transform:scale(.975)}
+#sobre .parte{position:absolute;inset:0;
+  background:url(../originales/sobres-v2/1-basico.png) center/100% 100% no-repeat;
   filter:drop-shadow(0 26px 60px rgba(0,0,0,.85))}
 
-/* El brillo que recorre el plástico mientras está cerrado: dice "esto se toca". */
 #sobre .lustre{position:absolute;inset:0;pointer-events:none;overflow:hidden;
   -webkit-mask-image:url(../originales/sobres-v2/1-basico.png);
   mask-image:url(../originales/sobres-v2/1-basico.png);
@@ -52,70 +53,52 @@ body{margin:0;background:#0a0708;overflow:hidden;
   transform:translateX(0) rotate(8deg);animation:pasa 3.4s ease-in-out infinite}
 @keyframes pasa{0%,62%{transform:translateX(0) rotate(8deg)}
                 100%{transform:translateX(420%) rotate(8deg)}}
+#sobre.rasgando .lustre{opacity:0;transition:opacity .2s}
 
-/* Al rasgar: la solapa gira y se va, el cuerpo se hunde y se apaga. */
-#sobre.abierto .lustre{opacity:0}
-#sobre.abierto .alto{animation:vuela .78s cubic-bezier(.3,.05,.6,1) forwards}
-#sobre.abierto .bajo{animation:cae 1.05s cubic-bezier(.4,0,.7,1) .30s forwards}
-@keyframes vuela{
-  0%  {transform:translate3d(0,0,0) rotate(0deg);opacity:1}
-  18% {transform:translate3d(0,-2%,0) rotate(-1.5deg);opacity:1}
-  100%{transform:translate3d(26%,-88%,0) rotate(24deg);opacity:0}}
-@keyframes cae{
-  0%  {transform:translate3d(0,0,0) rotate(0);opacity:1}
-  100%{transform:translate3d(0,34%,0) rotate(3deg);opacity:0}}
+/* Cuando la rasgadura llega al final, la solapa ya suelta se va y el cuerpo cae. */
+#sobre.suelta .alto{animation:vuela .46s cubic-bezier(.35,.05,.6,1) forwards}
+@keyframes vuela{to{transform:translate3d(26%,-56%,0) rotate(34deg);opacity:0}}
+#sobre.suelta .bajo{animation:cae .8s cubic-bezier(.4,0,.7,1) .16s forwards}
+@keyframes cae{to{transform:translate3d(0,38%,0) rotate(2deg);opacity:0}}
 
-/* ── EL MONTÓN DE CARTAS ─────────────────────────────────────────────────────
-   Nacen dentro del cuerpo del sobre —de ahí que empiecen bajas y pequeñas— y
-   suben. Cada una lleva su retraso, así que salen en cascada y no en bloque. */
+/* ── EL MONTÓN ─────────────────────────────────────────────────────────────
+   Todas las cartas viven en el mismo sitio; lo único que cambia es su puesto en la
+   pila, y de ahí salen su desplazamiento, su escala y su orden. Pasar una al fondo
+   es cambiarle el puesto, no llevársela a otra parte. */
 #monton{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none}
 .carta{position:absolute;width:min(74vw,calc(58vh * 1054 / 1492));aspect-ratio:1054/1492;
-  transform-style:preserve-3d;opacity:0;
-  /* El orden va por variable y NO en el atributo style: un z-index escrito en línea le
-     gana a cualquier regla, y la carta que se está revelando se quedaba detrás del
-     montón. */
-  z-index:var(--z,0);
-  will-change:transform,opacity}
-#monton.sale .carta{animation:sube .62s cubic-bezier(.2,.8,.3,1) forwards;
-  animation-delay:var(--r)}
-@keyframes sube{
-  0%  {transform:translate3d(0,42%,0) scale(.42) rotate(var(--giro));opacity:0}
-  40% {opacity:1}
-  100%{transform:translate3d(var(--dx),var(--dy),0) scale(.62) rotate(var(--giro));opacity:1}}
+  transform-style:preserve-3d;
+  --i:0;                       /* puesto en la pila: 0 es la de arriba */
+  transform:translate3d(0, calc(var(--i) * 1.2%), 0) scale(calc(1 - var(--i) * .028));
+  z-index:calc(50 - var(--i));
+  transition:transform .42s cubic-bezier(.25,.8,.3,1);
+  will-change:transform}
+/* Al salir del sobre nacen dentro del cuerpo y suben a su puesto, en cascada. */
+.carta.dentro{transform:translate3d(0,46%,0) scale(.34);opacity:0}
+#monton.sale .carta{transition:transform .55s cubic-bezier(.2,.85,.3,1) var(--r),
+                               opacity .3s ease var(--r)}
 
-/* La carta que está siendo revelada: al frente, grande y derecha. */
-.carta.mirando{animation:alfrente .5s cubic-bezier(.2,.8,.3,1) forwards !important;
-  z-index:50}
-@keyframes alfrente{to{transform:translate3d(0,0,0) scale(1) rotate(0deg);opacity:1}}
-/* Y cuando pasa a la siguiente, se aparta al montón de vistas. */
-.carta.vista{animation:aparta .45s cubic-bezier(.4,0,.6,1) forwards !important;z-index:10}
-@keyframes aparta{to{transform:translate3d(var(--vx),-34vh,0) scale(.30) rotate(var(--vg));opacity:.9}}
-
-/* Las dos caras. La de atrás va girada media vuelta y el contenedor gira entero. */
+/* Las dos caras. */
 .gira{position:absolute;inset:0;transform-style:preserve-3d;
-  transition:transform .62s cubic-bezier(.3,.7,.3,1)}
+  transition:transform .55s cubic-bezier(.3,.7,.3,1)}
 .carta.bocabajo .gira{transform:rotateY(180deg)}
-/* NO NOS FIAMOS DE backface-visibility, y no es manía: aquí, con el estilo calculado
-   correcto -hidden en las dos caras y rotateY(180deg) en el dorso-, Chromium seguía
-   pintando el dorso ENCIMA de la cara y las cinco cartas salían boca abajo. En el WebView
-   de Android esa propiedad ha ido mal históricamente, así que el cambio de cara se hace a
-   mano: cada cara se apaga o se enciende de golpe -0s de transición- a mitad del giro,
-   que es cuando la carta está de canto y no se ve nada. Se queda puesta igualmente, que
-   no estorba y ayuda donde sí funciona. */
+/* NO NOS FIAMOS DE backface-visibility: con el estilo calculado correcto, Chromium
+   pintaba el dorso ENCIMA de la cara y todas salían boca abajo. En el WebView de
+   Android esa propiedad ha ido mal históricamente. El cambio de cara se hace a mano,
+   de golpe y a mitad del giro, que es cuando la carta está de canto. */
 .cara{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;
-  transition:opacity 0s linear .31s}
+  transition:opacity 0s linear .275s}
+.cara > .recorte{position:absolute;inset:0;border-radius:14px;overflow:hidden;
+  box-shadow:0 18px 40px rgba(0,0,0,.8)}
 .carta .frente{opacity:1}
 .carta .dorso{opacity:0}
 .carta.bocabajo .frente{opacity:0}
 .carta.bocabajo .dorso{opacity:1}
-.cara > .recorte{position:absolute;inset:0;border-radius:14px;overflow:hidden;
-  box-shadow:0 18px 40px rgba(0,0,0,.8)}
 .cara.dorso{transform:rotateY(180deg)}
 .cara.dorso > .recorte{background:url(../originales/marcos-v2/comun-reverso.png)
   center/100% 100% no-repeat}
 
-/* ── LA CARA DE LA CARTA ─────────────────────────────────────────────────────
-   El mismo reparto de herramientas/maqueta-carta.html, en % del lienzo. */
+/* ── LA CARA DE LA CARTA ─────────────────────────────────────────────────── */
 .lienzo{position:absolute;left:0;top:0;width:1054px;height:1492px;
   transform:scale(var(--k));transform-origin:0 0;overflow:hidden}
 .marco{position:absolute;inset:0;width:100%;height:100%;z-index:0}
@@ -160,14 +143,19 @@ body{margin:0;background:#0a0708;overflow:hidden;
   background-image:var(--cromo);-webkit-background-clip:text;background-clip:text;color:transparent}
 
 /* ── AVISOS ──────────────────────────────────────────────────────────────── */
-#pista{position:fixed;left:0;right:0;bottom:6vh;text-align:center;z-index:80;
+#pista{position:fixed;left:0;right:0;bottom:5vh;text-align:center;z-index:80;
   font-size:clamp(15px,3.6vw,20px);letter-spacing:.16em;text-transform:uppercase;
-  color:#cdbfb4;opacity:0;transition:opacity .35s ease;pointer-events:none}
+  color:#cdbfb4;opacity:0;transition:opacity .3s ease;pointer-events:none}
 #pista.on{opacity:.95}
+#cuenta{position:fixed;left:0;right:0;top:5vh;text-align:center;z-index:80;
+  font-size:clamp(13px,3vw,16px);letter-spacing:.22em;color:#7d6f68;opacity:0;
+  transition:opacity .3s ease;pointer-events:none}
+#cuenta.on{opacity:1}
 #otra{position:fixed;right:14px;top:14px;z-index:90;font:600 13px/1 "Saira Condensed",sans-serif;
   letter-spacing:.12em;text-transform:uppercase;color:#8b7d74;background:#1a1211;
   border:1px solid #3a2b28;border-radius:999px;padding:9px 15px;cursor:pointer}
-@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms !important}}
+@media (prefers-reduced-motion:reduce){*{transition-duration:.01ms !important;
+  animation-duration:.01ms !important}}
 </style>
 
 <div id="escena">
@@ -178,48 +166,77 @@ body{margin:0;background:#0a0708;overflow:hidden;
   </div>
   <div id="monton"></div>
 </div>
+<div id="cuenta"></div>
 <div id="pista">Toca el sobre</div>
 <button id="otra">Otra vez</button>
 
 <script>
-/* Los cinco peleadores del ejemplo, con sus stats de verdad del plantel. El último es
-   el bueno: es el que se queda boca abajo. */
 const CARTAS = [
-  {p:'paddy-pimblett',   n:'Paddy Pimblett',   a:'THE BADDY',     b:'gb-eng', d:'LW', rk:'#5', s:[81,80,86,78,88,80]},
-  {p:'max-holloway',     n:'Max Holloway',     a:'BLESSED',       b:'us',     d:'LW', rk:'#4', s:[86,82,76,85,82,87]},
-  {p:'sean-o-malley',    n:"Sean O'Malley",    a:'SUGA',          b:'us',     d:'BW', rk:'#2', s:[87,77,79,83,88,86]},
-  {p:'merab-dvalishvili',n:'Merab Dvalishvili',a:'THE MACHINE',   b:'ge',     d:'BW', rk:'#1', s:[80,88,76,88,88,86]},
-  {p:'ilia-topuria',     n:'Ilia Topuria',     a:'EL MATADOR',    b:'es',     d:'FW', rk:'C',  s:[88,86,82,79,88,87]},
+  {p:'paddy-pimblett',   n:'Paddy Pimblett',   a:'THE BADDY',   b:'gb-eng', d:'LW', rk:'#5', s:[81,80,86,78,88,80]},
+  {p:'max-holloway',     n:'Max Holloway',     a:'BLESSED',     b:'us',     d:'LW', rk:'#4', s:[86,82,76,85,82,87]},
+  {p:'sean-o-malley',    n:"Sean O'Malley",    a:'SUGA',        b:'us',     d:'BW', rk:'#2', s:[87,77,79,83,88,86]},
+  {p:'merab-dvalishvili',n:'Merab Dvalishvili',a:'THE MACHINE', b:'ge',     d:'BW', rk:'#1', s:[80,88,76,88,88,86]},
+  {p:'ilia-topuria',     n:'Ilia Topuria',     a:'EL MATADOR',  b:'es',     d:'FW', rk:'C',  s:[88,86,82,79,88,87]},
 ];
 const ET = ['GOL','LUC','SUE','CAR','DUR','IQ'];
 
 const $ = s => document.querySelector(s);
-const sobre = $('#sobre'), monton = $('#monton'), pista = $('#pista');
+const sobre = $('#sobre'), monton = $('#monton'),
+      pista = $('#pista'), cuenta = $('#cuenta');
+const alto = sobre.querySelector('.alto'), bajo = sobre.querySelector('.bajo');
 
-/* LA LÍNEA DE DIENTES. Se genera una sola vez y se le da a las dos copias del sobre:
-   la de arriba se queda con lo de encima y la de abajo con lo de debajo, así que el
-   corte encaja diente con diente por construcción. */
-function dientes(corte, n = 22, alto = 1.15) {
-  const arriba = [], abajo = [];
-  for (let i = 0; i <= n; i++) {
-    const x = (100 * i / n);
-    // Diente arriba y abajo alternando, con una variación fija para que no sea un peine.
-    const v = (i % 2 ? -1 : 1) * alto * (0.7 + 0.3 * Math.sin(i * 2.1));
-    const y = corte + v;
-    arriba.push(`${x.toFixed(2)}% ${y.toFixed(2)}%`);
-    abajo.push(`${x.toFixed(2)}% ${y.toFixed(2)}%`);
-  }
+/* ── LA RASGADURA ────────────────────────────────────────────────────────────
+   Los dientes se generan UNA vez, así que la línea es siempre la misma y los dos
+   trozos encajan diente con diente por construcción. Lo que cambia en cada
+   fotograma es hasta dónde está abierta. */
+const CORTE = 11.5;                 // % del alto: justo bajo la banda de pliegues
+const N = 34;
+const DIENTES = Array.from({length: N + 1}, (_, i) => {
+  const x = 100 * i / N;
+  // Alternos y desiguales: un peine regular no parece un desgarro.
+  const v = (i % 2 ? -1 : 1) * (0.75 + 0.55 * Math.abs(Math.sin(i * 2.7)));
+  return { x, y: CORTE + v };
+});
+
+/* El recorte de cada trozo cuando la rasgadura ha llegado a p (0..1). Por delante de p
+   los dos trozos siguen pegados: el corte de la solapa baja recto hasta el borde de
+   arriba y el del cuerpo sube por el mismo sitio, así que no queda hueco entre ellos. */
+function recortes(p) {
+  const hasta = p * 100;
+  const linea = DIENTES.filter(d => d.x <= hasta);
+  // El punto exacto donde va el desgarro ahora mismo, interpolado entre dos dientes.
+  const j = Math.min(DIENTES.length - 1, linea.length);
+  const a = DIENTES[Math.max(0, j - 1)], b = DIENTES[j];
+  const t = b.x === a.x ? 0 : (hasta - a.x) / (b.x - a.x);
+  const punta = { x: hasta, y: a.y + (b.y - a.y) * t };
+  if (!linea.length || linea[linea.length - 1].x < hasta) linea.push(punta);
+
+  const pts = linea.map(d => `${d.x.toFixed(2)}% ${d.y.toFixed(2)}%`);
   return {
-    alto: `polygon(0% 0%, 100% 0%, ${arriba.slice().reverse().join(', ')}, 0% 0%)`,
-    bajo: `polygon(${abajo.join(', ')}, 100% 100%, 0% 100%)`,
+    alto: `polygon(0% 0%, ${hasta.toFixed(2)}% 0%, ${pts.slice().reverse().join(', ')})`,
+    bajo: `polygon(${pts.join(', ')}, ${hasta.toFixed(2)}% 0%, 100% 0%, 100% 100%, 0% 100%)`,
+    punta,
   };
 }
-/* 11,5% del alto: justo por debajo de la banda de pliegues de arriba, que es por donde
-   se rasga un sobre de verdad. */
-const CORTE = dientes(11.5);
-sobre.querySelector('.alto').style.clipPath = CORTE.alto;
-sobre.querySelector('.bajo').style.clipPath = CORTE.bajo;
 
+function pintaRasgadura(p) {
+  const r = recortes(p);
+  alto.style.clipPath = r.alto;
+  bajo.style.clipPath = r.bajo;
+  /* La solapa se levanta girando sobre el punto donde ESTÁ el desgarro: la esquina se
+     despega primero y el giro crece según avanza. El pliegue del plástico se sugiere
+     con un poco de skew. */
+  alto.style.transformOrigin = `${(p * 100).toFixed(2)}% ${r.punta.y.toFixed(2)}%`;
+  /* El giro crece casi desde el principio: si va con p al cuadrado, a media rasgadura
+     son cuatro grados y no se ve nada. Con esto la esquina ya está despegada cuando el
+     desgarro va por la mitad, que es lo que se ve al abrir una bolsa. */
+  alto.style.transform = `rotate(${(-34 * Math.pow(p, .85)).toFixed(2)}deg) `
+    + `skewX(${(-6 * p).toFixed(2)}deg) translateY(${(-1.6 * p).toFixed(2)}%)`;
+  /* El cuerpo acusa el tirón y se inclina un pelo hacia el otro lado. */
+  bajo.style.transform = `rotate(${(0.9 * p).toFixed(2)}deg)`;
+}
+
+/* ── LA PILA ─────────────────────────────────────────────────────────────── */
 function pintaCara(c) {
   return `<div class="lienzo">
     <img class="marco" src="../originales/marcos-v2/comun-frente.png" alt="">
@@ -239,88 +256,113 @@ function pintaCara(c) {
   </div>`;
 }
 
-/* El lienzo va a 1054 px fijos y se encoge con transform: así ningún mínimo de fuente
-   del WebView puede meterse por medio y descuadrar la carta. */
+/* offsetWidth Y NO getBoundingClientRect: el segundo devuelve el ancho YA TRANSFORMADO,
+   y las cartas nacen dentro del sobre a escala 0,34. Midiendo así, --k salía tres veces
+   más pequeño de la cuenta y las cartas se pintaban en miniatura en su esquina. */
 function ajustaK() {
   monton.querySelectorAll('.carta').forEach(el => {
-    const k = el.getBoundingClientRect().width / 1054;
+    const k = el.offsetWidth / 1054;
     el.querySelectorAll('.lienzo').forEach(l => l.style.setProperty('--k', k));
   });
 }
 
-let paso = -1, cartas = [];
+let pila = [], vistas = 0, fase = 'cerrado';
+const colocar = () => pila.forEach((el, i) => el.style.setProperty('--i', i));
 
 function montar() {
+  fase = 'cerrado'; vistas = 0;
+  sobre.className = ''; sobre.style.display = '';
+  alto.style.cssText = ''; bajo.style.cssText = '';
+  pintaRasgadura(0);
   monton.className = '';
   monton.innerHTML = CARTAS.map((c, i) => `
-    <div class="carta" style="--r:${(i*70)}ms;--giro:${(i-2)*2.2}deg;
-         --dx:${(i-2)*1.6}%;--dy:${-i*1.1}%;--vx:${(i%2?1:-1)*26}vw;--vg:${(i%2?7:-7)}deg;
-         --z:${i}">
+    <div class="carta dentro bocabajo" style="--r:${i*55}ms">
       <div class="gira">
         <div class="cara frente"><div class="recorte">${pintaCara(c)}</div></div>
         <div class="cara dorso"><div class="recorte"></div></div>
       </div>
     </div>`).join('');
-  cartas = [...monton.querySelectorAll('.carta')];
+  pila = [...monton.querySelectorAll('.carta')];
+  colocar();
   ajustaK();
-  paso = -1;
-  sobre.className = '';
-  sobre.style.display = '';
+  cuenta.classList.remove('on');
   pista.textContent = 'Toca el sobre';
   pista.classList.add('on');
 }
 
+/* Rasga de verdad: la abertura AVANZA con el tiempo, no aparece de golpe. */
 function rasgar() {
-  if (paso > -1) return;
-  paso = 0;
+  if (fase !== 'cerrado') return;
+  fase = 'rasgando';
   pista.classList.remove('on');
   sobre.classList.add('toque');
-  setTimeout(() => {
-    sobre.classList.remove('toque');
-    sobre.classList.add('abierto');
-    // El montón asoma cuando la solapa ya se ha ido.
-    setTimeout(() => {
-      monton.classList.add('sale');
-      // La última nace boca abajo: es la que puede ser la buena.
-      cartas[cartas.length - 1].classList.add('bocabajo');
-      setTimeout(() => { sobre.style.display = 'none'; siguiente(); }, 700);
-    }, 260);
-  }, 130);
+  setTimeout(() => sobre.classList.remove('toque'), 140);
+  sobre.classList.add('rasgando');
+
+  const DUR = 900, t0 = performance.now();
+  (function paso(t) {
+    const u = Math.min(1, (t - t0) / DUR);
+    // Cuesta arrancar y luego corre: es como se abre una bolsa de verdad.
+    const p = u < .32 ? (u / .32) * .16 : .16 + .84 * Math.pow((u - .32) / .68, .75);
+    pintaRasgadura(p);
+    if (u < 1) requestAnimationFrame(paso); else soltar();
+  })(t0);
 }
 
-function siguiente() {
-  if (paso > 0) cartas[paso - 1].classList.add('vista');
-  if (paso >= cartas.length) { fin(); return; }
-  const c = cartas[paso];
-  c.classList.add('mirando');
-  const ultima = paso === cartas.length - 1;
-  pista.textContent = ultima ? 'La última, boca abajo · tócala' : 'Toca para seguir';
+function soltar() {
+  sobre.classList.add('suelta');
+  setTimeout(() => {
+    monton.classList.add('sale');
+    pila.forEach(el => el.classList.remove('dentro'));
+    setTimeout(() => { sobre.style.display = 'none'; fase = 'tapada'; avisa(); }, 620);
+  }, 170);
+}
+
+function avisa() {
+  cuenta.textContent = `${vistas} de ${pila.length}`;
+  cuenta.classList.add('on');
+  pista.textContent = fase === 'tapada' ? 'Toca para darle la vuelta' : 'Toca para pasarla';
   pista.classList.add('on');
-  paso++;
-  if (!ultima) reloj = setTimeout(siguiente, 1500);
+}
+
+function toque() {
+  if (fase === 'cerrado') { rasgar(); return; }
+  if (fase === 'rasgando' || fase === 'pasando') return;
+  const arriba = pila[0];
+
+  if (fase === 'tapada') {
+    arriba.classList.remove('bocabajo');       // se le da la vuelta EN SU SITIO
+    vistas++;
+    fase = 'vista';
+    avisa();
+    return;
+  }
+
+  if (fase === 'vista') {
+    if (vistas >= pila.length) { fin(); return; }
+    fase = 'pasando';
+    // Al fondo del montón: se le cambia el puesto y baja sola por la transición.
+    arriba.style.setProperty('--i', pila.length - 1);
+    arriba.style.zIndex = 0;
+    setTimeout(() => {
+      pila.push(pila.shift());
+      arriba.style.zIndex = '';
+      colocar();
+      fase = 'tapada';
+      avisa();
+    }, 430);
+  }
 }
 
 function fin() {
+  fase = 'fin';
+  cuenta.textContent = `${vistas} de ${pila.length}`;
   pista.textContent = 'Se acabó · "Otra vez" para repetir';
   pista.classList.add('on');
 }
 
-let reloj = null;
-function toque() {
-  if (paso === -1) { rasgar(); return; }
-  clearTimeout(reloj);
-  const ultima = cartas[cartas.length - 1];
-  if (paso === cartas.length && ultima.classList.contains('bocabajo')) {
-    ultima.classList.remove('bocabajo');           // la vuelta de la buena
-    pista.textContent = '';
-    setTimeout(fin, 700);
-    return;
-  }
-  if (paso < cartas.length) siguiente();
-}
-
 addEventListener('pointerdown', e => { if (e.target.id !== 'otra') toque(); });
-$('#otra').addEventListener('click', () => { clearTimeout(reloj); montar(); });
+$('#otra').addEventListener('click', montar);
 addEventListener('resize', ajustaK);
 montar();
 </script>
