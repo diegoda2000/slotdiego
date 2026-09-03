@@ -68,6 +68,10 @@ body{margin:0;background:#0a0708;overflow:hidden;
 #monton{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none}
 .carta{position:absolute;width:min(74vw,calc(58vh * 1054 / 1492));aspect-ratio:1054/1492;
   transform-style:preserve-3d;
+  /* LA PERSPECTIVA VA AQUÍ, en la carta, y no en la escena: puesta arriba se aplica sólo
+     a los hijos directos, y entre medias hay dos capas que aplanan el 3D. Sin ella el
+     giro no es un giro, es la carta encogiéndose de ancho y volviendo a crecer. */
+  perspective:1150px;
   --i:0;                       /* puesto en la pila: 0 es la de arriba */
   transform:translate3d(0, calc(var(--i) * 1.2%), 0) scale(calc(1 - var(--i) * .028));
   z-index:calc(50 - var(--i));
@@ -78,23 +82,48 @@ body{margin:0;background:#0a0708;overflow:hidden;
 #monton.sale .carta{transition:transform .55s cubic-bezier(.2,.85,.3,1) var(--r),
                                opacity .3s ease var(--r)}
 
+/* PASAR UNA CARTA AL FONDO. No desaparece ni se encoge en el sitio: sale por el lado
+   y hacia abajo, da la vuelta y se mete por detrás, que es lo que hace la mano cuando
+   pasas la de arriba a la parte de atrás del montón. --fin es el puesto al que va. */
+.carta.pasando{animation:pasar .58s cubic-bezier(.42,0,.35,1) forwards}
+@keyframes pasar{
+  0%  {transform:translate3d(0,0,0) scale(1) rotate(0deg)}
+  46% {transform:translate3d(64%,17%,0) scale(.94) rotate(9deg)}
+  78% {transform:translate3d(30%,10%,0) scale(.90) rotate(4deg)}
+  100%{transform:translate3d(0, calc(var(--fin) * 1.2%), 0)
+                scale(calc(1 - var(--fin) * .028)) rotate(0deg)}}
+
 /* Las dos caras. */
 .gira{position:absolute;inset:0;transform-style:preserve-3d;
-  transition:transform .55s cubic-bezier(.3,.7,.3,1)}
+  transition:transform .62s cubic-bezier(.42,.02,.28,1)}
 .carta.bocabajo .gira{transform:rotateY(180deg)}
 /* NO NOS FIAMOS DE backface-visibility: con el estilo calculado correcto, Chromium
    pintaba el dorso ENCIMA de la cara y todas salían boca abajo. En el WebView de
    Android esa propiedad ha ido mal históricamente. El cambio de cara se hace a mano,
    de golpe y a mitad del giro, que es cuando la carta está de canto. */
+/* Las dos caras van SEPARADAS EN PROFUNDIDAD, 5 px cada una a su lado: así la carta es
+   un objeto con un grosor y no dos dibujos pegados, y al pasar de canto se nota. */
 .cara{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;
   transition:opacity 0s linear .275s}
+.cara.frente{transform:translateZ(5px)}
+.cara.dorso{transform:rotateY(180deg) translateZ(5px)}
+
+/* El reflejo que cruza la carta mientras gira: es lo que la hace parecer una lámina y no
+   una imagen. Va sólo durante el giro, y el destello cae justo cuando pasa de canto. */
+.brillo{position:absolute;inset:0;pointer-events:none;border-radius:14px;opacity:0;
+  background:linear-gradient(104deg,transparent 28%,rgba(255,255,255,.42) 47%,
+             rgba(255,255,255,.06) 58%,transparent 72%)}
+.carta.volteando .brillo{animation:destello .62s ease-out}
+@keyframes destello{
+  0%{opacity:0;transform:translateX(-38%)}
+  46%{opacity:.9}
+  100%{opacity:0;transform:translateX(38%)}}
 .cara > .recorte{position:absolute;inset:0;border-radius:14px;overflow:hidden;
   box-shadow:0 18px 40px rgba(0,0,0,.8)}
 .carta .frente{opacity:1}
 .carta .dorso{opacity:0}
 .carta.bocabajo .frente{opacity:0}
 .carta.bocabajo .dorso{opacity:1}
-.cara.dorso{transform:rotateY(180deg)}
 .cara.dorso > .recorte{background:url(../originales/marcos-v2/comun-reverso.png)
   center/100% 100% no-repeat}
 
@@ -278,8 +307,8 @@ function montar() {
   monton.innerHTML = CARTAS.map((c, i) => `
     <div class="carta dentro bocabajo" style="--r:${i*55}ms">
       <div class="gira">
-        <div class="cara frente"><div class="recorte">${pintaCara(c)}</div></div>
-        <div class="cara dorso"><div class="recorte"></div></div>
+        <div class="cara frente"><div class="recorte">${pintaCara(c)}</div><span class="brillo"></span></div>
+        <div class="cara dorso"><div class="recorte"></div><span class="brillo"></span></div>
       </div>
     </div>`).join('');
   pila = [...monton.querySelectorAll('.carta')];
@@ -319,7 +348,7 @@ function soltar() {
 }
 
 function avisa() {
-  cuenta.textContent = `${vistas} de ${pila.length}`;
+  cuenta.textContent = `${vistas} de ${CARTAS.length}`;
   cuenta.classList.add('on');
   pista.textContent = fase === 'tapada' ? 'Toca para darle la vuelta' : 'Toca para pasarla';
   pista.classList.add('on');
@@ -332,33 +361,35 @@ function toque() {
 
   if (fase === 'tapada') {
     arriba.classList.remove('bocabajo');       // se le da la vuelta EN SU SITIO
-    vistas++;
+    arriba.classList.add('volteando');
+    setTimeout(() => arriba.classList.remove('volteando'), 640);
+    if (!arriba.dataset.vista) { arriba.dataset.vista = '1'; vistas++; }
     fase = 'vista';
     avisa();
     return;
   }
 
   if (fase === 'vista') {
-    if (vistas >= pila.length) { fin(); return; }
+    /* Sale por el lado y hacia abajo y se mete por detrás. Se queda delante hasta que
+       ha salido del montón —si no, se metería por debajo nada más empezar— y ahí se le
+       baja el orden. */
     fase = 'pasando';
-    // Al fondo del montón: se le cambia el puesto y baja sola por la transición.
-    arriba.style.setProperty('--i', pila.length - 1);
-    arriba.style.zIndex = 0;
+    arriba.style.setProperty('--fin', pila.length - 1);
+    arriba.classList.add('pasando');
+    setTimeout(() => { arriba.style.zIndex = 0; }, 260);
     setTimeout(() => {
       pila.push(pila.shift());
+      arriba.classList.remove('pasando');
       arriba.style.zIndex = '';
+      arriba.style.removeProperty('--fin');
       colocar();
-      fase = 'tapada';
+      /* Nunca se acaba: se sigue pasando en círculo, y las ya vistas siguen boca
+         arriba, así que dar otra vuelta es repasarlas todas. */
+      fase = arriba === pila[0] || pila[0].classList.contains('bocabajo')
+        ? 'tapada' : 'vista';
       avisa();
-    }, 430);
+    }, 580);
   }
-}
-
-function fin() {
-  fase = 'fin';
-  cuenta.textContent = `${vistas} de ${pila.length}`;
-  pista.textContent = 'Se acabó · "Otra vez" para repetir';
-  pista.classList.add('on');
 }
 
 addEventListener('pointerdown', e => { if (e.target.id !== 'otra') toque(); });
