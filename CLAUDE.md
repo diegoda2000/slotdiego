@@ -90,8 +90,26 @@ dentado y sale volando → el montón de cartas sube desde dentro del cuerpo →
 a una → y **la última se queda boca abajo**, que es la que más posibilidades tiene de ser
 buena. Sin librerías: `transform` y `opacity`, que es lo único que va fino en el WebView.
 
-Dónde cortan los tres escalones está **sin decidir**: quedó en que se le proponen los
-números a partir de la media y el ranking que ya tienen las 402 cartas, y él dice sí o no.
+**Dónde cortan los tres escalones: DECIDIDO.** Y no sale de las medias ni de la suma de
+stats —lo dijo él—: sale de **la calidad del peleador**, o sea de dónde está en su división
+de verdad, que es el ranking que ya trae la base de datos.
+
+| escalón | quién | cartas |
+|---|---|---|
+| común | todos, sin excepción | 402 |
+| rara | rankeado (#1–15 o campeón) **o destacado** | 216 |
+| épica | campeón y top 5 | 68 |
+| | | **686** |
+
+Los **destacados** son los que llevan rara aunque hoy estén fuera del ranking, y están en
+`docs/destacados.json` en dos listas que aprobó él: **ex campeones de la UFC** (20, criterio
+objetivo) y **nombres grandes sin cinturón de la UFC** (15, lista opinable). Son 38 cartas
+que sin la lista serían sólo comunes. Sin eso, Conor McGregor sería una carta común.
+
+`importar-roster.mjs` ya calcula esto y lo guarda en cada carta como `base:["comun",…]`, y
+avisa si una clave de las listas no corresponde a ningún peleador. **Pero todavía NO genera
+las tres cartas**: eso es la migración, y es lo que cambia el identificador y rompe lo
+guardado.
 
 **EL LOGO NUEVO YA ESTÁ.** Es un octógono negro con el P4P.CG en blanco y oro; lo pasó
 en `originales/logo-v2/logo.png`, con fondo blanco, y `herramientas/preparar-logo-v2.mjs`

@@ -1,0 +1,64 @@
+{
+  "_comentario": [
+    "PELEADORES DESTACADOS. Los que llevan carta RARA aunque hoy no estén rankeados.",
+    "",
+    "La rareza de una carta base sale de la calidad del PELEADOR, no de sus números:",
+    "  común  · todos, sin excepción",
+    "  rara   · el que está rankeado (#1-15 o campeón) Y el que esté en esta lista",
+    "  épica  · campeones y top 5",
+    "",
+    "Sin esta lista, un ex campeón que ha caído del ranking tendría sólo la común, y eso",
+    "no se sostiene: Conor McGregor o Amanda Nunes no son cartas comunes.",
+    "",
+    "Va aparte del .md por lo mismo que los apodos: el .md es la fuente de los NÚMEROS y",
+    "se regenera entero cuando cambian. Esto no cambia de una temporada a otra.",
+    "importar-roster.mjs avisa si alguna clave no corresponde a ningún peleador."
+  ],
+
+  "_excampeones": "Han llevado un cinturón de la UFC. Criterio objetivo, no opinable.",
+  "excampeones": [
+    "alex-pereira",
+    "israel-adesanya",
+    "robert-whittaker",
+    "kamaru-usman",
+    "khamzat-chimaev",
+    "sean-strickland",
+    "dricus-du-plessis",
+    "conor-mcgregor",
+    "max-holloway",
+    "charles-oliveira",
+    "aljamain-sterling",
+    "henry-cejudo",
+    "cody-garbrandt",
+    "deiveson-figueiredo",
+    "amanda-nunes",
+    "valentina-shevchenko",
+    "zhang-weili",
+    "jessica-andrade",
+    "rose-namajunas",
+    "alexa-grasso"
+  ],
+
+  "_grandes": [
+    "Nombres grandes sin cinturón de la UFC: campeones de otras promotoras, aspirantes al",
+    "título y veteranos de mucho recorrido. Esta lista SÍ es opinable y la aprobó el dueño",
+    "tal cual; si hay que meter o sacar a alguien, se toca aquí y se vuelve a importar."
+  ],
+  "grandes": [
+    "michael-chandler",
+    "patricio-pitbull",
+    "kyoji-horiguchi",
+    "xiong-jing-nan",
+    "neil-magny",
+    "ovince-saint-preux",
+    "jack-hermansson",
+    "jared-cannonier",
+    "paulo-costa",
+    "marvin-vettori",
+    "dan-hooker",
+    "josh-emmett",
+    "irene-aldana",
+    "tatiana-suarez",
+    "karolina-kowalkiewicz"
+  ]
+}

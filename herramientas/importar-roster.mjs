@@ -15,6 +15,7 @@ const AQUI = path.dirname(fileURLToPath(import.meta.url));
 const RAIZ = path.join(AQUI, '..');
 const ENTRADA = path.join(RAIZ, 'docs', 'base-de-datos-peleadores.md');
 const APODOS  = path.join(RAIZ, 'docs', 'apodos.json');
+const DESTACADOS = path.join(RAIZ, 'docs', 'destacados.json');
 const SALIDA  = path.join(RAIZ, 'juego', 'roster.js');
 
 // Los nombres de las secciones del documento, a los identificadores de división del juego.
@@ -205,6 +206,35 @@ for (const k of Object.keys(apodos))
 for (const c of cartas) c.apodo = apodos[c.persona] || '';
 const conApodo = new Set(cartas.filter(c => c.apodo).map(c => c.persona)).size;
 
+/* ── QUÉ ESCALONES TIENE CADA CARTA ──
+   La rareza de una carta base sale de la CALIDAD DEL PELEADOR, no de sus números: de
+   dónde está en su división de verdad. Nada de medias ni de sumas.
+
+     común  · todas, sin excepción
+     rara   · rankeado (#1-15 o campeón) o destacado
+     épica  · campeón y top 5
+
+   Los destacados son los que llevan rara aunque hoy estén fuera del ranking: ex campeones
+   de la UFC y una lista de nombres grandes que aprobó el dueño. Sin ellos, un ex campeón
+   caído del ranking tendría sólo la común, y Conor McGregor no es una carta común.
+
+   Esto se calcula aquí y se guarda en cada carta, pero TODAVÍA NO se generan las tres
+   cartas: eso es la migración, que cambia el identificador -tiene que llevar la rareza
+   dentro- y rompe la colección guardada. Aquí sólo queda anotado y contado. */
+const dest = JSON.parse(fs.readFileSync(DESTACADOS, 'utf8'));
+const destacados = new Set([...dest.excampeones, ...dest.grandes]);
+for (const k of destacados)
+  if (!personas.has(k)) avisos.push(`destacados.json tiene "${k}", que no es ningún peleador`);
+
+for (const c of cartas) {
+  const rankeado = c.rk !== null;
+  c.base = ['comun'];
+  if (rankeado || destacados.has(c.persona)) c.base.push('rara');
+  if (rankeado && c.rk <= 5) c.base.push('epica');
+}
+const nBase = { comun: 0, rara: 0, epica: 0 };
+for (const c of cartas) for (const b of c.base) nBase[b]++;
+
 const resumen = {};
 for (const c of cartas) resumen[c.estatus] = (resumen[c.estatus] || 0) + 1;
 const rasgos = {};
@@ -226,7 +256,7 @@ const cabecera = `/* CATÁLOGO DE PELEADORES — GENERADO, NO SE EDITA A MANO.
 
 const cuerpo = cartas.map(c => JSON.stringify({
   id: c.id, persona: c.persona, nombre: c.nombre, apodo: c.apodo, division: c.division,
-  rareza: c.rareza, estatus: c.estatus, rk: c.rk, pais: c.pais,
+  rareza: c.rareza, base: c.base, estatus: c.estatus, rk: c.rk, pais: c.pais,
   suma: c.suma, record: c.record,
   dobleDiv: c.dobleDiv, stats: c.stats, rasgos: c.rasgos,
 })).join(',\n');
@@ -241,6 +271,10 @@ console.log('  ' + Object.entries(resumen).map(([k, v]) => `${k} ${v}`).join(' �
 console.log('  atributos: ' + Object.entries(rasgos).map(([k, v]) => `${k} ${v}`).join(' · '));
 console.log('  peleadores en varias divisiones: ' + enVarias.size);
 console.log(`  con apodo: ${conApodo} de ${personas.size} peleadores`);
+console.log(`  escalones base: común ${nBase.comun} · rara ${nBase.rara} · épica ${nBase.epica}` +
+            `  =  ${nBase.comun + nBase.rara + nBase.epica} cartas cuando se migre`);
+console.log(`  destacados: ${destacados.size} peleadores, ` +
+  `${cartas.filter(c => c.rk === null && destacados.has(c.persona)).length} cartas que sin la lista serían sólo comunes`);
 const paises = new Set(cartas.map(c => c.pais));
 console.log(`  países: ${paises.size} · cartas rankeadas: ${cartas.filter(c => c.rk !== null).length}`);
 const dudosos = cartas.filter(c => c.paisDudoso);
