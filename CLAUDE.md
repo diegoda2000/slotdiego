@@ -64,13 +64,25 @@ encima. Decidido por el dueño:
   detrás del metal como en el boceto.
 - **El "P4P.CG" del pie no lo pinta el juego**: el marco ya trae ahí sus marcas "////" y se
   montan. Si lo quiere, tiene que venir dibujado en el marco.
-- El monograma de la esquina es **una marca de agua**, no el logo del juego. Está recortado
-  del boceto con alfa en `originales/marcos-v2/monograma.png`.
+- **El récord SE VA.** En el boceto no estaba y el dueño lo ha confirmado: la carta nueva
+  no lo lleva. El campo sigue en `roster.js`, sólo deja de pintarse.
+- **Los apodos SÍ van**, y aprobó los que se usaron en la maqueta —THE NIGHTMARE, THE
+  BADDY, SUGA…—. El plantel tiene el campo `apodo` pero **vacío en los 355**: hay que
+  rellenarlo, y quien no tenga apodo deja la línea en blanco.
+- **El monograma de la esquina SE QUITÓ.** Estaba de marca de agua y lo mandó fuera. El
+  archivo se queda en `originales/marcos-v2/monograma.png` por si se recupera; no lo
+  repongas.
 - Antonio deja de estar justificada: se eligió midiendo las etiquetas impresas del marco
   viejo, y el marco nuevo no imprime ninguna. La maqueta va con Saira Condensed.
 
-Sin contestar todavía: si **el récord** desaparece —en el boceto no está—, y los **apodos**,
-que el plantel tiene el campo pero vacío en los 355.
+**La apertura con vídeo está DESCARTADA.** Se generó con Kling, se recortó a la columna
+del sobre —con lo que la marca de agua se quedaba fuera— y se montó en HTML; el dueño lo
+vio y dijo que no. El clip y el procedimiento se quedan en `originales/apertura/` y
+`herramientas/preparar-apertura.sh` por si se retoma. **No lo montes en el juego.**
+
+Si vuelve a generar vídeo, la entrada va con `herramientas/preparar-entrada-video.mjs`:
+monta el sobre entero sobre un 9:16 de 1080x1920 con fondo de estudio. Dándole el PNG a
+pelo, el generador reencuadra por su cuenta y el sobre sale cortado.
 
 **La apertura del sobre, tal como la pidió:** se toca → la parte de arriba se rasga por el
 dentado y sale volando → el montón de cartas sube desde dentro del cuerpo → se revelan una
