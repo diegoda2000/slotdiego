@@ -200,7 +200,7 @@ function generarRoster(){
     throw new Error('falta juego/roster.js: el catálogo de peleadores no está cargado');
 
   ROSTER = datos.map(d=>({
-    id:d.id, persona:d.persona, nombre:d.nombre, apodo:'',
+    id:d.id, persona:d.persona, nombre:d.nombre, apodo:d.apodo||'',
     division:d.division, rareza:d.rareza, estatus:d.estatus,
     rk:d.rk===undefined?null:d.rk,   // 0 = campeón, 1-15 clasificado, null sin rankear
     pais:d.pais||'', suma:d.suma, stats:d.stats, record:d.record,

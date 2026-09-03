@@ -14,6 +14,7 @@ import { fileURLToPath } from 'url';
 const AQUI = path.dirname(fileURLToPath(import.meta.url));
 const RAIZ = path.join(AQUI, '..');
 const ENTRADA = path.join(RAIZ, 'docs', 'base-de-datos-peleadores.md');
+const APODOS  = path.join(RAIZ, 'docs', 'apodos.json');
 const SALIDA  = path.join(RAIZ, 'juego', 'roster.js');
 
 // Los nombres de las secciones del documento, a los identificadores de división del juego.
@@ -188,6 +189,22 @@ cartas.forEach((c, i) => {
   c.suma = suma(c);
 });
 
+/* ── LOS APODOS ──
+   Van en docs/apodos.json y no en el .md porque el .md es la fuente de los NÚMEROS y se
+   regenera entero cuando cambian; los apodos no cambian de temporada a temporada.
+
+   SOLO ESTÁN LOS QUE SE SABEN SEGURO. Quien no esté sale con el apodo vacío, y eso es lo
+   correcto: muchos peleadores no tienen, e inventarle uno a alguien es peor que dejarlo
+   en blanco. Una clave que no corresponda a ningún peleador se avisa: es como se cazan
+   las erratas de nombre, que si no se quedan calladas para siempre. */
+const apodos = JSON.parse(fs.readFileSync(APODOS, 'utf8'));
+delete apodos._comentario;
+const personas = new Set(cartas.map(c => c.persona));
+for (const k of Object.keys(apodos))
+  if (!personas.has(k)) avisos.push(`apodos.json tiene "${k}", que no es ningún peleador`);
+for (const c of cartas) c.apodo = apodos[c.persona] || '';
+const conApodo = new Set(cartas.filter(c => c.apodo).map(c => c.persona)).size;
+
 const resumen = {};
 for (const c of cartas) resumen[c.estatus] = (resumen[c.estatus] || 0) + 1;
 const rasgos = {};
@@ -208,7 +225,7 @@ const cabecera = `/* CATÁLOGO DE PELEADORES — GENERADO, NO SE EDITA A MANO.
 `;
 
 const cuerpo = cartas.map(c => JSON.stringify({
-  id: c.id, persona: c.persona, nombre: c.nombre, division: c.division,
+  id: c.id, persona: c.persona, nombre: c.nombre, apodo: c.apodo, division: c.division,
   rareza: c.rareza, estatus: c.estatus, rk: c.rk, pais: c.pais,
   suma: c.suma, record: c.record,
   dobleDiv: c.dobleDiv, stats: c.stats, rasgos: c.rasgos,
@@ -223,6 +240,7 @@ console.log(`${cartas.length} cartas escritas en juego/roster.js`);
 console.log('  ' + Object.entries(resumen).map(([k, v]) => `${k} ${v}`).join(' · '));
 console.log('  atributos: ' + Object.entries(rasgos).map(([k, v]) => `${k} ${v}`).join(' · '));
 console.log('  peleadores en varias divisiones: ' + enVarias.size);
+console.log(`  con apodo: ${conApodo} de ${personas.size} peleadores`);
 const paises = new Set(cartas.map(c => c.pais));
 console.log(`  países: ${paises.size} · cartas rankeadas: ${cartas.filter(c => c.rk !== null).length}`);
 const dudosos = cartas.filter(c => c.paisDudoso);
