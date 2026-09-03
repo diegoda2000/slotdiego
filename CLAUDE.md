@@ -28,7 +28,31 @@ El APK se publica solo en cada push y se descarga de la publicación **`apk-late
 - **Conor en JUGAR e Islam en Logros**, recortados y sobre el fondo general.
 - Los nombres de todos los botones **en cursiva y más grandes**.
 
-**Lo que queda, y está esperando a que él lo diga:**
+**REDISEÑO EN MARCHA.** El dueño ha dicho que se rehace el juego casi entero: logo nuevo,
+sobres nuevos, diseño de carta nuevo e interfaz nueva. Él va pasando los recursos. El orden
+acordado es: **1) la carta, 2) el logo y la paleta, 3) los sobres, 4) la interfaz.** La
+carta va primera porque es la única pieza que puede bloquear días: las 354 fotos están
+recortadas para el hueco del marco actual y, si la ventana cambia, hay que volver a bajarlas
+las 354 desde una máquina con internet normal —desde aquí el proxy da 403 en ufc.com—.
+
+**Se acaban el oro y la plata.** Las cartas base pasan a tener tres escalones: **común,
+raro y épico**. Todo peleador tiene la común; los del medio tienen común y rara; los top
+tienen las tres. O sea que un mismo peleador puede existir en tres cartas distintas con la
+misma cara. Legendarias y demás vendrán luego y NO son carta base. Esto **contradice el
+GDD**, que hay que actualizar cuando esté cerrado, y arrastra: `roster.js` (la rareza de las
+402 cartas), `motor.js` (`RAREZAS`, `ORDEN_RAREZA`, los seis estatus con su rango de media y
+lo que paga el reciclaje), `juego.html` (85 sitios), la suite (41) y los tres sobres de la
+tienda, que se llaman básico, plata y oro.
+
+**Y ojo con el identificador.** Hoy una carta es peleador + división (`ilia-topuria-m3`).
+Con tres variaciones del mismo peleador el identificador tiene que llevar la rareza dentro,
+y eso **rompe la colección guardada**: lo guardado apunta a identificadores que dejarían de
+existir. Hay que migrarlo a propósito al arrancar, no descubrirlo después. Ya se le avisó.
+
+Dónde cortan los tres escalones está **sin decidir**: quedó en que se le proponen los
+números a partir de la media y el ranking que ya tienen las 402 cartas, y él dice sí o no.
+
+**Lo que queda de lo anterior, y está esperando a que él lo diga:**
 
 1. **Las imágenes de los botones que faltan.** Él dijo: *"TIENES QUE SUSTITUIRLOS POR
    IMÁGENES QUE YO TE DÉ, COMO EN EL PRIMERO DE JUGAR"*. Van dos (Conor y Islam) de
