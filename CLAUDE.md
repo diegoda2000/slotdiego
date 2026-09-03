@@ -35,10 +35,11 @@ carta va primera porque es la única pieza que puede bloquear días: las 354 fot
 recortadas para el hueco del marco actual y, si la ventana cambia, hay que volver a bajarlas
 las 354 desde una máquina con internet normal —desde aquí el proxy da 403 en ufc.com—.
 
-**Se acaban el oro y la plata.** Las cartas base pasan a tener tres escalones: **común,
-raro y épico**. Todo peleador tiene la común; los del medio tienen común y rara; los top
-tienen las tres. O sea que un mismo peleador puede existir en tres cartas distintas con la
-misma cara. Legendarias y demás vendrán luego y NO son carta base. Esto **contradice el
+**Se acaban el oro y la plata.** La escalera entera es de cinco: **común, raro, épico,
+legendario y ultimate**. De ésos, las **cartas base son los tres primeros**: todo peleador
+tiene la común; los del medio tienen común y rara; los top tienen las tres. O sea que un
+mismo peleador puede existir en tres cartas distintas con la misma cara. **Legendario y
+ultimate NO son carta base** y vienen después. Esto **contradice el
 GDD**, que hay que actualizar cuando esté cerrado, y arrastra: `roster.js` (la rareza de las
 402 cartas), `motor.js` (`RAREZAS`, `ORDEN_RAREZA`, los seis estatus con su rango de media y
 lo que paga el reciclaje), `juego.html` (85 sitios), la suite (41) y los tres sobres de la
@@ -105,7 +106,11 @@ de **cuatro píxeles**, no de uno, deshaciendo la mezcla con el blanco —si `P 
 medir **el radio real del logo** (553 px de 1013x974, frente a los 703 de la media diagonal
 de su caja): por eso llena el círculo de 66 dp en vez de quedarse corto.
 
-**La paleta cambia, y hay que rehacer la interfaz con ella.** Lo dijo él. Del logo, medido:
+**La interfaz se reestructura, y NO es un cambio de colores.** Lo dijo con esas palabras:
+*"lo de los colores es lo de menos, la reestructuración es mucho más que simplemente
+cambiar los colores"*. Qué significa exactamente **está sin definir**: no inventes pantallas
+ni muevas nada por tu cuenta, que ya sabes cómo acaba eso. La paleta nueva, del logo y
+medida, es esto:
 
 | | |
 |---|---|
