@@ -92,6 +92,32 @@ buena. Sin librerías: `transform` y `opacity`, que es lo único que va fino en 
 Dónde cortan los tres escalones está **sin decidir**: quedó en que se le proponen los
 números a partir de la media y el ranking que ya tienen las 402 cartas, y él dice sí o no.
 
+**EL LOGO NUEVO YA ESTÁ.** Es un octógono negro con el P4P.CG en blanco y oro; lo pasó
+en `originales/logo-v2/logo.png`, con fondo blanco, y `herramientas/preparar-logo-v2.mjs`
+le quita el fondo y saca el icono de Android y el de iPhone. **El icono de la aplicación ya
+es éste.** La cabecera sigue con el logo viejo hasta que se rehaga la interfaz.
+
+Dos cosas del recorte que costaron una vuelta: la inundación va con el umbral en **165 y
+no en 228**, porque el archivo trae una sombra suave alrededor y con el listón alto quedaba
+un aro claro pegado al octógono que sobre negro se veía; y el canto se limpia en una banda
+de **cuatro píxeles**, no de uno, deshaciendo la mezcla con el blanco —si `P = a·F +
+(1-a)·blanco` y el canto es casi negro, `a = (255-luz)/229`—. El tamaño del icono sale de
+medir **el radio real del logo** (553 px de 1013x974, frente a los 703 de la media diagonal
+de su caja): por eso llena el círculo de 66 dp en vez de quedarse corto.
+
+**La paleta cambia, y hay que rehacer la interfaz con ella.** Lo dijo él. Del logo, medido:
+
+| | |
+|---|---|
+| oro | `#c08719` |
+| oro claro | `#f0c54e` |
+| blanco | `#f0f0f1` |
+| negro | `#060707` |
+| carbón | `#272829` |
+
+**Ya no hay rojo.** La paleta de ahora gira sobre `--acc:#d40c1a`, así que el rediseño de
+la interfaz es también un cambio de color de arriba abajo. Sin empezar.
+
 **Lo que queda de lo anterior, y está esperando a que él lo diga:**
 
 1. **Las imágenes de los botones que faltan.** Él dijo: *"TIENES QUE SUSTITUIRLOS POR
