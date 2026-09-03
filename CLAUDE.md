@@ -49,6 +49,34 @@ Con tres variaciones del mismo peleador el identificador tiene que llevar la rar
 y eso **rompe la colección guardada**: lo guardado apunta a identificadores que dejarían de
 existir. Hay que migrarlo a propósito al arrancar, no descubrirlo después. Ya se le avisó.
 
+**La carta nueva, lo que ya está cerrado.** El marco común (frente y reverso) está en
+`originales/marcos-v2/` y la maqueta del reparto en `herramientas/maqueta-carta.html`, con
+las medidas en % de un lienzo de 1054x1492 sacadas de medir el boceto con una rejilla
+encima. Decidido por el dueño:
+
+- **La medida es 1054x1492 (0,706)**, la del boceto y el reverso. El que se sale es el
+  frente, que viene a 1024x1536, y es el que se reescala.
+- **La foto va a cuerpo entero, como la tenemos hoy** —eligió la opción B—. O sea que
+  **las 354 fotos se quedan y no hay que volver a bajarlas.** Se probó también el recorte
+  cercano del boceto y lo descartó: con un archivo de 360x551 se ablanda al ampliarlo.
+- **El marco es OPACO**, 0% de transparencia, así que va debajo y el contenido se recorta a
+  su hueco libre: 6,93–92,87% de ancho, 4,23–95,64% de alto. El peleador no puede pasar por
+  detrás del metal como en el boceto.
+- **El "P4P.CG" del pie no lo pinta el juego**: el marco ya trae ahí sus marcas "////" y se
+  montan. Si lo quiere, tiene que venir dibujado en el marco.
+- El monograma de la esquina es **una marca de agua**, no el logo del juego. Está recortado
+  del boceto con alfa en `originales/marcos-v2/monograma.png`.
+- Antonio deja de estar justificada: se eligió midiendo las etiquetas impresas del marco
+  viejo, y el marco nuevo no imprime ninguna. La maqueta va con Saira Condensed.
+
+Sin contestar todavía: si **el récord** desaparece —en el boceto no está—, y los **apodos**,
+que el plantel tiene el campo pero vacío en los 355.
+
+**La apertura del sobre, tal como la pidió:** se toca → la parte de arriba se rasga por el
+dentado y sale volando → el montón de cartas sube desde dentro del cuerpo → se revelan una
+a una → y **la última se queda boca abajo**, que es la que más posibilidades tiene de ser
+buena. Sin librerías: `transform` y `opacity`, que es lo único que va fino en el WebView.
+
 Dónde cortan los tres escalones está **sin decidir**: quedó en que se le proponen los
 números a partir de la media y el ranking que ya tienen las 402 cartas, y él dice sí o no.
 
