@@ -728,188 +728,60 @@ falla ahí. Pasó al sacar `luchador.webp` de `juego/arte/`.
 
 ---
 
-## El diseño nuevo de la carta: HECHO
+## LA CARTA NUEVA YA ESTÁ PUESTA, Y TODAS SON COMUNES
 
-Los marcos llegaron y está montado. Los PNG a resolución completa que pasó el usuario
-están en **`originales/marcos/`** —fuera de `juego/`, porque `build.gradle` y
-`servidor.yml` empaquetan `marcos/**` y esos dos PNG pesan cinco megas—. `juego/marcos/`
-lleva la versión a 620x877 en WebP. **Si hay que volver a medir algo del marco, se mide
-sobre el PNG de `originales/`, no sobre el WebP.**
+Lo pidió así: *"haz ya todas las cartas comunes, o sea cambia el diseño"*. El marco de
+raro, épico, legendario y ultimate son variaciones que todavía no ha pasado, y llegan con
+la migración de rarezas.
 
-Lo que pinta el juego ahora: bandera, ranking, atributo, nombre, récord, división y los
-seis números. Los nombres de las stats y sus iconos **vienen dibujados dentro del marco**,
-así que `.c-et`, `FILAS_STAT` y `COLS_STAT` ya no existen. No los reintroduzcas.
+**La referencia es la maqueta que él aprobó**, `herramientas/maqueta-carta.html`, y volvió a
+mandarla al final: *"hazlas como estas que me habías dado de ejemplo, quitando solo la marca
+en la esquina, lo demás como en la carta de ejemplo"*. Está guardada en
+`originales/marcos-v2/referencia-carta.png`. Si algo se mueve, se cambia primero en la
+maqueta.
 
-### Los huecos, medidos sobre el PNG (1054x1492) y no sacados de la tabla vieja
+**Qué pinta la carta**, en % de un lienzo de 1054x1492:
 
-| Hueco | x | y |
-|---|---|---|
-| Octágono de la bandera (hueco negro) | 7,31 – 18,50% | 5,76 – 13,94% |
-| Ranking | 79,89 – 95,92% | 2,88 – 12,40% |
-| Ventana grande (el atributo) | 3,42 – 65,94% | 2,68 – 71% |
-| Barra del nombre | 5,12 – 71,73% | 72,32 – 81,84% |
-| Banda blanca (el récord) | 5,98 – 93,83% | 83,45 – 96,58% |
-| Polígono del borde (la división) | 42,60 – 53,80% | cara plana 95,51 – 98,93% |
-| Recuadros de stat | 85,39 – 93,55% | 17,36 / 26,21 / 35,66 / 45,04 / 54,36 / 63,47%, alto 4,15% |
+| pieza | dónde |
+|---|---|
+| ventana de la foto | x 6,93–92,87% · y 4,23%, alto 71% · la foto a cuerpo entero, apoyada abajo, con el pie fundido en negro |
+| nombre | y 63,4% · cromado, `skewX(-9deg)`, hasta el 12,52% del ancho de la carta |
+| apodo | y 73,5% · en oro, entre dos filetes |
+| bandera · división · ranking | y 78,4%, alto 5,0% |
+| panel de stats | x 7–93% · y 84,0%, alto 10,6% · GOL LUC SUE CAR DUR IQ |
 
-Dos cosas que no son lo que parecen: **el polígono de abajo no está centrado en la carta**
-—va de 42,60 a 53,80%, o sea centrado en el 48,20%—, y la sigla de la división se centra
-en su **cara plana**, no en el contorno, porque la mitad de abajo es un pico que se
-estrecha y centrar en el contorno la deja alta.
+**Lo que ya NO pinta, y no es un olvido:** el RÉCORD —lo quitó él—, el ATRIBUTO —el boceto
+no le da sitio, y con el marco viejo tampoco se pintaba en las cartas con foto, que son 354
+de 355— y el MONOGRAMA de la esquina. Las siglas de las stats pasan de GLP/LCH a **GOL/LUC**,
+que son las del boceto: el marco viejo las traía dibujadas y éste no.
 
-### La tinta
-El marco viejo tenía casi todo el texto sobre metal claro y se escribía oscuro. Aquí el
-nombre, el ranking y los seis recuadros son **huecos negros**: esos van en claro. Solo el
-récord (banda blanca) y la división (polígono dorado o plateado) van en oscuro, y la
-división en negro puro porque lo pidió así el usuario.
+**LA CARTA VA RECORTADA, sin rectángulo negro detrás.** Los dos PNG vienen en RGB, sobre
+negro puro. Quitarlo por umbral no se puede —el interior de la carta también es casi negro—
+y **una inundación libre desde los bordes tampoco**: el canto exterior del marco es tan
+negro como el fondo, así que la inundación se cuela por ahí y va comiéndose una tira del
+marco a lo largo del lateral. Se probó con el listón en 4, en 6 y en 10 y las tres veces
+pasó; con 10 la carta salía agujereada. Lo cazó él las dos veces.
 
-### La fuente: Antonio
-Elegida midiendo el recorte de las etiquetas del marco a resolución completa, no a ojo.
-Tres medidas de la referencia: inclinación **11,4°** (oblicua sintética, no itálica
-dibujada), palo/altura de caja alta **0,156** (bold condensada, **no** black) y caja alta
-al 3,04% del alto de la carta. Contra eso, Antonio 700 es la más cercana de las libres:
-+2,6% de ancho, −3% de grosor, 80,5% de solape de silueta. **Quedan descartadas por medida
-Barlow Condensed 900 (52% demasiado ancha) y Big Shoulders 900 (demasiado gorda)**, que
-eran las dos candidatas que se manejaban antes; League Gothic y Bebas Neue quedaron a un
-punto de Antonio.
+Lo que hace `herramientas/preparar-marco-v2.py` es acotar el problema: **las franjas negras
+de los lados están FUERA de la caja del dibujo** y se van sin inundar nada, y **el chaflán de
+cada esquina se inunda sólo dentro de su rincón** (el 16% de la carta), donde una fuga no
+puede recorrer el lateral. También cuadra los dos tamaños del origen: el reverso viene a
+1054x1492 y el frente a 1024x1536, y **el que se reescala es el frente**.
 
-La inclinación se reproduce con `skewX(-11.4deg)` y **no** con `font-style:oblique 11.4deg`:
-la forma con ángulo no existe en los WebView viejos y ahí el texto saldría recto al lado
-de unas etiquetas inclinadas.
+**Dos porcentajes que no tenían contra qué resolverse, y el mismo fallo las dos veces:** la
+bandera con `height:56%` dentro de una celda de alto automático se pintaba a su tamaño
+natural (72x54), y los filetes del apodo con `height:.32%` no se veían. Un porcentaje de
+alto necesita un padre con alto definido: la celda lleva `align-self:stretch` y los filetes
+miden en fracción del ANCHO de la carta.
 
-### Cómo se verifica
-```bash
-node herramientas/medir-carta.mjs   # los diez textos, uno a uno, contra su hueco
-node juego/test-humo.mjs            # la suite entera
-```
-`medir-carta.mjs` lleva los huecos de la tabla de arriba dentro. Si mueves un texto,
-mueve también su hueco ahí, o la herramienta deja de decir la verdad.
+**El tamaño del nombre se retocó**: `tamNombre()` pasa de un tope del 9,5% a **12,52%** —el
+del boceto— y el numerador de 63,2 a 87,3, porque el hueco pasó del 66,6% del ancho al 92%.
 
-### La carta no tiene fondo
-El marco es un PNG con la carta **recortada**: alrededor del metal lleva de 14 a 55 px
-transparentes, según por dónde se mire, porque el contorno no es un rectángulo —esquinas
-cortadas y una muesca arriba en medio—. `.carta` **no lleva color de fondo ni
-border-radius**: si se le ponen, ese margen se rellena y la carta se ve pegada sobre un
-rectángulo gris. `overflow:hidden` se queda, para que un texto mal medido no se salga.
-
-### Las fotos de los peleadores
-Van en `juego/fotos/<persona>.webp`, **una por peleador y no por carta** —402 cartas, 355
-peleadores, y quien pelea en dos divisiones tiene dos cartas y una cara—.
-
-**Recortadas y con transparencia.** El peleador va superpuesto ENCIMA del fondo de
-hexágonos del marco, que se sigue viendo por detrás y alrededor; una foto rectangular con
-su fondo taparía el dibujo. Por eso el encaje es `object-fit:contain` y no `cover`.
-
-Se apoyan abajo y **la imagen se corta por debajo del borde de arriba de la placa del
-nombre** —72,60% en el oro, 72,85% en el plata—, no en el borde de la ventana. Cortándola
-en la ventana el peleador queda colgado en el aire; así sale de detrás de la placa.
-
-**La caja de la foto es más estrecha que el hueco, y no es un descuido.** El cartel del
-nombre tiene las esquinas cortadas en diagonal: su borde de arriba solo es plano entre el
-8,06% y el 68% en el oro, y entre el 7,81% y otro tanto en el plata. Llegando la foto
-hasta el filo del hueco (3,89%), sus dos esquinas de abajo quedaban fuera de ese tramo
-plano y el brazo del peleador se cortaba en recto sin cartel debajo: se veía flotando. La
-caja se estrecha lo mismo por los dos lados para que siga centrada en el hueco, y al
-estrechar pierde alto por arriba, porque abajo está clavada al cartel. Por eso el peleador
-entra algo más pequeño y con la cabeza más baja.
-
-**Y el cuerpo tiene que llegar al borde de abajo del ARCHIVO.** El juego apoya la imagen
-en el suelo de su hueco; si el recorte lleva aire transparente al pie, lo que se apoya es
-el aire y el peleador vuelve a quedar flotando. Esto no se arregla con CSS y ya costó una
-vuelta: la silueta de prueba tenía 85 px de nada por debajo y parecía un fallo del encaje.
-
-**Están las 354 de 355.** Pesan 8,4 MB, todas a 360x551 desde un origen de 460x700.
-
-**La firma del estilo no hace falta.** Las URLs de la UFC llevan `?itok=`, que Drupal
-calcula con una clave del sitio y no se puede reconstruir. Da igual: el CDN
-`dmxg5wxfqgb4u.cloudfront.net` sirve `/styles/athlete_bio_full_body/<ruta en s3>` **sin
-firma** y devuelve exactamente el mismo archivo, 460x700. Así que basta con conocer la
-ruta del archivo, que aparece en cualquier volcado de la web. Por eso las entradas de
-`docs/fotos-urls.json` pueden ser **una URL o una lista de candidatas**: se prueban en
-orden hasta que una conteste. Ojo con el nombre: la UFC no lo escribe siempre igual
-—`ROSAS_JR_RAUL`, no `ROSAS_RAUL_JR`— y el archivo **sin** sufijo `_R_`/`_L_` es el
-retrato, un recorte de cabeza que metería una carta con otro encuadre.
-
-**Todos miran al mismo lado, y no se consigue volteando.** La UFC fotografía a cada
-peleador dos veces, una para cada esquina del cartel, y nombra los archivos `_L_` y `_R_`.
-En la toma `_R_` el peleador está girado al contrario, y mezclados en la baraja se ve
-enseguida. De 351 fotos, 289 vienen de una toma `_L_`, así que ese es el lado bueno.
-
-**Las dos tomas son dos fotos distintas, no una espejada**: en las dos el logo de la UFC
-del pantalón se lee bien. Por eso voltear la `_R_` con un espejo **no vale**: deja el logo
-al revés —se lee "JFU"—, y en la carta se nota. Se probó y se descartó. Lo que se hace es
-**pedir la toma `_L_` del mismo peleador**, que está en la misma carpeta de s3 y el mismo
-día, con `_L_` en vez de `_R_`. Por eso esos diecisiete llevan en `docs/fotos-urls.json`
-una lista que empieza por la `_L_` y deja la `_R_` de reserva: si la `_L_` no existiera,
-`importar-fotos.mjs` baja la `_R_` y **esa sí la voltea al vuelo**, que un logo pequeño al
-revés molesta menos que un peleador mirando al otro lado.
-
-**El cinturón tiene que cuadrar con el plantel.** La UFC fotografía al campeón con el
-cinturón, y esa foto se queda puesta aunque pierda el título. En la carta de quien en
-`roster.js` no es `campeon`, un cinturón es mentira. Se cambiaron seis —Ankalaev, Du
-Plessis, Della Maddalena, Dvalishvili, Pantoja y Zhang Weili— pidiendo la toma sin
-cinturón, que suele ser más nueva o más vieja pero existe. **Pantoja y Zhang Weili se
-quedan con el suyo**: llevan años siendo campeones y la UFC no publica de ellos ninguna
-otra, y una carta con cinturón se lee mejor que una carta sin foto.
-
-Y hay quien lleva cinturón en una carta y no en las otras. Para eso está
-`juego/fotos/<persona>-<división>.webp`, que `fotoSrc()` mira antes que la de la persona;
-`generar-fotos.mjs` valida el nombre contra las cartas del plantel para no darlo por
-sobrante. Se usa en tres sitios:
-
-| Carta | Foto | Por qué |
-|---|---|---|
-| `ilia-topuria-m3` | sin cinturón | campeón en pluma, no en ligero |
-| `valentina-shevchenko-f2` | sin cinturón | campeona en mosca, no en gallo |
-| `alex-pereira-m6` | **con** cinturón | **lo pidió el usuario** |
-
-**Ojo con la de Pereira, que no sale de la regla de arriba y no es un descuido.** En
-`roster.js` el campeón de semipesado es Carlos Ulberg y Pereira está de #3, así que por la
-regla no debería llevarlo. El usuario pidió expresamente que en la de semipesado saliera
-con cinturón y en las de pesado y medio sin él. **Se le avisó de que el plantel dice otra
-cosa y aun así lo quiere así: no lo "arregles".**
-
-**El derivado sin firma solo existe si la UFC lo ha generado**, o sea si es la foto que
-enseña la ficha. Para una toma que no es la de la ficha hay que pedir el **archivo
-original**, sin estilo —seis rutas posibles, están en `formas()`—, y **ese es la toma
-entera, de la cabeza a los pies**, no el recorte por el muslo del derivado. Recortado como
-los demás deja en la carta un par de piernas; pasó con Ankalaev. Por eso `prepararImagen()`
-tiene una rama para cuando la proporción es de cuerpo entero: corta desde la cabeza hacia
-abajo y se queda con el 70% del cuerpo, que es por donde corta la UFC.
-
-**Y hay dos sesiones de fotos distintas.** La de la Contender Series —luz fría, pantalón
-negro liso, guantes azules de la DWCS— sale apagada al lado de la del estudio de la UFC, y
-en la baraja parece en blanco y negro. **No se arregla subiendo la saturación**: a ×1,6
-sigue siendo otra sesión y a ×2,2 la piel se vuelve rosa. Se arregla **pidiendo la toma
-posterior**, la de después de firmar, que casi siempre existe en otra carpeta de s3. Así se
-cambiaron seis. La saturación media de las 351 es 0,42; por debajo de 0,23 conviene mirar
-si hay una toma más nueva. Josh Hokit también tenía una, de enero de 2026, aunque la de abril de ese año
-no exista: **si una carpeta no contesta, prueba las otras fechas antes de rendirte.**
-
-**Y la UFC tiene siluetas negras de relleno** (`SHADOW_Fighter_fullLength_RED.png`,
-`womens-silhouette-RED-corner.png`) para quien todavía no tiene foto. Se bajan sin
-protestar y son un borrón con forma de persona encima de un peleador real. `esSilueta()`
-las descarta. Tres se colaron —Brando Pericic, Louie Sutherland y Michelle Montague— y no
-era que no tuvieran foto: era que la ficha de la que salió la URL se scrapeó antes de que
-la UFC les hiciera la sesión. **Cuando una URL devuelva la silueta, busca una carpeta de
-s3 más nueva antes de dar al peleador por perdido.**
-
-**De dónde salen.** `herramientas/importar-fotos.mjs` las baja de ufcespanol.com, las
-recorta y las deja listas. **Hay que ejecutarla en una máquina con internet normal**: el
-proxy de la sesión de Claude tiene lista blanca —GitHub, npm, PyPI, Google Fonts— y
-deniega con 403 ufc.com, ufcespanol.com, es.ufc.com, espn.com y hasta Wikimedia, así que
-desde ahí no se puede bajar ni una. Primero `--ver` con un peleador, para comprobar que
-la herramienta encuentra la imagen que toca antes de gastar 355 descargas; `--probar` pasa
-un archivo del disco por el recorte, sin red.
-
-`juego/fotos.js` dice qué caras hay y **lo escribe `herramientas/generar-fotos.mjs`**:
-después de añadir o quitar una foto hay que volver a ejecutarlo. Se usa una lista y no un
-`onerror` porque la carta se pinta distinta según haya foto o no —el atributo pasa de estar
-en medio de la ventana a ser una chapa abajo— y descubrirlo después de pintar es un salto
-que se ve; además, doce cartas sin foto serían doce peticiones fallidas por pantalla.
-
-Al añadir fotos hay que tocar **tres** sitios de empaquetado, no dos: `build.gradle`
-(`fotos/**` y `fotos.js`) y `servidor.yml` (la carpeta y el archivo).
+**Cómo se verifica.** `node herramientas/medir-carta.mjs` pinta la carta a tamaño natural,
+la fotografía con y sin cada texto y compara: mira **la caja** del elemento (exacta, la dice
+el navegador) y **la tinta** (que caza los desbordes). Ojo con una trampa que costó un rato:
+las imágenes van con `loading="lazy"` y si una termina de cargar ENTRE las dos capturas, la
+diferencia sale de ella; la herramienta ahora las espera.
 
 ### Lo que quedó sin tocar y hay que decidir algún día
 - **`.c-copias` se pinta y no tiene CSS en ninguna parte.** Ya estaba así antes de este

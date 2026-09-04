@@ -19,34 +19,23 @@ import fs from 'fs';
 import path from 'path';
 import zlib from 'zlib';
 
-/* Los huecos de los DOS marcos, leídos de sus PNG a resolución completa recorriendo cada
-   columna y anotando dónde el negro del hueco se separa del metal o del marfil.
+/* LAS CAJAS DE LA CARTA NUEVA, en % de su alto, tal como las reparte el diseño.
 
-   Hay dos tablas y no una porque los dos dibujos no están alineados entre sí: el de plata
-   es otro render —1050x1489 frente a 1054x1492— y lleva los recuadros de stat casi medio
-   punto a la derecha, la barra del nombre un cuarto de punto abajo y el polígono del borde
-   0,43 abajo. Midiendo solo el oro, como se hizo al principio, las platas pasaban la
-   comprobación con todo ligeramente descolocado. Se miden las dos.
+   OJO, QUE ESTO YA NO SE MIDE SOBRE EL MARCO. El marco viejo traía huecos negros
+   dibujados —una barra para el nombre, seis recuadros para las stats— y la comprobación
+   era "¿cae la tinta dentro del hueco que le pintaron?". El marco nuevo no trae ninguno:
+   el nombre, el apodo, los datos y el panel de stats se pintan sobre el fondo, y sus cajas
+   salen del boceto, no del dibujo. Lo que se comprueba ahora es que cada texto se quede
+   dentro de la caja que el diseño le asigna, que es lo que caza los desbordes por el
+   mínimo de letra del móvil —el fallo para el que se hizo esta herramienta—.
 
-   Los seis recuadros de stat van uno debajo de otro en la misma columna, y entre uno y el
-   siguiente quedan 4,3 puntos de carta: más que el margen de 1,5 con el que busca banda(),
-   así que ninguna búsqueda se cuela en el número de al lado. */
+   Si mueves una caja en el CSS, muévela también aquí o esto deja de decir la verdad. */
 const MARCOS = {
-  oro: {
-    '.c-rk':     { x: [0.7989, 0.9592], filas: [[2.88, 12.40]] },
-    '.c-nom':    { x: [0.0512, 0.7173], filas: [[72.32, 81.84]] },
-    '.c-record': { x: [0.0598, 0.9383], filas: [[83.45, 94.70]] },
-    '.c-peso':   { x: [0.4260, 0.5380], filas: [[95.51, 98.93]] },
-    '.c-num':    { x: [0.8539, 0.9355], filas: [[17.36, 21.51], [26.21, 30.36], [35.66, 39.75],
-                                                [45.04, 49.13], [54.36, 58.45], [63.47, 67.56]] },
-  },
-  plata: {
-    '.c-rk':     { x: [0.8029, 0.9638], filas: [[2.75, 12.29]] },
-    '.c-nom':    { x: [0.0514, 0.7210], filas: [[72.60, 82.07]] },
-    '.c-record': { x: [0.0598, 0.9383], filas: [[83.45, 94.70]] },
-    '.c-peso':   { x: [0.4279, 0.5399], filas: [[95.97, 99.33]] },
-    '.c-num':    { x: [0.8581, 0.9400], filas: [[17.33, 21.42], [26.26, 30.36], [35.66, 39.83],
-                                                [45.13, 49.23], [54.53, 58.63], [63.67, 67.76]] },
+  comun: {
+    '.c-nom':    { x: [0.04, 0.96], filas: [[63.40, 72.30]] },
+    '.c-apodo':  { x: [0.00, 1.00], filas: [[73.50, 76.80]] },
+    '.c-datos':  { x: [0.00, 1.00], filas: [[78.40, 83.40]] },
+    '.c-stats':  { x: [0.07, 0.93], filas: [[84.00, 94.60]] },
   },
 };
 
@@ -61,8 +50,14 @@ await pag.waitForFunction(() => typeof window.ROSTER !== 'undefined');
 await pag.evaluate(() => {
   const est = document.createElement('style');
   // Sin sombras ni reflejos: lo que se mide tiene que ser la letra, no su relieve.
-  est.textContent = '.carta .c-nom,.carta .c-rk,.carta .c-record,.carta .c-peso,.carta .c-num{text-shadow:none !important}'
-                  + '.carta .brillo{display:none !important}';
+  /* Sin sombras ni relieves: lo que se mide tiene que ser la letra. El nombre del diseño
+     nuevo lleva drop-shadow en un filter, no un text-shadow, así que hay que apagar los
+     dos o la sombra cuenta como tinta y la banda sale más alta de lo que es. */
+  est.textContent = '.carta .c-nom,.carta .c-apodo,.carta .c-datos,.carta .c-stats'
+                  + '{text-shadow:none !important;filter:none !important}'
+                  + '.carta .c-foto{filter:none !important}'
+                  + '.carta .c-datos img{box-shadow:none !important}';
+  // (la sombra de la bandera se apaga para medir: es relieve, no letra)
   document.head.appendChild(est);
   const jaula = document.createElement('div');
   jaula.id = 'jaula';
@@ -71,29 +66,44 @@ await pag.evaluate(() => {
 });
 
 const foto = async () => descodificar(await pag.locator('#jaula .carta').screenshot());
+/* Dónde cae de verdad la caja del elemento, en % del alto de la carta. Esto es exacto: lo
+   dice el navegador. La medida por tinta de más abajo es la que caza los desbordes, pero
+   arrastra medio punto de suavizado de bordes ahora que la carta no lleva fondo opaco
+   detrás, así que las dos se leen juntas: la caja dice dónde ESTÁ el elemento y la tinta,
+   si su contenido se le sale. */
+const caja = async (sel) => pag.evaluate(s => {
+  const c = document.querySelector('#jaula .carta').getBoundingClientRect();
+  const e = document.querySelector('#jaula ' + s);
+  if (!e) return null;
+  const b = e.getBoundingClientRect();
+  return [(b.top - c.top) / c.height * 100, (b.bottom - c.top) / c.height * 100];
+}, sel);
 const sig = n => (n >= 0 ? '+' : '') + n.toFixed(2);
 let fuera = 0;
 
 for (const [marco, HUECOS] of Object.entries(MARCOS)) {
-  /* La sigla más larga que hay, para que el polígono se mida en su peor caso, y con
-     puesto para que salga también la pestaña del ranking. */
-  const carta = await pag.evaluate(m => {
-    const largo = (c) => SIGLA_DIV[c.division].length;
-    const l = ROSTER.filter(c => c.rareza === m).sort((a, b) =>
-      (largo(b) - largo(a)) || ((b.rk !== undefined) - (a.rk !== undefined)));
-    const c = l.find(x => x.rk !== undefined && x.rk !== null) || l[0];
+  /* EL PEOR CASO, no una carta cualquiera: el nombre más largo, con apodo y rankeado, que
+     es donde el texto tiene más papeletas de salirse. */
+  const carta = await pag.evaluate(() => {
+    const l = ROSTER.filter(c => c.apodo && (c.rk === 0 || c.rk))
+      .sort((a, b) => (b.nombre.length - a.nombre.length) || (b.apodo.length - a.apodo.length));
+    const c = l[0] || ROSTER[0];
     const j = document.getElementById('jaula');
     j.innerHTML = cartaHTML(c);
     j.querySelector('.carta').style.setProperty('--k', '1');
-    return { nombre: c.nombre, rk: j.querySelector('.c-rk').textContent,
-             peso: j.querySelector('.c-peso').textContent };
-  }, marco);
-  console.log(`\n── ${marco.toUpperCase()} ──  ${carta.rk} ${carta.nombre} (${carta.peso})`);
+    return { nombre: c.nombre, apodo: c.apodo, peso: SIGLA_DIV[c.division] };
+  });
+  console.log(`\n── ${marco.toUpperCase()} ──  ${carta.nombre} "${carta.apodo}" (${carta.peso})`);
+  /* Y se espera a que TODO esté pintado antes de la primera foto: la foto del peleador y
+     la bandera van con loading="lazy", y si una termina de cargar entre las dos capturas
+     la diferencia sale de ella y no del texto que se está midiendo. */
+  await pag.evaluate(() => Promise.all(
+    [...document.querySelectorAll('#jaula img')].map(i => i.complete ? null : i.decode().catch(() => null))));
+  await pag.waitForTimeout(250);
   const con = await foto();
 
-  /* Se apaga UN elemento cada vez, no todos a la vez: la franja del récord toca por arriba
-     con la placa del nombre y por los lados con los recuadros, y apagándolos juntos la
-     diferencia salía de un texto que no era el que se estaba midiendo. */
+  /* Se apaga UN elemento cada vez, no todos a la vez: las cajas se tocan entre ellas y
+     apagándolas juntas la diferencia salía de un texto que no era el que se medía. */
   for (const [sel, { x, filas }] of Object.entries(HUECOS)) {
     const est = await pag.evaluateHandle(s => {
       const e = document.createElement('style');
@@ -102,17 +112,26 @@ for (const [marco, HUECOS] of Object.entries(MARCOS)) {
     }, sel);
     const sin = await foto();
     await est.evaluate(e => e.remove());
-    filas.forEach(([arriba, abajo], i) => {
+    const cj = await caja(sel);
+    for (const [i, [arriba, abajo]] of filas.entries()) {
       const t = banda(con, sin, x, [arriba - 1.5, abajo + 1.5]);
       const et = `${sel}${filas.length > 1 ? ' ' + (i + 1) : ''}`;
-      if (!t) { console.log(`  ${et.padEnd(14)} sin tinta`); return; }
+      /* LA CAJA, EXACTA: tiene que caer clavada donde dice el diseño. */
+      const bienCaja = cj && cj[0] >= arriba - 0.02 && cj[1] <= abajo + 0.02;
+      if (!bienCaja) fuera++;
+      if (!t) { console.log(`  ${et.padEnd(14)} sin tinta`); continue; }
+      /* Y LA TINTA, con una décima de margen para el suavizado del canto de las letras.
+         Estuvo en medio punto mientras se perseguía un desborde que resultó no serlo: las
+         imágenes con loading="lazy" terminaban de cargar ENTRE las dos capturas y la
+         diferencia salía de ellas. Esperándolas, la medida vuelve a ser limpia. */
       const ha = t[0] - arriba, hb = abajo - t[1];
-      const bien = ha >= -0.05 && hb >= -0.05;
-      if (!bien) fuera++;
-      console.log(`  ${et.padEnd(14)} tinta ${t[0].toFixed(2).padStart(6)}-${t[1].toFixed(2)}` +
+      const bienTinta = ha >= -0.10 && hb >= -0.10;
+      if (!bienTinta) fuera++;
+      console.log(`  ${et.padEnd(14)} caja ${cj ? cj[0].toFixed(2).padStart(6) + '-' + cj[1].toFixed(2) : '  ?'}` +
+        `   tinta ${t[0].toFixed(2).padStart(6)}-${t[1].toFixed(2)}` +
         `   hueco ${arriba.toFixed(2).padStart(6)}-${abajo.toFixed(2)}` +
-        `   holgura ${sig(ha)} / ${sig(hb)}   ${bien ? 'DENTRO' : 'FUERA'}`);
-    });
+        `   ${sig(ha)}/${sig(hb)}   ${bienCaja && bienTinta ? 'DENTRO' : 'FUERA'}`);
+    }
   }
 }
 await nav.close();

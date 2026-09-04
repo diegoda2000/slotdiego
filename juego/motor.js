@@ -31,8 +31,11 @@ const DIV = Object.fromEntries(DIVISIONES.map(d=>[d.id,d]));
 function contiguas(a,b){ const x=DIV[a],y=DIV[b]; return x.g===y.g && Math.abs(x.o-y.o)===1; }
 function vecinas(id){ return DIVISIONES.filter(d=>contiguas(id,d.id)).map(d=>d.id); }
 
+/* Las siglas son las del BOCETO DE LA CARTA: GOL, LUC, SUE, CAR, DUR, IQ. Antes eran GLP
+   y LCH, que salían del marco viejo —donde venían dibujadas—; el diseño nuevo las escribe
+   el juego y son las del dueño. */
 const STATS = [
-  {id:'golpeo',n:'GOLPEO',c:'GLP'}, {id:'lucha',n:'LUCHA',c:'LCH'},
+  {id:'golpeo',n:'GOLPEO',c:'GOL'}, {id:'lucha',n:'LUCHA',c:'LUC'},
   {id:'suelo', n:'SUELO', c:'SUE'}, {id:'cardio',n:'CARDIO',c:'CAR'},
   {id:'dureza',n:'DUREZA',c:'DUR'}, {id:'iq',    n:'IQ',    c:'IQ'},
 ];
@@ -102,9 +105,16 @@ function etiquetaEstatus(c){
    por letra de media sobre los nombres del plantel, y 0,455 en el peor —"Khamzat
    Chimaev"—, así que la cuenta usa 0,46 y no la media: con la media el nombre más ancho
    se saldría. El techo evita que "Bo Nickal" acabe con letras de cartel de feria. */
+/* El tamaño del nombre, en fracción del ancho de la carta. Se ajusta a lo largo que sea
+   para llenar su hueco sin salirse.
+
+   LOS DOS NÚMEROS SON DE LA CARTA NUEVA. Antes eran 63,2 y un tope de 9,5%, medidos contra
+   la barra del nombre del marco VIEJO, que ocupaba el 66,6% del ancho. En el diseño nuevo
+   el nombre va suelto y de lado a lado —el 92%—, y el tope es el del boceto: 132 px de
+   1054, o sea 12,52%. El 87,3 es el 63,2 llevado al hueco nuevo (x 92/66,6). */
 function tamNombre(nombre){
   const largo=Math.max(nombre.length,6);
-  return (Math.min(9.5, 63.2/(largo*0.46))/100).toFixed(4);  // fracción del ancho de la carta
+  return (Math.min(12.52, 87.3/(largo*0.46))/100).toFixed(4);
 }
 const ORDEN_ESTATUS = ESTATUS.map(e=>e.id);
 

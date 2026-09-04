@@ -67,7 +67,14 @@
 :root{
   --titulo:Teko,"Saira Condensed","Barlow Condensed","Arial Narrow",system-ui,sans-serif;
   --texto:Barlow,system-ui,-apple-system,"Segoe UI",sans-serif;
-  --carta:Antonio,"Roboto Condensed","Avenir Next Condensed","Arial Narrow",system-ui,sans-serif;
+  /* LA CARTA NUEVA VA CON SAIRA CONDENSED, que es con lo que se montó y aprobó la maqueta.
+     Antonio se eligió midiendo las etiquetas impresas del marco VIEJO, y el marco nuevo no
+     imprime ninguna: ya no hay nada contra lo que casarla. Los archivos de Antonio se
+     quedan por si se recupera. */
+  --carta:"Saira Condensed","Barlow Condensed","Arial Narrow",system-ui,sans-serif;
+  /* El nombre y los números del boceto son cromados: claro arriba, gris en medio y otra
+     vez claro. */
+  --cromo:linear-gradient(180deg,#ffffff 0%,#e6e6e6 38%,#9d9da1 55%,#f2f2f2 74%,#b9b9bd 100%);
   /* LA PALETA DEL LOGO NUEVO: negro, carbón y oro. YA NO HAY ROJO.
      Los cinco colores de arriba están medidos sobre originales/logo-v2/logo.png; los
      grises de en medio son interpolaciones entre el negro y el carbón, para tener
@@ -720,23 +727,18 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
    en los WebView antiguos, y ahí el texto se quedaba en un tamaño fijo: en la rejilla de
    sobres y colección, con cartas de 124 px, los números se salían de los rombos y los
    nombres del recuadro. Con una variable y calc() se ve igual en cualquier motor. */
-/* SIN FONDO. El marco es un PNG con la carta recortada: alrededor del metal lleva de 14
-   a 55 px transparentes, según por dónde se mire, porque el contorno no es un rectángulo
-   —tiene las esquinas cortadas y una muesca arriba en medio—. Poniéndole a .carta un
-   color de fondo y un border-radius, ese margen transparente se rellenaba de gris oscuro
-   y la carta se veía pegada sobre un rectángulo. Aquí no hay fondo ni redondeo: lo que
-   se ve es la silueta del dibujo y nada más.
+/* SIN FONDO. El marco es un PNG con la carta recortada: alrededor del metal lleva píxeles
+   transparentes, porque el contorno no es un rectángulo. Poniéndole a .carta un color de
+   fondo y un border-radius, ese margen se rellenaba de gris y la carta se veía pegada
+   sobre un rectángulo. Aquí no hay fondo ni redondeo: lo que se ve es la silueta.
 
-   overflow:hidden se queda, pero ya sin redondeo: sigue recortando el lienzo y la foto
-   al rectángulo de la carta, que es lo que evita que un texto mal medido se salga. */
+   overflow:hidden se queda: recorta el lienzo y la foto al rectángulo de la carta, que es
+   lo que evita que un texto mal medido se salga. */
 .carta{position:relative;aspect-ratio:620/877;
   font-family:var(--carta);
-  background-position:center;background-size:100% 100%;background-repeat:no-repeat;
   overflow:hidden;
   cursor:pointer;color:#fff;font-size:calc(var(--cw,110px)*.034);line-height:1.1;
   transition:transform .15s,filter .15s}
-.carta.oro  {background-image:url(marcos/oro.webp)}
-.carta.plata{background-image:url(marcos/plata.webp)}
 .carta.sel{outline:2px solid var(--acc);outline-offset:1px}
 .carta:active{transform:scale(.985)}
 
@@ -747,202 +749,132 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
    WebView traen un TAMAÑO MÍNIMO DE LETRA —8 px en Android— y cualquier texto por debajo
    se dibuja a 8 px de todos modos. En el álbum la carta mide 93 px, así que el número
    salía a 3,3 px, la etiqueta a 3,9 y el nombre a 4,2, y los tres acababan dibujados a 8:
-   todos del mismo tamaño y todos desbordando su hueco. Los números se salían del rombo un
-   158% de su ancho y las etiquetas se montaban encima. En Chromium de escritorio no pasa,
-   que es justo por lo que se coló: se estaba comprobando donde el fallo no existe.
+   todos del mismo tamaño y todos desbordando su hueco.
 
    Maquetando a 620 px las letras son de 22 px y ningún mínimo interviene; lo que encoge
-   después es el dibujo entero, y encoger no es tipografía. Vale igual para Android, para
-   iPhone y para el navegador. */
+   después es el dibujo entero, y encoger no es tipografía. */
 .carta .lienzo{position:absolute;left:0;top:0;width:620px;height:877px;
   --cw:620px;                    /* dentro del lienzo el ancho es siempre este */
   font-size:calc(620px*.034);line-height:1.1;
-  /* Y que el tamaño de letra del sistema tampoco deforme la carta: si el móvil está en
-     "texto grande", el WebView multiplica todas las letras y volverían a salirse del
-     hueco. Fuera de la carta el ajuste sigue funcionando, que es donde tiene sentido. */
   -webkit-text-size-adjust:none;text-size-adjust:none;
   transform:scale(var(--k,.15));transform-origin:0 0;pointer-events:none}
 
-/* Los huecos del marco nuevo, medidos sobre el PNG a resolución completa (1054x1492)
-   con un cuentapíxeles. La proporción del dibujo es 0,7064 y la de la carta 0,7070, así
-   que el mismo porcentaje vale para los dos y ninguna pantalla se mueve de sitio.
+/* ══ EL MARCO NUEVO ═══════════════════════════════════════════════════════
+   TODAS LAS CARTAS SON COMUNES POR AHORA, y lo pidió él: "haz ya todas las cartas
+   comunes". El marco de raro, épico, legendario y ultimate son variaciones que todavía no
+   ha pasado, y llegan con la migración de rarezas.
 
-   El marco nuevo cambia una cosa de fondo: los nombres de las stats y sus iconos vienen
-   PINTADOS DENTRO del dibujo. El juego ya no los escribe —.c-et se ha ido, y con ella
-   FILAS_STAT y COLS_STAT—: solo pone bandera, ranking, atributo, nombre, récord y los
-   seis números.
+   Las medidas salen de medir el boceto con una rejilla encima, en % de un lienzo de
+   1054x1492 —que es la proporción del reverso y la que aprobó él—. Están montadas y vistas
+   en herramientas/maqueta-carta.html; si mueve algo, se cambia ahí primero.
 
-   Y cambia el color de la tinta. En el marco viejo casi todo el texto caía sobre metal
-   claro y se escribía en oscuro; aquí el nombre, el ranking y los seis recuadros son
-   huecos NEGROS, así que esos van en claro, y solo el récord —que cae en la banda
-   blanca de abajo— sigue en oscuro. */
+   EL MARCO VA DEBAJO DE TODO, y no es un capricho: el PNG que pasó es OPACO, 0% de
+   transparencia, así que puesto encima taparía la carta entera. Lo que hace de ventana es
+   el hueco libre que deja su borde por dentro. */
+.carta .marco{position:absolute;inset:0;width:100%;height:100%;z-index:0;display:block}
 
-/* La inclinación. Las etiquetas del marco van a 11,4 grados, medidos sobre el palo de
-   la I de IQ ajustando una recta a su centro fila a fila: dx/dy = 0,2009. Se reproduce
-   con skewX y no con `font-style:oblique 11.4deg` porque la forma con ángulo no existe
-   en los WebView viejos, y ahí el texto saldría recto al lado de unas etiquetas
-   inclinadas. skewX lo entiende cualquier motor.
+/* La ventana de la foto. La foto va a CUERPO ENTERO —él eligió la opción B—, apoyada abajo
+   y con el pie fundido en negro para que no se vea el canto del recorte. */
+.carta .hueco{position:absolute;left:6.93%;width:85.94%;top:4.23%;height:71%;
+  z-index:1;overflow:hidden}
+.carta .c-foto{position:absolute;left:50%;bottom:0;height:97%;width:auto;max-width:none;
+  transform:translateX(-50%);
+  filter:drop-shadow(0 10px 30px rgba(0,0,0,.75))}
+.carta .hueco::after{content:'';position:absolute;left:0;right:0;bottom:0;height:26%;
+  background:linear-gradient(180deg,transparent,#000 88%)}
 
-   Y el medio punto de subida que va con ella. Centrar con flex centra la CAJA DE LÍNEA,
-   no la tinta: entre la caja de línea y la letra hay el hueco que la fuente reserva para
-   ascendentes y colas, y en Antonio no es simétrico, así que el texto queda bajo dentro
-   de su hueco. La corrección está medida con una sonda —ocho textos distintos, pintados
-   y restados a escala 4—, y sale entre 0,041 y 0,089 em según la cadena, con la media en
-   0,059 y las tres medidas sobre la carta de verdad en 0,054, 0,055 y 0,057. Se usa
-   0,055 em. Va en em y no en porcentaje para que valga igual a cualquier tamaño de letra.
+.carta .capa{position:absolute;inset:0;z-index:2}
 
-   Esto NO es el desplazamiento de 0,42em que hubo que quitar en su día: aquel salía de
-   una sonda de línea base metida dentro de un flex, que no medía la letra sino otra caja
-   flex. Este sale de pintar y restar píxeles, que es lo único que aquí ha valido. */
-/* Bandera dentro del octágono de arriba a la izquierda: puesta por detrás y asomando
-   por el hueco. Por eso va recortada al octágono y llenándolo, no encajada dentro con
-   aire alrededor.
+/* EL CROMADO del nombre y de los números: claro arriba, gris en medio y otra vez claro,
+   que es como está pintado en el boceto.
 
-   Las medidas son las del hueco NEGRO, no las del octágono entero: recorriendo el dibujo
-   por el centro del octágono, el anillo de metal cae en x 6,93-7,21% y 18,60-18,98%, y
-   en y 5,43-5,70% y 14,01-14,21%. Entre anillo y anillo queda x 7,31-18,50% y
-   y 5,76-13,94%, que es lo que llena la bandera. Un punto más y taparía el metal. */
-.carta .c-ban{position:absolute;left:7.31%;width:11.19%;top:5.76%;height:8.18%;
-  overflow:hidden;
-  clip-path:polygon(30% 0,70% 0,100% 30%,100% 70%,70% 100%,30% 100%,0 70%,0 30%)}
-.carta .c-ban img{width:100%;height:100%;object-fit:cover;display:block}
+   Va detrás de un @supports A PROPÓSITO. El recorte del fondo al texto necesita
+   background-clip:text, y donde no exista, `color:transparent` dejaría el nombre INVISIBLE
+   en vez de simplemente sin cromar. Así que el color plano es el de partida y el cromado
+   solo se aplica donde se puede. */
+.carta .cromo{color:#eef0f3}
+@supports (-webkit-background-clip:text) or (background-clip:text){
+  .carta .cromo{background-image:var(--cromo);
+    -webkit-background-clip:text;background-clip:text;color:transparent}
+}
 
-/* Ranking, arriba a la derecha. Quien no tenga ranking lleva SR, para que el hueco no
-   quede vacío. */
-.carta .c-rk{position:absolute;left:79.89%;width:16.03%;top:2.88%;height:9.52%;
-  display:flex;align-items:center;justify-content:center;line-height:1;
-  font-weight:700;color:#f3dfa4;font-size:calc(var(--cw,110px)*.055);letter-spacing:-.02em;
-  transform:translateY(-.055em) skewX(-11.4deg)}
-.carta.plata .c-rk{color:#e6ecf2;left:80.29%;width:16.09%;top:2.75%;height:9.54%}
+/* El nombre. La inclinación del boceto son 9 grados, y se hace con skewX y no con
+   `font-style:oblique 9deg` porque la forma con ángulo no existe en los WebView viejos.
+   Lo largo que sea el nombre lo pone tamNombre() en --nom. */
+.carta .c-nom{position:absolute;left:4%;width:92%;top:63.4%;text-align:center;
+  text-transform:uppercase;
+  font-weight:800;font-size:calc(var(--cw,620px)*var(--nom,.1252));
+  line-height:1;letter-spacing:-.005em;
+  transform:skewX(-9deg);
+  white-space:nowrap;overflow:hidden;
+  filter:drop-shadow(0 5px 12px rgba(0,0,0,.85))}
 
-/* LA FOTO, en la ventana grande, que es el hueco que el dibujo tiene para ella.
+/* El apodo, entre dos filetes de oro. Quien no tenga apodo no lleva ni el texto ni los
+   filetes: una línea vacía con dos rayas se lee como que falta algo. */
+.carta .c-apodo{position:absolute;left:0;right:0;top:73.5%;text-align:center;
+  display:flex;align-items:center;justify-content:center;
+  gap:calc(var(--cw,620px)*.0247)}
+.carta .c-apodo b{font-weight:700;font-size:calc(var(--cw,620px)*.0455);line-height:1;
+  letter-spacing:.20em;color:var(--oro-suave);transform:skewX(-9deg);text-indent:.20em;
+  white-space:nowrap}
+/* LOS DOS FILETES DEL APODO. El alto va en la misma unidad que el ancho —fracción del
+   ancho de la carta— y NO en porcentaje: el porcentaje se resolvería contra el alto de
+   .c-apodo, que es automático, así que caía a `auto` y los filetes no se veían. Es el
+   mismo fallo que tenía la bandera. */
+.carta .c-apodo i{display:block;flex:none;
+  width:calc(var(--cw,620px)*.1044);height:calc(var(--cw,620px)*.0019);
+  background:linear-gradient(90deg,transparent,var(--oro));opacity:.85}
+.carta .c-apodo i:last-child{background:linear-gradient(90deg,var(--oro),transparent)}
 
-   Los bordes de la ventana, medidos sobre los PNG a resolución completa: en el oro va de
-   x 3,89 a 67,08% y de y 2,68 a 71,11%; en el plata, de 3,81 a 67,33% y de 2,55 a 71,32%.
-   La foto se mete 0,4 puntos por dentro de esos bordes, así que nunca pisa el metal y
-   queda un filo del fondo de hexágonos haciendo de paspartú.
+/* Bandera · división · ranking, con dos separadores verticales. */
+.carta .c-datos{position:absolute;left:0;right:0;top:78.4%;height:5.0%;
+  display:flex;align-items:center;justify-content:center;gap:0}
+/* align-self:stretch NO ES ADORNO. Sin él, la celda mide lo que mida su contenido, y
+   entonces el `height:56%` de la bandera no tiene contra qué resolverse: el porcentaje cae
+   a `auto` y la bandera se pinta a su tamaño natural, más alta que la fila. Estirando la
+   celda al alto de la fila el porcentaje vuelve a significar algo. Lo cazó
+   herramientas/medir-carta.mjs, que es para lo que está. */
+.carta .c-datos > *{display:flex;align-items:center;justify-content:center;
+  align-self:stretch}
+.carta .c-datos .cel{width:19%}
+.carta .c-datos .sep{width:.19%;height:74%;background:var(--oro);opacity:.75}
+/* La sombra de la bandera va CORTA. Con la del boceto —0 3px 10px— se derramaba 12 px por
+   debajo de su fila, y como el panel de stats es translúcido, la mancha se veía a través
+   de él. Lo cazó herramientas/medir-carta.mjs. */
+.carta .c-datos img{height:56%;width:auto;box-shadow:0 1px 3px rgba(0,0,0,.8)}
+.carta .c-datos b{font-weight:700;font-size:calc(var(--cw,620px)*.0588);line-height:1;
+  letter-spacing:.02em}
 
-   Las esquinas van cortadas en chaflán, como las de la ventana. No hace falta que el
-   recorte sea exacto: al ir por dentro, lo que asoma por las esquinas es el propio fondo
-   del marco.
+/* El panel de las stats: esquinas cortadas, la etiqueta en oro y el número debajo. Las
+   etiquetas las escribe el juego —este marco no las trae dibujadas, al revés que el
+   viejo—, así que STATS manda también aquí. */
+.carta .c-stats{position:absolute;left:7.0%;width:86%;top:84.0%;height:10.6%;
+  border:.19% solid rgba(217,164,65,.55);
+  background:linear-gradient(180deg,rgba(0,0,0,.55),rgba(0,0,0,.30));
+  clip-path:polygon(2.47% 0,97.53% 0,100% 15%,100% 85%,97.53% 100%,2.47% 100%,0 85%,0 15%);
+  display:grid;grid-template-columns:repeat(6,1fr)}
+.carta .c-stats .st{position:relative;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:5%}
+.carta .c-stats .st + .st::before{content:'';position:absolute;left:0;top:22%;bottom:22%;
+  width:1.4%;background:var(--oro);opacity:.55}
+.carta .c-et{font-weight:700;font-size:calc(var(--cw,620px)*.0370);line-height:1;
+  letter-spacing:.10em;color:var(--oro-suave);transform:skewX(-9deg);text-indent:.10em}
+.carta .c-num{font-weight:800;font-size:calc(var(--cw,620px)*.0588);line-height:1;
+  font-variant-numeric:tabular-nums}
+.carta .c-num.pen{color:#ff8a7a;background-image:none;-webkit-text-fill-color:#ff8a7a}
+.carta .c-num.up{color:#8ee6a6;background-image:none;-webkit-text-fill-color:#8ee6a6}
 
-   LA CAJA NO ES TAN ANCHA COMO EL HUECO, Y NO ES UN DESCUIDO. El cartel del nombre
-   tiene las esquinas cortadas en diagonal: su borde de arriba solo es plano entre el
-   8,06% y el 68% —en el plata, entre el 7,81% y otro tanto—, y a los lados de eso baja en
-   chaflán. La foto llegaba hasta el filo del hueco, el 3,89%, así que sus dos esquinas de
-   abajo quedaban por fuera de esa parte plana: el brazo del peleador se cortaba en recto
-   y debajo no había cartel donde apoyarse. Se veía flotando.
-
-   Así que la caja se estrecha hasta que sus dos bordes caen dentro del tramo plano, y se
-   estrecha lo mismo por los dos lados para que siga centrada en el hueco: el centro de la
-   foto y el del hueco son el mismo, 35,49% en el oro y 35,57% en el plata.
-
-   Y al estrecharse, encoge: la caja mantiene la proporción de la imagen (0,6529), así que
-   al quitarle ancho pierde alto por abajo... no, por arriba, porque abajo está clavada al
-   cartel. El peleador entra más pequeño y con la cabeza algo más baja, que es justo lo
-   que se pedía.
-
-   La foto va RECORTADA y con transparencia, no es un rectángulo: el peleador se pega
-   ENCIMA del fondo de hexágonos del marco, que se sigue viendo por detrás y alrededor.
-   Por eso el encaje es `contain` y no `cover` —recortar a un peleador ya recortado sería
-   cortarle la cabeza— y por eso se apoya abajo: de pie sobre el suelo de la ventana, no
-   flotando en medio.
-
-   Y POR ABAJO SE CORTA EN EL SUELO DE LA VENTANA: 71,11% en el oro y 71,32% en el plata.
-   Ni un punto más. Justo debajo empieza el filo de metal de la placa del nombre —71,18%
-   en el oro—, y bajando la imagen para meterla por detrás de la placa lo que hacía era
-   pasarle el cuerpo POR ENCIMA de ese filo y partirlo por la mitad. La placa no está
-   dibujada por el juego: viene en el marco, que va de fondo, así que nada de lo que se
-   pinte encima puede colarse detrás de ella.
-
-   Cortando en el suelo de la ventana el cuerpo llega justo a tocar la placa, que es el
-   efecto que se buscaba. Lo que NO puede llevar la imagen es aire transparente al pie:
-   entonces lo que se apoya en el suelo es el aire y el peleador vuelve a flotar. Eso se
-   arregla en el recorte, no aquí; está escrito en juego/fotos/LEEME.md.
-
-   El recorte de abajo va cuadrado, sin chaflán, justo por eso: esa arista no se ve nunca.
-   Los de arriba sí, y siguen la esquina cortada de la ventana.
-
-   El recorte entero se queda además como red de seguridad: si algún día entra una foto
-   rectangular o más grande de la cuenta, se queda dentro del hueco en vez de pisar el
-   metal de los lados. */
-.carta .c-foto{position:absolute;left:8.07%;width:54.85%;top:11.71%;height:59.40%;
-  object-fit:contain;object-position:50% 100%;pointer-events:none;
-  clip-path:polygon(3.6% 0,96.4% 0,100% 2.3%,100% 100%,0 100%,0 2.3%)}
-.carta.plata .c-foto{left:7.81%;width:55.52%;top:11.21%;height:60.11%}
-
-/* El atributo. Sin foto se queda donde estaba, en medio de la ventana y en grande, que es
-   lo único que hay ahí.
-
-   CON FOTO NO SE PINTA. Estuvo un rato como chapa al pie de la ventana, encima del
-   peleador, y sobraba: la ventana es para la cara y meterle una etiqueta delante la
-   ensucia. El atributo se sigue viendo entero al abrir la carta. */
-.carta .c-mid{position:absolute;left:3.42%;width:62.52%;top:2.68%;height:68.32%;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-  gap:5%;text-align:center}
-.carta.confoto .c-mid{display:none}
-.carta .c-icono{font-size:calc(var(--cw,110px)*.20);line-height:1;
-  filter:drop-shadow(0 2px 6px rgba(0,0,0,.6))}
-.carta .c-rasgo{font-weight:600;letter-spacing:.07em;text-transform:uppercase;
-  font-size:calc(var(--cw,110px)*.030);line-height:1.2;color:var(--warn)}
-.carta.plata .c-rasgo{color:#cfd6dd}
-
-/* Barra del nombre: x 5,31-72,49%, y 72,12-82,31%. Hueco negro, letra clara. Lo largo
-   que sea el nombre lo pone tamNombre() en --nom, para llenar la barra sin salirse. */
-.carta .c-nom{position:absolute;left:5.12%;width:66.61%;top:72.32%;height:9.52%;
-  display:flex;align-items:center;justify-content:center;line-height:1;
-  color:#f6ecd2;font-weight:700;font-size:calc(var(--cw,110px)*var(--nom,.045));
-  overflow:hidden;white-space:nowrap;padding:0 2%;
-  transform:translateY(-.055em) skewX(-11.4deg)}
-.carta.plata .c-nom{color:#eef2f6;left:5.14%;width:66.96%;top:72.60%;height:9.47%}
-
-/* Récord, en la banda blanca de abajo: x 5,88-93,93%, y 83,45-94,64%. Única tinta
-   oscura de la carta, porque es la única que cae sobre claro. La sigla de la división
-   se va al polígono del borde de abajo, justo debajo del récord.
-
-   El polígono no está centrado en la carta: recorriéndolo por su fila más ancha va de
-   x 42,60 a 53,80%, o sea centrado en el 48,20% y no en el 50%. Y su cara plana —el oro
-   de dentro del bisel, leído por la columna central— va de y 95,51 a 98,93%. La sigla se
-   centra en esa cara, no en el contorno: centrarla en el contorno la deja alta, porque la
-   mitad de abajo del polígono es un pico que se estrecha. */
-.carta .c-record{position:absolute;left:5.98%;width:87.85%;top:83.45%;height:11.25%;
-  display:flex;align-items:center;justify-content:center;line-height:1;
-  color:#23201c;font-weight:700;letter-spacing:.04em;
-  font-size:calc(var(--cw,110px)*.046);font-variant-numeric:tabular-nums;
-  transform:translateY(-.055em) skewX(-11.4deg)}
-.carta .c-peso{position:absolute;left:42.60%;width:11.20%;top:95.26%;height:3.24%;
-  display:flex;align-items:center;justify-content:center;line-height:1;
-  color:#000;font-weight:700;letter-spacing:.03em;
-  font-size:calc(var(--cw,110px)*.032);
-  transform:translateY(-.055em) skewX(-11.4deg)}
-/* El polígono del plata está 0,43 más abajo y 0,19 más a la derecha que el del oro.
-   Los bordes de los dos se localizaron igual, por el pico de gradiente de la fila que
-   cruza la cara: oro 43,26-52,94% y plata 43,43-53,14%. */
-.carta.plata .c-peso{left:42.79%;top:95.69%}
-
-/* El reflejo. Una franja de luz cruzada por encima, que es lo que hace que el texto
-   parezca parte del metal y no una pegatina puesta encima. */
-.carta .brillo{position:absolute;inset:0;pointer-events:none;border-radius:inherit;
-  background:linear-gradient(104deg,
-    rgba(255,255,255,0) 26%, rgba(255,255,255,.34) 41%,
-    rgba(255,255,255,.10) 52%, rgba(255,255,255,0) 66%)}
-
-/* Los seis números, cada uno dentro de su recuadro negro, al lado del nombre de su stat
-   —que lo pinta el marco—. Todos los recuadros comparten la columna x 85,39-93,74%; lo
-   único que cambia es la altura, y va en el atributo style desde ALTURAS_STAT. */
-.carta .c-num{position:absolute;left:85.39%;width:8.16%;height:4.15%;
-  display:flex;align-items:center;justify-content:center;line-height:1;
-  color:#f6ecd2;font-weight:700;
-  font-size:calc(var(--cw,110px)*.040);font-variant-numeric:tabular-nums;
-  transform:translateY(-.055em) skewX(-11.4deg)}
-.carta.plata .c-num{color:#eef2f6;left:85.81%;width:8.19%;height:4.10%}
-.carta .c-num.pen{color:#ff8a7a}
-.carta .c-num.up{color:#8ee6a6}
+/* Las repetidas, arriba a la derecha. Antes se pintaba el ×N y no tenía CSS en ninguna
+   parte, así que caía suelto en una esquina del lienzo. */
+.carta .c-copias{position:absolute;right:9%;top:6%;z-index:3;
+  font-weight:800;font-size:calc(var(--cw,620px)*.038);line-height:1;
+  color:#0b0c0d;background:linear-gradient(180deg,var(--oro-suave),var(--oro));
+  border-radius:.6em;padding:.25em .5em}
 
 /* Boca abajo: la del rival mientras no se resuelve el duelo. */
-.carta.tapada{display:grid;place-items:center;font-size:44px;font-weight:800;color:#46525f;
-  background:repeating-linear-gradient(135deg,#1b222b,#1b222b 9px,#222b35 9px,#222b35 18px);
-  border:1px dashed #3a4551;aspect-ratio:620/877;border-radius:9px}
+/* Boca abajo: el REVERSO de verdad, que también lo pasó él. Antes era una trama de rayas
+   dibujada con CSS porque no había reverso; ahora sí. */
+.carta.tapada{aspect-ratio:620/877;background:url(marcos/comun-reverso.webp) center/100% 100% no-repeat}
 .carta.oculta{display:grid;place-items:center;background:var(--bg2);
   border:1px dashed var(--line);color:var(--dim2);aspect-ratio:620/877;border-radius:9px}
 
@@ -985,20 +917,18 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 .carta.revelando .c-foto,
 .carta.revelando .c-ban,
 .carta.revelando .c-peso,
-.carta.revelando .c-record,
+.carta.revelando .c-apodo,
 .carta.revelando .c-rk,
-.carta.revelando .c-mid,
 .carta.revelando .c-nom,
-.carta.revelando .c-num{opacity:0;visibility:hidden}
+.carta.revelando .c-stats{opacity:0;visibility:hidden}
 
 /* Y cada clase enciende su parte. */
 .carta.ve-pais   .c-ban,
 .carta.ve-peso   .c-peso,
-.carta.ve-record .c-record,
+.carta.ve-apodo  .c-apodo,
 .carta.ve-rk     .c-rk,
-.carta.ve-todo   .c-mid,
 .carta.ve-todo   .c-nom,
-.carta.ve-todo   .c-num,
+.carta.ve-todo   .c-stats,
 .carta.ve-foto   .c-foto{opacity:1;visibility:visible;animation:aparece .5s ease both}
 /* Desvanecido puro: solo opacidad. Cualquier salto o cambio de tamaño aquí se lee como
    un parpadeo de la carta, que es justo lo contrario de lo que tiene que parecer —el
@@ -1043,9 +973,9 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 
 /* Quien pide menos movimiento en su móvil no tiene por qué tragarse nada de esto. */
 @media (prefers-reduced-motion: reduce){
-  .carta.ve-pais .c-ban,.carta.ve-peso .c-peso,.carta.ve-record .c-record,
-  .carta.ve-rk .c-rk,.carta.ve-todo .c-mid,.carta.ve-todo .c-nom,
-  .carta.ve-todo .c-num,.carta.ve-foto .c-foto{animation-duration:.01ms}
+  .carta.ve-pais .c-ban,.carta.ve-peso .c-peso,.carta.ve-apodo .c-apodo,
+  .carta.ve-rk .c-rk,.carta.ve-todo .c-nom,
+  .carta.ve-todo .c-stats,.carta.ve-foto .c-foto{animation-duration:.01ms}
   .aviso .apertura-carta::before{animation:none;opacity:1}
   .suelta .destello::after,.suelta .apertura-carta.n-corona .destello::before{animation:none;opacity:0}
 }
@@ -1880,43 +1810,54 @@ const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',
    un cuarto abajo, el polígono del borde 0,43 abajo—. Con una sola tabla, medida sobre el
    oro, las platas salían con todo ligeramente descolocado, y donde más se veía era en el
    polígono: como el texto casi lo llena, medio punto ahí se nota. */
-const ALTURAS_STAT = {
-  oro:  ['17.36%','26.21%','35.66%','45.04%','54.36%','63.47%'],
-  plata:['17.33%','26.26%','35.66%','45.13%','54.53%','63.67%'],
-};
+/* LA CARTA, con el diseño nuevo. Lo que pinta: la foto a cuerpo entero, el nombre, el
+   apodo, bandera · división · ranking, y los seis números con su etiqueta.
 
+   LO QUE YA NO PINTA, y no es un olvido:
+
+   · EL RÉCORD. Se fue por orden suya —"el récord se va"—. El campo sigue en roster.js.
+   · EL ATRIBUTO. El boceto no le da sitio, y en la práctica no cambia nada: con el marco
+     viejo tampoco se pintaba en las cartas con foto, y foto tienen 354 de 355. Se sigue
+     viendo entero al abrir la carta.
+   · Las etiquetas de las stats las escribe AHORA el juego. El marco viejo las traía
+     dibujadas; éste no. */
 function cartaHTML(c,o={}){
   if(!c) return `<div class="carta oculta">?</div>`;
-  if(o.oculta) return `<div class="carta tapada">?</div>`;
+  if(o.oculta) return `<div class="carta tapada"></div>`;
   const aj=o.ajuste||{};
 
-  const st=STATS.map((s,i)=>{
+  const st=STATS.map(s=>{
     const base=c.stats[s.id], d=aj[s.id]||0, v=base+d;
-    return `<div class="c-num ${d<0?'pen':d>0?'up':''}" style="top:${(ALTURAS_STAT[c.rareza]||ALTURAS_STAT.oro)[i]}">${v}</div>`;
+    return `<div class="st"><span class="c-et">${s.c}</span>
+      <span class="c-num cromo ${d<0?'pen':d>0?'up':''}">${v}</span></div>`;
   }).join('');
 
-  const r=c.rasgos[0];
   const bnd=banderaSrc(c.pais);
   const foto=fotoSrc(c.persona, c.division);
   const nCop=o.copias&&o.copias>1?`<div class="c-copias">×${o.copias}</div>`:'';
   /* Destapado por partes, para la apertura de sobres. Las clases se acumulan: con
-     've-record' puesta ya están puestas también 've-pais' y 've-peso'. Se hace con
-     clases y no con un selector por nivel para que funcione en cualquier motor. */
+     've-rk' puesta ya están puestas también 've-pais' y 've-peso'. Se hace con clases y
+     no con un selector por nivel para que funcione en cualquier motor. */
   const rev=o.rev?('revelando '+o.rev.map(k=>'ve-'+k).join(' ')):'';
-  return `<div class="carta ${c.rareza} ${foto?'confoto':''} ${o.compacta?'compacta':''} ${o.sel?'sel':''} ${rev}" ${o.attr||''}>
-   ${foto?`<img class="c-foto" src="${foto}" alt="" loading="lazy">`:''}
+  return `<div class="carta ${foto?'confoto':''} ${o.sel?'sel':''} ${rev}" ${o.attr||''}>
    <div class="lienzo">
-    <div class="c-rk">${etiquetaEstatus(c)}<i class="brillo"></i></div>
-    ${nCop}
-    <div class="c-mid${r?'':' sinrasgo'}">
-      <div class="c-icono">${r?RASGOS[r.tipo].ic:'🥊'}</div>
-      ${r?`<div class="c-rasgo">${RASGOS[r.tipo].n}${r.plus?'+':''}${r.stat?' · '+r.stat.toUpperCase():''}</div>`:''}
+    <img class="marco" src="marcos/comun.webp" alt="">
+    <div class="hueco">
+      ${foto?`<img class="c-foto" src="${foto}" alt="" loading="lazy">`:''}
     </div>
-    <div class="c-record">${esc(c.record||'')}</div>
-    <div class="c-peso">${SIGLA_DIV[c.division]}</div>
-    <div class="c-nom" style="--nom:${tamNombre(c.nombre)}">${esc(c.nombre)}<i class="brillo"></i></div>
-    ${st}
-    ${bnd?`<div class="c-ban"><img src="${bnd}" alt="${esc(c.pais)}" loading="lazy"></div>`:''}
+    <div class="capa">
+      <div class="c-nom cromo" style="--nom:${tamNombre(c.nombre)}">${esc(c.nombre)}</div>
+      ${c.apodo?`<div class="c-apodo"><i></i><b>${esc(c.apodo)}</b><i></i></div>`:''}
+      <div class="c-datos">
+        <span class="cel c-ban">${bnd?`<img src="${bnd}" alt="${esc(c.pais)}" loading="lazy">`:''}</span>
+        <span class="sep"></span>
+        <span class="cel c-peso"><b class="cromo">${SIGLA_DIV[c.division]}</b></span>
+        <span class="sep"></span>
+        <span class="cel c-rk"><b class="cromo">${etiquetaEstatus(c)}</b></span>
+      </div>
+      <div class="c-stats">${st}</div>
+      ${nCop}
+    </div>
    </div>
   </div>`;
 }
@@ -2894,14 +2835,16 @@ function abrirTanda(items,tipo){
    sonara en cada sobre dejaría de significar que ha caído algo gordo. Y se sigue
    pudiendo saltar, que corta el anuncio con un fundido. */
 function pasosAviso(c){
-  // Nacionalidad, peso, récord, ranking, nombre y stats, y la cara al final. Cada uno
+  // Nacionalidad, peso, apodo, ranking, nombre y stats, y la cara al final. Cada uno
   // aparece EN SU SITIO de la carta, no en una lista aparte: lo que se está viendo
   // es la carta llenándose.
   const p=[
     {k:'pais',   et:'Nacionalidad'},
     {k:'peso',   et:'Peso'},
-    {k:'record', et:'Récord'},
   ];
+  /* El récord se fue de la carta, y con él su paso. En su sitio va el APODO, y solo si lo
+     tiene: 162 de 355 lo tienen, y encender un hueco vacío se lee como que algo falla. */
+  if(c.apodo) p.push({k:'apodo', et:'Apodo'});
   // El ranking solo si lo tiene. En una carta sin rankear no hay nada que destapar,
   // y una pestaña vacía encendiéndose sería peor: parecería que falla algo.
   if(c.rk===0||c.rk) p.push({k:'rk', et:'Ranking', gordo:true});

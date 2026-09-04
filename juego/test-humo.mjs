@@ -631,11 +631,16 @@ const porPartes = await page.evaluate(async () => {
   S.gratis = {}; S.sobres = []; S.coleccion = []; ir('inicio');
   document.querySelector('[data-a="versobre"][data-t="comun"]').click();
   document.querySelector('[data-a="abrirsobre"]').click();
-  await new Promise(r => setTimeout(r, 900));          // el encendido
+  /* SE MIRA DESDE EL PRIMER MOMENTO, sin esperar al encendido. Antes se esperaban 900 ms
+     y luego se contaba: con la revelación de seis pasos daba igual, pero al quitarse el
+     paso del récord una carta sin apodo y sin ranking baja a cuatro pasos y para entonces
+     ya casi ha terminado, así que todas las clases se leían a la vez. */
   const t0 = performance.now(), visto = {};
   let conFoto = false, caraAntes = false;
   const mira = () => { const k = document.querySelector('.apertura-carta .carta'); if (!k) return;
-    for (const cl of ['ve-pais', 've-peso', 've-record', 've-rk', 've-todo', 've-foto'])
+    /* El récord se fue de la carta con el diseño nuevo, y su paso con él: en su sitio va
+       el APODO, que además solo aparece si el peleador tiene uno. */
+    for (const cl of ['ve-pais', 've-peso', 've-apodo', 've-rk', 've-todo', 've-foto'])
       if (k.classList.contains(cl) && visto[cl] === undefined) visto[cl] = Math.round(performance.now() - t0);
     const img = k.querySelector('.c-foto');
     if (!img) return;
@@ -643,7 +648,7 @@ const porPartes = await page.evaluate(async () => {
     if (!k.classList.contains('ve-foto') && getComputedStyle(img).visibility !== 'hidden') caraAntes = true;
   };
   const iv = setInterval(mira, 10);
-  await new Promise(r => setTimeout(r, 2600));
+  await new Promise(r => setTimeout(r, 3400));
   clearInterval(iv); pararAviso();
   return { visto, conFoto, caraAntes };
 });
