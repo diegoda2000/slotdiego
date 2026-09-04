@@ -250,10 +250,50 @@ filas quedaba con filas del doble de altas.
 cinco pantallas a 390x844 y con el mínimo de letra del WebView puesto, y avisa si alguna
 desborda.
 
+**LA TIENDA YA ES LA DEL BOCETO.** Cinco sobres, con el arte que pasó él:
+
+| sobre | archivo de origen | precio | cartas |
+|---|---|---|---|
+| común | `1-basico.png` | 1.000 | 5 |
+| rare | `2-azul.png` | 2.000 | 6 |
+| epic | `3-morado.png` | 4.000 | 8 |
+| legendary | `4-oro.png` | 7.500 | 10 |
+| ultimate | `5-holo.png` | 12.500 | 10 |
+
+**El sexto, el rojo, es el SOBRE DE EVENTO** —lo dijo él—. Está preparado en
+`juego/sobres/evento.webp` esperando a que exista la pantalla de Eventos. Los prepara
+`herramientas/preparar-sobres-v2.py`, que recorta el aire y da transparencia a los tres
+que vienen en RGB con el fondo pintado de negro: sobre el panel del boceto —que no es negro
+puro— se veía el recuadro.
+
+Y del dibujo salen también las dos solapas de COMPRAR / MIS SOBRES —que no son píldoras, y
+cuyo filete no puede ser un `border` porque `clip-path` se lo lleva por delante: van dos
+capas recortadas—, el precio abajo a la derecha con la moneda dibujada y su punto de millar,
+la (i) arriba a la derecha y el TIENDA grande en cursiva.
+
+**Lo que arrastró pasar de tres tipos de sobre a cinco:**
+
+- **Los sobres guardados se traducen al cargar** (`migrarSobres`, con `SOBRES_VIEJOS`). Sin
+  eso, a quien tuviera sobres sin abrir se le quedaban en el inventario sin nombre, sin
+  arte y sin poder abrirlos.
+- **`CARTAS_POR_SOBRE` ya no existe**: cada sobre trae las suyas, en `TIPOS_SOBRE.cartas`.
+- **LAS TABLAS DE REPARTO NO SALEN DEL BOCETO Y HAY QUE CERRARLAS CON ÉL.** Las viejas
+  repartían de 7 a 9 oros, y un sobre común de 5 cartas no puede traer 7, así que hubo que
+  escribir cinco que escalan de común a ultimate. Hay una comprobación al arrancar que
+  avisa si un sobre puede repartir más oros de los que anuncia. **Los números concretos no
+  se los ha dado nadie: son míos.**
+- **El sobre gratis salió de la tienda**: en el boceto son cinco de pago, así que se
+  reclama en la ACTIVIDAD DIARIA de Inicio. Sigue siendo el común y sigue sin límite —es lo
+  que permite empezar sin dinero, y ponerle un reloj sería inventarse una regla de juego—.
+- Los premios de SBC, el bono de bienvenida y el premio del tutorial usan los nombres nuevos.
+- **`servidor.yml` comprobaba `sobres/oro.webp`**, que ya no existe; ahora comprueba
+  `sobres/ultimate.webp`. Los tres archivos viejos se borraron.
+- Los textos de los cinco **siguen hablando de plata y de oro** a propósito: hoy el plantel
+  sólo tiene esas dos rarezas. Se reescriben con la migración, junto con las tablas.
+
 **Lo que el boceto trae y sigue sin existir:** nivel y XP, gemas de verdad (hoy son las
 fichas), pase de temporada, actividad diaria con reloj y racha, novedades, eventos, rango,
-estadísticas e historial, cartas favoritas, cuenta y ayuda. Y los cinco sobres nuevos: la
-tienda sigue con básico, plata y oro.
+estadísticas e historial, cartas favoritas, cuenta y ayuda.
 
 **Lo que queda de lo anterior, y está esperando a que él lo diga:**
 
