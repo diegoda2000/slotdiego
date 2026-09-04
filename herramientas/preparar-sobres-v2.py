@@ -26,9 +26,9 @@ ALTO = 940          # el mismo alto que tenían los sobres de antes
 
 TRABAJOS = {
     '1-basico': 'comun',
-    '2-azul':   'rare',
-    '3-morado': 'epic',
-    '4-oro':    'legendary',
+    '2-azul':   'raro',
+    '3-morado': 'epico',
+    '4-oro':    'legendario',
     '5-holo':   'ultimate',
     '6-rojo':   'evento',
 }

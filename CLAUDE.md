@@ -252,13 +252,36 @@ desborda.
 
 **LA TIENDA YA ES LA DEL BOCETO.** Cinco sobres, con el arte que pasó él:
 
-| sobre | archivo de origen | precio | cartas |
-|---|---|---|---|
-| común | `1-basico.png` | 1.000 | 5 |
-| rare | `2-azul.png` | 2.000 | 6 |
-| epic | `3-morado.png` | 4.000 | 8 |
-| legendary | `4-oro.png` | 7.500 | 10 |
-| ultimate | `5-holo.png` | 12.500 | 10 |
+| sobre | archivo de origen | precio | cartas | |
+|---|---|---|---|---|
+| común | `1-basico.png` | 1.000 | 5 | |
+| raro | `2-azul.png` | 2.000 | 6 | |
+| épico | `3-morado.png` | 4.000 | 8 | |
+| legendario | `4-oro.png` | 7.500 | 10 | **PRÓXIMAMENTE** |
+| ultimate | `5-holo.png` | 12.500 | 10 | **PRÓXIMAMENTE** |
+
+**Los nombres van en español menos ultimate**, que él dijo que no se puede traducir. Las
+claves también: `comun`, `raro`, `epico`, `legendario`, `ultimate` —en este proyecto los
+identificadores van en español—, y `SOBRES_VIEJOS` traduce tanto los tres de antes como
+los que llegaron a existir un rato con la clave en inglés.
+
+**Legendario y ultimate llevan cartel de PRÓXIMAMENTE** y **no se quitan de la tienda** —lo
+pidió así—, pero no se pueden comprar: `T.pronto` apaga la fila, apaga el precio y
+`hacerCompra()` lo rechaza. El cartel es una banda al pie de la fila y **le pasa por delante
+al sobre**: se probó a subirle el pie para que cupiera entero encima y los dos de abajo se
+veían más pequeños que los otros tres, y lo cazó él.
+
+**El texto de cada sobre es SÓLO cuántas cartas trae** —"5 cartas"—, y lo pidió él así. El
+boceto añadía la garantía ("1 plata o superior"), pero eso hablaba de rarezas que ya no
+existen.
+
+**La (i) es de la tienda y NO sale en la pantalla del sobre.** Ahí no hay nada que
+comparar: sólo abrirlo.
+
+**Y ojo con `.pila.tienda`:** su columna va a `1fr` y no a `auto`. `.pila` lleva
+`justify-content:center`, que en una rejilla centra la PISTA, y una pista `auto` se encoge
+al ancho de su contenido; al dejar la descripción en "5 cartas" las cinco filas se
+quedaron a 295 px centradas en 366.
 
 **El sexto, el rojo, es el SOBRE DE EVENTO** —lo dijo él—. Está preparado en
 `juego/sobres/evento.webp` esperando a que exista la pantalla de Eventos. Los prepara

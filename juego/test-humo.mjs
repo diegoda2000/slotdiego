@@ -242,7 +242,7 @@ const oficio = await page.evaluate(() => {
    básico era el gratis para montarse un equipo, el de plata cerraba la colección de platas
    y el de oro era el caro; ahora van de común a ultimate y cada uno tiene que ser mejor
    que el de debajo, que es lo que dice el boceto con sus precios de 1.000 a 12.500. */
-const ESCALERA = ['comun', 'rare', 'epic', 'legendary', 'ultimate'];
+const ESCALERA = ['comun', 'raro', 'epico', 'legendario', 'ultimate'];
 comprobar(oficio.comun.oros >= 1.5,
   `el común da oros para ir montando el equipo (${oficio.comun.oros.toFixed(2)} por sobre)`);
 comprobar(oficio.exacto.comun <= 1,
@@ -324,7 +324,7 @@ const tienda = await page.evaluate(() => {
       return { dice: /no tienes ning/i.test(t), enlace }; })(),
   };
 });
-comprobar(tienda.orden.join(',') === 'comun,rare,epic,legendary,ultimate',
+comprobar(tienda.orden.join(',') === 'comun,raro,epico,legendario,ultimate',
   `las cinco filas del boceto, de barata a cara (${tienda.orden.join(', ')})`);
 comprobar(tienda.precioEsBoton,
   'la tarjeta y su precio hacen lo mismo, para no tener que buscar dónde tocar');
@@ -342,14 +342,14 @@ comprobar(tienda.vacio.dice && tienda.vacio.enlace,
    las quiere con sitio para leerlas. */
 const laI = await page.evaluate(() => {
   S.divisa = 1000; S.sobres = []; ir('tienda');
-  const fila = document.querySelector('.sobre-fila:has(.precio[data-t="epic"]) .fila');
+  const fila = document.querySelector('.sobre-fila:has(.precio[data-t="epico"]) .fila');
   const enLaFila = /%/.test(fila.textContent);
   const i = document.querySelectorAll('.info').length;
   // la (i) está FUERA de la fila, para que tocarla no dispare también la fila
   const dentroDeLaFila = fila.querySelectorAll('.info').length;
   // y cada sobre lleva su arte de verdad, no un emoji
   window.__arte = [...document.querySelectorAll('.sobre-art img')].map(i => i.getAttribute('src'));
-  document.querySelector('.info[data-t="epic"]').click();
+  document.querySelector('.info[data-t="epico"]').click();
   const capa = document.querySelector('.ov, #ov, .overlay') || document.body;
   const texto = capa.textContent;
   const abrio = /por carta de oro/i.test(texto);
@@ -369,8 +369,8 @@ comprobar(laI.sigueEnTienda, 'sin salir de la tienda ni comprar nada');
    compás de 850 ms que existía para enseñarlos. Lo que queda es que el toque bloquea el
    sobre y que en menos de medio segundo ya se está en el walkout. */
 const flor = await page.evaluate(async () => {
-  S.divisa = 9000; S.sobres = [{ tipo: 'epic' }]; ir('tienda'); tmp.sub = 'mios'; render();
-  document.querySelector('[data-a="versobre"][data-t="epic"]').click();
+  S.divisa = 9000; S.sobres = [{ tipo: 'epico' }]; ir('tienda'); tmp.sub = 'mios'; render();
+  document.querySelector('[data-a="versobre"][data-t="epico"]').click();
   const esc = document.querySelector('#escena');
   const caja = document.querySelector('.sobre-toque');
   const fondoPuesto = esc.classList.contains('puesta');
@@ -438,7 +438,7 @@ const compra = await page.evaluate(() => {
   S.divisa = 3000; S.sobres = []; S.gratis = {}; S.coleccion = [];
   ir('tienda');
   const antes = { div: S.divisa, sobres: S.sobres.length };
-  document.querySelector('.precio[data-a="comprar"][data-t="rare"]').click();
+  document.querySelector('.precio[data-a="comprar"][data-t="raro"]').click();
   document.querySelector('[data-a="confirmarcompra"]').click();   // pagar pide un sí
   return { antes, tras: { div: S.divisa, sobres: S.sobres.length, sub: tmp.sub, vista },
            cartas: S.coleccion.length };
@@ -452,7 +452,7 @@ comprobar(compra.tras.sub === 'mios',
 
 const abrir = await page.evaluate(async () => {
   const guardado = { coleccion: S.coleccion.slice(), plantilla: { ...S.plantilla } };
-  document.querySelector('[data-a="versobre"][data-t="rare"]').click();
+  document.querySelector('[data-a="versobre"][data-t="raro"]').click();
   const enSobre = { vista, div: S.divisa, sobres: S.sobres.length };
   /* En esta pantalla no hay nada que pagar, así que no se enseña ningún precio: ni la
      chapa ni la moneda dibujada que la acompaña. */
@@ -479,11 +479,11 @@ comprobar(abrir.tras.vista === 'apertura',
 const confirma = await page.evaluate(() => {
   const hayOv = () => !!document.querySelector('[data-a="confirmarcompra"]');
   S.divisa = 3000; S.sobres = []; S.gratis = {}; S.coleccion = []; ir('tienda');
-  document.querySelector('.fila[data-a="comprar"][data-t="rare"]').click();
+  document.querySelector('.fila[data-a="comprar"][data-t="raro"]').click();
   const tarjeta = { pregunta: hayOv(), div: S.divisa, sobres: S.sobres.length };
   document.querySelector('[data-a="cerrarov"]').click();
   const cancelado = { div: S.divisa, sobres: S.sobres.length };
-  document.querySelector('.precio[data-a="comprar"][data-t="rare"]').click();
+  document.querySelector('.precio[data-a="comprar"][data-t="raro"]').click();
   const desdeElPrecio = hayOv();
   document.querySelector('[data-a="confirmarcompra"]').click();
   const comprado = { div: S.divisa, sobres: S.sobres.length, sub: tmp.sub };
@@ -491,7 +491,7 @@ const confirma = await page.evaluate(() => {
   document.querySelector('[data-a="versobre"][data-t="comun"]').click();
   const gratis = { vista, pregunta: hayOv() };
   ir('tienda'); tmp.sub = 'mios'; render();
-  document.querySelector('.fila[data-a="versobre"][data-t="rare"]').click();
+  document.querySelector('.fila[data-a="versobre"][data-t="raro"]').click();
   const abrir = { vista, pregunta: hayOv() };
   return { tarjeta, cancelado, desdeElPrecio, comprado, gratis, abrir };
 });
@@ -524,6 +524,40 @@ comprobar(pobre.apagada && pobre.desactivada, 'sin fichas, la fila sale apagada 
 comprobar(pobre.precio.includes('12.500') && pobre.nombre,
   `y se sigue leyendo entera, con su precio (${pobre.precio})`);
 comprobar(pobre.sigueIgual, 'y tocarla no hace nada ni da ningún error');
+
+/* LEGENDARIO Y ULTIMATE LLEVAN CARTEL DE PRÓXIMAMENTE. Se quedan en la tienda —lo pidió
+   así— pero no se pueden comprar: un sobre que todavía no existe no puede cobrarse, ni
+   tocando la fila, ni el precio, ni llamando a hacerCompra() por detrás. */
+const pronto = await page.evaluate(() => {
+  S.divisa = 99000; S.sobres = []; ir('tienda');
+  const filas = [...document.querySelectorAll('.sobre-fila')];
+  const conCartel = filas.filter(f => f.querySelector('.cartel'))
+    .map(f => f.querySelector('.precio').dataset.t);
+  const antes = { div: S.divisa, sobres: S.sobres.length };
+  for (const k of conCartel) {
+    document.querySelector(`.fila[data-t="${k}"]`).click();
+    document.querySelector(`.precio[data-t="${k}"]`).click();
+    hacerCompra(k);
+  }
+  return { conCartel, siguen: S.divisa === antes.div && S.sobres.length === antes.sobres,
+    texto: (filas.find(f => f.querySelector('.cartel')) || {}).textContent || '',
+    ov: !!document.querySelector('[data-a="confirmarcompra"]') };
+});
+comprobar(pronto.conCartel.join(',') === 'legendario,ultimate',
+  `el cartel va en legendario y ultimate (${pronto.conCartel.join(', ') || 'ninguno'})`);
+comprobar(/pr[oó]ximamente/i.test(pronto.texto), 'y dice PRÓXIMAMENTE');
+comprobar(pronto.siguen && !pronto.ov,
+  'y no se pueden comprar ni por la fila, ni por el precio, ni llamando a hacerCompra()');
+
+/* Y la (i) NO va en la pantalla del sobre: ahí no hay nada que comparar, sólo abrirlo. */
+const iEnSobre = await page.evaluate(() => {
+  S.sobres = [{ tipo: 'epico' }]; ir('tienda'); tmp.sub = 'mios'; render();
+  document.querySelector('[data-a="versobre"][data-t="epico"]').click();
+  const n = document.querySelectorAll('#app .info').length;
+  ir('tienda'); tmp.sub = 'comprar'; render();
+  return n;
+});
+comprobar(iEnSobre === 0, `la (i) es de la tienda, no de la pantalla del sobre (${iEnSobre})`);
 
 comprobar(!(await page.evaluate(() => document.body.innerHTML.includes('abrirtodo'))),
   'no hay ninguna forma de abrir varios sobres de golpe');
@@ -634,7 +668,7 @@ comprobar(conAnuncio.cuando && conAnuncio.cuando.length === conAnuncio.pasos.len
 /* Este bloque abre y compra sobres a mano, así que deja la colección y la plantilla en
    un estado cualquiera. Se rehacen antes de seguir: lo que viene detrás cuenta con una
    plantilla completa, y fallaría por algo que no tiene nada que ver con ello. */
-await page.evaluate(() => { S = estadoNuevo(); for (let i = 0; i < 4; i++) abrirSobre('epic');
+await page.evaluate(() => { S = estadoNuevo(); for (let i = 0; i < 4; i++) abrirSobre('epico');
   autoPlantilla(S, true); guardar(); ir('inicio'); });
 
 /* ── 2c. Sobre gratis ilimitado ───────────────────────────────────────── */
@@ -689,7 +723,7 @@ comprobar(dist.plata > 0.2, `y el resto son platas (${(dist.plata * 100).toFixed
 
 // La escalera de calidad tiene que subir de un sobre al siguiente.
 const escalera = await page.evaluate(() =>
-  ['comun', 'rare', 'epic', 'legendary', 'ultimate'].map(k => pctCorona(k)));
+  ['comun', 'raro', 'epico', 'legendario', 'ultimate'].map(k => pctCorona(k)));
 comprobar(escalera.every((v, i) => i === 0 || v > escalera[i - 1]),
   `los campeones suben en cada escalón: ${escalera.map(v => v.toFixed(2)).join('% · ')}%`);
 
