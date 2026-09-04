@@ -45,10 +45,16 @@
   --titulo:"Saira Condensed","Barlow Condensed","Arial Narrow",system-ui,sans-serif;
   --texto:Barlow,system-ui,-apple-system,"Segoe UI",sans-serif;
   --carta:Antonio,"Roboto Condensed","Avenir Next Condensed","Arial Narrow",system-ui,sans-serif;
-  /* La paleta de la arena: negro con rojo sangre y oro. */
-  --bg:#150a0a; --bg2:#231413; --bg3:#34211f; --line:#493531;
-  --txt:#f8f5ee; --dim:#aea298; --dim2:#7d6f68;
-  --acc:#d40c1a; --acc2:#f12e1d; --ok:#5cb572; --warn:#e4b33f;
+  /* LA PALETA DEL LOGO NUEVO: negro, carbón y oro. YA NO HAY ROJO.
+     Los cinco colores de arriba están medidos sobre originales/logo-v2/logo.png; los
+     grises de en medio son interpolaciones entre el negro y el carbón, para tener
+     escalones de panel sin salirse de esos cinco.
+
+     --acc y --acc2 SIGUEN LLAMÁNDOSE ASÍ aunque ya no sean rojo: son "el color de
+     acento", y renombrarlas obligaría a tocar cien sitios que no cambian de sentido. */
+  --bg:#060707; --bg2:#151617; --bg3:#272829; --line:#3d3e40;
+  --txt:#f0f0f1; --dim:#a4a5a8; --dim2:#76777a;
+  --acc:#c08719; --acc2:#f0c54e; --ok:#5cb572; --warn:#e4b33f;
   --plata:#b9b2ad; --oro:#eabe4a; --corona:#f7e59f;
   --oro-suave:#f7e59f;
   /* El fondo no es un color plano: un foco rojo arriba, como el de encima del octágono. */
@@ -56,30 +62,37 @@
      El velo ES TRANSLÚCIDO a propósito: cuando era negro opaco tapaba la foto entera y no
      se veía nada de lo que hay detrás. Lo que apaga la foto es esto, no el archivo, para
      poder subirlo o bajarlo sin volver a generar la imagen. */
-  --arena:radial-gradient(120% 80% at 50% 0%, rgba(88,28,24,.55) 0%, transparent 60%),
-          linear-gradient(180deg,rgba(16,6,6,.62) 0%,rgba(5,3,3,.80) 100%);
-  /* Y las tarjetas llevan su propio degradado, no un gris liso. */
-  /* Las tarjetas van TRANSLÚCIDAS. Opacas tapaban el fondo entero y la pantalla se leía
-     como una lista de cajas; con el fondo detrás, la jaula se ve entre fila y fila y por
-     debajo de cada una. El degradado sigue siendo el mismo, solo que con alfa. */
-  --tarjeta:linear-gradient(160deg,rgba(53,28,26,.80) 0%,rgba(23,12,12,.86) 100%);
+  --arena:radial-gradient(120% 80% at 50% 0%, rgba(192,135,25,.20) 0%, transparent 60%),
+          linear-gradient(180deg,rgba(8,9,9,.62) 0%,rgba(3,3,3,.82) 100%);
+  /* LA MALLA DE OCTÓGONO DEL BOCETO. Es lo que hay detrás de todo: negro con un enrejado
+     de rombos apenas visible. Va en CSS y no en una imagen porque tiene que verse igual a
+     cualquier tamaño de pantalla y no pesar nada en el APK. */
+  --malla:repeating-linear-gradient(45deg,rgba(240,197,78,.055) 0 1px,transparent 1px 44px),
+          repeating-linear-gradient(-45deg,rgba(240,197,78,.055) 0 1px,transparent 1px 44px);
+  /* El filete de oro es la firma del boceto: TODOS los paneles lo llevan. */
+  --filo:rgba(192,135,25,.45);
+  --filo-suave:rgba(192,135,25,.26);
+  /* LOS PANELES SON OPACOS. Lo eran translúcidos para dejar ver la foto de la jaula entre
+     fila y fila; sin foto, el alfa solo dejaba ver el negro de debajo. En el boceto son
+     paneles negros con un filete de oro, y eso es lo que son. */
+  --tarjeta:linear-gradient(160deg,#191a1c 0%,#0a0b0c 100%);
   --sombra-tarjeta:0 18px 40px -20px rgba(0,0,0,.9);
-  --brillo-rojo:0 0 30px -6px rgba(212,12,26,.7);
+  --brillo-acc:0 0 30px -6px rgba(192,135,25,.75);
   --brillo-oro:0 0 24px -6px rgba(234,190,74,.6);
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 /* Las tres propiedades por separado, NO el atajo: --arena lleva dos degradados separados
    por coma y `background:` no admite eso. Con el atajo la regla entera era inválida y el
    fondo se caía a blanco, en el navegador y en el móvil. */
-/* EL FONDO ES LA FOTO DE LA JAULA, Y NADA MÁS. Va fija, así que no se desplaza con el
-   contenido, y a cover para llenar cualquier pantalla.
+/* EL FONDO ES NEGRO CON LA MALLA DE OCTÓGONO, como el boceto.
 
-   Encima llevaba el foco rojo de --arena y el dueño lo quitó: la quiere tal cual. El
-   color de fondo se queda solo por debajo, para lo que tarde en cargar la imagen. */
+   LA FOTO DE LA JAULA SE FUE, y la quitó él: "EL FONDO DE JAULA QUÍTALO, HAZ ABSOLUTAMENTE
+   TODO COMO EN EL BOCETO". Antes era intocable —también por orden suya—, así que si alguna
+   vez vuelve a pedirla, el archivo sigue en juego/arte/fondo.webp y su herramienta en
+   herramientas/preparar-fondo.mjs. */
 body{background-color:var(--bg);
-  background-image:url(arte/fondo.webp);
-  background-size:cover;background-position:center;
-  background-attachment:fixed;background-repeat:no-repeat;
+  background-image:var(--malla);
+  background-attachment:fixed;background-repeat:repeat;
   color:var(--txt);
   font:15px/1.45 var(--texto);
   /* El hueco para la barra de navegación incluye el área segura del móvil. La barra
@@ -94,7 +107,7 @@ h3{font-size:15px;margin-bottom:8px}
 .sub{color:var(--dim);font-size:13px}
 .tiny{font-size:12px;color:var(--dim2)}
 button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
-.btn{font-family:var(--titulo);letter-spacing:.03em;background:var(--acc);color:#fff;border-radius:9px;padding:11px 16px;font-weight:650;font-size:14px;
+.btn{font-family:var(--titulo);letter-spacing:.03em;background:var(--acc);color:var(--bg);border-radius:9px;padding:11px 16px;font-weight:650;font-size:14px;
   display:inline-flex;align-items:center;justify-content:center;gap:7px;transition:.12s;width:100%}
 .btn:active{transform:scale(.975)}
 .btn:disabled{opacity:.32;cursor:default;transform:none}
@@ -110,26 +123,29 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
    barra de abajo de la de gestos. En Android lo resuelve además la propia aplicación
    pidiéndole al sistema cuánto ocupan sus barras; esto es lo que hace falta en iPhone y
    en el navegador, donde no hay aplicación que pregunte. */
-#top{display:flex;align-items:center;gap:9px;background:var(--bg2);
-  padding:calc(9px + env(safe-area-inset-top)) calc(12px + env(safe-area-inset-right)) 9px
-          calc(12px + env(safe-area-inset-left));
-  border-bottom:1px solid var(--line);position:sticky;top:0;z-index:50}
+#top{display:flex;align-items:center;gap:14px;background:var(--bg);
+  padding:calc(11px + env(safe-area-inset-top)) calc(14px + env(safe-area-inset-right)) 11px
+          calc(14px + env(safe-area-inset-left));
+  border-bottom:1px solid rgba(192,135,25,.20);position:sticky;top:0;z-index:50}
 /* El logotipo. Va con la tipografía de los botones —la misma var(--titulo)—, en cursiva
    como el JUGAR del botón grande, y con los colores dichos por el dueño: las dos P en el
-   rojo de la paleta, el 4 en el plata y el .CG en blanco y más pequeño. */
-#top .logo{font-family:var(--titulo);font-weight:800;font-size:25px;letter-spacing:.01em;
+   acento —que ahora es oro—, el 4 en el plata y el .CG en blanco y más pequeño.
+
+   EL DIBUJO YA NO ESTÁ EN LA CABECERA. El boceto de la interfaz nueva la enseña con el
+   nombre solo, en las cinco pantallas, y con cinco pestañas, dos monedas y el engranaje
+   el ancho ya no da para el dibujo. Con él se fueron los tres números que existían solo
+   para alinearlo: el top:10px del texto, el margen negativo de la imagen y el apoyo
+   abajo del bloque. Si vuelve el dibujo, hay que volver a medirlos. */
+#top .logo{font-family:var(--titulo);font-weight:800;font-size:24px;letter-spacing:.01em;
   font-style:italic;text-transform:uppercase;margin-right:auto;
-  display:flex;align-items:flex-end;
-  /* El bloque entero se apoya abajo, y se sube 4 px del borde: separación corta, no
-     pegado. */
-  align-self:flex-end;margin-bottom:-5px}
+  display:flex;align-items:center}
 /* EL PIE DEL NOMBRE, A LA MISMA LÍNEA QUE EL PIE DEL LOGO. Con align-items:flex-end no
    basta: lo que se alinea es la caja del texto, y esa caja reserva sitio bajo la línea
    base para las colas de las letras, así que los pies de las letras quedan por encima del
    canto del dibujo. Los 10 px son ese hueco, medido pintando y mirando dónde acaba la
    tinta, no calculado. El span propio existe para poder moverlo solo a él y para que el
    P4P y el .CG, que tienen tamaños distintos, compartan línea base entre ellos. */
-#top .logo .txt{display:flex;align-items:baseline;position:relative;top:10px}
+#top .logo .txt{display:flex;align-items:baseline}
 #top .logo b{color:var(--acc)}
 /* El 4 va del gris del propio logo y no de --plata: --plata (#b9b2ad) es un gris cálido,
    tira a beige, y al lado del dibujo cantaba. Este #a59e9f sale de medir el logotipo —los
@@ -137,19 +153,19 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
    los nudillos del guante. --plata no se toca, que la usan las cartas. */
 #top .logo em{color:#a59e9f}
 #top .logo i{color:#fff;font-size:.58em;letter-spacing:.02em}
-/* El logo, a la izquierda del nombre. Va con el negro ya quitado —lo hace
-   herramientas/preparar-logo.mjs, que el original es un cuadrado sobre negro puro y la
-   cabecera es marrón oscuro—, así que aquí solo hay que darle alto y separación. */
-/* El logo se queda en píxeles y no en em: si fuera en em, agrandar el nombre agrandaría
-   también el dibujo y con él toda la cabecera. */
-/* El margen es NEGATIVO: la P va en cursiva y su pie se echa a la izquierda, así que con
-   una separación de cero el hueco se sigue viendo grande. Con -3 el pie de la P entra
-   bajo el canto del dibujo y el conjunto se lee pegado, sin llegar a tocarse. */
-#top .logo .marca{height:35px;width:auto;margin-right:-3px}
-.res{display:flex;align-items:center;gap:5px;font-family:var(--titulo);font-size:14px;
-  font-weight:700;font-variant-numeric:tabular-nums;
-  background:rgba(35,20,19,.9);border:1px solid var(--line);
-  padding:5px 10px;border-radius:11px;white-space:nowrap}
+/* Las dos monedas del boceto: el oro y las gemas. Icono dibujado —no un emoji, que cambia
+   de forma en cada sistema— y el número al lado. SIN CHAPA NI RECUADRO: en el boceto van
+   sueltas sobre la banda negra. */
+.res{display:flex;align-items:center;gap:6px;font-family:var(--titulo);font-size:15px;
+  font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+.res .mon{width:18px;height:18px;flex:none;display:block}
+/* EL ENGRANAJE VA EN LA CABECERA Y SE VE DESDE CUALQUIER PANTALLA, que es lo que pide el
+   boceto. Antes Ajustes era un botón dentro del Club y desde una pantalla de partida no
+   había manera de llegar. */
+#top .engranaje{flex:none;width:26px;height:26px;color:var(--acc2);
+  display:flex;align-items:center;justify-content:center;transition:.12s}
+#top .engranaje .ico{width:24px;height:24px;stroke-width:2}
+#top .engranaje:active{transform:scale(.88)}
 
 /* Sub-pestañas dentro de una sección. Se apoyan en la misma fila, sin caja: una barra
    más sería otra franja de alto comida a las cartas. */
@@ -158,20 +174,20 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 .subtabs{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0 0 10px}
 .subtabs button{font-family:var(--titulo);letter-spacing:.05em;text-transform:uppercase;
   font-size:14px;font-weight:700;color:var(--dim);
-  border:1px solid var(--line);background:rgba(35,20,19,.7);
+  border:1px solid var(--line);background:rgba(21,22,23,.7);
   border-radius:999px;padding:11px 8px}
-.subtabs button.on{color:var(--acc2);border-color:var(--acc);background:rgba(212,12,26,.14)}
+.subtabs button.on{color:var(--acc2);border-color:var(--acc);background:rgba(192,135,25,.16)}
 
 /* La FILA: el patrón de toda la navegación nueva. La fila entera es el botón — no lleva
    un botón dentro. Un botón dentro de una fila que también responde al toque son dos
    blancos para lo mismo, y el jugador nunca sabe cuál toca. */
 .fila{display:flex;align-items:center;gap:11px;width:100%;text-align:left;
   background-image:var(--tarjeta);
-  border:1px solid rgba(212,12,26,.25);border-radius:17px;
+  border:1px solid var(--filo);border-radius:14px;
   box-shadow:var(--sombra-tarjeta);overflow:hidden;position:relative;
   padding:11px 12px;margin-bottom:8px;
   transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease}
-.fila:active{transform:scale(.975);border-color:rgba(234,190,74,.6);box-shadow:var(--brillo-rojo)}
+.fila:active{transform:scale(.975);border-color:var(--acc2);box-shadow:var(--brillo-acc)}
 /* La trama del octágono, tenue, sobre cada tarjeta: es lo que las saca de parecer cajas
    grises y las mete dentro de la jaula. */
 .fila::before{content:'';position:absolute;inset:0;pointer-events:none;
@@ -188,7 +204,7 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 .fila .precio{font-family:var(--titulo);font-weight:700;font-size:14px;color:var(--txt);
   background:var(--bg3);border-radius:7px;padding:5px 9px;white-space:nowrap}
 /* Sin fichas: se sigue leyendo entera y con su precio, pero no responde. */
-.fila.apagada{opacity:.42}
+.fila.apagada{opacity:.62}
 .fila.apagada:active{transform:none;filter:none}
 .fila.alerta{border-color:var(--acc)}
 .fila.grande{padding:15px 13px}
@@ -211,6 +227,15 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
    abrirlo— no hay nada que topar: que ocupe lo que haya. */
 .pila.libre{gap:0}
 .pila.libre > *{max-height:none}
+/* La pila de la interfaz nueva. La de siempre reparte el alto a partes iguales entre sus
+   hijos y les pone un tope de 186 px, que es lo que hace falta cuando todos son tarjetas
+   de menú del mismo tamaño. Aquí no: los bloques del boceto miden cosas distintas —la
+   ficha del jugador es una línea y el banner de JUGAR manda—, así que cada uno lleva su
+   peso y el tope se quita. */
+.pila.v2{gap:10px;justify-content:flex-start}
+.pila.v2 > *{max-height:none;flex:0 0 auto}
+.pila.v2 > .crece{flex:1 1 0;min-height:0}
+.pila.v2 > .crece > .sobre-fila.menu{height:100%}
 .pila > *{flex:1 1 0;min-height:0;margin:0}
 /* Dentro de un bloque estirado, el contenido se centra en vertical. */
 
@@ -252,11 +277,20 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 .ico{width:1em;height:1em;display:block;flex:none}
 .sobre-fila.menu{margin:0;height:100%}
 .sobre-fila.menu .fila{flex-direction:column;align-items:stretch;justify-content:flex-start;
-  height:100%;gap:0;padding:13px 14px;border-color:rgba(212,12,26,.55)}
+  height:100%;gap:0;padding:13px 14px;border-color:rgba(192,135,25,.55)}
 .sobre-fila.menu .cu{flex:0 0 auto}
 /* En cursiva y algo más grandes que el resto de la interfaz, como el JUGAR del banner,
    pero muy lejos de su tamaño: ese es el botón principal y tiene que seguir mandando. */
 .sobre-fila.menu .cu b{display:block;font-size:21px;line-height:1.1;font-style:italic}
+/* El botón del boceto dentro del banner de JUGAR. Va abajo y centrado, encima del dibujo,
+   y ocupa algo menos de dos tercios del ancho: medido sobre el boceto, 62%. */
+.sobre-fila.menu .fila.concta{position:relative}
+.sobre-fila.menu .btn.cta{position:absolute;left:50%;bottom:11px;transform:translateX(-50%);
+  width:62%;z-index:3;padding:9px 10px;font-size:14px;font-weight:800;letter-spacing:.06em;
+  text-transform:uppercase;border-radius:9px;
+  background:linear-gradient(180deg,var(--acc2),var(--acc));color:#151005;
+  box-shadow:0 6px 18px -6px rgba(0,0,0,.9)}
+.sobre-fila.menu .btn.cta:active{transform:translateX(-50%) scale(.97)}
 .sobre-fila.menu .cu .sub{display:block;font-size:12px;line-height:1.35;margin-top:1px}
 /* El dibujo se queda con lo que sobre, centrado, y nunca empuja al texto. */
 .sobre-fila.menu .sobre-art{position:static;width:auto;flex:1 1 0;min-height:0;
@@ -306,10 +340,11 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 .sobre-fila.banner .sobre-art img{width:100%;height:100%;object-fit:contain;
   object-position:bottom right;max-width:none;max-height:none;
   filter:drop-shadow(0 8px 20px rgba(0,0,0,.7))}
-.sobre-fila.banner .cu{position:absolute;left:18px;top:50%;transform:translateY(-50%);z-index:2}
-.sobre-fila.banner .cu b{font-size:min(14vw,52px);font-style:italic;font-weight:800;
-  letter-spacing:.01em;line-height:1;text-shadow:0 4px 18px rgba(0,0,0,.7)}
-.sobre-fila.banner .cu .sub{display:none}
+.sobre-fila.banner .cu{position:absolute;left:16px;top:13px;right:38%;z-index:2}
+.sobre-fila.banner .cu b{font-size:min(9.5vw,36px);font-style:normal;font-weight:800;
+  letter-spacing:.01em;line-height:1;text-shadow:0 4px 18px rgba(0,0,0,.85)}
+.sobre-fila.banner .cu .sub{display:block;font-size:13px;color:var(--dim);margin-top:3px;
+  text-shadow:0 2px 10px rgba(0,0,0,.9)}
 
 /* El rótulo dorado en cursiva del SBC. */
 .rotulo-oro{font-family:var(--titulo);font-weight:800;font-style:italic;text-transform:uppercase;
@@ -318,7 +353,7 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
   -webkit-background-clip:text;background-clip:text;color:transparent}
 /* El anillo con el porcentaje de colección. */
 .anillo{display:grid;place-items:center;width:58px;height:58px;border-radius:50%;
-  border:2px solid rgba(234,190,74,.5);background:rgba(5,3,3,.5);
+  border:2px solid rgba(192,135,25,.55);background:rgba(6,7,7,.55);
   box-shadow:var(--brillo-oro);font-family:var(--titulo);font-weight:800;font-size:18px}
 
 /* LA TARJETA CON FOTO. La de JUGAR lleva al luchador de fondo, degradado hacia la
@@ -332,7 +367,7 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 .sobre-fila.foto .cu b{font-size:26px;letter-spacing:.02em}
 .sobre-fila.foto .cu .sub{font-size:12.5px}
 /* La píldora del precio monta sobre el borde de abajo, centrada en la parte de texto. */
-.sobre-fila button.precio:active{background:var(--acc);border-color:var(--acc);color:#fff}
+.sobre-fila button.precio:active{background:var(--acc);border-color:var(--acc);color:var(--bg)}
 .sobre-fila .precio{position:absolute;right:12px;top:50%;transform:translateY(-50%);
   z-index:3;font-family:var(--titulo);font-weight:700;font-size:14px;letter-spacing:.04em;
   background:var(--bg3);border:1px solid var(--line);border-radius:999px;
@@ -347,7 +382,7 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
   display:flex;align-items:center;justify-content:center;
   font-family:var(--titulo);font-weight:700;font-size:11.5px;line-height:1;
   color:var(--dim);background:rgba(0,0,0,.45);border:1px solid var(--line)}
-.info:active{background:var(--acc);border-color:var(--acc);color:#fff}
+.info:active{background:var(--acc);border-color:var(--acc);color:var(--bg)}
 
 /* El sobre de la pantalla de apertura. Grande y solo: lo único que se puede tocar ahí. */
 .sobre-toque{display:flex;flex-direction:column;align-items:center;justify-content:center;
@@ -384,15 +419,185 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 
 /* ── navegación ── */
 #nav{position:fixed;bottom:0;left:0;right:0;display:flex;
-  background:rgba(21,10,10,.95);backdrop-filter:blur(10px);
-  border-top:1px solid var(--line);z-index:50;padding-bottom:env(safe-area-inset-bottom)}
-#nav button{font-family:var(--titulo);letter-spacing:.05em;text-transform:uppercase;
-  flex:1;padding:9px 2px 10px;font-size:11px;color:var(--dim2);
-  display:flex;flex-direction:column;align-items:center;gap:3px;font-weight:600}
-#nav button .ic{font-size:22px;line-height:1}
-#nav button.on{color:var(--acc2)}
-#nav .badge{position:absolute;transform:translate(15px,-4px);background:var(--acc);color:#fff;
+  background:#0a0b0c;border-top:1px solid rgba(192,135,25,.20);
+  z-index:50;padding-bottom:env(safe-area-inset-bottom)}
+#nav button{position:relative;font-family:var(--titulo);letter-spacing:.04em;
+  text-transform:uppercase;
+  flex:1;min-width:0;padding:9px 1px 10px;font-size:10.5px;color:var(--dim2);
+  display:flex;flex-direction:column;align-items:center;gap:4px;font-weight:600}
+#nav button .ic{display:block;line-height:0}
+#nav button .ic .ico{width:23px;height:23px;stroke-width:1.75}
+/* La pestaña activa, como en el boceto: su celda con fondo propio y un filete de oro
+   arriba, no sólo el color del icono. Con cinco botones y el rótulo a 10 px, el color
+   solo no basta para localizarla de un vistazo. */
+#nav button.on{color:var(--acc2);background:rgba(192,135,25,.10)}
+#nav button.on::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:var(--acc2)}
+#nav .badge{position:absolute;transform:translate(15px,-4px);background:var(--acc);color:var(--bg);
   border-radius:9px;font-size:9px;padding:1px 5px;font-weight:700}
+
+/* ══ LOS BLOQUES DE LA INTERFAZ NUEVA ══════════════════════════════════════
+   Salen del boceto que pasó el dueño (originales/interfaz-v2/boceto-pantallas.png).
+   Del dibujo se toma la DISTRIBUCIÓN y el lenguaje visual —paneles negros y carbón,
+   filetes e iconos en oro, texto en blanco y oro—, no sus números, que son de ejemplo.
+
+   MARCA "PENDIENTE": el boceto enseña cosas que el juego todavía no tiene —nivel y XP,
+   pase de temporada, racha, rango, eventos, historial…—. Esos bloques se pintan en su
+   sitio, con su forma, y llevan esta chapa. Así se ve la estructura entera sin inventarse
+   números que parecerían de verdad. */
+.pdte{font-family:var(--titulo);font-size:9px;font-weight:700;letter-spacing:.10em;
+  text-transform:uppercase;color:var(--acc);border:1px solid rgba(192,135,25,.55);
+  border-radius:5px;padding:1px 5px;line-height:1.35;white-space:nowrap}
+.blq.esperando{opacity:.62}
+
+/* Un bloque con su título en oro y, a la derecha, su enlace o su reloj. */
+.blq{background:var(--tarjeta);border:1px solid var(--line);border-radius:15px;
+  padding:11px 12px;box-shadow:var(--sombra-tarjeta);
+  display:flex;flex-direction:column;min-height:0}
+.blq > .bt{display:flex;align-items:center;gap:8px;margin-bottom:9px;flex:none}
+.blq > .bt h3{margin:0;font-size:13px;letter-spacing:.09em;color:var(--acc2);flex:1;
+  min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.blq > .bt .mas{font-family:var(--titulo);font-size:11px;font-weight:700;letter-spacing:.07em;
+  text-transform:uppercase;color:var(--dim);display:flex;align-items:center;gap:4px}
+.blq > .bt .reloj{font-family:var(--titulo);font-size:11.5px;font-weight:700;color:var(--acc2);
+  display:flex;align-items:center;gap:4px}
+.blq > .bt .reloj .ico{width:13px;height:13px}
+.blq > .cuerpo{flex:1 1 auto;min-height:0;display:flex}
+
+/* ── La tarjeta del jugador: avatar, nombre, nivel y barra de XP ── */
+.jug{display:flex;align-items:center;gap:12px;flex:none}
+.jug .cara{position:relative;width:58px;height:58px;flex:none;
+  background:linear-gradient(160deg,var(--acc2),var(--acc));
+  clip-path:polygon(29% 0,71% 0,100% 29%,100% 71%,71% 100%,29% 100%,0 71%,0 29%);
+  display:flex;align-items:center;justify-content:center}
+.jug .cara i{position:absolute;inset:2px;overflow:hidden;background:var(--bg3);
+  clip-path:polygon(29% 0,71% 0,100% 29%,100% 71%,71% 100%,29% 100%,0 71%,0 29%);
+  display:flex;align-items:center;justify-content:center}
+.jug .cara img{position:absolute;left:50%;top:1%;width:235%;height:auto;
+  transform:translateX(-50%);max-width:none}
+.jug .cara .ico{width:26px;height:26px;color:var(--dim2)}
+.jug .qn{flex:1;min-width:0}
+.jug .qn .nv{font-family:var(--titulo);font-weight:700;font-size:19px;letter-spacing:.03em;
+  text-transform:uppercase;display:flex;align-items:center;gap:8px}
+.jug .qn .xp{display:block;font-size:11px;color:var(--dim);font-variant-numeric:tabular-nums;
+  margin-top:2px}
+.jug .chapa{flex:none;width:46px;text-align:center;font-family:var(--titulo);
+  border:1px solid rgba(192,135,25,.55);border-radius:10px;padding:3px 0}
+.jug .chapa small{display:block;font-size:8px;letter-spacing:.08em;color:var(--acc);
+  text-transform:uppercase}
+.jug .chapa b{display:block;font-size:17px;font-weight:800;line-height:1.1}
+.barra{height:6px;border-radius:99px;background:var(--bg3);overflow:hidden;margin-top:5px}
+.barra i{display:block;height:100%;border-radius:99px;
+  background:linear-gradient(90deg,var(--acc),var(--acc2))}
+
+/* ── Rejilla de cifras: TU PROGRESO y la fila de estadísticas del Perfil ── */
+.cifras{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);
+  border-radius:11px;overflow:hidden;flex:1}
+.cifras > span{background:var(--bg2);padding:7px 3px;text-align:center;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+.cifras small{font-size:8.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--dim2);
+  font-family:var(--titulo);font-weight:600}
+.cifras b{font-family:var(--titulo);font-size:18px;font-weight:800;line-height:1;
+  font-variant-numeric:tabular-nums}
+.cifras b.chico{font-size:12px;letter-spacing:.02em}
+
+/* ── ACTIVIDAD DIARIA: tres celdas iguales, cada una con su acción ── */
+.diaria{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;flex:1}
+.diaria > div{border:1px solid var(--line);border-radius:11px;background:var(--bg2);
+  padding:7px 6px;display:flex;flex-direction:column;align-items:center;
+  justify-content:space-between;gap:5px;text-align:center;min-width:0}
+.diaria .et{font-family:var(--titulo);font-size:9.5px;font-weight:700;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--dim);line-height:1.15}
+.diaria .ico{width:26px;height:26px;color:var(--acc2)}
+.diaria .btn{padding:5px 8px;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;
+  border-radius:7px}
+.diaria .btn.gho{color:var(--acc2);border-color:rgba(192,135,25,.55)}
+.diaria .cuenta{font-family:var(--titulo);font-size:15px;font-weight:800;line-height:1}
+
+/* ── NOVEDADES: el carrusel, con sus puntos debajo ── */
+.novedad{flex:1;border-radius:11px;overflow:hidden;position:relative;
+  border:1px solid var(--line);background:var(--bg3);
+  display:flex;flex-direction:column;justify-content:flex-end;padding:9px 11px;min-height:64px}
+.novedad .fondo{position:absolute;inset:0;background:
+  radial-gradient(120% 110% at 78% 30%,rgba(192,135,25,.28) 0%,transparent 62%),
+  linear-gradient(100deg,rgba(6,7,7,.92) 34%,rgba(39,40,41,.55) 100%)}
+.novedad > *{position:relative}
+.novedad .ep{font-family:var(--titulo);font-size:9.5px;letter-spacing:.10em;color:var(--acc2);
+  text-transform:uppercase;font-weight:700}
+.novedad .tt{font-family:var(--titulo);font-size:20px;font-weight:800;letter-spacing:.02em;
+  text-transform:uppercase;line-height:1.05}
+.puntos{display:flex;gap:4px;justify-content:center;margin-top:6px;flex:none;height:5px;
+  align-items:center}
+.puntos i{width:5px;height:5px;border-radius:50%;background:var(--line)}
+.puntos i.on{background:var(--acc2);width:13px;border-radius:99px}
+
+/* ── MI PLANTILLA: la tira de cinco cartas con su media ── */
+.tira{display:flex;gap:0;flex:1;min-height:0;align-items:flex-end;justify-content:center;
+  padding-top:5px}
+.tira .hueco{flex:1 1 0;min-width:0;display:flex;flex-direction:column;
+  align-items:stretch;justify-content:flex-end;gap:4px}
+.tira .hueco + .hueco{margin-left:-11px}
+.tira .hueco > .carta{width:100%}
+/* La del medio, más grande y por delante: es la que manda en el boceto. */
+.tira .hueco.jefa{z-index:2}
+.tira .hueco.jefa > .carta{transform:scale(1.10);transform-origin:bottom center}
+.tira .hueco:not(.jefa) > .carta{filter:brightness(.86)}
+.tira .med{text-align:center}
+.tira .med{font-family:var(--titulo);font-size:12px;font-weight:800;color:var(--acc2);
+  line-height:1;flex:none}
+.tira .vacia{flex:1;width:100%;border:1px dashed var(--line);border-radius:7px}
+
+/* ── Fila de lista: icono en oro, título, subtítulo y galón. Es la fila del boceto en
+      Desafíos y en Perfil, más baja que las tarjetas de menú. ── */
+.lista{display:flex;flex-direction:column;gap:8px;min-height:0}
+.lista.crece > .fila,.lista.crece > .blq{flex:1 1 0;min-height:52px;max-height:104px}
+.lista.alta.crece > .fila,.lista.alta.crece > .blq{max-height:128px}
+.lista.crece > .grupo{flex:var(--n,1) 1 0;min-height:52px}
+.lista.crece > .fila:not(.emblema){max-height:76px}
+.lista.crece > .rot{flex:0 0 auto}
+.lista .fila{padding:10px 12px;border-radius:13px}
+.lista .fila .ic{width:32px;height:32px;flex:none;color:var(--acc);
+  display:flex;align-items:center;justify-content:center;font-size:0}
+.lista .fila .ic .ico{width:27px;height:27px;stroke-width:1.6}
+.lista .fila .cu b{font-size:15px;letter-spacing:.05em}
+.lista .fila .cu .sub{display:block;font-size:11.5px;color:var(--dim);margin-top:1px}
+.lista .fila .der{flex:none;display:flex;align-items:center;color:var(--acc);line-height:0}
+.lista .fila .der .ico{width:20px;height:20px;stroke-width:2.4}
+
+/* DOS CLASES DE FILA, y son las dos del boceto:
+
+   · CON EMBLEMA (Club y Desafíos) — cada fila es su propio panel con filete de oro, el
+     texto a la izquierda y un emblema grande en oro a la derecha. Sin galón: el emblema
+     ya dice que se entra.
+   · EN GRUPO (Perfil) — varias filas dentro de UN solo panel, separadas por una raya fina,
+     con el icono pequeño a la izquierda y el galón a la derecha. Es lo que hace que
+     Ajustes, Cuenta y Ayuda se lean como un bloque y no como tres botones sueltos.
+
+   Las medidas salen de medir el boceto: las filas del Club ocupan el 10,6% del alto del
+   móvil, las de Desafíos entre el 14 y el 17%, y las de Perfil el 8,6% las de arriba y el
+   6,8% las de abajo. */
+.lista .fila.emblema{padding:12px 14px}
+.lista .fila.emblema .em{flex:none;width:56px;height:56px;color:var(--acc);
+  display:flex;align-items:center;justify-content:center;opacity:.92}
+.lista .fila.emblema .em .ico{width:100%;height:100%;stroke-width:1.35}
+.lista .fila.emblema .cu b{font-size:17px;letter-spacing:.045em}
+.lista .fila.emblema .cu .sub{display:block;font-size:12px;color:var(--dim);margin-top:3px}
+
+.grupo{background-image:var(--tarjeta);border:1px solid var(--filo);border-radius:14px;
+  box-shadow:var(--sombra-tarjeta);overflow:hidden;display:flex;flex-direction:column;
+  min-height:0}
+.grupo > .fila{border:0;border-radius:0;background:none;box-shadow:none;margin:0;
+  padding:11px 14px;flex:1 1 0;min-height:46px}
+.grupo > .fila + .fila{border-top:1px solid rgba(192,135,25,.20)}
+.grupo > .fila::before{display:none}
+.grupo > .fila:active{transform:none;background:rgba(192,135,25,.09);box-shadow:none}
+
+/* Rótulo de sección dentro de una lista. */
+.rot{font-family:var(--titulo);font-size:10px;font-weight:700;letter-spacing:.11em;
+  text-transform:uppercase;color:var(--dim2);padding:2px 3px 0;flex:none;
+  display:flex;align-items:center;gap:7px}
+.rot::after{content:'';flex:1;height:1px;background:var(--line)}
+
 
 /* ── CARTA ──
    La carta es el marco (una imagen) con el texto colocado encima en porcentajes, así
@@ -755,7 +960,7 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 /* ── varios ── */
 .chip{font-family:var(--titulo);letter-spacing:.05em;display:inline-block;background:var(--bg3);border:1px solid var(--line);border-radius:6px;
   padding:3px 8px;font-size:11.5px;color:var(--dim);font-weight:600}
-.chip.on{background:var(--acc);border-color:var(--acc);color:#fff}
+.chip.on{background:var(--acc);border-color:var(--acc);color:var(--bg)}
 .chip.dead{opacity:.28;text-decoration:line-through}
 .chip.next{border-color:var(--acc2);color:var(--acc2)}
 .chips{display:flex;flex-wrap:wrap;gap:5px}
@@ -795,7 +1000,7 @@ th{color:var(--dim2);font-size:11px;text-transform:uppercase;letter-spacing:.04e
   font-weight:650;font-size:14px;cursor:pointer;transition:.12s}
 .fila-stat b{font-size:19px;font-variant-numeric:tabular-nums}
 .fila-stat:active{transform:scale(.985)}
-.fila-stat.on{border-color:var(--acc);background:#2a1a19;color:#fff}
+.fila-stat.on{border-color:var(--acc);background:rgba(192,135,25,.16);color:var(--txt)}
 .fila-stat.on b{color:var(--acc2)}
 /* El entrenador del tutorial: pegado arriba, para que no haya que buscarlo, y con el
    mismo peso visual que un panel — no es un aviso de error ni un anuncio. */
@@ -861,9 +1066,10 @@ th{color:var(--dim2);font-size:11px;text-transform:uppercase;letter-spacing:.04e
 </style>
 
 <div id="top">
-  <div class="logo"><img class="marca" src="arte/logo.webp" alt=""><span class="txt"><b>P</b><em>4</em><b>P</b><i>.CG</i></span></div>
-  <div class="res" id="r-div">🪙 <span>0</span></div>
-  <div class="res" id="r-fic">🎟️ <span>0</span></div>
+  <div class="logo"><span class="txt"><b>P</b><em>4</em><b>P</b><i>.CG</i></span></div>
+  <div class="res" id="r-div"></div>
+  <div class="res" id="r-fic"></div>
+  <button class="engranaje" data-nav="ajustes" aria-label="Ajustes"></button>
 </div>
 <div id="escena" class="escena"></div>
 <div id="app"></div>
@@ -1023,10 +1229,45 @@ const ICONOS={
   robot:'<path d="M12 8V4H8" /> <rect width="16" height="12" x="4" y="8" rx="2" /> <path d="M2 14h2" /> <path d="M20 14h2" /> <path d="M15 13v2" /> <path d="M9 13v2" />',
   antena:'<path d="M16.247 7.761a6 6 0 0 1 0 8.478" /> <path d="M19.075 4.933a10 10 0 0 1 0 14.134" /> <path d="M4.925 19.067a10 10 0 0 1 0-14.134" /> <path d="M7.753 16.239a6 6 0 0 1 0-8.478" /> <circle cx="12" cy="12" r="2" />',
   megafono:'<path d="M11 6a13 13 0 0 0 8.4-2.8A1 1 0 0 1 21 4v12a1 1 0 0 1-1.6.8A13 13 0 0 0 11 14H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z" /> <path d="M6 14a12 12 0 0 0 2.4 7.2 2 2 0 0 0 3.2-2.4A8 8 0 0 1 10 14" /> <path d="M8 6v8" />',
+  // Los de la interfaz nueva: las cinco pestañas y las filas del boceto.
+  carrito:'<circle cx="8" cy="21" r="1" /> <circle cx="19" cy="21" r="1" /> <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12" />',
+  casa:'<path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8" /> <path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />',
+  escudo:'<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" />',
+  persona:'<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" /> <circle cx="12" cy="7" r="4" />',
+  diana:'<circle cx="12" cy="12" r="10" /> <circle cx="12" cy="12" r="6" /> <circle cx="12" cy="12" r="2" />',
+  llama:'<path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" />',
+  regalo:'<rect x="3" y="8" width="18" height="4" rx="1" /> <path d="M12 8v13" /> <path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7" /> <path d="M7.5 8a2.5 2.5 0 0 1 0-5A4.8 8 0 0 1 12 8a4.8 8 0 0 1 4.5-5 2.5 2.5 0 0 1 0 5" />',
+  pase:'<path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2z" /> <path d="M13 5v2" /> <path d="M13 11v2" /> <path d="M13 17v2" />',
+  grafico:'<path d="M3 3v16a2 2 0 0 0 2 2h16" /> <path d="M18 17V9" /> <path d="M13 17V5" /> <path d="M8 17v-3" />',
+  estrella:'<path d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 20.99a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z" />',
+  ayuda:'<circle cx="12" cy="12" r="10" /> <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /> <path d="M12 17h.01" />',
+  reloj:'<circle cx="12" cy="12" r="10" /> <polyline points="12 6 12 12 16 14" />',
+  galon:'<path d="m9 18 6-6-6-6" />',
 };
 const icono=(n,cls='')=>`<svg class="ico ${cls}" viewBox="0 0 24 24" fill="none"
   stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
   aria-hidden="true">${ICONOS[n]||''}</svg>`;
+
+/* LAS DOS MONEDAS DE LA CABECERA. Van dibujadas y RELLENAS, no con el trazo de los demás
+   iconos: a 15 px un contorno hueco no se distingue de otro, y lo que tiene que leerse de
+   un vistazo es cuál es el oro y cuál la gema. Por eso no pasan por icono(). */
+const MONEDA=`<svg class="mon" viewBox="0 0 24 24" aria-hidden="true">
+  <circle cx="12" cy="12" r="9.4" fill="#f0c54e" stroke="#7a5410" stroke-width="1.4"/>
+  <circle cx="12" cy="12" r="5.5" fill="none" stroke="#7a5410" stroke-width="1.5"/></svg>`;
+const GEMA=`<svg class="mon" viewBox="0 0 24 24" aria-hidden="true">
+  <path d="M12 2.4 21.2 9 12 21.6 2.8 9z" fill="#8f7bd6" stroke="#4b3c8e" stroke-width="1.4"
+    stroke-linejoin="round"/>
+  <path d="M2.8 9h18.4M12 2.4 8.1 9l3.9 12.6M12 2.4 15.9 9 12 21.6" fill="none"
+    stroke="#4b3c8e" stroke-width="1.1" opacity=".75"/></svg>`;
+
+/* 125.6K, no 125600. Lo pide el boceto y, con dos monedas y el engranaje al lado, un
+   número de seis cifras empuja al nombre fuera de la cabecera. */
+function corto(n){
+  n=Math.round(n||0);
+  if(n<10000) return String(n);
+  if(n<1000000) return (n/1000).toFixed(n<100000?1:0).replace(/\.0$/,'')+'K';
+  return (n/1000000).toFixed(1).replace(/\.0$/,'')+'M';
+}
 
 const TIPOS_SOBRE={
   /* BÁSICO — gratis e ilimitado. Mitad oros y mitad platas, para que cualquiera monte
@@ -1507,13 +1748,22 @@ function cartaHTML(c,o={}){
   </div>`;
 }
 
-/* Cuatro pestañas, y cada una es un SITIO, no una pantalla: dentro de cada una viven
-   varias. Antes eran cinco y dos de ellas —Colección y Plantilla— eran pantallas sueltas
-   ascendidas a pestaña, mientras el cajón de "Más" escondía otras ocho. */
+/* CINCO PESTAÑAS, Y INICIO VA EN EL MEDIO. Lo dijo el dueño antes de pasar el boceto,
+   donde sale el segundo: manda la corrección, no el dibujo.
+
+   Cada pestaña es un SITIO, no una pantalla: dentro de cada una viven varias, y la
+   pestaña se queda encendida mientras estés en cualquiera de ellas. Por eso Draft y las
+   tres formas de jugar cuelgan de Inicio aunque no se vean en la pantalla de Inicio: se
+   llega a ellas desde JUGAR.
+
+   Los iconos van DIBUJADOS y no en emoji: a 22 px un emoji cambia de forma en cada
+   sistema y la barra se ve distinta en cada móvil. */
 const PESTANAS=[
-  ['tienda', '🛒', 'Tienda', ['apertura','sobre']],
-  ['inicio', '🏠', 'Inicio', ['jugar','aprende','logros','reglas','directo','online','partida','retosdetalle','draft']],
-  ['club',   '🛡️', 'Club',   ['plantilla','coleccion','intercambio','sets','reciclaje','ajustes','redes','notas']],
+  ['tienda',  'carrito','Tienda',  ['apertura','sobre']],
+  ['club',    'escudo', 'Club',    ['plantilla','coleccion','intercambio','sets','reciclaje','notas']],
+  ['inicio',  'casa',   'Inicio',  ['jugar','reglas','directo','online','partida','draft']],
+  ['desafios','trofeo', 'Desafíos',['retosdetalle','logros']],
+  ['perfil',  'persona','Perfil',  ['ajustes','redes','aprende']],
 ];
 function navHTML(){
   const pend=S.sobres.length+nGratisListos();
@@ -1521,20 +1771,21 @@ function navHTML(){
     // La insignia va en Tienda, que es de donde ahora se abren los sobres.
     const b=v==='tienda'&&pend?`<span class="badge">${pend}</span>`:'';
     const on=vista===v||dentro.includes(vista);
-    return `<button data-nav="${v}" class="${on?'on':''}"><span class="ic">${i}</span>${t}${b}</button>`;
+    return `<button data-nav="${v}" class="${on?'on':''}"><span class="ic">${icono(i)}</span>${t}${b}</button>`;
   }).join('');
 }
 
 function render(){
-  $('#r-div').innerHTML='🪙 <span>'+S.divisa+'</span>';
-  $('#r-fic').innerHTML='🎟️ <span>'+S.fichas+'</span>';
+  $('#r-div').innerHTML=MONEDA+'<span>'+corto(S.divisa)+'</span>';
+  $('#r-fic').innerHTML=GEMA+'<span>'+corto(S.fichas)+'</span>';
+  $('#top .engranaje').innerHTML=icono('engranaje');
   const sinNav = vista==='partida'||vista==='online';
   $('#nav').innerHTML = sinNav?'':navHTML();
   $('#nav').style.display = sinNav?'none':'flex';
   document.body.style.paddingBottom = sinNav
     ? 'calc(12px + env(safe-area-inset-bottom))'
     : 'calc(64px + env(safe-area-inset-bottom))';
-  const f={inicio:vInicio,tienda:vTienda,club:vClub,
+  const f={inicio:vInicio,tienda:vTienda,club:vClub,desafios:vDesafios,perfil:vPerfil,
     sobre:vSobre,apertura:vApertura,
     jugar:vJugar,aprende:vAprende,logros:vLogros,reglas:vReglas,draft:vDraft,
     ajustes:vAjustes,redes:vRedes,notas:vNotas,
@@ -1646,27 +1897,96 @@ function ir(v){ pararAviso(); vista=v; tmp={}; window.scrollTo(0,0); render(); }
    pantalla muerta debajo, que es lo que se veía. */
 function vInicio(){
   const ok=plantillaCompleta();
-  const l=logros(), hechos=l.filter(x=>x.hecho).length;
-  const reto=RETOS.find(r=>!S.retos.includes(r.id));
-  return `<div class="pila">
+  return `<div class="pila v2">
     ${ok?'':`<div class="fila" style="border-color:var(--warn);flex:0 0 auto">
       <span class="cu"><b>Te faltan divisiones</b>
       <span class="sub">Necesitas una carta alineable en las 11 para poder jugar.</span></span></div>`}
-    ${tarjeta({nav:'jugar', t:'Jugar', foto:'arte/jugar.webp', banner:true, off:!ok})}
-    ${tarjeta({nav:'draft', t:'Draft', d:'Elige tu plantilla y compite',
-      dentro:abanico()+icono('dados','suelto')})}
-    ${tarjeta({nav:'retosdetalle', t:'SBC', d:'Retos de construcción',
-      dentro:`<span class="centrado">${icono('pergamino','rojo')}
-        <span class="rotulo-oro">${esc(reto?reto.n:'Todos hechos')}</span></span>`})}
-    <div class="mitades">
-      ${tarjeta({nav:'logros', t:'Logros', foto:'arte/islam.webp', media:true, pie:`${hechos} de ${l.length}`})}
-      ${tarjeta({nav:'aprende', t:'Aprende', d:'Tutorial', ic:'birrete',
-        alerta:!S.tutorialHecho, media:true})}
-    </div>
+    ${fichaJugador()}
+    <div class="crece" style="flex-grow:2">
+      ${tarjeta({nav:'jugar', t:'Jugar', d:'Entra al octágono', foto:'arte/jugar.webp',
+        banner:true, off:!ok, cta:'Jugar ahora'})}</div>
+    ${bloqueDiaria()}
+    ${bloqueNovedades()}
+    ${bloqueProgreso()}
   </div>`;
 }
 
-function tarjeta({nav,a,t,d,ic,foto,dentro,off,alerta,media,pie,banner}){
+/* La cara del jugador es la MEJOR CARTA DE SU PLANTILLA, no un avatar que haya que
+   elegir: sale de lo que ya hay puesto y cambia sola cuando cambia el once. Si todavía
+   no hay nadie alineado, va el icono de persona. */
+function avatarJugador(){
+  const cs=Object.values(S.plantilla||{}).map(iid=>{
+    const o=S.coleccion.find(x=>x.iid===iid); return o&&PORID[o.cid];
+  }).filter(Boolean);
+  if(!cs.length) return null;
+  const c=ordenar(cs)[0];
+  return fotoSrc(c.persona, c.division);
+}
+const nombreJugador=()=>S.nombre||'JUGADOR';
+
+/* La ficha de arriba: cara, nombre, nivel, barra de XP y chapa de temporada.
+   NIVEL, XP Y TEMPORADA NO EXISTEN EN EL JUEGO: no hay de dónde sacarlos y no me los
+   invento. El bloque está en su sitio, con su forma, y marcado PENDIENTE. */
+function fichaJugador(){
+  const foto=avatarJugador();
+  return `<div class="blq"><div class="jug">
+    <span class="cara"><i>${foto?`<img src="${foto}" alt="" loading="lazy">`:icono('persona')}</i></span>
+    <span class="qn">
+      <span class="nv">${esc(nombreJugador())} <span class="pdte">Nivel y XP</span></span>
+      <span class="xp">Nivel — · — / — XP</span>
+      <span class="barra"><i style="width:0%"></i></span>
+    </span>
+    <span class="chapa"><small>Season</small><b>—</b></span>
+  </div></div>`;
+}
+
+/* ACTIVIDAD DIARIA. De las tres celdas del boceto solo una tiene sistema detrás: el sobre
+   gratis, que existe y se reclama. El desafío diario y la racha no existen todavía. */
+function bloqueDiaria(){
+  const g=GRATIS.find(x=>x.tipo==='basico');
+  const listo=g&&listoGratis(g);
+  return `<div class="blq crece" style="flex-grow:1.47">
+    <div class="bt"><h3>Actividad diaria</h3>
+      <span class="reloj">${icono('reloj')}<span class="pdte">Sin reloj</span></span></div>
+    <div class="cuerpo"><div class="diaria">
+      <div><span class="et">Sobre gratis</span>${icono('regalo')}
+        <button class="btn ${listo?'':'gho'} sm" data-a="versobre" data-t="basico"
+          ${listo?'':'disabled'}>${listo?'Reclamar':'Abierto'}</button></div>
+      <div><span class="et">Desafío diario</span>${icono('diana')}
+        <span class="pdte">Pendiente</span></div>
+      <div><span class="et">Racha</span>${icono('llama')}
+        <span class="pdte">Pendiente</span></div>
+    </div></div>
+  </div>`;
+}
+
+/* NOVEDADES. No hay ningún sitio de donde sacar noticias, así que el carrusel se pinta
+   vacío y marcado: la forma es la del boceto, el contenido está por decidir. */
+function bloqueNovedades(){
+  return `<div class="blq crece esperando">
+    <div class="bt"><h3>Novedades</h3><span class="mas">Ver todo ›</span></div>
+    <div class="cuerpo"><div class="novedad"><span class="fondo"></span>
+      <span class="ep">Sin novedades</span>
+      <span class="tt">Pendiente</span></div></div>
+    <div class="puntos"><i class="on"></i><i></i><i></i></div>
+  </div>`;
+}
+
+/* TU PROGRESO. Partidas y victorias SÍ existen; la mejor racha y el rango, no. */
+function bloqueProgreso(){
+  return `<div class="blq">
+    <div class="bt"><h3>Tu progreso</h3>
+      <span class="mas">Ver estadísticas ›</span></div>
+    <div class="cuerpo"><div class="cifras">
+      <span><small>Partidas</small><b>${S.partidas}</b></span>
+      <span><small>Victorias</small><b>${S.victorias}</b></span>
+      <span><small>Mejor racha</small><b class="chico">—</b></span>
+      <span><small>Rango</small><b class="chico">—</b></span>
+    </div></div>
+  </div>`;
+}
+
+function tarjeta({nav,a,t,d,ic,foto,dentro,off,alerta,media,pie,banner,cta}){
   const attr=nav?`data-nav="${nav}"`:`data-a="${a}"`;
   /* Tres formas de llenar el hueco del dibujo: el banner -la foto de fondo a sangre-, un
      peleador recortado centrado como estaba el icono, o el icono de siempre. */
@@ -1675,11 +1995,19 @@ function tarjeta({nav,a,t,d,ic,foto,dentro,off,alerta,media,pie,banner}){
     : foto
     ? `<span class="sobre-art retrato"><img src="${foto}" alt="" loading="lazy"></span>`
     : `<span class="sobre-art ${ic?'icono':''}">${dentro||icono(ic)}</span>`;
-  return `<div class="sobre-fila menu ${banner?'banner':''} ${off?'apagada':''} ${media?'media':''}">
-    <button class="fila ${alerta?'alerta':''}" ${off?'disabled':''} ${attr}>
+  /* CON `cta` LA TARJETA NO ES UN BOTÓN, es un div con el botón dentro: es lo que pide el
+     boceto para JUGAR, que lleva su "JUGAR AHORA" encima de la foto. Un botón dentro de
+     otro botón no es HTML válido y el toque se dispara dos veces. El div sigue siendo
+     tocable entero porque el reparto de toques va por closest([data-nav]). */
+  const caja=cta?'div':'button';
+  const cuerpo=`<${caja} class="fila ${alerta?'alerta':''} ${cta?'concta':''}"
+      ${off&&!cta?'disabled':''} ${attr}>
       <span class="cu"><b>${t}</b><span class="sub">${d||''}</span></span>
       ${dibujo}
-    </button>
+      ${cta?`<button class="btn cta" ${off?'disabled':''} ${attr}>${cta}</button>`:''}
+    </${caja}>`;
+  return `<div class="sobre-fila menu ${banner?'banner':''} ${off?'apagada':''} ${media?'media':''}">
+    ${cuerpo}
     ${pie?`<span class="precio">${pie}</span>`:''}
   </div>`;
 }
@@ -1699,6 +2027,9 @@ const abanico=()=>`<span class="abanico">
    Ya no existe "retar la plantilla de un amigo por código": era un código de texto que
    había que copiar, pegar y volver a pegar para registrar el resultado, y para eso está
    la partida en directo, que juega de verdad. */
+/* EL DRAFT VIVE AQUÍ DENTRO. En la interfaz de antes era una tarjeta suelta en Inicio; el
+   boceto no le da sitio propio y el dueño lo dijo claro: "lo de draft está dentro de la
+   parte de jugar". Que es donde tenía que estar: es otra manera de jugar, no otra sección. */
 function vJugar(){
   const ok=plantillaCompleta();
   return `<div class="pcab"><h2>Jugar</h2></div>
@@ -1709,6 +2040,8 @@ function vJugar(){
         off:!ok})}
       ${tarjeta({a:'jugar', ic:'robot', t:'Contra la IA', d:'Sin conexión, cuando quieras',
         off:!ok})}
+      ${tarjeta({nav:'draft', t:'Draft', d:'Elige tu plantilla y compite',
+        dentro:abanico()+icono('dados','suelto')})}
     </div>
     <button class="btn sec" data-nav="inicio">Atrás</button>`;
 }
@@ -1767,27 +2100,143 @@ function vLogros(){
 }
 
 /* ── CLUB ──
-   Todo lo que es "lo mío": las cartas y lo que se hace con ellas. */
+   Todo lo que es "lo mío": las cartas y lo que se hace con ellas. Arriba la tira de la
+   plantilla, y debajo las cuatro filas con su cuenta, como en el boceto. */
 function vClub(){
   const distintas=new Set(S.coleccion.map(x=>x.cid)).size;
   const hechos=SETS.filter(x=>S.sets.includes(x.id)).length;
-  const puestas=DIVISIONES.filter(d=>S.plantilla[d.id]).length;
-  return `<div class="pila">
-    ${tarjeta({nav:'plantilla', t:'Plantilla', d:'Tu equipo titular', dentro:abanico(),
-      alerta:plantillaCompleta(), pie:`${puestas} de ${DIVISIONES.length}`})}
-    <div class="mitades">
-      ${tarjeta({nav:'coleccion', t:'Colección', media:true,
-        dentro:`<span class="anillo">${Math.round(distintas/ROSTER.length*100)}%</span>`,
-        pie:`${distintas} de ${ROSTER.length}`})}
-      ${tarjeta({nav:'sets', t:'Sets', ic:'trofeo', media:true, pie:`${hechos} de ${SETS.length}`})}
+  const repes=S.coleccion.length-distintas;
+  return `<div class="pila v2">
+    ${tiraPlantilla()}
+    <div class="lista crece">
+      ${filaLista({nav:'coleccion', ic:'carpeta', t:'Colección', em:true,
+        d:`${distintas} / ${ROSTER.length}`})}
+      ${filaLista({nav:'sets', ic:'trofeo', t:'Sets', em:true,
+        d:`${hechos} / ${SETS.length}`})}
+      ${filaLista({nav:'reciclaje', ic:'reciclar', t:'Reciclaje', em:true,
+        d:`${repes} ${repes===1?'repetida':'repetidas'}`})}
+      ${filaLista({nav:'intercambio', ic:'trueque', t:'Intercambio', em:true,
+        d:'Cartas con otros jugadores'})}
     </div>
-    <div class="mitades">
-      ${tarjeta({nav:'reciclaje', t:'Reciclaje', d:'Repetidas por fichas', ic:'reciclar', media:true})}
-      ${tarjeta({nav:'intercambio', t:'Intercambio', d:'Cartas con jugadores', ic:'trueque', media:true})}
+  </div>`;
+}
+
+/* MI PLANTILLA: las cinco mejores del once, con su media debajo. Cinco y no once porque
+   es lo que cabe de un vistazo, y son las que mandan. La media es la suma de las seis
+   stats entre seis; no es un dato nuevo, es el que ya ordena la colección. */
+function tiraPlantilla(){
+  const cs=Object.values(S.plantilla||{}).map(iid=>{
+    const o=S.coleccion.find(x=>x.iid===iid); return o&&PORID[o.cid];
+  }).filter(Boolean);
+  const cinco=ordenar(cs).slice(0,5);
+  /* La mejor va EN EL MEDIO, no la primera: en el boceto la carta grande es la central.
+     Se reordena 5-3-1-2-4 para que las mejores queden hacia dentro. */
+  const orden=[4,2,0,1,3].map(i=>cinco[i]).filter(Boolean);
+  const medio=(orden.length-1)>>1;
+  const huecos=orden.map((c,i)=>`<span class="hueco ${i===medio?'jefa':''}">
+      ${cartaHTML(c,{compacta:true})}
+      <span class="med">${Math.round(c.suma/6)}</span></span>`).join('')
+    || '<span class="hueco"><span class="vacia"></span></span>'.repeat(5);
+  return `<div class="blq">
+    <div class="bt"><h3>Mi plantilla</h3>
+      <button class="mas" data-nav="plantilla">Ver plantilla ›</button></div>
+    <div class="cuerpo"><div class="tira">${huecos}</div></div>
+  </div>`;
+}
+
+/* La fila de lista, en las dos formas que tiene el boceto.
+
+   Con `em` es la del Club y Desafíos: su propio panel, el texto a la izquierda y el
+   emblema grande en oro a la derecha. Sin `em` es la del Perfil, que va dentro de un
+   grupo(): icono pequeño delante y galón detrás. */
+function filaLista({nav,a,ic,t,d,alerta,pdte,em}){
+  const attr=nav?`data-nav="${nav}"`:a?`data-a="${a}"`:'disabled';
+  const der=pdte?'<span class="pdte">Pendiente</span>':(em?'':icono('galon'));
+  return `<button class="fila ${em?'emblema':''} ${alerta?'alerta':''} ${pdte?'apagada':''}" ${attr}>
+    ${em?'':`<span class="ic">${icono(ic)}</span>`}
+    <span class="cu"><b>${t}</b>${d?`<span class="sub">${d}</span>`:''}</span>
+    ${der?`<span class="der">${der}</span>`:''}
+    ${em?`<span class="em">${icono(ic)}</span>`:''}
+  </button>`;
+}
+/* Varias filas dentro de un solo panel, separadas por una raya. Es lo que hace que
+   Ajustes, Cuenta y Ayuda se lean como un bloque y no como tres botones sueltos. */
+const grupo=(...filas)=>`<div class="grupo" style="--n:${filas.length}">${filas.join('')}</div>`;
+
+/* ── DESAFÍOS ──
+   Lo que hay que completar para ganar algo. SBC y Logros vienen de Inicio y de Club, que
+   es donde estaban; Desafíos, Eventos y el pase de temporada son del boceto y todavía no
+   tienen sistema detrás. */
+function vDesafios(){
+  const reto=RETOS.find(r=>!S.retos.includes(r.id));
+  const hechosR=S.retos.length;
+  const l=logros(), hechos=l.filter(x=>x.hecho).length;
+  return `<div class="pila v2">
+    <div class="lista alta crece">
+      ${filaLista({nav:'retosdetalle', ic:'pergamino', t:'SBC', em:true,
+        d:reto?`${hechosR} / ${RETOS.length} · siguiente: ${esc(reto.n)}`:'Todos hechos'})}
+      ${filaLista({ic:'diana', t:'Desafíos', em:true,
+        d:'Diarios, semanales y especiales', pdte:true})}
+      ${filaLista({ic:'trofeo', t:'Eventos', em:true,
+        d:'Eventos limitados y exclusivos', pdte:true})}
+      ${bloquePase()}
+      ${filaLista({nav:'logros', ic:'medalla', t:'Logros', em:true,
+        d:`${hechos} / ${l.length} completados`})}
     </div>
-    <div class="mitades">
-      ${tarjeta({nav:'ajustes', t:'Ajustes', ic:'engranaje', media:true})}
-      ${tarjeta({nav:'redes', t:'Mis redes', ic:'megafono', media:true})}
+  </div>`;
+}
+
+/* El pase de temporada es el único bloque de Desafíos que no es una fila: en el boceto
+   lleva nivel y barra. Como no hay temporadas, va con la barra a cero y marcado. */
+function bloquePase(){
+  return `<div class="blq esperando" style="padding:12px 14px;justify-content:center">
+    <div class="bt" style="margin-bottom:9px">
+      <span class="ic" style="width:34px;height:34px;flex:none;border-radius:9px;
+        border:1px solid rgba(192,135,25,.40);background:rgba(192,135,25,.10);color:var(--acc2);
+        display:flex;align-items:center;justify-content:center">${icono('pase')}</span>
+      <h3 style="font-size:14px;color:var(--txt);text-transform:uppercase">Pase de temporada</h3>
+      <span class="pdte">Pendiente</span></div>
+    <span class="barra"><i style="width:0%"></i></span>
+  </div>`;
+}
+
+/* ── PERFIL ──
+   Quién eres y tu configuración. Aquí caen Ajustes —que deja de ser un botón del Club— y,
+   de momento, Aprende y Mis redes, que el boceto no coloca en ninguna pantalla y el dueño
+   dejó para más adelante: no se comen, se aparcan aquí abajo y con su rótulo. */
+function vPerfil(){
+  const foto=avatarJugador();
+  return `<div class="pila v2">
+    <div class="blq">
+      <div class="jug" style="margin-bottom:9px">
+        <span class="cara"><i>${foto?`<img src="${foto}" alt="" loading="lazy">`:icono('persona')}</i></span>
+        <span class="qn">
+          <span class="nv">${esc(nombreJugador())} <span class="pdte">Nivel y XP</span></span>
+          <span class="xp">Nivel — · — / — XP</span>
+          <span class="barra"><i style="width:0%"></i></span>
+        </span>
+        <span class="chapa"><small>Rango</small><b>—</b></span>
+      </div>
+      <div class="cifras" style="flex:none">
+        <span><small>Partidas</small><b>${S.partidas}</b></span>
+        <span><small>Victorias</small><b>${S.victorias}</b></span>
+        <span><small>Racha</small><b class="chico">—</b></span>
+        <span><small>Rango</small><b class="chico">—</b></span>
+      </div>
+    </div>
+    <div class="lista crece">
+      ${grupo(
+        filaLista({ic:'tablilla', t:'Historial de partidas', d:'Tus últimos resultados', pdte:true}),
+        filaLista({ic:'grafico', t:'Estadísticas', d:'Ver estadísticas detalladas', pdte:true}),
+        filaLista({ic:'estrella', t:'Cartas favoritas', d:'Las que quieras tener a mano', pdte:true}))}
+      ${grupo(
+        filaLista({nav:'ajustes', ic:'engranaje', t:'Ajustes'}),
+        filaLista({ic:'persona', t:'Cuenta', pdte:true}),
+        filaLista({ic:'ayuda', t:'Ayuda', pdte:true}))}
+      <span class="rot">Sin colocar todavía</span>
+      ${grupo(
+        filaLista({nav:'aprende', ic:'birrete', t:'Aprende a jugar', alerta:!S.tutorialHecho}),
+        filaLista({nav:'redes', ic:'megafono', t:'Mis redes'}))}
     </div>
   </div>`;
 }
@@ -1921,7 +2370,7 @@ function tiendaComprar(){
     const off=caro||espera;
     return `<div class="sobre-fila ${off?'apagada':''}">
       <button class="fila" ${off?'disabled':''} data-a="${T.coste?'comprar':'versobre'}" data-t="${k}"
-        style="border-color:${k==='plata'?'rgba(212,12,26,.55)':'rgba(234,190,74,.5)'}">
+        style="border-color:rgba(192,135,25,.55)">
         <span class="cu"><b>${T.n}</b>
           <span class="sub">${T.desc}</span></span>
         <span class="sobre-art"><img src="sobres/${k}.webp" alt="" loading="lazy"></span>
@@ -1948,7 +2397,7 @@ function tiendaMios(){
     const T=TIPOS_SOBRE[t];
     return `<div class="sobre-fila">
       <button class="fila" data-a="versobre" data-t="${t}" data-mio="1"
-        style="border-color:${t==='plata'?'rgba(212,12,26,.55)':'rgba(234,190,74,.5)'}">
+        style="border-color:rgba(192,135,25,.55)">
         <span class="cu"><b>${T.n}</b>
           <span class="sub">${T.desc}</span></span>
         <span class="sobre-art"><img src="sobres/${t}.webp" alt="" loading="lazy"></span>

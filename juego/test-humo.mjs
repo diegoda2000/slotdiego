@@ -761,12 +761,18 @@ comprobar(!veredictos.muerto.ok && /No contesta/i.test(veredictos.muerto.txt),
 const menu = await page.evaluate(() => {
   ir('jugar'); const j = document.querySelector('#app').textContent;
   ir('inicio'); const i = document.querySelector('#app').textContent;
-  return { j, i };
+  ir('desafios'); const d = document.querySelector('#app').textContent;
+  return { j, i, d };
 });
 comprobar(/PvP/.test(menu.j) && /Contra un amigo/i.test(menu.j) && /Contra la IA/i.test(menu.j),
   'Jugar ofrece PvP, contra un amigo y contra la IA');
-comprobar(/SBC/.test(menu.i) && /Draft/.test(menu.i),
-  'e Inicio lleva Jugar, Draft, SBC, Aprende y Logros');
+/* EL DRAFT SE MUDÓ DENTRO DE JUGAR y SBC a Desafíos: lo pidió el dueño con el boceto de
+   la interfaz nueva. "Lo de draft está dentro de la parte de jugar", y es donde tenía que
+   estar: es otra forma de jugar, no otra sección. */
+comprobar(/Draft/.test(menu.j), 'y el Draft, que es otra forma de jugar, va ahí dentro');
+comprobar(!/Draft/.test(menu.i), 'y ya no cuelga de Inicio');
+comprobar(/SBC/.test(menu.d) && /Logros/i.test(menu.d),
+  'Desafíos lleva SBC y Logros, que venían de Inicio y de Club');
 // PvP y "contra un amigo" llevan las dos a la misma pantalla de directo: una crea la
 // sala y la otra entra con el código. Que las dos lleguen ahí es lo que hay que asegurar.
 const dosCaminos = await page.evaluate(() => {
@@ -946,8 +952,11 @@ comprobar(def.elOtro.cambios === 0, 'y solo al que le toca defender, no al que d
 /* ── 2h. Declarar tocando cartas, y el defensor manda la suya ──────────── */
 console.log('\n2h. Declarar por carta y confirmación del defensor');
 // Inicio → JUGAR → Contra la IA: el camino que hace el jugador de verdad
+/* Se toca el BOTÓN "Jugar ahora", no el panel: desde el boceto de la interfaz nueva el
+   banner de JUGAR lleva su botón dentro, así que hay dos elementos con data-nav="jugar"
+   —el panel entero y el botón— y los dos hacen lo mismo. Se toca el que toca el jugador. */
 await page.evaluate(() => { ir('inicio'); });
-await page.locator('[data-nav="jugar"]').click();
+await page.locator('.btn.cta[data-nav="jugar"]').click();
 await page.locator('[data-a="jugar"]').click();
 await page.locator('[data-rol="declarar"]').click();
 for (let i = 0; i < 40; i++) {
@@ -1033,9 +1042,13 @@ comprobar(tut.vet && tut.esp && tut.cam, 'la tuya lleva Veterano, Especialista y
 comprobar(tut.inc, 'y la del sparring lleva Incómodo, para que lo veas de verdad');
 
 /* El tutorial ya no cuelga de Inicio: vive dentro de "Aprende a jugar". Mientras no se
-   haya jugado, esa mitad va en rojo y el tutorial es lo primero de dentro. */
+   haya jugado, esa fila va marcada y el tutorial es lo primero de dentro.
+
+   Y "Aprende a jugar" ya no está en Inicio, sino en PERFIL: el boceto de la interfaz
+   nueva no le da sitio y el dueño lo dejó para más adelante -"lo de aprende, ya veremos
+   dónde lo metemos"-, así que se aparca ahí abajo, bajo su rótulo, sin comérselo. */
 const sinHacer = await page.evaluate(() => {
-  S.tutorialHecho = false; ir('inicio');
+  S.tutorialHecho = false; ir('perfil');
   const mitad = document.querySelector('[data-nav="aprende"]');
   const roja = mitad && mitad.classList.contains('alerta');
   ir('aprende');
@@ -1043,7 +1056,7 @@ const sinHacer = await page.evaluate(() => {
   return { roja, primera: filas[0] && filas[0].dataset.a === 'tutorial',
            enInicio: (ir('inicio'), document.querySelectorAll('[data-a="tutorial"]').length) };
 });
-comprobar(sinHacer.roja, 'sin hacer el tutorial, "Aprende a jugar" va en rojo en Inicio');
+comprobar(sinHacer.roja, 'sin hacer el tutorial, "Aprende a jugar" va marcada en Perfil');
 comprobar(sinHacer.primera, 'y dentro, el tutorial es la primera línea');
 comprobar(sinHacer.enInicio === 0, 'pero no cuelga de Inicio: Inicio solo lleva a la sección');
 await page.evaluate(() => { ir('aprende'); });
@@ -1095,7 +1108,7 @@ comprobar(finT.partidas === 0, 'y NO cuenta en tu registro de partidas: se juega
 /* Hecho el tutorial: deja el rojo, las reglas pasan delante — y el tutorial NO
    desaparece, se puede repetir. */
 const yaHecho = await page.evaluate(() => {
-  ir('inicio');
+  ir('perfil');
   const mitad = document.querySelector('[data-nav="aprende"]');
   const roja = mitad && mitad.classList.contains('alerta');
   ir('aprende');

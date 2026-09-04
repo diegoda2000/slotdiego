@@ -146,47 +146,84 @@ medida, es esto:
 **Ya no hay rojo.** La paleta de ahora gira sobre `--acc:#d40c1a`, así que el rediseño de
 la interfaz es también un cambio de color de arriba abajo. Sin empezar.
 
-**YA HAY BOCETO DE LA INTERFAZ.** Lo pasó él entero, cinco pantallas y una leyenda, y está
-en `originales/interfaz-v2/boceto-pantallas.png`. **Sin empezar a montar: falta que dé la
-orden.**
+**LA ESTRUCTURA DE LA INTERFAZ NUEVA YA ESTÁ MONTADA.** El boceto lo pasó él entero
+—cinco pantallas y una leyenda— y está en `originales/interfaz-v2/boceto-pantallas.png`.
+La orden fue: *"EL FONDO DE JAULA QUÍTALO, HAZ ABSOLUTAMENTE TODO COMO EN EL BOCETO, Y
+COPIA TAMBIÉN LAS FUENTES DE TEXTO, LO QUE OCUPA CADA BOTÓN EN PANTALLA, ETC."*, y antes
+de eso: *"lo principal es dejar la estructura de la interfaz. Y una vez esté hecho eso, ya
+vamos modificando"*. Del dibujo se toma **la distribución y el lenguaje visual, no sus
+números**: él mismo avisó de que 198/402 y los textos de plata y oro son de ejemplo.
 
 **Cinco pestañas abajo, e INICIO VA EN EL MEDIO.** Lo corrigió antes de pasar el dibujo,
 donde sale el segundo; manda la corrección:
 
     TIENDA · CLUB · INICIO · DESAFÍOS · PERFIL
 
-**Cabecera en todas las pantallas:** el P4P.CG a la izquierda, dos monedas —oro 125.6K y
-gemas 2.450— y el **engranaje de AJUSTES arriba a la derecha, alcanzable desde cualquier
-pantalla**.
+**Cabecera en todas las pantallas:** el P4P.CG a la izquierda, las dos monedas —oro y
+gemas, que son `S.divisa` y `S.fichas`, dibujadas y rellenas porque a 18 px un contorno
+hueco no se distingue— y el **engranaje de AJUSTES arriba a la derecha, alcanzable desde
+cualquier pantalla**.
 
 | pantalla | qué lleva |
 |---|---|
-| **Tienda** | pestañas COMPRAR / MIS SOBRES · cinco sobres en fila, cada uno con su arte, qué trae y su precio, y un botón **(i)** de información · probabilidades |
-| **Inicio** | tarjeta del jugador (avatar, nivel, barra de XP, chapa de temporada) · banner **JUGAR** con su botón · **ACTIVIDAD DIARIA** (recompensa con RECLAMAR, desafío diario con IR, racha) y cuenta atrás · **NOVEDADES** en carrusel con VER TODO · **TU PROGRESO** (partidas, victorias, mejor racha, rango) con VER ESTADÍSTICAS |
-| **Club** | tira **MI PLANTILLA** con cinco cartas y sus medias y VER PLANTILLA › · filas COLECCIÓN, SETS, RECICLAJE, INTERCAMBIO, cada una con su cuenta |
-| **Desafíos** | SBC · DESAFÍOS (diarios, semanales, especiales) · EVENTOS · **PASE DE TEMPORADA** con nivel y barra · LOGROS |
-| **Perfil** | avatar, nombre, nivel y XP, escudo de rango · fila de estadísticas · HISTORIAL DE PARTIDAS · ESTADÍSTICAS · CARTAS FAVORITAS · AJUSTES · CUENTA · AYUDA |
+| **Tienda** | igual que estaba: COMPRAR / MIS SOBRES, las filas de sobre con su (i) y sus probabilidades |
+| **Inicio** | ficha del jugador · banner **JUGAR** con su botón · **ACTIVIDAD DIARIA** · **NOVEDADES** · **TU PROGRESO** |
+| **Club** | tira **MI PLANTILLA** con cinco cartas solapadas · COLECCIÓN · SETS · RECICLAJE · INTERCAMBIO |
+| **Desafíos** | SBC · DESAFÍOS · EVENTOS · **PASE DE TEMPORADA** · LOGROS |
+| **Perfil** | ficha con cifras · tres grupos de filas · y abajo, con su rótulo, lo que aún no tiene sitio |
 
-Lenguaje visual: paneles negros y carbón, filetes y iconos en oro, malla de octógono de
-fondo, texto en blanco y oro. O sea la paleta medida del logo, y **sin rojo**.
+**NO SE COME NADA, y lo dijo él.** Draft está **dentro de JUGAR** —*"lo de draft está
+dentro de la parte de jugar"*—, junto a PvP, Contra un amigo y Contra la IA. **Aprende y
+Mis redes** no salen en el boceto y quedaron en *"ya veremos dónde lo metemos"*: están
+aparcados al final del Perfil, bajo el rótulo **SIN COLOCAR TODAVÍA**. SBC y Logros se
+fueron a Desafíos; Ajustes dejó de ser un botón del Club y vive en el engranaje y en el
+Perfil.
 
-**Lo que el boceto se lleva por delante de lo que hay hoy** —dicho, no decidido por mí—:
-Draft, Aprende y Mis redes no aparecen en ninguna pantalla; SBC y Logros se van de Inicio y
-Club a Desafíos; Ajustes deja de ser un botón del Club y pasa al engranaje y al Perfil;
-PvP, Contra un amigo y Contra la IA no salen, así que se dan por dentro de JUGAR.
+**La marca PENDIENTE.** El boceto enseña cosas que el juego no tiene: nivel y XP, pase de
+temporada, racha, rango, eventos, novedades, historial, estadísticas, cartas favoritas,
+cuenta y ayuda. Esos bloques **están pintados en su sitio y con su forma**, y llevan una
+chapa `PENDIENTE` en oro. No se inventan números: el que se ve es de verdad —partidas,
+victorias, colección, sets, repetidas, SBC, logros— o no se ve.
 
-**Y lo que el boceto trae y hoy no existe en el juego:** nivel y XP, una segunda moneda
-(gemas), pase de temporada, actividad diaria y racha, novedades, eventos, rango,
-estadísticas e historial, cartas favoritas, cuenta y ayuda.
+**Lo que cambió de lo que antes era intocable, y lo cambió él:**
 
-**Tres cosas del boceto que hay que cerrar con él antes de montar nada:**
+- **La foto de la jaula se fue del fondo.** Ahora es negro con la malla de rombos del
+  boceto, hecha con dos `repeating-linear-gradient` y no con una imagen. El archivo sigue
+  en `juego/arte/fondo.webp` y su herramienta también, por si vuelve a pedirla.
+- **Los paneles son OPACOS.** El alfa de `--tarjeta` existía para dejar ver la jaula entre
+  fila y fila; sin jaula solo dejaba ver el negro de debajo.
+- **El dibujo del logo se fue de la cabecera**: el boceto la enseña con el nombre solo, y
+  con cinco pestañas, dos monedas y el engranaje ya no cabía. Con él se fueron los tres
+  números medidos que existían para alinearlo —el `top:10px`, el margen negativo y el
+  apoyo abajo—. Si vuelve, hay que volver a medirlos.
+- **El JUGAR del banner ya no va a `min(14vw,52px)`.** En el boceto es el título del panel
+  y el botón es el "JUGAR AHORA" de abajo, así que va arriba a la izquierda, con su
+  subtítulo, a `min(9.5vw,36px)` —medido: 22 px de caja alta en un móvil de 295 de ancho—.
+  Y por eso el banner **sí lleva un botón dentro**: es un `div` con `data-nav`, no un
+  botón dentro de otro botón. Hay dos elementos con `data-nav="jugar"` y hacen lo mismo.
+- **Ya no hay rojo en ninguna parte.** `--acc` y `--acc2` siguen llamándose así pero son
+  oro: renombrarlas obligaba a tocar cien sitios que no cambian de sentido.
 
-1. Los sobres del dibujo se llaman COMÚN, RARE, EPIC, LEGENDARY y ULTIMATE, y **sus textos
-   todavía hablan de plata y de oro** ("1 plata o superior", "1 oro o superior"), que es lo
-   que se acaba de eliminar. Hay que reescribirlos con los escalones nuevos.
-2. En `originales/sobres-v2/` hay **seis** artes de sobre y el boceto enseña **cinco**.
-3. La colección del dibujo pone 198/402, que es el número de HOY. Con la migración de
-   rarezas son **686**.
+**Las medidas salen de medir el boceto, no de ajustar a ojo.** El móvil del dibujo son
+295x706 px; sobre eso: cabecera 5,2% del alto, barra de abajo 7,9%, filas del Club 10,6%,
+filas de Desafíos 14–17%, filas del Perfil 8,6% las de arriba y 6,8% las de abajo, y en
+Inicio ficha 81 px, JUGAR 194, actividad 144, novedades 98 y progreso 52 sobre 598 de alto
+útil —de ahí los `flex-grow` 2 / 1,47 / 1—.
+
+**Dos formas de fila, y son las dos del boceto.** Con emblema (Club y Desafíos): cada fila
+es su propio panel con filete de oro, texto a la izquierda y el icono grande a la derecha,
+sin galón. En grupo (Perfil): varias filas dentro de UN panel, separadas por una raya, con
+el icono pequeño delante y el galón detrás. Un grupo pesa lo que tiene (`--n`), o el de dos
+filas quedaba con filas del doble de altas.
+
+**Cómo se mira.** `node herramientas/ver-pantallas.mjs [carpeta]` saca una foto de las
+cinco pantallas a 390x844 y con el mínimo de letra del WebView puesto, y avisa si alguna
+desborda.
+
+**Lo que el boceto trae y sigue sin existir:** nivel y XP, gemas de verdad (hoy son las
+fichas), pase de temporada, actividad diaria con reloj y racha, novedades, eventos, rango,
+estadísticas e historial, cartas favoritas, cuenta y ayuda. Y los cinco sobres nuevos: la
+tienda sigue con básico, plata y oro.
 
 **Lo que queda de lo anterior, y está esperando a que él lo diga:**
 
