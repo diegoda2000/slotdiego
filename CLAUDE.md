@@ -146,10 +146,47 @@ medida, es esto:
 **Ya no hay rojo.** La paleta de ahora gira sobre `--acc:#d40c1a`, así que el rediseño de
 la interfaz es también un cambio de color de arriba abajo. Sin empezar.
 
-**LO ÚNICO QUE BLOQUEA AHORA MISMO: no está definida la interfaz nueva.** Todo lo demás
-está decidido o hecho. Se le ha pedido un boceto de la pantalla de inicio —con la carta
-funcionó a la primera— o, si lo prefiere hablado: qué pantallas hay y cuáles desaparecen,
-qué es lo primero que ve el jugador y qué se queda fuera de lo que hay hoy.
+**YA HAY BOCETO DE LA INTERFAZ.** Lo pasó él entero, cinco pantallas y una leyenda, y está
+en `originales/interfaz-v2/boceto-pantallas.png`. **Sin empezar a montar: falta que dé la
+orden.**
+
+**Cinco pestañas abajo, e INICIO VA EN EL MEDIO.** Lo corrigió antes de pasar el dibujo,
+donde sale el segundo; manda la corrección:
+
+    TIENDA · CLUB · INICIO · DESAFÍOS · PERFIL
+
+**Cabecera en todas las pantallas:** el P4P.CG a la izquierda, dos monedas —oro 125.6K y
+gemas 2.450— y el **engranaje de AJUSTES arriba a la derecha, alcanzable desde cualquier
+pantalla**.
+
+| pantalla | qué lleva |
+|---|---|
+| **Tienda** | pestañas COMPRAR / MIS SOBRES · cinco sobres en fila, cada uno con su arte, qué trae y su precio, y un botón **(i)** de información · probabilidades |
+| **Inicio** | tarjeta del jugador (avatar, nivel, barra de XP, chapa de temporada) · banner **JUGAR** con su botón · **ACTIVIDAD DIARIA** (recompensa con RECLAMAR, desafío diario con IR, racha) y cuenta atrás · **NOVEDADES** en carrusel con VER TODO · **TU PROGRESO** (partidas, victorias, mejor racha, rango) con VER ESTADÍSTICAS |
+| **Club** | tira **MI PLANTILLA** con cinco cartas y sus medias y VER PLANTILLA › · filas COLECCIÓN, SETS, RECICLAJE, INTERCAMBIO, cada una con su cuenta |
+| **Desafíos** | SBC · DESAFÍOS (diarios, semanales, especiales) · EVENTOS · **PASE DE TEMPORADA** con nivel y barra · LOGROS |
+| **Perfil** | avatar, nombre, nivel y XP, escudo de rango · fila de estadísticas · HISTORIAL DE PARTIDAS · ESTADÍSTICAS · CARTAS FAVORITAS · AJUSTES · CUENTA · AYUDA |
+
+Lenguaje visual: paneles negros y carbón, filetes y iconos en oro, malla de octógono de
+fondo, texto en blanco y oro. O sea la paleta medida del logo, y **sin rojo**.
+
+**Lo que el boceto se lleva por delante de lo que hay hoy** —dicho, no decidido por mí—:
+Draft, Aprende y Mis redes no aparecen en ninguna pantalla; SBC y Logros se van de Inicio y
+Club a Desafíos; Ajustes deja de ser un botón del Club y pasa al engranaje y al Perfil;
+PvP, Contra un amigo y Contra la IA no salen, así que se dan por dentro de JUGAR.
+
+**Y lo que el boceto trae y hoy no existe en el juego:** nivel y XP, una segunda moneda
+(gemas), pase de temporada, actividad diaria y racha, novedades, eventos, rango,
+estadísticas e historial, cartas favoritas, cuenta y ayuda.
+
+**Tres cosas del boceto que hay que cerrar con él antes de montar nada:**
+
+1. Los sobres del dibujo se llaman COMÚN, RARE, EPIC, LEGENDARY y ULTIMATE, y **sus textos
+   todavía hablan de plata y de oro** ("1 plata o superior", "1 oro o superior"), que es lo
+   que se acaba de eliminar. Hay que reescribirlos con los escalones nuevos.
+2. En `originales/sobres-v2/` hay **seis** artes de sobre y el boceto enseña **cinco**.
+3. La colección del dibujo pone 198/402, que es el número de HOY. Con la migración de
+   rarezas son **686**.
 
 **Lo que queda de lo anterior, y está esperando a que él lo diga:**
 
