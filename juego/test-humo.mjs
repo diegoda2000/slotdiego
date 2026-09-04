@@ -153,6 +153,7 @@ const sobres = await page.evaluate(() => {
     const cs = r.map(i => PORID[i.cid]);
     porTipo[t] = {
       n: r.length,
+      debe: TIPOS_SOBRE[t].cartas,
       oros: cs.filter(c => c.rareza === 'oro').length,
       repetidasDentro: r.length - new Set(r.map(i => i.cid)).size,
       // ¿salen ordenadas de mejor a peor?
@@ -162,10 +163,14 @@ const sobres = await page.evaluate(() => {
   return { antes, despues: S.coleccion.length, porTipo };
 });
 const tipos = Object.keys(sobres.porTipo);
-comprobar(sobres.despues === sobres.antes + tipos.length * 9,
+/* CADA SOBRE TRAE LAS SUYAS, no nueve todos. Lo pone el boceto: 5, 6, 8, 10 y 10, y va
+   escrito en TIPOS_SOBRE.cartas, que es contra lo que se comprueba. */
+const sumaCartas = tipos.reduce((a, t) => a + sobres.porTipo[t].debe, 0);
+comprobar(sobres.despues === sobres.antes + sumaCartas,
   'las cartas del sobre entran en la colección');
-comprobar(Object.values(sobres.porTipo).every(x => x.n === 9),
-  'todos los sobres reparten 9 cartas: ' + tipos.map(t => `${t} ${sobres.porTipo[t].n}`).join(' · '));
+comprobar(Object.values(sobres.porTipo).every(x => x.n === x.debe),
+  'cada sobre reparte las cartas que anuncia: ' + tipos.map(t =>
+    `${t} ${sobres.porTipo[t].n}/${sobres.porTipo[t].debe}`).join(' · '));
 comprobar(Object.values(sobres.porTipo).every(x => x.repetidasDentro === 0),
   'y ninguna carta se repite dentro del mismo sobre');
 comprobar(Object.values(sobres.porTipo).every(x => x.ordenadas),
@@ -188,13 +193,13 @@ const reparto = await page.evaluate(() => {
     const esperadosOros = Object.entries(T.oros)
       .reduce((a, [n, p]) => a + (+n) * p, 0) / Object.values(T.oros).reduce((a, b) => a + b, 0);
     const totNiv = Object.values(T.nivel).reduce((a, b) => a + b, 0);
-    out[t] = { huecos: huecos / N, oros: oros / N, esperadosOros,
+    out[t] = { debe: T.cartas, huecos: huecos / N, oros: oros / N, esperadosOros,
       coronas: coronas / N, esperadasCoronas: (oros / N) * T.nivel.corona / totNiv };
   }
   return out;
 });
 for (const [t, r] of Object.entries(reparto)) {
-  comprobar(Math.abs(r.huecos - 9) < 0.001, `${t}: siempre 9 huecos`);
+  comprobar(Math.abs(r.huecos - r.debe) < 0.001, `${t}: siempre ${r.debe} huecos`);
   comprobar(Math.abs(r.oros - r.esperadosOros) < 0.12,
     `${t}: ${r.oros.toFixed(2)} oros por sobre (declarado ${r.esperadosOros.toFixed(2)})`);
   comprobar(Math.abs(r.coronas - r.esperadasCoronas) < 0.02,
@@ -233,14 +238,20 @@ const oficio = await page.evaluate(() => {
   }
   return out;
 });
-comprobar(oficio.basico.oros >= 4,
-  `el básico da oros de sobra para montarse un equipo (${oficio.basico.oros.toFixed(2)} por sobre)`);
-comprobar(oficio.exacto.basico <= 1,
-  `pero un oro alto es casi imposible, el 1% o menos que manda el GDD (${oficio.exacto.basico.toFixed(2)}% de los sobres)`);
-comprobar(Math.abs(oficio.basico.pctAlto - oficio.exacto.basico) < 0.25,
-  `y las tiradas dan lo que dice la tabla (${oficio.basico.pctAlto.toFixed(2)}% medido)`);
-comprobar(oficio.plata.platas >= 6,
-  `el de plata es sobre todo platas, que es para lo que se compra (${oficio.plata.platas.toFixed(2)} por sobre)`);
+/* LOS CINCO SOBRES SON UNA ESCALERA, no tres sobres con oficios distintos. Antes el
+   básico era el gratis para montarse un equipo, el de plata cerraba la colección de platas
+   y el de oro era el caro; ahora van de común a ultimate y cada uno tiene que ser mejor
+   que el de debajo, que es lo que dice el boceto con sus precios de 1.000 a 12.500. */
+const ESCALERA = ['comun', 'rare', 'epic', 'legendary', 'ultimate'];
+comprobar(oficio.comun.oros >= 1.5,
+  `el común da oros para ir montando el equipo (${oficio.comun.oros.toFixed(2)} por sobre)`);
+comprobar(oficio.exacto.comun <= 1,
+  `pero un oro alto es casi imposible, el 1% o menos que manda el GDD (${oficio.exacto.comun.toFixed(2)}% de los sobres)`);
+comprobar(Math.abs(oficio.comun.pctAlto - oficio.exacto.comun) < 0.25,
+  `y las tiradas dan lo que dice la tabla (${oficio.comun.pctAlto.toFixed(2)}% medido)`);
+const subeOros = ESCALERA.every((k, i) => i === 0 || oficio[k].oros > oficio[ESCALERA[i - 1]].oros);
+comprobar(subeOros,
+  `y cada escalón trae más oros que el de debajo (${ESCALERA.map(k => oficio[k].oros.toFixed(1)).join(' · ')})`);
 
 /* Lo que define a cada sobre, escrito para que no se deshaga sin querer. */
 const perfil = await page.evaluate(() => {
@@ -262,20 +273,22 @@ const perfil = await page.evaluate(() => {
   }
   return out;
 });
-comprobar(Math.abs(perfil.basico.pctOro - 50) < 2,
-  `el básico reparte mitad y mitad oros y platas (${perfil.basico.pctOro.toFixed(1)}% de oro)`);
-comprobar(perfil.basico.pctRank < 25,
-  `y un rankeado es raro: uno cada ${Math.round(100 / perfil.basico.pctRank)} sobres`);
-comprobar(perfil.basico.deLosRank1215 > 90,
-  `cuando cae uno, casi siempre es de los últimos puestos (${perfil.basico.deLosRank1215.toFixed(1)}% son del 12-15)`);
-comprobar(perfil.plata.pctPlataAlta < 15,
-  `el de plata reparte platas bajas, y altas rara vez (${perfil.plata.pctPlataAlta.toFixed(1)}% altas)`);
+comprobar(perfil.comun.pctOro > 30 && perfil.comun.pctOro < 55,
+  `el común reparte más plata que oro, sin llegar a ser sólo plata (${perfil.comun.pctOro.toFixed(1)}% de oro)`);
+comprobar(perfil.comun.pctRank < 25,
+  `y un rankeado es raro: uno cada ${Math.round(100 / perfil.comun.pctRank)} sobres`);
+comprobar(perfil.comun.deLosRank1215 > 90,
+  `cuando cae uno, casi siempre es de los últimos puestos (${perfil.comun.deLosRank1215.toFixed(1)}% son del 12-15)`);
 const bandas = await page.evaluate(() =>
   ({ alta: poolNivel('plataAlta').length, baja: poolNivel('plataBaja').length }));
 comprobar(bandas.alta > 20 && bandas.baja > 20,
   `y las dos bandas de plata tienen fondo de sobra (${bandas.alta} altas · ${bandas.baja} bajas)`);
-comprobar(oficio.exacto.basico < oficio.exacto.plata && oficio.exacto.plata < oficio.exacto.oro,
-  `y la carta alta sube con el sobre (${oficio.exacto.basico.toFixed(2)}% · ${oficio.exacto.plata.toFixed(2)}% · ${oficio.exacto.oro.toFixed(2)}%)`);
+const subeAlta = ESCALERA.every((k, i) => i === 0 || oficio.exacto[k] > oficio.exacto[ESCALERA[i - 1]]);
+comprobar(subeAlta,
+  `y la carta alta sube en cada escalón (${ESCALERA.map(k => oficio.exacto[k].toFixed(2) + '%').join(' · ')})`);
+const subePlataAlta = ESCALERA.every((k, i) => i === 0 || perfil[k].pctPlataAlta >= perfil[ESCALERA[i - 1]].pctPlataAlta);
+comprobar(subePlataAlta,
+  `y hasta las platas son mejores arriba (${ESCALERA.map(k => perfil[k].pctPlataAlta.toFixed(0) + '%').join(' · ')})`);
 
 /* ── La Tienda y el flujo de apertura ──────────────────────────────────
    Un solo camino para los tres sobres: fila → pantalla del sobre → toque encima del
@@ -296,9 +309,13 @@ const tienda = await page.evaluate(() => {
     acciones: precios.map(b => b.dataset.a),
     // el precio es un BOTÓN y la tarjeta no: tocar el nombre no compra
     precioEsBoton: precios.every(b => b.tagName === 'BUTTON'),
-    gratis: tarjetas.find(t => t.querySelector('.precio').dataset.t === 'basico')
-      .querySelector('.precio').textContent.trim(),
     precios: precios.map(b => b.textContent.trim()),
+    /* EL SOBRE GRATIS YA NO ESTÁ EN LA TIENDA: en el boceto la tienda son cinco sobres de
+       pago y el gratis se reclama en la ACTIVIDAD DIARIA de Inicio. */
+    gratisEnInicio: (() => { ir('inicio');
+      const b = document.querySelector('[data-a="versobre"][data-t="comun"]');
+      const txt = b ? b.textContent.trim() : '';
+      ir('tienda'); return txt; })(),
     // "Mis sobres" vacío lo dice y enlaza a Comprar
     vacio: (() => { const antes = S.sobres; S.sobres = []; tmp.sub = 'mios'; render();
       const t = document.querySelector('#app').textContent;
@@ -307,14 +324,16 @@ const tienda = await page.evaluate(() => {
       return { dice: /no tienes ning/i.test(t), enlace }; })(),
   };
 });
-comprobar(tienda.orden.join(',') === 'basico,plata,oro',
-  `las filas van básico, plata y oro (${tienda.orden.join(', ')})`);
+comprobar(tienda.orden.join(',') === 'comun,rare,epic,legendary,ultimate',
+  `las cinco filas del boceto, de barata a cara (${tienda.orden.join(', ')})`);
 comprobar(tienda.precioEsBoton,
   'la tarjeta y su precio hacen lo mismo, para no tener que buscar dónde tocar');
-comprobar(tienda.acciones.join(',') === 'versobre,comprar,comprar',
-  `el gratis va al sobre y los de pago se compran (${tienda.acciones.join(', ')})`);
-comprobar(/gratis/i.test(tienda.gratis),
-  `el gratis lleva su etiqueta donde los otros llevan su precio (${tienda.precios.join(' · ')})`);
+comprobar(tienda.acciones.every(a => a === 'comprar'),
+  `los cinco se compran: en la tienda ya no hay nada gratis (${tienda.acciones.join(', ')})`);
+comprobar(/reclamar/i.test(tienda.gratisEnInicio),
+  `el sobre gratis se reclama en Inicio, no en la tienda ("${tienda.gratisEnInicio}")`);
+comprobar(tienda.precios.every(p => /\d\.\d{3}/.test(p)),
+  `y los precios van con su punto de millar (${tienda.precios.join(' · ')})`);
 comprobar(tienda.vacio.dice && tienda.vacio.enlace,
   'sin sobres guardados, "Mis sobres" lo dice y enlaza a Comprar');
 
@@ -323,14 +342,14 @@ comprobar(tienda.vacio.dice && tienda.vacio.enlace,
    las quiere con sitio para leerlas. */
 const laI = await page.evaluate(() => {
   S.divisa = 1000; S.sobres = []; ir('tienda');
-  const fila = document.querySelector('.sobre-fila:has(.precio[data-t="oro"]) .fila');
+  const fila = document.querySelector('.sobre-fila:has(.precio[data-t="epic"]) .fila');
   const enLaFila = /%/.test(fila.textContent);
   const i = document.querySelectorAll('.info').length;
   // la (i) está FUERA de la fila, para que tocarla no dispare también la fila
   const dentroDeLaFila = fila.querySelectorAll('.info').length;
   // y cada sobre lleva su arte de verdad, no un emoji
   window.__arte = [...document.querySelectorAll('.sobre-art img')].map(i => i.getAttribute('src'));
-  document.querySelector('.info[data-t="oro"]').click();
+  document.querySelector('.info[data-t="epic"]').click();
   const capa = document.querySelector('.ov, #ov, .overlay') || document.body;
   const texto = capa.textContent;
   const abrio = /por carta de oro/i.test(texto);
@@ -339,8 +358,8 @@ const laI = await page.evaluate(() => {
   return { enLaFila, i, dentroDeLaFila, abrio, sigueEnTienda };
 });
 comprobar(!laI.enLaFila, 'la fila del sobre no lleva porcentajes encima');
-comprobar(laI.i === 3 && laI.dentroDeLaFila === 0,
-  `cada sobre lleva su (i) en la esquina, fuera de la fila (${laI.i} de 3)`);
+comprobar(laI.i === 5 && laI.dentroDeLaFila === 0,
+  `cada sobre lleva su (i) en la esquina, fuera de la fila (${laI.i} de 5)`);
 comprobar(laI.abrio, 'y tocarla saca las probabilidades');
 comprobar(laI.sigueEnTienda, 'sin salir de la tienda ni comprar nada');
 
@@ -350,8 +369,8 @@ comprobar(laI.sigueEnTienda, 'sin salir de la tienda ni comprar nada');
    compás de 850 ms que existía para enseñarlos. Lo que queda es que el toque bloquea el
    sobre y que en menos de medio segundo ya se está en el walkout. */
 const flor = await page.evaluate(async () => {
-  S.divisa = 9000; S.sobres = [{ tipo: 'oro' }]; ir('tienda'); tmp.sub = 'mios'; render();
-  document.querySelector('[data-a="versobre"][data-t="oro"]').click();
+  S.divisa = 9000; S.sobres = [{ tipo: 'epic' }]; ir('tienda'); tmp.sub = 'mios'; render();
+  document.querySelector('[data-a="versobre"][data-t="epic"]').click();
   const esc = document.querySelector('#escena');
   const caja = document.querySelector('.sobre-toque');
   const fondoPuesto = esc.classList.contains('puesta');
@@ -371,7 +390,7 @@ comprobar(flor.trasMedioSegundo === 'apertura',
   `y en medio segundo ya se está en el walkout (${flor.trasMedioSegundo})`);
 
 const arte = await page.evaluate(() => window.__arte || []);
-comprobar(arte.length === 3 && arte.every(a => /^sobres\/.+\.webp$/.test(a)),
+comprobar(arte.length === 5 && arte.every(a => /^sobres\/.+\.webp$/.test(a)),
   `cada sobre lleva su arte propio (${arte.join(', ')})`);
 
 /* Las secciones tienen que LLENAR la pantalla. Apiladas arriba dejaban media pantalla
@@ -416,15 +435,15 @@ comprobar(!inicioLimpio.margenes, 'ni la tabla de márgenes, que vive en Reglas'
    cobra nada: el sobre ya es tuyo cuando llegas, y lo único que se hace ahí es abrirlo. */
 const compra = await page.evaluate(() => {
   window.__antes = { coleccion: S.coleccion.slice(), plantilla: { ...S.plantilla } };
-  S.divisa = 2000; S.sobres = []; S.gratis = {}; S.coleccion = [];
+  S.divisa = 3000; S.sobres = []; S.gratis = {}; S.coleccion = [];
   ir('tienda');
   const antes = { div: S.divisa, sobres: S.sobres.length };
-  document.querySelector('.precio[data-a="comprar"][data-t="oro"]').click();
+  document.querySelector('.precio[data-a="comprar"][data-t="rare"]').click();
   document.querySelector('[data-a="confirmarcompra"]').click();   // pagar pide un sí
   return { antes, tras: { div: S.divisa, sobres: S.sobres.length, sub: tmp.sub, vista },
            cartas: S.coleccion.length };
 });
-comprobar(compra.tras.div === 1400 && compra.tras.sobres === 1,
+comprobar(compra.tras.div === 1000 && compra.tras.sobres === 1,
   `la fila de Comprar paga y guarda el sobre (${compra.antes.div} → ${compra.tras.div})`);
 comprobar(compra.cartas === 0 && compra.tras.vista === 'tienda',
   'y no abre nada: comprar y abrir son dos decisiones distintas');
@@ -433,10 +452,11 @@ comprobar(compra.tras.sub === 'mios',
 
 const abrir = await page.evaluate(async () => {
   const guardado = { coleccion: S.coleccion.slice(), plantilla: { ...S.plantilla } };
-  document.querySelector('[data-a="versobre"][data-t="oro"]').click();
+  document.querySelector('[data-a="versobre"][data-t="rare"]').click();
   const enSobre = { vista, div: S.divisa, sobres: S.sobres.length };
-  // en esta pantalla no hay nada que pagar, así que no se menciona ningún precio
-  const hablaDePrecio = /🪙/.test(document.querySelector('#app').textContent);
+  /* En esta pantalla no hay nada que pagar, así que no se enseña ningún precio: ni la
+     chapa ni la moneda dibujada que la acompaña. */
+  const hablaDePrecio = !!document.querySelector('#app .precio, #app .mon');
   document.querySelector('[data-a="abrirsobre"]').click();
   await new Promise(r => setTimeout(r, 950));
   const tras = { vista, div: S.divisa, sobres: S.sobres.length };
@@ -444,10 +464,10 @@ const abrir = await page.evaluate(async () => {
   S.coleccion = guardado.coleccion; S.plantilla = guardado.plantilla;
   return { enSobre, hablaDePrecio, tras };
 });
-comprobar(abrir.enSobre.vista === 'sobre' && abrir.enSobre.div === 1400 && abrir.enSobre.sobres === 1,
+comprobar(abrir.enSobre.vista === 'sobre' && abrir.enSobre.div === 1000 && abrir.enSobre.sobres === 1,
   'entrar a la pantalla del sobre no cobra ni consume nada');
 comprobar(!abrir.hablaDePrecio, 'y ahí no se habla de precio: no hay nada que pagar');
-comprobar(abrir.tras.div === 1400 && abrir.tras.sobres === 0,
+comprobar(abrir.tras.div === 1000 && abrir.tras.sobres === 0,
   `abrir gasta el sobre y NO el dinero (${abrir.tras.div} monedas intactas)`);
 comprobar(abrir.tras.vista === 'apertura',
   'y tras encenderse las florituras arranca el walkout');
@@ -458,50 +478,50 @@ comprobar(abrir.tras.vista === 'apertura',
    un trámite delante de algo que no tiene consecuencia. */
 const confirma = await page.evaluate(() => {
   const hayOv = () => !!document.querySelector('[data-a="confirmarcompra"]');
-  S.divisa = 2000; S.sobres = []; S.gratis = {}; S.coleccion = []; ir('tienda');
-  document.querySelector('.fila[data-a="comprar"][data-t="oro"]').click();
+  S.divisa = 3000; S.sobres = []; S.gratis = {}; S.coleccion = []; ir('tienda');
+  document.querySelector('.fila[data-a="comprar"][data-t="rare"]').click();
   const tarjeta = { pregunta: hayOv(), div: S.divisa, sobres: S.sobres.length };
   document.querySelector('[data-a="cerrarov"]').click();
   const cancelado = { div: S.divisa, sobres: S.sobres.length };
-  document.querySelector('.precio[data-a="comprar"][data-t="oro"]').click();
+  document.querySelector('.precio[data-a="comprar"][data-t="rare"]').click();
   const desdeElPrecio = hayOv();
   document.querySelector('[data-a="confirmarcompra"]').click();
   const comprado = { div: S.divisa, sobres: S.sobres.length, sub: tmp.sub };
-  ir('tienda');
-  document.querySelector('.fila[data-t="basico"]').click();
+  ir('inicio');
+  document.querySelector('[data-a="versobre"][data-t="comun"]').click();
   const gratis = { vista, pregunta: hayOv() };
   ir('tienda'); tmp.sub = 'mios'; render();
-  document.querySelector('.fila[data-a="versobre"][data-t="oro"]').click();
+  document.querySelector('.fila[data-a="versobre"][data-t="rare"]').click();
   const abrir = { vista, pregunta: hayOv() };
   return { tarjeta, cancelado, desdeElPrecio, comprado, gratis, abrir };
 });
-comprobar(confirma.tarjeta.pregunta && confirma.tarjeta.div === 2000 && confirma.tarjeta.sobres === 0,
+comprobar(confirma.tarjeta.pregunta && confirma.tarjeta.div === 3000 && confirma.tarjeta.sobres === 0,
   'tocar la tarjeta de un sobre de pago pregunta antes, y no cobra nada todavía');
-comprobar(confirma.cancelado.div === 2000 && confirma.cancelado.sobres === 0,
+comprobar(confirma.cancelado.div === 3000 && confirma.cancelado.sobres === 0,
   'cancelar no cobra ni deja sobre');
 comprobar(confirma.desdeElPrecio, 'y el precio hace exactamente lo mismo que la tarjeta');
-comprobar(confirma.comprado.div === 1400 && confirma.comprado.sobres === 1,
+comprobar(confirma.comprado.div === 1000 && confirma.comprado.sobres === 1,
   `confirmando sí se cobra y aparece el sobre (${confirma.comprado.div} monedas)`);
 comprobar(confirma.comprado.sub === 'mios', 'y salta a "Mis sobres", que es donde ha aparecido');
 comprobar(!confirma.gratis.pregunta && confirma.gratis.vista === 'sobre',
-  'el gratis no pregunta: no hay nada que confirmar');
+  'el gratis de Inicio no pregunta: no hay nada que confirmar');
 comprobar(!confirma.abrir.pregunta && confirma.abrir.vista === 'sobre',
   'y abrir uno del inventario tampoco');
 
 /* Sin fichas: la fila se lee entera, no responde y no da error. */
 const pobre = await page.evaluate(() => {
   S.divisa = 0; S.sobres = []; S.gratis = { g1: Date.now() }; ir('tienda');
-  const f = document.querySelector('.precio[data-t="oro"]');
+  const f = document.querySelector('.precio[data-t="ultimate"]');
   const fuera = f.closest('.sobre-fila');
   const antes = { div: S.divisa, cartas: S.coleccion.length, vista };
   f.click();
   return { apagada: fuera.classList.contains('apagada'), desactivada: f.disabled,
     precio: f.textContent.trim(),
-    nombre: /oro/i.test(fuera.textContent),
+    nombre: /ultimate/i.test(fuera.textContent),
     sigueIgual: vista === antes.vista && S.divisa === antes.div && S.coleccion.length === antes.cartas };
 });
 comprobar(pobre.apagada && pobre.desactivada, 'sin fichas, la fila sale apagada y no responde');
-comprobar(pobre.precio.includes('600') && pobre.nombre,
+comprobar(pobre.precio.includes('12.500') && pobre.nombre,
   `y se sigue leyendo entera, con su precio (${pobre.precio})`);
 comprobar(pobre.sigueIgual, 'y tocarla no hace nada ni da ningún error');
 
@@ -513,8 +533,8 @@ comprobar(!(await page.evaluate(() => document.body.innerHTML.includes('abrirtod
    que no cuesta nada y que se reclama justamente para abrirlo ya. */
 const gratis = await page.evaluate(async () => {
   S.gratis = {}; S.sobres = []; S.divisa = 0; S.coleccion = [];
-  ir('tienda');
-  document.querySelector('[data-a="versobre"][data-t="basico"]').click();
+  ir('inicio');
+  document.querySelector('[data-a="versobre"][data-t="comun"]').click();
   const enSobre = { vista, guardados: S.sobres.length };
   document.querySelector('[data-a="abrirsobre"]').click();
   await new Promise(r => setTimeout(r, 950));
@@ -523,8 +543,9 @@ const gratis = await page.evaluate(async () => {
 });
 comprobar(gratis.enSobre.vista === 'sobre' && gratis.enSobre.guardados === 0,
   'el gratis va derecho al sobre en grande, sin pasar por el inventario');
-comprobar(gratis.vista === 'apertura' && gratis.cartas === 9 && gratis.guardados === 0,
-  'y el toque lo abre ahí mismo, entregando sus 9 cartas');
+const nComun = await page.evaluate(() => TIPOS_SOBRE.comun.cartas);
+comprobar(gratis.vista === 'apertura' && gratis.cartas === nComun && gratis.guardados === 0,
+  `y el toque lo abre ahí mismo, entregando sus ${nComun} cartas`);
 
 /* La revelación tiene que ir POR PARTES también aquí. El walkout arranca después del
    encendido de las florituras, y ese retraso no puede comerse los pasos.
@@ -534,8 +555,8 @@ comprobar(gratis.vista === 'apertura' && gratis.cartas === 9 && gratis.guardados
    verdad oculta —una clase en su sitio con el CSS mal puesto dejaría la cara a la vista
    desde el primer fotograma, que es justo el fallo que se está tapando aquí—. */
 const porPartes = await page.evaluate(async () => {
-  S.gratis = {}; S.sobres = []; S.coleccion = []; ir('tienda');
-  document.querySelector('[data-a="versobre"][data-t="basico"]').click();
+  S.gratis = {}; S.sobres = []; S.coleccion = []; ir('inicio');
+  document.querySelector('[data-a="versobre"][data-t="comun"]').click();
   document.querySelector('[data-a="abrirsobre"]').click();
   await new Promise(r => setTimeout(r, 900));          // el encendido
   const t0 = performance.now(), visto = {};
@@ -571,7 +592,7 @@ const laFoto = await page.evaluate(async () => {
   if (!c) return { sinNadie: true };
   const it = { iid: 'iprueba', cid: c.id };
   S.coleccion.push(it);
-  abrirTanda([it], 'basico');
+  abrirTanda([it], 'comun');
   const t0 = performance.now(), orden = [];
   let caraAntes = false;
   const mira = () => { const k = document.querySelector('.apertura-carta .carta'); if (!k) return;
@@ -613,43 +634,45 @@ comprobar(conAnuncio.cuando && conAnuncio.cuando.length === conAnuncio.pasos.len
 /* Este bloque abre y compra sobres a mano, así que deja la colección y la plantilla en
    un estado cualquiera. Se rehacen antes de seguir: lo que viene detrás cuenta con una
    plantilla completa, y fallaría por algo que no tiene nada que ver con ello. */
-await page.evaluate(() => { S = estadoNuevo(); for (let i = 0; i < 4; i++) abrirSobre('oro');
+await page.evaluate(() => { S = estadoNuevo(); for (let i = 0; i < 4; i++) abrirSobre('epic');
   autoPlantilla(S, true); guardar(); ir('inicio'); });
 
-/* ── 2c. Sobre básico ilimitado ───────────────────────────────────────── */
-console.log('\n2c. Sobre básico ilimitado');
+/* ── 2c. Sobre gratis ilimitado ───────────────────────────────────────── */
+console.log('\n2c. Sobre gratis ilimitado');
 const ilim = await page.evaluate(() => {
-  S.gratis = {}; S.sobres = []; ir('tienda');
+  S.gratis = {}; S.sobres = []; ir('inicio');
   const g = GRATIS.find(x => x.espera === 0);
   let cartas = 0;
   for (let i = 0; i < 5; i++) {
     if (!listoGratis(g)) return { fallo: 'dejó de estar disponible en la vuelta ' + i };
     cartas += abrirSobre(g.tipo).length;
   }
-  return { fallo: null, cartas, guardados: S.sobres.length };
+  return { fallo: null, cartas, guardados: S.sobres.length, debe: TIPOS_SOBRE[g.tipo].cartas * 5 };
 });
-comprobar(!ilim.fallo, 'el básico sigue disponible por muchas veces que se abra');
-comprobar(ilim.cartas === 45, 'cinco aperturas seguidas dan 45 cartas');
+comprobar(!ilim.fallo, 'el sobre gratis sigue disponible por muchas veces que se abra');
+comprobar(ilim.cartas === ilim.debe, `cinco aperturas seguidas dan ${ilim.debe} cartas`);
 comprobar(ilim.guardados === 0, 'y ninguna se queda guardada sin abrir');
 comprobar(await page.evaluate(() => nGratisListos() <= 2),
   'el ilimitado no infla el aviso del menú');
 
 // La distribución se mide sobre la salida REAL, abriendo sobres de verdad: un fallo en
 // el reparto no se ve leyendo la tabla de probabilidades.
-console.log('\n2c-bis. Distribución real de 2.000 sobres básicos');
+console.log('\n2c-bis. Distribución real de 2.000 sobres comunes');
 const dist = await page.evaluate(() => {
   const cuenta = {}; let n = 0;
   const guardada = S.coleccion.slice();
   for (let i = 0; i < 2000; i++) {
-    for (const it of abrirSobre('basico')) {
+    for (const it of abrirSobre('comun')) {
       const e = PORID[it.cid].estatus;
       cuenta[e] = (cuenta[e] || 0) + 1; n++;
     }
     S.coleccion = guardada.slice();   // sin acumular 18.000 cartas de prueba
   }
   const p = k => (cuenta[k] || 0) / n;
+  const T = TIPOS_SOBRE.comun, totO = Object.values(T.oros).reduce((a, b) => a + b, 0);
+  const mediaOros = Object.entries(T.oros).reduce((a, [k, w]) => a + (+k) * w, 0) / totO;
   return { n, cuenta, corona: p('campeon') + p('top5'), plata: p('plata'),
-    oro: 1 - p('plata'),
+    oro: 1 - p('plata'), cartas: T.cartas, esperado: mediaOros / T.cartas,
     // los nombres viajan con el resultado: dentro del navegador sí existen
     orden: ORDEN_ESTATUS.map(e => [e, EST[e].n]) };
 });
@@ -657,14 +680,18 @@ for (const [e, nombre] of dist.orden)
   console.log(`     ${nombre.padEnd(11)} ${((dist.cuenta[e] || 0) / dist.n * 100).toFixed(2)}%`);
 comprobar(dist.corona <= 0.005,
   `campeón o top 5 por debajo del 0,5% de las cartas (${(dist.corona * 100).toFixed(3)}%)`);
-comprobar(Math.abs(dist.oro - 4.5 / 9) < 0.03,
-  `los oros salen al ritmo declarado, mitad y mitad (${(dist.oro * 9).toFixed(2)} de 9)`);
+/* Lo que se comprueba es que el ritmo REAL sea el DECLARADO, sea cual sea: el número sale
+   de la propia tabla del sobre, no escrito a mano, para que no haya que tocar la prueba
+   cada vez que se retoca el reparto. */
+comprobar(Math.abs(dist.oro - dist.esperado) < 0.04,
+  `los oros salen al ritmo declarado (${(dist.oro * dist.cartas).toFixed(2)} de ${dist.cartas}, declarados ${(dist.esperado * dist.cartas).toFixed(2)})`);
 comprobar(dist.plata > 0.2, `y el resto son platas (${(dist.plata * 100).toFixed(1)}%)`);
 
 // La escalera de calidad tiene que subir de un sobre al siguiente.
-const escalera = await page.evaluate(() => ['basico', 'plata', 'oro'].map(k => pctCorona(k)));
-comprobar(escalera[2] > escalera[1] && escalera[2] > escalera[0],
-  `el sobre de oro es el que más campeones da: ${escalera.map(v => v.toFixed(2)).join('% · ')}%`);
+const escalera = await page.evaluate(() =>
+  ['comun', 'rare', 'epic', 'legendary', 'ultimate'].map(k => pctCorona(k)));
+comprobar(escalera.every((v, i) => i === 0 || v > escalera[i - 1]),
+  `los campeones suben en cada escalón: ${escalera.map(v => v.toFixed(2)).join('% · ')}%`);
 
 /* ── 2d. Amigos por código ────────────────────────────────────────────── */
 /* El código de plantilla ya no existe: era un texto que había que copiar, pegar y

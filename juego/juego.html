@@ -190,16 +190,33 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 #top .engranaje .ico{width:24px;height:24px;stroke-width:2}
 #top .engranaje:active{transform:scale(.88)}
 
-/* Sub-pestañas dentro de una sección. Se apoyan en la misma fila, sin caja: una barra
-   más sería otra franja de alto comida a las cartas. */
-/* Dos botones a mitad y mitad, como en el diseño: el activo con su borde y su texto en
-   rojo. Un subrayado fino se pierde entre tarjetas del tamaño de las de abajo. */
-.subtabs{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0 0 10px}
-.subtabs button{font-family:var(--titulo);letter-spacing:.05em;text-transform:uppercase;
-  font-size:14px;font-weight:700;color:var(--dim);
-  border:1px solid var(--line);background:rgba(21,22,23,.7);
-  border-radius:999px;padding:11px 8px}
-.subtabs button.on{color:var(--acc2);border-color:var(--acc);background:rgba(192,135,25,.16)}
+/* LAS DOS PESTAÑAS DE LA TIENDA, CON LA FORMA DEL BOCETO: solapas de carpeta, con el
+   canto cortado en diagonal hacia dentro y apoyadas en una raya que cruza la pantalla. No
+   son píldoras.
+
+   El filete no puede ser un `border`: con clip-path el borde se dibuja sobre el rectángulo
+   y el recorte se lo lleva por delante. Se hace con dos capas recortadas —una de color por
+   fuera y el fondo por dentro, metido 2 px—, que es el mismo truco del avatar octogonal.
+   La de dentro se queda abierta por abajo a propósito: es lo que hace que la solapa se lea
+   apoyada en la raya y no como una caja suelta. */
+.subtabs{display:flex;margin:0 0 11px;position:relative;padding-bottom:1px}
+.subtabs::after{content:'';position:absolute;left:0;right:0;bottom:0;height:1px;
+  background:var(--filo-suave)}
+.subtabs button{position:relative;flex:1;height:37px;font-family:var(--titulo);
+  letter-spacing:.06em;text-transform:uppercase;font-size:15px;font-weight:700;
+  color:var(--txt);display:flex;align-items:center;justify-content:center}
+.subtabs button::before{content:'';position:absolute;inset:0;background:var(--line);
+  clip-path:var(--corte)}
+.subtabs button::after{content:'';position:absolute;inset:2px 2px 0;background:#0d0e0f;
+  clip-path:var(--corte)}
+.subtabs button > span{position:relative;z-index:1}
+.subtabs button:first-child{--corte:polygon(9px 0,calc(100% - 15px) 0,100% 100%,0 100%);
+  z-index:2}
+.subtabs button:last-child{--corte:polygon(15px 0,calc(100% - 9px) 0,100% 100%,0 100%);
+  margin-left:-13px}
+.subtabs button.on{color:var(--acc2);z-index:3}
+.subtabs button.on::before{background:linear-gradient(180deg,var(--acc2),var(--acc))}
+.subtabs button.on::after{background:linear-gradient(180deg,#100d05,#1c1508)}
 
 /* La FILA: el patrón de toda la navegación nueva. La fila entera es el botón — no lleva
    un botón dentro. Un botón dentro de una fila que también responde al toque son dos
@@ -277,18 +294,23 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
    que comparar entre ellas, hay que llegar a todas de un vistazo y sin hueco muerto. */
 .pila > .sobre-fila{flex:1 1 0;min-height:0;margin:0}
 .pila > .sobre-fila > .fila{height:100%}
+/* Medido sobre el boceto: la fila ocupa 96 px de un móvil de 706 de alto —114 en uno de
+   844— y el sobre llena el 92% de ese alto. El texto arranca donde acaba el arte y deja
+   libre la esquina de abajo a la derecha, que es donde va el precio. */
 .sobre-fila .fila{position:relative;align-items:center;overflow:visible;
-  min-height:112px;padding:14px 104px 14px 108px;margin:0;
+  min-height:114px;padding:13px 14px 13px 104px;margin:0;
   /* El degradado sale del sistema. Escrito aquí a mano pisaba al de .fila por
      especificidad, y las tarjetas se quedaban azules mientras el resto era granate. */
   background-image:var(--tarjeta)}
 .sobre-fila .fila .ic{display:none}
-.sobre-fila .fila .cu b{display:block;font-size:21px;line-height:1.15;margin-bottom:3px;
-  font-style:italic}
-.sobre-fila .fila .cu .sub{font-size:12px;line-height:1.4}
+/* El nombre del sobre NO va en cursiva: en el boceto es recto, como los demás títulos de
+   fila. La cursiva era del diseño anterior. */
+.sobre-fila .fila .cu b{display:block;font-size:20px;line-height:1.15;margin-bottom:4px;
+  font-style:normal;letter-spacing:.045em}
+.sobre-fila .fila .cu .sub{font-size:12.5px;line-height:1.4;padding-right:118px}
 /* El arte, saliéndose de la caja: es lo que hace que el sobre se lea como un objeto y
    no como un icono metido en una celda. */
-.sobre-art{position:absolute;left:8px;top:6px;bottom:6px;width:92px;
+.sobre-art{position:absolute;left:9px;top:5%;bottom:5%;width:88px;
   pointer-events:none;display:flex;align-items:center;justify-content:center}
 .sobre-art img{max-width:100%;max-height:100%;width:auto;height:auto;
   filter:drop-shadow(0 7px 15px rgba(0,0,0,.65))}
@@ -383,20 +405,25 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 .sobre-fila.foto .cu .sub{font-size:12.5px}
 /* La píldora del precio monta sobre el borde de abajo, centrada en la parte de texto. */
 .sobre-fila button.precio:active{background:var(--acc);border-color:var(--acc);color:var(--bg)}
-.sobre-fila .precio{position:absolute;right:12px;top:50%;transform:translateY(-50%);
-  z-index:3;font-family:var(--titulo);font-weight:700;font-size:14px;letter-spacing:.04em;
-  background:var(--bg3);border:1px solid var(--line);border-radius:999px;
-  padding:6px 20px;white-space:nowrap;color:var(--txt);box-shadow:var(--sombra-tarjeta)}
+/* EL PRECIO VA ABAJO A LA DERECHA y con la moneda dibujada dentro, como en el boceto: una
+   chapa con filete de oro, no una píldora gris centrada en el costado. */
+.sobre-fila .precio{position:absolute;right:12px;bottom:11px;
+  z-index:3;font-family:var(--titulo);font-weight:700;font-size:17px;letter-spacing:.03em;
+  font-variant-numeric:tabular-nums;
+  background:#0b0c0d;border:1px solid var(--filo);border-radius:9px;
+  padding:5px 13px;white-space:nowrap;color:var(--txt);box-shadow:var(--sombra-tarjeta);
+  display:flex;align-items:center;gap:7px}
+.sobre-fila .precio .mon{width:17px;height:17px;flex:none;display:block}
 .sobre-fila .fila .der{display:none}
-.sobre-fila.apagada{opacity:.42}
+.sobre-fila.apagada{opacity:.62}
 
 /* La (i), en la esquina de arriba. Es la única excepción a que la fila entera sea el
    botón, y va FUERA de ella para que tocarla no dispare también la fila. */
-.info{position:absolute;top:8px;right:10px;z-index:4;
-  width:21px;height:21px;border-radius:50%;
+.info{position:absolute;top:10px;right:11px;z-index:4;
+  width:26px;height:26px;border-radius:50%;
   display:flex;align-items:center;justify-content:center;
-  font-family:var(--titulo);font-weight:700;font-size:11.5px;line-height:1;
-  color:var(--dim);background:rgba(0,0,0,.45);border:1px solid var(--line)}
+  font-family:var(--titulo);font-weight:700;font-size:15px;line-height:1;
+  color:var(--txt);background:rgba(0,0,0,.45);border:1.5px solid var(--dim2)}
 .info:active{background:var(--acc);border-color:var(--acc);color:var(--bg)}
 
 /* El sobre de la pantalla de apertura. Grande y solo: lo único que se puede tocar ahí. */
@@ -410,7 +437,9 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
    El sobre se mira sobre un fondo liso y oscuro, y ya está. Antes cruzaban la pantalla
    unos arcos que se encendían del color del nivel al abrir; se han quitado. */
 .escena{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;
-  background:radial-gradient(120% 90% at 50% 44%, #12181f 0%, #0a0d11 68%);
+  /* Negro con un foco de oro apenas encendido, como el resto de la interfaz. El azul de
+     antes venía de la paleta vieja y al lado del sobre cantaba. */
+  background:radial-gradient(120% 90% at 50% 44%, #14120c 0%, #060707 68%);
   opacity:0;transition:opacity .3s ease}
 .escena.puesta{opacity:1}
 
@@ -1051,6 +1080,10 @@ th{color:var(--dim2);font-size:11px;text-transform:uppercase;letter-spacing:.04e
 .pcab{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin:0 0 7px}
 .pcab h2{margin:0;font-size:19px}
 .pcab .sub{font-size:11px}
+/* El TIENDA del boceto: grande y en cursiva, no el titulillo de una pantalla interior.
+   Medido sobre el dibujo, 17 px de caja alta en un móvil de 273 de ancho. */
+.pcab.tienda{margin:0 0 11px}
+.pcab.tienda h2{font-size:29px;font-style:italic;letter-spacing:.01em;line-height:1}
 .pauto{margin-top:12px;padding:9px 12px;display:flex;flex-direction:column;gap:1px;
   line-height:1.2}
 .pauto .tiny{color:var(--dim2);font-weight:400;font-size:10px}
@@ -1128,7 +1161,7 @@ function estadoNuevo(){
   const conRasgo=ordenar(alineables().filter(c=>c.rasgos.length===1&&!c.rasgos[0].plus)).reverse();
   if(conRasgo.length) s.coleccion.push({iid:'i-start',cid:conRasgo[0].id,notraspasable:true});
   // Bono de bienvenida, una sola vez: 2 de oro y 2 de plata, gratis.
-  s.sobres=[{tipo:'oro'},{tipo:'oro'},{tipo:'plata'},{tipo:'plata'}];
+  s.sobres=[{tipo:'epic'},{tipo:'epic'},{tipo:'rare'},{tipo:'rare'}];
   autoPlantilla(s);
   return s;
 }
@@ -1165,8 +1198,22 @@ function personaRepetida(s,cardInst,divId){
 // funcionando en memoria durante la sesión en vez de reventar.
 let ALMACEN_OK=true;
 function guardar(){ try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){ALMACEN_OK=false} }
+
+/* LOS SOBRES GUARDADOS SE TRADUCEN AL CARGAR. Los tipos basico/plata/oro dejaron de
+   existir con los cinco del boceto, y un sobre guardado con un tipo que ya no está se
+   queda en el inventario sin nombre, sin arte y sin poder abrirse. Se traduce una vez, al
+   arrancar, y lo que no se reconozca se cae al común: mejor un sobre de menos que uno
+   roto. Los premios de los retos que estén a medio camino entran por aquí también. */
+function migrarSobres(s){
+  if(!s||!Array.isArray(s.sobres)) return;
+  for(const x of s.sobres){
+    if(TIPOS_SOBRE[x.tipo]) continue;
+    x.tipo=SOBRES_VIEJOS[x.tipo]||'comun';
+  }
+}
 function cargar(){
-  try{const r=localStorage.getItem(KEY); if(r){S=JSON.parse(r); return true}}
+  try{const r=localStorage.getItem(KEY);
+    if(r){S=JSON.parse(r); migrarSobres(S); return true}}
   catch(e){ALMACEN_OK=false}
   return false;
 }
@@ -1191,7 +1238,8 @@ const cartaDe=iid=>{const i=inst(iid);return i?PORID[i.cid]:null};
 
    Los niveles van por ESTATUS DEPORTIVO, no por ninguna media. "Corona" es campeón o
    top 5, que en la tabla de probabilidades van juntos. */
-const CARTAS_POR_SOBRE=9;
+/* CUÁNTAS CARTAS TRAE CADA SOBRE ya no es un número único: el boceto le da a cada uno las
+   suyas —5, 6, 8, 10 y 10— y va escrito en TIPOS_SOBRE, en el campo `cartas`. */
 
 /* Los niveles de un sobre NO son los tramos de estatus. El estatus ordena la colección
    y pone el precio del reciclaje, y va por bloques de cinco puestos. Aquí hace falta más
@@ -1281,6 +1329,10 @@ const GEMA=`<svg class="mon" viewBox="0 0 24 24" aria-hidden="true">
   <path d="M2.8 9h18.4M12 2.4 8.1 9l3.9 12.6M12 2.4 15.9 9 12 21.6" fill="none"
     stroke="#4b3c8e" stroke-width="1.1" opacity=".75"/></svg>`;
 
+/* 1.000, no 1000. toLocaleString('es-ES') NO agrupa los de cuatro cifras —es lo correcto
+   en español para años y códigos—, pero esto son precios y el boceto los agrupa. */
+const miles=n=>String(Math.round(n||0)).replace(/\B(?=(\d{3})+(?!\d))/g,'.');
+
 /* 125.6K, no 125600. Lo pide el boceto y, con dos monedas y el engranaje al lado, un
    número de seis cifras empuja al nombre fuera de la cabecera. */
 function corto(n){
@@ -1290,36 +1342,66 @@ function corto(n){
   return (n/1000000).toFixed(1).replace(/\.0$/,'')+'M';
 }
 
-const TIPOS_SOBRE={
-  /* BÁSICO — gratis e ilimitado. Mitad oros y mitad platas, para que cualquiera monte
-     un once desde el primer día. Lo que casi nunca da es un rankeado: cuando cae uno es
-     de los últimos puestos, 12-15, y de ahí para arriba la probabilidad es simbólica.
-     Se hace un equipo, no se hace un equipo de campeones. */
-  basico:{n:'Sobre básico', ic:'📦', coste:0, unico:true, gratis:true,
-    desc:'Gratis y sin límite. Mitad oros y mitad platas, para montar un once desde el primer día.',
-    oros  :{3:15, 4:35, 5:35, 6:15},
-    nivel :{corona:0.01, top611:0.09, top1215:3.9, oro:96},
-    platas:{plataAlta:40, plataBaja:60}},
-  /* PLATA — se compra para cerrar la colección de platas. Reparte sobre todo platas
-     BAJAS: las de arriba son las que cuesta completar, y si cayeran por igual el sobre
-     se quedaría sin recorrido a las pocas compras. */
-  plata :{n:'Sobre de plata', ic:'🎁', coste:250,
-    desc:'Para cerrar la colección de platas. Reparte sobre todo platas bajas.',
-    oros  :{1:40, 2:40, 3:20},
-    nivel :{corona:0.30, top611:2, top1215:40, oro:57.7},
-    platas:{plataAlta:8, plataBaja:92}},
-  /* ORO — el caro, y el único que reparte cartas de arriba de verdad. */
-  oro   :{n:'Sobre de oro', ic:'🥇', coste:600,
-    desc:'El caro, y el único que reparte cartas de arriba de verdad.',
-    oros  :{7:30, 8:45, 9:25},
-    nivel :{corona:0.60, top611:3.20, top1215:46.2, oro:50},
-    platas:{plataAlta:55, plataBaja:45}},
-};
-for(const t of Object.values(TIPOS_SOBRE)) t.cartas=CARTAS_POR_SOBRE;
+/* LOS CINCO SOBRES DEL BOCETO. Los nombres, los precios, cuántas cartas trae cada uno y
+   su texto salen del dibujo tal cual, y el arte son los archivos que pasó el dueño.
 
-/* Solo el básico se reclama gratis. Los de plata y oro se compran o se ganan en
-   desafíos: ya no se regalan por reloj. */
-const GRATIS=[{id:'g1', tipo:'basico', espera:0}];
+   EL SEXTO, EL ROJO, NO ESTÁ AQUÍ: es el sobre de EVENTO —lo dijo él— y su sitio es la
+   pantalla de Eventos, que todavía no existe. El arte ya está preparado en
+   juego/sobres/evento.webp esperando.
+
+   LO QUE REPARTE CADA UNO ESTÁ SIN CERRAR Y HAY QUE HABLARLO. Los nombres, los precios,
+   las cartas y los textos son del boceto; las tres tablas de cada sobre —cuántos oros
+   trae, de qué nivel y qué platas— NO están en el boceto y las he tenido que poner para
+   que los cinco funcionen. Escalan de común a ultimate y no se pueden dejar como estaban:
+   las de antes repartían de 7 a 9 oros, y un sobre común de 5 cartas no puede traer 7.
+
+   Además los textos siguen hablando de plata y de oro porque hoy el plantel sólo tiene
+   esas dos rarezas: común/raro/épico no existen hasta la MIGRACIÓN DE RAREZAS, que va con
+   el rediseño. Cuando se migre hay que reescribir estas tablas Y los textos. */
+const TIPOS_SOBRE={
+  comun    :{n:'Sobre común', coste:1000, cartas:5,
+    desc:'5 cartas. 1 plata o superior garantizada.',
+    oros  :{1:30, 2:40, 3:30},
+    nivel :{corona:0.01, top611:0.09, top1215:3.9, oro:96},
+    platas:{plataAlta:35, plataBaja:65}},
+  rare     :{n:'Sobre rare', coste:2000, cartas:6,
+    desc:'6 cartas. 1 oro o superior garantizada.',
+    oros  :{2:30, 3:40, 4:30},
+    nivel :{corona:0.10, top611:0.90, top1215:20, oro:79},
+    platas:{plataAlta:45, plataBaja:55}},
+  epic     :{n:'Sobre epic', coste:4000, cartas:8,
+    desc:'8 cartas. 1 especial o superior garantizada.',
+    oros  :{4:25, 5:45, 6:30},
+    nivel :{corona:0.30, top611:2, top1215:40, oro:57.7},
+    platas:{plataAlta:55, plataBaja:45}},
+  legendary:{n:'Sobre legendary', coste:7500, cartas:10,
+    desc:'10 cartas. 1 especial o superior garantizada.',
+    oros  :{6:25, 7:45, 8:30},
+    nivel :{corona:0.60, top611:3.20, top1215:46.2, oro:50},
+    platas:{plataAlta:65, plataBaja:35}},
+  ultimate :{n:'Sobre ultimate', coste:12500, cartas:10,
+    desc:'10 cartas. 1 ultimate garantizada.',
+    oros  :{8:30, 9:45, 10:25},
+    nivel :{corona:1.50, top611:6, top1215:52, oro:40.5},
+    platas:{plataAlta:80, plataBaja:20}},
+};
+/* Y una red de seguridad: si alguien toca una tabla y deja el sobre pidiendo más oros de
+   los que caben, el sobre repartiría más cartas de las que anuncia. Salta al arrancar. */
+for(const [k,T] of Object.entries(TIPOS_SOBRE)){
+  const max=Math.max(...Object.keys(T.oros).map(Number));
+  if(max>T.cartas) console.error(`El sobre ${k} anuncia ${T.cartas} cartas y puede repartir ${max} oros`);
+}
+
+/* CÓMO SE LLAMABAN ANTES. Lo guardado apunta a basico/plata/oro, y esos tipos ya no
+   existen: sin traducirlos, a quien tuviera sobres sin abrir se le quedan en el
+   inventario sin nombre, sin arte y sin poder abrirlos. Se traduce al cargar. */
+const SOBRES_VIEJOS={basico:'comun', plata:'rare', oro:'epic'};
+
+/* EL SOBRE GRATIS NO ESTÁ EN LA TIENDA. En el boceto la tienda son cinco sobres de pago y
+   el gratis vive en la ACTIVIDAD DIARIA de Inicio, que es de donde se reclama. Sigue
+   siendo el común y sigue sin límite: es lo que permite empezar sin dinero, y ponerle un
+   reloj sería inventarse una regla de juego que él no ha dado. */
+const GRATIS=[{id:'g1', tipo:'comun', espera:0}];
 const listoGratis=g=>g.espera===0||Date.now()-(S.gratis[g.id]||0)>=g.espera;
 const restaGratis=g=>Math.max(0,g.espera-(Date.now()-(S.gratis[g.id]||0)));
 // El ilimitado no cuenta para el aviso del menú: estaría encendido siempre.
@@ -1504,20 +1586,20 @@ const setListo=s=>s.req.every(cid=>copias(cid)>0);
 const RETOS=[
   {id:'r1',n:'Cantera',   d:'Entrega 3 platas de divisiones distintas',
    check:l=>l.length===3&&l.every(c=>c.estatus==='plata')&&new Set(l.map(c=>c.division)).size===3,
-   premio:{sobre:'plata',divisa:120}},
+   premio:{sobre:'rare',divisa:120}},
   {id:'r2',n:'Base sólida',d:'Entrega 2 oros sin rankear de divisiones distintas',
    check:l=>l.length===2&&l.every(c=>c.estatus==='oro')&&new Set(l.map(c=>c.division)).size===2,
-   premio:{sobre:'oro',divisa:0}},
+   premio:{sobre:'epic',divisa:0}},
   {id:'r3',n:'Cartel completo',d:'Entrega 4 oros de 4 divisiones distintas',
    check:l=>l.length===4&&l.every(c=>c.rareza==='oro')&&new Set(l.map(c=>c.division)).size===4,
-   premio:{sobre:'oro',divisa:400}},
+   premio:{sobre:'epic',divisa:400}},
   {id:'r4',n:'Caja de herramientas',d:'Entrega 3 cartas con atributo, los tres distintos',
    check:l=>l.length===3&&l.every(c=>c.rasgos.length)&&
      new Set(l.map(c=>c.rasgos[0].tipo)).size===3,
-   premio:{sobre:'oro',divisa:0}},
+   premio:{sobre:'epic',divisa:0}},
   {id:'r5',n:'Mundial',d:'Entrega 4 cartas de 4 países distintos',
    check:l=>l.length===4&&new Set(l.map(c=>c.pais)).size===4,
-   premio:{sobre:'plata',divisa:250}},
+   premio:{sobre:'rare',divisa:250}},
 ];
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -1964,14 +2046,14 @@ function fichaJugador(){
 /* ACTIVIDAD DIARIA. De las tres celdas del boceto solo una tiene sistema detrás: el sobre
    gratis, que existe y se reclama. El desafío diario y la racha no existen todavía. */
 function bloqueDiaria(){
-  const g=GRATIS.find(x=>x.tipo==='basico');
+  const g=GRATIS.find(x=>x.tipo==='comun');
   const listo=g&&listoGratis(g);
   return `<div class="blq crece" style="flex-grow:1.47">
     <div class="bt"><h3>Actividad diaria</h3>
       <span class="reloj">${icono('reloj')}<span class="pdte">Sin reloj</span></span></div>
     <div class="cuerpo"><div class="diaria">
       <div><span class="et">Sobre gratis</span>${icono('regalo')}
-        <button class="btn ${listo?'':'gho'} sm" data-a="versobre" data-t="basico"
+        <button class="btn ${listo?'':'gho'} sm" data-a="versobre" data-t="comun"
           ${listo?'':'disabled'}>${listo?'Reclamar':'Abierto'}</button></div>
       <div><span class="et">Desafío diario</span>${icono('diana')}
         <span class="pdte">Pendiente</span></div>
@@ -2327,10 +2409,11 @@ const desgloseSobre=t=>{
    y con qué probabilidad, y solo el toque sobre el sobre cobra y abre. */
 function vTienda(){
   const sub=tmp.sub||'comprar';
-  const cab=`<div class="pcab"><h2>Tienda</h2></div>
+  const cab=`<div class="pcab tienda"><h2>Tienda</h2></div>
     <div class="subtabs">
-      <button data-a="sub" data-v="comprar" class="${sub==='comprar'?'on':''}">Comprar</button>
-      <button data-a="sub" data-v="mios" class="${sub==='mios'?'on':''}">Mis sobres${S.sobres.length?` (${S.sobres.length})`:''}</button>
+      <button data-a="sub" data-v="comprar" class="${sub==='comprar'?'on':''}"><span>Comprar</span></button>
+      <button data-a="sub" data-v="mios" class="${sub==='mios'?'on':''}"><span>Mis sobres${
+        S.sobres.length?` (${S.sobres.length})`:''}</span></button>
     </div>`;
   // Las tres se reparten el alto de la pantalla, como en el diseño: miden todas lo mismo
   // y se comparan de un vistazo sin dejar media pantalla vacía debajo.
@@ -2390,15 +2473,14 @@ function tiendaComprar(){
     const caro=T.coste>0&&S.divisa<T.coste;
     const off=caro||espera;
     return `<div class="sobre-fila ${off?'apagada':''}">
-      <button class="fila" ${off?'disabled':''} data-a="${T.coste?'comprar':'versobre'}" data-t="${k}"
-        style="border-color:rgba(192,135,25,.55)">
+      <button class="fila" ${off?'disabled':''} data-a="${T.coste?'comprar':'versobre'}" data-t="${k}">
+        <span class="sobre-art"><img src="sobres/${k}.webp" alt="" loading="lazy"></span>
         <span class="cu"><b>${T.n}</b>
           <span class="sub">${T.desc}</span></span>
-        <span class="sobre-art"><img src="sobres/${k}.webp" alt="" loading="lazy"></span>
       </button>
       <button class="precio" ${off?'disabled':''} data-a="${T.coste?'comprar':'versobre'}"
         data-t="${k}" ${espera?`data-reloj="${g.id}"`:''}>${
-        espera?reloj(restaGratis(g)):(T.coste?T.coste+' 🪙':'GRATIS')}</button>
+        espera?reloj(restaGratis(g)):(T.coste?MONEDA+`<span>${miles(T.coste)}</span>`:'GRATIS')}</button>
       <button class="info" data-a="probs" data-t="${k}" aria-label="Probabilidades">i</button>
     </div>`;
   }).join('');
@@ -2417,11 +2499,10 @@ function tiendaMios(){
   return lista.map(t=>{
     const T=TIPOS_SOBRE[t];
     return `<div class="sobre-fila">
-      <button class="fila" data-a="versobre" data-t="${t}" data-mio="1"
-        style="border-color:rgba(192,135,25,.55)">
+      <button class="fila" data-a="versobre" data-t="${t}" data-mio="1">
+        <span class="sobre-art"><img src="sobres/${t}.webp" alt="" loading="lazy"></span>
         <span class="cu"><b>${T.n}</b>
           <span class="sub">${T.desc}</span></span>
-        <span class="sobre-art"><img src="sobres/${t}.webp" alt="" loading="lazy"></span>
       </button>
       <span class="precio">×${hay[t]}</span>
       <button class="info" data-a="probs" data-t="${t}" aria-label="Probabilidades">i</button>
@@ -3821,7 +3902,7 @@ function pFin(){
   if(P.tutorial){
     if(!tmp.cobrado){
       tmp.cobrado=true;
-      if(!S.tutorialHecho){ S.tutorialHecho=true; S.divisa+=250; S.sobres.push({tipo:'oro'}); }
+      if(!S.tutorialHecho){ S.tutorialHecho=true; S.divisa+=250; S.sobres.push({tipo:'epic'}); }
       guardar();
     }
     return `<div class="card-panel center" style="padding:24px 14px">
@@ -3837,7 +3918,7 @@ function pFin(){
   if(!tmp.cobrado){
     tmp.cobrado=true; S.partidas++; if(gane)S.victorias++;
     S.divisa+=prem;
-    if(gane&&Math.random()<.5) S.sobres.push({tipo:'plata'});   // el básico es gratis e infinito: no es premio
+    if(gane&&Math.random()<.5) S.sobres.push({tipo:'rare'});   // el común es gratis e infinito: no es premio
     if(amigo){ if(gane) amigo.p++; else amigo.g++; }
     guardar();
   }
