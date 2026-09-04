@@ -543,12 +543,13 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 
 /* ── La tarjeta del jugador: avatar, nombre, nivel y barra de XP ── */
 .jug{display:flex;align-items:center;gap:12px;flex:none}
-.jug .cara{position:relative;width:58px;height:58px;flex:none;padding:0;border:0;
-  background:linear-gradient(160deg,var(--acc2),var(--acc));
-  clip-path:polygon(29% 0,71% 0,100% 29%,100% 71%,71% 100%,29% 100%,0 71%,0 29%);
-  display:flex;align-items:center;justify-content:center}
-.jug .cara i{position:absolute;inset:2px;overflow:hidden;background:var(--bg3);
-  clip-path:polygon(29% 0,71% 0,100% 29%,100% 71%,71% 100%,29% 100%,0 71%,0 29%);
+/* UN CÍRCULO, no un octógono. Que el juego vaya de MMA no obliga a que todo tenga forma
+   de jaula, y el dueño lo dijo con esas palabras. El filete de oro se hace con un borde
+   normal, que en un círculo sí funciona. */
+.jug .cara{position:relative;width:58px;height:58px;flex:none;padding:0;
+  border:2px solid var(--acc);border-radius:50%;background:var(--bg3);overflow:hidden;
+  display:flex;align-items:center;justify-content:center;box-shadow:var(--brillo-acc)}
+.jug .cara i{position:absolute;inset:0;overflow:hidden;border-radius:50%;
   display:flex;align-items:center;justify-content:center}
 /* EL ENCUADRE DE LA CARA SALE DE MEDIR LAS 357 FOTOS, no de ajustarlo a ojo. Midiendo el
    ancho opaco fila a fila en veinte al azar: la cara -la fila más ancha de la cabeza- cae
@@ -558,7 +559,7 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
    foto a 164% de ancho y su borde de arriba en el 4,6%.
 
    Antes iba a 235% y cortaba la coronilla y la barbilla. */
-.jug .cara img{position:absolute;left:50%;top:4.6%;width:164%;height:auto;
+.jug .cara img{position:absolute;left:50%;width:164%;height:auto;
   transform:translateX(-50%);max-width:none}
 .jug .cara .ico{width:26px;height:26px;color:var(--dim2)}
 .jug .cara:active{transform:scale(.94)}
@@ -569,15 +570,14 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
   max-height:52vh;overflow-y:auto;padding:2px}
 .cara-op{display:flex;flex-direction:column;align-items:center;gap:5px;padding:0}
 .cara-op .mini{position:relative;width:100%;aspect-ratio:1;overflow:hidden;
-  background:var(--bg3);
-  clip-path:polygon(29% 0,71% 0,100% 29%,100% 71%,71% 100%,29% 100%,0 71%,0 29%);
+  background:var(--bg3);border:1px solid var(--line);border-radius:50%;
   display:flex;align-items:center;justify-content:center}
-.cara-op .mini img{position:absolute;left:50%;top:4.6%;width:164%;height:auto;
+.cara-op .mini img{position:absolute;left:50%;width:164%;height:auto;
   transform:translateX(-50%);max-width:none}
 .cara-op .nm{font-family:var(--titulo);font-size:11px;font-weight:600;line-height:1.15;
   color:var(--dim);text-align:center;max-width:100%;overflow:hidden;text-overflow:ellipsis;
   white-space:nowrap}
-.cara-op.on .mini{outline:2px solid var(--acc2);outline-offset:-2px}
+.cara-op.on .mini{border-color:var(--acc2);box-shadow:var(--brillo-acc)}
 .cara-op.on .nm{color:var(--acc2)}
 .cara-op:active{transform:scale(.95)}
 .jug .qn{flex:1;min-width:0}
@@ -1192,6 +1192,7 @@ th{color:var(--dim2);font-size:11px;text-transform:uppercase;letter-spacing:.04e
 
 <script src="roster.js"></script>
 <script src="fotos.js"></script>
+<script src="caras.js"></script>
 <script src="motor.js"></script>
 <script src="servidor.js"></script>
 <script>
@@ -2099,6 +2100,20 @@ function avatarJugador(){
   return c?fotoSrc(c.persona, c.division):null;
 }
 
+/* EL ENCUADRE ES DE CADA FOTO, NO UNO PARA TODAS. Las 357 están cortadas igual —cuerpo
+   entero hasta el muslo—, pero las cabezas NO miden lo mismo: un peleador alto sale con la
+   cabeza pequeña dentro del cuadro y uno bajo con la cabeza grande. Con una ventana única,
+   unas caras salían enanas y otras enormes. Lo cazó el dueño.
+
+   Los dos números de cada foto los mide herramientas/medir-caras.py y viven en caras.js.
+   El de reserva es la mediana, por si aparece una foto sin medir. */
+function estiloCara(src){
+  const n=(src||'').replace(/^fotos\//,'').replace(/\.webp$/,'');
+  const c=(typeof CARAS!=='undefined'&&CARAS[n])||[136,7];
+  return `width:${c[0]}%;top:${c[1]}%`;
+}
+const caraImg=src=>`<img src="${src}" alt="" loading="lazy" style="${estiloCara(src)}">`;
+
 /* Los peleadores de la colección que tienen foto, uno por cara y no uno por carta: quien
    pelea en dos divisiones sale una vez, con la carta que se tenga. */
 function carasElegibles(){
@@ -2122,7 +2137,7 @@ function ovElegirAvatar(){
     <div class="sub mb">Elige a uno de los tuyos.</div>
     <div class="caras">${cs.map(c=>`<button class="cara-op ${c.id===S.avatar?'on':''}"
         data-a="ponavatar" data-cid="${c.id}">
-        <span class="mini"><img src="${fotoSrc(c.persona,c.division)}" alt="" loading="lazy"></span>
+        <span class="mini">${caraImg(fotoSrc(c.persona,c.division))}</span>
         <span class="nm">${esc(c.nombre)}</span></button>`).join('')}</div>
     <div class="row" style="margin-top:12px">
       ${S.avatar?'<button class="btn gho" data-a="quitaravatar">Quitarla</button>':''}
@@ -2137,7 +2152,7 @@ function fichaJugador(){
   const foto=avatarJugador();
   return `<div class="blq"><div class="jug">
     <button class="cara" data-a="elegiravatar" aria-label="Tu foto de perfil"><i>${
-          foto?`<img src="${foto}" alt="" loading="lazy">`:icono('persona')}</i></button>
+          foto?caraImg(foto):icono('persona')}</i></button>
     <span class="qn">
       <span class="nv">${esc(nombreJugador())} <span class="pdte">Nivel y XP</span></span>
       <span class="xp">Nivel — · — / — XP</span>
@@ -2417,7 +2432,7 @@ function vPerfil(){
     <div class="blq">
       <div class="jug" style="margin-bottom:9px">
         <button class="cara" data-a="elegiravatar" aria-label="Tu foto de perfil"><i>${
-          foto?`<img src="${foto}" alt="" loading="lazy">`:icono('persona')}</i></button>
+          foto?caraImg(foto):icono('persona')}</i></button>
         <span class="qn">
           <span class="nv">${esc(nombreJugador())} <span class="pdte">Nivel y XP</span></span>
           <span class="xp">Nivel — · — / — XP</span>

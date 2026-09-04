@@ -187,13 +187,24 @@ en `S.avatar` y **no la ruta de la foto**: quien pelea en dos divisiones tiene u
 división. Y si la carta deja de ser suya —reciclada o intercambiada—, la foto se cae sola
 en vez de apuntar a una carta que ya no tiene. Se ofrece **uno por cara, no uno por carta**.
 
-**El encuadre de la cara sale de medir las 357 fotos, no de ajustarlo a ojo.** Midiendo el
-ancho opaco fila a fila en veinte al azar: la cara —la fila más ancha de la cabeza— cae de
-media en el píxel **85** de 551, el cuello en el **146** y el hombro en el **180**. Para que
-entre la cabeza entera con aire y algo de hombro, la ventana va del −10 al 210 —220 px de
-551—; metidos en el octógono de 54 px eso es un factor de 0,245, o sea la foto al **164% de
-ancho con el borde de arriba en el 4,6%**. El primer intento fue a 235% y cortaba la
-coronilla y la barbilla; lo cazó él.
+**LA CARA ES UN CÍRCULO, NO UN OCTÓGONO.** Lo dijo él: que el juego vaya de MMA no obliga
+a que todo tenga forma de jaula. Y con círculo el filete de oro vuelve a ser un `border`
+normal, sin el truco de las dos capas recortadas.
+
+**EL ENCUADRE ES DE CADA FOTO, Y SALE DE MEDIRLAS UNA A UNA.** Las 357 están cortadas igual
+—cuerpo entero hasta el muslo, 360x551—, pero **las cabezas NO miden lo mismo**: un peleador
+alto sale con la cabeza pequeña dentro del cuadro y uno bajo con la cabeza grande. Con una
+ventana única unas caras salían enanas y otras enormes, y lo cazó él. El zoom que hace falta
+va del **64% al 193%**, o sea que la cabeza más grande es el triple que la más pequeña.
+
+`herramientas/medir-caras.py` mide la cabeza foto a foto —coronilla, fila más ancha y
+cuello— y escribe `juego/caras.js` con dos números por foto, ya en porcentaje de CSS. **Hay
+que volver a ejecutarlo cada vez que se añada, quite o cambie una foto**, como con
+`fotos.js`, y va empaquetado en los dos sitios (`build.gradle` y `servidor.yml`).
+
+El cuello **no siempre se ve** —con melena el ancho no baja nunca—, así que en 32 de las 357
+el alto de la cabeza se estima por su ancho: en las que sí se miden bien, el alto es 1,15
+veces el ancho.
 
 **La marca PENDIENTE.** El boceto enseña cosas que el juego no tiene: nivel y XP, pase de
 temporada, racha, rango, eventos, novedades, historial, estadísticas, cartas favoritas,
