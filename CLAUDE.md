@@ -191,20 +191,34 @@ en vez de apuntar a una carta que ya no tiene. Se ofrece **uno por cara, no uno 
 a que todo tenga forma de jaula. Y con círculo el filete de oro vuelve a ser un `border`
 normal, sin el truco de las dos capas recortadas.
 
+**LAS CARAS ESTÁN A MEDIAS Y APARCADAS POR ORDEN SUYA** —*"las caras están mal todas,
+déjalo, ya lo haremos"*—. Lo que hay funciona en la foto normal, pero **las de campeón con
+cinturón siguen mal encuadradas**: Strickland, Makhachev, Kayla Harrison, Topuria, Aspinall,
+Pantoja… La cara se detecta bien, lo que falla es dónde acaba la ventana. **No lo des por
+terminado.**
+
 **EL ENCUADRE ES DE CADA FOTO, Y SALE DE MEDIRLAS UNA A UNA.** Las 357 están cortadas igual
 —cuerpo entero hasta el muslo, 360x551—, pero **las cabezas NO miden lo mismo**: un peleador
 alto sale con la cabeza pequeña dentro del cuadro y uno bajo con la cabeza grande. Con una
 ventana única unas caras salían enanas y otras enormes, y lo cazó él. El zoom que hace falta
 va del **64% al 193%**, o sea que la cabeza más grande es el triple que la más pequeña.
 
-`herramientas/medir-caras.py` mide la cabeza foto a foto —coronilla, fila más ancha y
-cuello— y escribe `juego/caras.js` con dos números por foto, ya en porcentaje de CSS. **Hay
-que volver a ejecutarlo cada vez que se añada, quite o cambie una foto**, como con
-`fotos.js`, y va empaquetado en los dos sitios (`build.gradle` y `servidor.yml`).
+`herramientas/medir-caras.py` **detecta la cara de verdad con YuNet** —el detector de
+OpenCV, cuyo modelo está en `herramientas/modelos/yunet.onnx`— y escribe `juego/caras.js`
+con tres números por foto, ya en porcentaje de CSS. **Hay que volver a ejecutarlo cada vez
+que se añada, quite o cambie una foto**, como con `fotos.js`, y va empaquetado en los dos
+sitios (`build.gradle` y `servidor.yml`).
 
-El cuello **no siempre se ve** —con melena el ancho no baja nunca—, así que en 32 de las 357
-el alto de la cabeza se estima por su ancho: en las que sí se miden bien, el alto es 1,15
-veces el ancho.
+**Adivinar la cabeza por la silueta NO vale, y se probó.** Contar el ancho de píxel opaco
+fila a fila —coronilla, fila más ancha, cuello— falla en tres sitios: con melena el ancho no
+baja nunca y no hay cuello que encontrar; Pereira sostiene el cinturón a la altura del pecho
+y ensancha las filas de la barbilla; y no dice nada de dónde está la cara **a lo ancho**, así
+que quien mira de lado quedaba descentrado. El ancla buena es **la distancia entre los ojos**:
+no la toca el pelo, ni la barba, ni girar la cabeza.
+
+**Y de las caras detectadas se queda la de MÁS PUNTUACIÓN, no la de más arriba.** Preferir la
+de arriba parecía razonable y era justo lo que rompía las fotos de campeón: quien sostiene el
+cinturón en alto tiene ahí un adorno que puntúa algo menos que su cara pero está más alto.
 
 **La marca PENDIENTE.** El boceto enseña cosas que el juego no tiene: nivel y XP, pase de
 temporada, racha, rango, eventos, novedades, historial, estadísticas, cartas favoritas,
