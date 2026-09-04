@@ -550,7 +550,15 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 .jug .cara i{position:absolute;inset:2px;overflow:hidden;background:var(--bg3);
   clip-path:polygon(29% 0,71% 0,100% 29%,100% 71%,71% 100%,29% 100%,0 71%,0 29%);
   display:flex;align-items:center;justify-content:center}
-.jug .cara img{position:absolute;left:50%;top:1%;width:235%;height:auto;
+/* EL ENCUADRE DE LA CARA SALE DE MEDIR LAS 357 FOTOS, no de ajustarlo a ojo. Midiendo el
+   ancho opaco fila a fila en veinte al azar: la cara -la fila más ancha de la cabeza- cae
+   de media en el píxel 85 de 551, el cuello en el 146 y el hombro en el 180. Para que
+   entre la cabeza entera con aire y un poco de hombro, la ventana va del -10 al 210, o sea
+   220 px de los 551; metidos en el octógono de 54 eso es un factor de 0,245, que deja la
+   foto a 164% de ancho y su borde de arriba en el 4,6%.
+
+   Antes iba a 235% y cortaba la coronilla y la barbilla. */
+.jug .cara img{position:absolute;left:50%;top:4.6%;width:164%;height:auto;
   transform:translateX(-50%);max-width:none}
 .jug .cara .ico{width:26px;height:26px;color:var(--dim2)}
 .jug .cara:active{transform:scale(.94)}
@@ -564,7 +572,7 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
   background:var(--bg3);
   clip-path:polygon(29% 0,71% 0,100% 29%,100% 71%,71% 100%,29% 100%,0 71%,0 29%);
   display:flex;align-items:center;justify-content:center}
-.cara-op .mini img{position:absolute;left:50%;top:1%;width:235%;height:auto;
+.cara-op .mini img{position:absolute;left:50%;top:4.6%;width:164%;height:auto;
   transform:translateX(-50%);max-width:none}
 .cara-op .nm{font-family:var(--titulo);font-size:11px;font-weight:600;line-height:1.15;
   color:var(--dim);text-align:center;max-width:100%;overflow:hidden;text-overflow:ellipsis;

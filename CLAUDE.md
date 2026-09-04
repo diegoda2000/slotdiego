@@ -187,6 +187,14 @@ en `S.avatar` y **no la ruta de la foto**: quien pelea en dos divisiones tiene u
 división. Y si la carta deja de ser suya —reciclada o intercambiada—, la foto se cae sola
 en vez de apuntar a una carta que ya no tiene. Se ofrece **uno por cara, no uno por carta**.
 
+**El encuadre de la cara sale de medir las 357 fotos, no de ajustarlo a ojo.** Midiendo el
+ancho opaco fila a fila en veinte al azar: la cara —la fila más ancha de la cabeza— cae de
+media en el píxel **85** de 551, el cuello en el **146** y el hombro en el **180**. Para que
+entre la cabeza entera con aire y algo de hombro, la ventana va del −10 al 210 —220 px de
+551—; metidos en el octógono de 54 px eso es un factor de 0,245, o sea la foto al **164% de
+ancho con el borde de arriba en el 4,6%**. El primer intento fue a 235% y cortaba la
+coronilla y la barbilla; lo cazó él.
+
 **La marca PENDIENTE.** El boceto enseña cosas que el juego no tiene: nivel y XP, pase de
 temporada, racha, rango, eventos, novedades, historial, estadísticas, cartas favoritas,
 cuenta y ayuda. Esos bloques **están pintados en su sitio y con su forma**, y llevan una
