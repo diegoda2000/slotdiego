@@ -37,12 +37,35 @@
    cercana de las libres: +2,6% de ancho, -3% de grosor, 80,5% de solape de silueta.
    Barlow Condensed 900 sale un 52% demasiado ancha y Big Shoulders 900 demasiado
    gorda; las dos estaban descartadas por medida antes de escribir esto. */
+/* TEKO. Es la fuente del boceto, y sale de MEDIRLA, no de mirarla: se recortaron del
+   dibujo tres muestras -COLECCIÓN, HISTORIAL y PARTIDAS-, se binarizaron, y se renderizó
+   la misma palabra con diez condensadas a la misma caja alta comparando cuánto se solapan
+   las siluetas. Teko gana las tres (67,9 / 50,1 / 35,9%) y con el ancho clavado; la
+   segunda -Khand- se queda catorce puntos por debajo. Saira Condensed, que es la que
+   llevaba el juego, es la quinta.
+
+   Lo que la delata a la vista: la D rectangular, la pata recta de la R y la S escuadrada.
+
+   EL size-adjust NO ES UN CAPRICHO. La caja alta de Teko 600 mide 0,635 em y la de Saira
+   Condensed 0,690: puestas al mismo font-size, Teko se ve un 8% más pequeña y todos los
+   tamaños medidos sobre el boceto se quedarían cortos. Con 108,7% -que es 0,690/0,635- la
+   letra vuelve a medir en pantalla lo que mide en el boceto sin tocar ni un font-size. Si
+   un WebView viejo lo ignora, el texto sale un 8% más pequeño y ya está: no rompe nada.
+
+   Va servida desde juego/fuentes/, como las demás, y es una fuente VARIABLE: un solo
+   archivo cubre del 400 al 700. */
+@font-face{font-family:Teko;src:url(fuentes/teko-latin.woff2) format('woff2');
+  font-weight:400 700;font-display:swap;size-adjust:108.7%;
+  unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:Teko;src:url(fuentes/teko-latin-ext.woff2) format('woff2');
+  font-weight:400 700;font-display:swap;size-adjust:108.7%;
+  unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}
 @font-face{font-family:Antonio;src:url(fuentes/antonio-latin.woff2) format('woff2');
   font-weight:100 700;font-display:swap;unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+2122,U+2212}
 @font-face{font-family:Antonio;src:url(fuentes/antonio-latin-ext.woff2) format('woff2');
   font-weight:100 700;font-display:swap;unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+1E00-1E9F,U+2C60-2C7F,U+A720-A7FF}
 :root{
-  --titulo:"Saira Condensed","Barlow Condensed","Arial Narrow",system-ui,sans-serif;
+  --titulo:Teko,"Saira Condensed","Barlow Condensed","Arial Narrow",system-ui,sans-serif;
   --texto:Barlow,system-ui,-apple-system,"Segoe UI",sans-serif;
   --carta:Antonio,"Roboto Condensed","Avenir Next Condensed","Arial Narrow",system-ui,sans-serif;
   /* LA PALETA DEL LOGO NUEVO: negro, carbón y oro. YA NO HAY ROJO.
@@ -282,15 +305,7 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 /* En cursiva y algo más grandes que el resto de la interfaz, como el JUGAR del banner,
    pero muy lejos de su tamaño: ese es el botón principal y tiene que seguir mandando. */
 .sobre-fila.menu .cu b{display:block;font-size:21px;line-height:1.1;font-style:italic}
-/* El botón del boceto dentro del banner de JUGAR. Va abajo y centrado, encima del dibujo,
-   y ocupa algo menos de dos tercios del ancho: medido sobre el boceto, 62%. */
-.sobre-fila.menu .fila.concta{position:relative}
-.sobre-fila.menu .btn.cta{position:absolute;left:50%;bottom:11px;transform:translateX(-50%);
-  width:62%;z-index:3;padding:9px 10px;font-size:14px;font-weight:800;letter-spacing:.06em;
-  text-transform:uppercase;border-radius:9px;
-  background:linear-gradient(180deg,var(--acc2),var(--acc));color:#151005;
-  box-shadow:0 6px 18px -6px rgba(0,0,0,.9)}
-.sobre-fila.menu .btn.cta:active{transform:translateX(-50%) scale(.97)}
+
 .sobre-fila.menu .cu .sub{display:block;font-size:12px;line-height:1.35;margin-top:1px}
 /* El dibujo se queda con lo que sobre, centrado, y nunca empuja al texto. */
 .sobre-fila.menu .sobre-art{position:static;width:auto;flex:1 1 0;min-height:0;
@@ -486,7 +501,11 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 .jug .chapa small{display:block;font-size:8px;letter-spacing:.08em;color:var(--acc);
   text-transform:uppercase}
 .jug .chapa b{display:block;font-size:17px;font-weight:800;line-height:1.1}
-.barra{height:6px;border-radius:99px;background:var(--bg3);overflow:hidden;margin-top:5px}
+/* display:block A PROPÓSITO. La barra es un <span>, y a un elemento en línea no se le
+   puede dar alto: se quedaba con el alto de su línea -58 px-, estiraba la columna del
+   nombre por encima del panel y el nombre se salía de la ficha del jugador. */
+.barra{display:block;height:6px;border-radius:99px;background:var(--bg3);
+  overflow:hidden;margin-top:6px}
 .barra i{display:block;height:100%;border-radius:99px;
   background:linear-gradient(90deg,var(--acc),var(--acc2))}
 
@@ -577,9 +596,11 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
    móvil, las de Desafíos entre el 14 y el 17%, y las de Perfil el 8,6% las de arriba y el
    6,8% las de abajo. */
 .lista .fila.emblema{padding:12px 14px}
-.lista .fila.emblema .em{flex:none;width:56px;height:56px;color:var(--acc);
-  display:flex;align-items:center;justify-content:center;opacity:.92}
-.lista .fila.emblema .em .ico{width:100%;height:100%;stroke-width:1.35}
+.lista .fila.emblema .em{flex:none;height:84%;max-height:96px;
+  display:flex;align-items:center;justify-content:flex-end}
+.em img{height:100%;width:auto;max-width:112px;object-fit:contain;display:block}
+.em.chico{height:38px;flex:none;display:flex;align-items:center}
+.em.chico img{height:100%;width:auto;display:block}
 .lista .fila.emblema .cu b{font-size:17px;letter-spacing:.045em}
 .lista .fila.emblema .cu .sub{display:block;font-size:12px;color:var(--dim);margin-top:3px}
 
@@ -1904,7 +1925,7 @@ function vInicio(){
     ${fichaJugador()}
     <div class="crece" style="flex-grow:2">
       ${tarjeta({nav:'jugar', t:'Jugar', d:'Entra al octágono', foto:'arte/jugar.webp',
-        banner:true, off:!ok, cta:'Jugar ahora'})}</div>
+        banner:true, off:!ok})}</div>
     ${bloqueDiaria()}
     ${bloqueNovedades()}
     ${bloqueProgreso()}
@@ -1986,7 +2007,7 @@ function bloqueProgreso(){
   </div>`;
 }
 
-function tarjeta({nav,a,t,d,ic,foto,dentro,off,alerta,media,pie,banner,cta}){
+function tarjeta({nav,a,t,d,ic,foto,dentro,off,alerta,media,pie,banner}){
   const attr=nav?`data-nav="${nav}"`:`data-a="${a}"`;
   /* Tres formas de llenar el hueco del dibujo: el banner -la foto de fondo a sangre-, un
      peleador recortado centrado como estaba el icono, o el icono de siempre. */
@@ -1995,19 +2016,14 @@ function tarjeta({nav,a,t,d,ic,foto,dentro,off,alerta,media,pie,banner,cta}){
     : foto
     ? `<span class="sobre-art retrato"><img src="${foto}" alt="" loading="lazy"></span>`
     : `<span class="sobre-art ${ic?'icono':''}">${dentro||icono(ic)}</span>`;
-  /* CON `cta` LA TARJETA NO ES UN BOTÓN, es un div con el botón dentro: es lo que pide el
-     boceto para JUGAR, que lleva su "JUGAR AHORA" encima de la foto. Un botón dentro de
-     otro botón no es HTML válido y el toque se dispara dos veces. El div sigue siendo
-     tocable entero porque el reparto de toques va por closest([data-nav]). */
-  const caja=cta?'div':'button';
-  const cuerpo=`<${caja} class="fila ${alerta?'alerta':''} ${cta?'concta':''}"
-      ${off&&!cta?'disabled':''} ${attr}>
+  /* EL BOTÓN "JUGAR AHORA" DEL BOCETO NO VA: lo quitó él. La tarjeta entera vuelve a ser
+     el botón, que además es la regla de siempre — un botón dentro de una fila que también
+     responde al toque son dos blancos para lo mismo. */
+  return `<div class="sobre-fila menu ${banner?'banner':''} ${off?'apagada':''} ${media?'media':''}">
+    <button class="fila ${alerta?'alerta':''}" ${off?'disabled':''} ${attr}>
       <span class="cu"><b>${t}</b><span class="sub">${d||''}</span></span>
       ${dibujo}
-      ${cta?`<button class="btn cta" ${off?'disabled':''} ${attr}>${cta}</button>`:''}
-    </${caja}>`;
-  return `<div class="sobre-fila menu ${banner?'banner':''} ${off?'apagada':''} ${media?'media':''}">
-    ${cuerpo}
+    </button>
     ${pie?`<span class="precio">${pie}</span>`:''}
   </div>`;
 }
@@ -2109,13 +2125,13 @@ function vClub(){
   return `<div class="pila v2">
     ${tiraPlantilla()}
     <div class="lista crece">
-      ${filaLista({nav:'coleccion', ic:'carpeta', t:'Colección', em:true,
+      ${filaLista({nav:'coleccion', ic:'carpeta', t:'Colección', em:'coleccion',
         d:`${distintas} / ${ROSTER.length}`})}
-      ${filaLista({nav:'sets', ic:'trofeo', t:'Sets', em:true,
+      ${filaLista({nav:'sets', ic:'trofeo', t:'Sets', em:'sets',
         d:`${hechos} / ${SETS.length}`})}
-      ${filaLista({nav:'reciclaje', ic:'reciclar', t:'Reciclaje', em:true,
+      ${filaLista({nav:'reciclaje', ic:'reciclar', t:'Reciclaje', em:'reciclaje',
         d:`${repes} ${repes===1?'repetida':'repetidas'}`})}
-      ${filaLista({nav:'intercambio', ic:'trueque', t:'Intercambio', em:true,
+      ${filaLista({nav:'intercambio', ic:'trueque', t:'Intercambio', em:'intercambio',
         d:'Cartas con otros jugadores'})}
     </div>
   </div>`;
@@ -2156,9 +2172,16 @@ function filaLista({nav,a,ic,t,d,alerta,pdte,em}){
     ${em?'':`<span class="ic">${icono(ic)}</span>`}
     <span class="cu"><b>${t}</b>${d?`<span class="sub">${d}</span>`:''}</span>
     ${der?`<span class="der">${der}</span>`:''}
-    ${em?`<span class="em">${icono(ic)}</span>`:''}
+    ${em?emblema(em):''}
   </button>`;
 }
+/* LOS EMBLEMAS SON LOS DEL BOCETO, recortados de su propio archivo por
+   herramientas/sacar-emblemas.py. No son iconos parecidos: los dibujó él y los pidió tal
+   cual —"intenta copiar, por ejemplo, los logos de desafíos, eventos, colección, sets, no
+   me pongas esos logos de mierda"—. Van a 3x para que no se ablanden en un móvil que
+   pinta a doble densidad. */
+const emblema=n=>`<span class="em"><img src="arte/emblemas/${n}.webp" alt="" loading="lazy"></span>`;
+
 /* Varias filas dentro de un solo panel, separadas por una raya. Es lo que hace que
    Ajustes, Cuenta y Ayuda se lean como un bloque y no como tres botones sueltos. */
 const grupo=(...filas)=>`<div class="grupo" style="--n:${filas.length}">${filas.join('')}</div>`;
@@ -2173,14 +2196,14 @@ function vDesafios(){
   const l=logros(), hechos=l.filter(x=>x.hecho).length;
   return `<div class="pila v2">
     <div class="lista alta crece">
-      ${filaLista({nav:'retosdetalle', ic:'pergamino', t:'SBC', em:true,
+      ${filaLista({nav:'retosdetalle', ic:'pergamino', t:'SBC', em:'sbc',
         d:reto?`${hechosR} / ${RETOS.length} · siguiente: ${esc(reto.n)}`:'Todos hechos'})}
-      ${filaLista({ic:'diana', t:'Desafíos', em:true,
+      ${filaLista({ic:'diana', t:'Desafíos', em:'desafios',
         d:'Diarios, semanales y especiales', pdte:true})}
-      ${filaLista({ic:'trofeo', t:'Eventos', em:true,
+      ${filaLista({ic:'trofeo', t:'Eventos', em:'eventos',
         d:'Eventos limitados y exclusivos', pdte:true})}
       ${bloquePase()}
-      ${filaLista({nav:'logros', ic:'medalla', t:'Logros', em:true,
+      ${filaLista({nav:'logros', ic:'medalla', t:'Logros', em:'logros',
         d:`${hechos} / ${l.length} completados`})}
     </div>
   </div>`;
@@ -2191,10 +2214,8 @@ function vDesafios(){
 function bloquePase(){
   return `<div class="blq esperando" style="padding:12px 14px;justify-content:center">
     <div class="bt" style="margin-bottom:9px">
-      <span class="ic" style="width:34px;height:34px;flex:none;border-radius:9px;
-        border:1px solid rgba(192,135,25,.40);background:rgba(192,135,25,.10);color:var(--acc2);
-        display:flex;align-items:center;justify-content:center">${icono('pase')}</span>
-      <h3 style="font-size:14px;color:var(--txt);text-transform:uppercase">Pase de temporada</h3>
+      <span class="em chico">${emblema('pase').replace(/^<span class="em">|<\/span>$/g,'')}</span>
+      <h3 style="font-size:15px;color:var(--txt);text-transform:uppercase">Pase de temporada</h3>
       <span class="pdte">Pendiente</span></div>
     <span class="barra"><i style="width:0%"></i></span>
   </div>`;

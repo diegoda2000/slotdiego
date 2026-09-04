@@ -196,19 +196,49 @@ victorias, colección, sets, repetidas, SBC, logros— o no se ve.
   con cinco pestañas, dos monedas y el engranaje ya no cabía. Con él se fueron los tres
   números medidos que existían para alinearlo —el `top:10px`, el margen negativo y el
   apoyo abajo—. Si vuelve, hay que volver a medirlos.
-- **El JUGAR del banner ya no va a `min(14vw,52px)`.** En el boceto es el título del panel
-  y el botón es el "JUGAR AHORA" de abajo, así que va arriba a la izquierda, con su
-  subtítulo, a `min(9.5vw,36px)` —medido: 22 px de caja alta en un móvil de 295 de ancho—.
-  Y por eso el banner **sí lleva un botón dentro**: es un `div` con `data-nav`, no un
-  botón dentro de otro botón. Hay dos elementos con `data-nav="jugar"` y hacen lo mismo.
+- **El JUGAR del banner ya no va a `min(14vw,52px)`.** En el boceto es el título del panel,
+  así que va arriba a la izquierda, con su subtítulo, a `min(9.5vw,36px)` —medido: 22 px de
+  caja alta en un móvil de 295 de ancho—. **El botón "JUGAR AHORA" del boceto NO va**: se
+  montó y lo quitó él. La tarjeta entera vuelve a ser el botón, que además es la regla de
+  siempre.
 - **Ya no hay rojo en ninguna parte.** `--acc` y `--acc2` siguen llamándose así pero son
   oro: renombrarlas obligaba a tocar cien sitios que no cambian de sentido.
+
+**LA FUENTE ES TEKO, Y SALE DE MEDIRLA.** Se recortaron del boceto tres muestras
+—COLECCIÓN, HISTORIAL, PARTIDAS—, se binarizaron, y se renderizó la misma palabra con diez
+condensadas a la misma caja alta comparando cuánto se solapan las siluetas: Teko gana las
+tres (67,9 / 50,1 / 35,9%) con el ancho clavado, y la segunda —Khand— se queda catorce
+puntos por debajo. Saira Condensed, la que llevaba el juego, es la quinta. A la vista la
+delatan la D rectangular, la pata recta de la R y la S escuadrada. Va servida desde
+`juego/fuentes/teko-*.woff2` y es variable: un archivo cubre del 400 al 700.
+
+**Y lleva `size-adjust:108.7%`, que no es un capricho.** La caja alta de Teko 600 mide
+0,635 em y la de Saira 0,690: al mismo `font-size` Teko se ve un 8% más pequeña y todos los
+tamaños medidos sobre el boceto se quedarían cortos. Con 108,7% —que es 0,690/0,635— la
+letra vuelve a medir en pantalla lo que mide en el boceto sin tocar ni un `font-size`. Si un
+WebView viejo lo ignora, el texto sale un 8% más pequeño y ya está.
+
+**LOS EMBLEMAS SON LOS DEL BOCETO, recortados de su propio archivo.** Lo pidió así:
+*"intenta copiar, por ejemplo, los logos de desafíos, eventos, colección, sets, no me pongas
+esos logos de mierda"*. Los saca `herramientas/sacar-emblemas.py` y viven en
+`juego/arte/emblemas/` —nueve: colección, sets, reciclaje, intercambio, SBC, desafíos,
+eventos, pase y logros—. El fondo del panel se quita por **luminancia** y no por umbral: el
+emblema es claro sobre negro, así que el alfa sale de lo claro que es cada píxel; con un
+umbral duro el canto quedaba dentado. Van a **3x** para que no se ablanden en un móvil que
+pinta a doble densidad, y tres de las cajas están apretadas a mano porque el filete de oro
+del panel se colaba dentro y salía una raya suelta encima del emblema. Entran en el APK
+solos: `build.gradle` y `servidor.yml` ya se llevan `arte/**`.
 
 **Las medidas salen de medir el boceto, no de ajustar a ojo.** El móvil del dibujo son
 295x706 px; sobre eso: cabecera 5,2% del alto, barra de abajo 7,9%, filas del Club 10,6%,
 filas de Desafíos 14–17%, filas del Perfil 8,6% las de arriba y 6,8% las de abajo, y en
 Inicio ficha 81 px, JUGAR 194, actividad 144, novedades 98 y progreso 52 sobre 598 de alto
 útil —de ahí los `flex-grow` 2 / 1,47 / 1—.
+
+**Un fallo que costó encontrar y que conviene recordar:** `.barra` es un `<span>`, y a un
+elemento en línea no se le puede dar alto. Sin `display:block` se quedaba con el alto de su
+línea —58 px—, estiraba la columna del nombre por encima del panel y **el nombre se salía
+de la ficha del jugador** en el Perfil.
 
 **Dos formas de fila, y son las dos del boceto.** Con emblema (Club y Desafíos): cada fila
 es su propio panel con filete de oro, texto a la izquierda y el icono grande a la derecha,

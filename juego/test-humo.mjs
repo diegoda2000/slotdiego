@@ -952,11 +952,8 @@ comprobar(def.elOtro.cambios === 0, 'y solo al que le toca defender, no al que d
 /* ── 2h. Declarar tocando cartas, y el defensor manda la suya ──────────── */
 console.log('\n2h. Declarar por carta y confirmación del defensor');
 // Inicio → JUGAR → Contra la IA: el camino que hace el jugador de verdad
-/* Se toca el BOTÓN "Jugar ahora", no el panel: desde el boceto de la interfaz nueva el
-   banner de JUGAR lleva su botón dentro, así que hay dos elementos con data-nav="jugar"
-   —el panel entero y el botón— y los dos hacen lo mismo. Se toca el que toca el jugador. */
 await page.evaluate(() => { ir('inicio'); });
-await page.locator('.btn.cta[data-nav="jugar"]').click();
+await page.locator('[data-nav="jugar"]').click();
 await page.locator('[data-a="jugar"]').click();
 await page.locator('[data-rol="declarar"]').click();
 for (let i = 0; i < 40; i++) {
