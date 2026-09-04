@@ -559,6 +559,45 @@ const iEnSobre = await page.evaluate(() => {
 });
 comprobar(iEnSobre === 0, `la (i) es de la tienda, no de la pantalla del sobre (${iEnSobre})`);
 
+/* LA FOTO DE PERFIL EMPIEZA VACÍA Y LA ELIGE EL JUGADOR. Antes salía sola la mejor carta
+   de su plantilla, que es ponerle una cara que él no ha escogido. */
+const avatar = await page.evaluate(() => {
+  S = estadoNuevo();
+  ir('perfil');
+  const vacia = { guardado: S.avatar, foto: !!document.querySelector('#app .jug .cara img') };
+  // se toca la cara y sale la rejilla de los tuyos
+  document.querySelector('[data-a="elegiravatar"]').click();
+  const ops = [...document.querySelectorAll('[data-a="ponavatar"]')];
+  const abre = ops.length > 0;
+  // ninguno repetido: uno por cara, no uno por carta
+  const cids = ops.map(o => o.dataset.cid);
+  const personas = cids.map(c => PORID[c].persona);
+  const sinRepetir = new Set(personas).size === personas.length;
+  // y todos los ofrecidos son tuyos
+  const todosMios = cids.every(c => S.coleccion.some(x => x.cid === c));
+  ops[0].click();
+  const puesta = { guardado: S.avatar, foto: !!document.querySelector('#app .jug .cara img') };
+  // si la carta deja de ser tuya, la foto se cae sola
+  const suyo = S.avatar;
+  S.coleccion = S.coleccion.filter(x => x.cid !== suyo);
+  render();
+  const tras = !!document.querySelector('#app .jug .cara img');
+  // y se puede quitar a mano
+  S = estadoNuevo(); S.avatar = carasElegibles()[0].id; render();
+  document.querySelector('[data-a="elegiravatar"]').click();
+  document.querySelector('[data-a="quitaravatar"]').click();
+  const quitada = { guardado: S.avatar, foto: !!document.querySelector('#app .jug .cara img') };
+  return { vacia, abre, sinRepetir, todosMios, puesta, tras, quitada, n: ops.length };
+});
+comprobar(avatar.vacia.guardado === '' && !avatar.vacia.foto,
+  'la foto de perfil empieza vacía, no con la mejor carta de la plantilla');
+comprobar(avatar.abre && avatar.todosMios,
+  `tocarla ofrece a los peleadores de tu colección (${avatar.n})`);
+comprobar(avatar.sinRepetir, 'uno por cara, no uno por carta');
+comprobar(avatar.puesta.guardado && avatar.puesta.foto, 'elegir uno la pone y la guarda');
+comprobar(!avatar.tras, 'y si la carta deja de ser tuya, la foto se cae sola');
+comprobar(avatar.quitada.guardado === '' && !avatar.quitada.foto, 'y se puede quitar a mano');
+
 comprobar(!(await page.evaluate(() => document.body.innerHTML.includes('abrirtodo'))),
   'no hay ninguna forma de abrir varios sobres de golpe');
 

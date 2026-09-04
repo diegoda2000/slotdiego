@@ -543,7 +543,7 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 
 /* ── La tarjeta del jugador: avatar, nombre, nivel y barra de XP ── */
 .jug{display:flex;align-items:center;gap:12px;flex:none}
-.jug .cara{position:relative;width:58px;height:58px;flex:none;
+.jug .cara{position:relative;width:58px;height:58px;flex:none;padding:0;border:0;
   background:linear-gradient(160deg,var(--acc2),var(--acc));
   clip-path:polygon(29% 0,71% 0,100% 29%,100% 71%,71% 100%,29% 100%,0 71%,0 29%);
   display:flex;align-items:center;justify-content:center}
@@ -553,6 +553,25 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 .jug .cara img{position:absolute;left:50%;top:1%;width:235%;height:auto;
   transform:translateX(-50%);max-width:none}
 .jug .cara .ico{width:26px;height:26px;color:var(--dim2)}
+.jug .cara:active{transform:scale(.94)}
+
+/* LA REJILLA DE CARAS para elegir la foto de perfil. Las caras van recortadas en octógono,
+   igual que en la ficha, para que se vea cuál va a ser el resultado antes de tocarla. */
+.caras{display:grid;grid-template-columns:repeat(auto-fill,minmax(76px,1fr));gap:9px;
+  max-height:52vh;overflow-y:auto;padding:2px}
+.cara-op{display:flex;flex-direction:column;align-items:center;gap:5px;padding:0}
+.cara-op .mini{position:relative;width:100%;aspect-ratio:1;overflow:hidden;
+  background:var(--bg3);
+  clip-path:polygon(29% 0,71% 0,100% 29%,100% 71%,71% 100%,29% 100%,0 71%,0 29%);
+  display:flex;align-items:center;justify-content:center}
+.cara-op .mini img{position:absolute;left:50%;top:1%;width:235%;height:auto;
+  transform:translateX(-50%);max-width:none}
+.cara-op .nm{font-family:var(--titulo);font-size:11px;font-weight:600;line-height:1.15;
+  color:var(--dim);text-align:center;max-width:100%;overflow:hidden;text-overflow:ellipsis;
+  white-space:nowrap}
+.cara-op.on .mini{outline:2px solid var(--acc2);outline-offset:-2px}
+.cara-op.on .nm{color:var(--acc2)}
+.cara-op:active{transform:scale(.95)}
 .jug .qn{flex:1;min-width:0}
 .jug .qn .nv{font-family:var(--titulo);font-weight:700;font-size:19px;letter-spacing:.03em;
   text-transform:uppercase;display:flex;align-items:center;gap:8px}
@@ -1060,7 +1079,8 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 .mark .vs{font-size:13px;color:var(--dim2);font-weight:600}
 .ov{position:fixed;inset:0;background:rgba(6,8,11,.9);z-index:100;display:flex;
   align-items:center;justify-content:center;padding:16px;overflow-y:auto}
-.ov .box{background:var(--bg2);border:1px solid var(--line);border-radius:15px;padding:18px;
+.ov .box{background-image:var(--tarjeta);background-color:var(--bg2);
+  border:1px solid var(--filo);border-radius:15px;padding:18px;
   max-width:420px;width:100%;max-height:92vh;overflow-y:auto}
 .opt{background:var(--bg3);border:1px solid var(--line);border-radius:9px;padding:11px 13px;
   margin-bottom:7px;cursor:pointer;transition:.12s}
@@ -1177,6 +1197,11 @@ let S=null;
 function estadoNuevo(){
   const s={divisa:250,fichas:0,coleccion:[],plantilla:{},sobres:[],
     partidas:0,victorias:0,gratis:{},sets:[],retos:[],nombre:'',amigos:[],
+    /* LA FOTO DE PERFIL ARRANCA VACÍA y la elige el jugador tocándola. Antes salía sola
+       la mejor carta de su plantilla, y eso es ponerle una cara que él no ha escogido.
+       Se guarda el `cid` de la carta y no la ruta de la foto: quien pelea en dos
+       divisiones tiene una foto por división, y el cid las distingue. */
+    avatar:'',
     tutorialHecho:false,tutorCortado:false,mudo:false};
   /* Arranque garantizado: una plata por división. Sin repetir peleador — hay quien
      tiene carta de plata en dos divisiones, y si al sortear cae el mismo en las dos, una
@@ -2050,16 +2075,50 @@ function vInicio(){
   </div>`;
 }
 
-/* La cara del jugador es la MEJOR CARTA DE SU PLANTILLA, no un avatar que haya que
-   elegir: sale de lo que ya hay puesto y cambia sola cuando cambia el once. Si todavía
-   no hay nadie alineado, va el icono de persona. */
+/* La cara del jugador es LA QUE ÉL HAYA ELEGIDO, y empieza vacía. Se elige tocándola, de
+   entre los peleadores que tenga en su colección.
+
+   Se comprueba que la carta siga estando: se puede reciclar o intercambiar al peleador que
+   tienes de foto, y entonces la foto se cae sola en vez de quedarse apuntando a una carta
+   que ya no es tuya. */
+function cartaAvatar(){
+  if(!S.avatar) return null;
+  if(!S.coleccion.some(x=>x.cid===S.avatar)) return null;
+  return PORID[S.avatar]||null;
+}
 function avatarJugador(){
-  const cs=Object.values(S.plantilla||{}).map(iid=>{
-    const o=S.coleccion.find(x=>x.iid===iid); return o&&PORID[o.cid];
-  }).filter(Boolean);
-  if(!cs.length) return null;
-  const c=ordenar(cs)[0];
-  return fotoSrc(c.persona, c.division);
+  const c=cartaAvatar();
+  return c?fotoSrc(c.persona, c.division):null;
+}
+
+/* Los peleadores de la colección que tienen foto, uno por cara y no uno por carta: quien
+   pelea en dos divisiones sale una vez, con la carta que se tenga. */
+function carasElegibles(){
+  const vistos=new Set(), out=[];
+  for(const c of ordenar([...new Set(S.coleccion.map(x=>x.cid))].map(id=>PORID[id]).filter(Boolean))){
+    if(vistos.has(c.persona)) continue;
+    if(!fotoSrc(c.persona, c.division)) continue;
+    vistos.add(c.persona); out.push(c);
+  }
+  return out;
+}
+
+/* Elegir la foto de perfil. Sólo entre los que tienes: es una carta tuya, no un catálogo. */
+function ovElegirAvatar(){
+  const cs=carasElegibles();
+  if(!cs.length) return ov(`<div class="center"><h3>Todavía no tienes a nadie</h3>
+    <div class="sub mb">Abre un sobre y podrás poner de foto a cualquier peleador de tu
+      colección.</div>
+    <button class="btn" data-a="cerrarov">Vale</button></div>`);
+  ov(`<h3>Tu foto de perfil</h3>
+    <div class="sub mb">Elige a uno de los tuyos.</div>
+    <div class="caras">${cs.map(c=>`<button class="cara-op ${c.id===S.avatar?'on':''}"
+        data-a="ponavatar" data-cid="${c.id}">
+        <span class="mini"><img src="${fotoSrc(c.persona,c.division)}" alt="" loading="lazy"></span>
+        <span class="nm">${esc(c.nombre)}</span></button>`).join('')}</div>
+    <div class="row" style="margin-top:12px">
+      ${S.avatar?'<button class="btn gho" data-a="quitaravatar">Quitarla</button>':''}
+      <button class="btn sec" data-a="cerrarov">Cerrar</button></div>`);
 }
 const nombreJugador=()=>S.nombre||'JUGADOR';
 
@@ -2069,7 +2128,8 @@ const nombreJugador=()=>S.nombre||'JUGADOR';
 function fichaJugador(){
   const foto=avatarJugador();
   return `<div class="blq"><div class="jug">
-    <span class="cara"><i>${foto?`<img src="${foto}" alt="" loading="lazy">`:icono('persona')}</i></span>
+    <button class="cara" data-a="elegiravatar" aria-label="Tu foto de perfil"><i>${
+          foto?`<img src="${foto}" alt="" loading="lazy">`:icono('persona')}</i></button>
     <span class="qn">
       <span class="nv">${esc(nombreJugador())} <span class="pdte">Nivel y XP</span></span>
       <span class="xp">Nivel — · — / — XP</span>
@@ -2348,7 +2408,8 @@ function vPerfil(){
   return `<div class="pila v2">
     <div class="blq">
       <div class="jug" style="margin-bottom:9px">
-        <span class="cara"><i>${foto?`<img src="${foto}" alt="" loading="lazy">`:icono('persona')}</i></span>
+        <button class="cara" data-a="elegiravatar" aria-label="Tu foto de perfil"><i>${
+          foto?`<img src="${foto}" alt="" loading="lazy">`:icono('persona')}</i></button>
         <span class="qn">
           <span class="nv">${esc(nombreJugador())} <span class="pdte">Nivel y XP</span></span>
           <span class="xp">Nivel — · — / — XP</span>
@@ -4368,6 +4429,12 @@ document.addEventListener('click',e=>{
     case 'confirmarcompra': cerrarOv(); hacerCompra(d.t); break;
     case 'probs':                        // la (i) de la esquina de un sobre
       ovProbabilidades(d.t); break;
+    /* La foto de perfil: se toca la cara y se elige entre los peleadores que tienes. */
+    case 'elegiravatar': ovElegirAvatar(); break;
+    case 'ponavatar':
+      S.avatar=d.cid; guardar(); cerrarOv(); render(); break;
+    case 'quitaravatar':
+      S.avatar=''; guardar(); cerrarOv(); render(); break;
     case 'sub':                          // cambiar de sub-pestaña dentro de la Tienda
       tmp.sub=d.v; window.scrollTo(0,0); render(); break;
     /* Ir a la pantalla del sobre. NO cobra ni gasta nada: solo enseña qué trae.

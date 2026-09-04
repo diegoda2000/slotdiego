@@ -179,6 +179,14 @@ aparcados al final del Perfil, bajo el rótulo **SIN COLOCAR TODAVÍA**. SBC y L
 fueron a Desafíos; Ajustes dejó de ser un botón del Club y vive en el engranaje y en el
 Perfil.
 
+**LA FOTO DE PERFIL EMPIEZA VACÍA Y LA ELIGE ÉL.** Se toca la cara —en Inicio o en
+Perfil— y sale una rejilla con los peleadores de tu colección, recortados en octógono para
+que se vea cómo va a quedar; se puede quitar. Antes salía sola la mejor carta de la
+plantilla, y eso es ponerle una cara que él no ha escogido. Se guarda el `cid` de la carta
+en `S.avatar` y **no la ruta de la foto**: quien pelea en dos divisiones tiene una foto por
+división. Y si la carta deja de ser suya —reciclada o intercambiada—, la foto se cae sola
+en vez de apuntar a una carta que ya no tiene. Se ofrece **uno por cara, no uno por carta**.
+
 **La marca PENDIENTE.** El boceto enseña cosas que el juego no tiene: nivel y XP, pase de
 temporada, racha, rango, eventos, novedades, historial, estadísticas, cartas favoritas,
 cuenta y ayuda. Esos bloques **están pintados en su sitio y con su forma**, y llevan una
