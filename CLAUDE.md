@@ -12,10 +12,12 @@ disculpas. Los nombres de funciones, variables y archivos también van en españ
 ## En qué punto está el trabajo
 
 Rama de trabajo: **`claude/diseno-carta-pendiente-vn5tw1`**. Lo último entregado: las
-cuentas con correo, contraseña y nombre de usuario. (El número de commit no se apunta aquí: se quedaba viejo al
-commit siguiente y despistaba más que ayudaba.)
-El APK se publica solo en cada push y se descarga de la publicación **`apk-latest`**
-(`p4p-cg.apk`, ~11,6 MB, y `p4p-cg.ipa`).
+cuentas con correo, contraseña y nombre de usuario, y **la release 0.1.0 publicada**. (El
+número de commit no se apunta aquí: se quedaba viejo al commit siguiente y despistaba más
+que ayudaba.)
+El APK se publica solo en cada push, **firmado con la clave de release**, y se descarga de
+dos sitios: **`apk-latest`**, que es siempre lo último y cambia debajo, y **`v0.1.0`**, que
+es la versión concreta y no se toca nunca más (`p4p-cg.apk`, ~13 MB, y `p4p-cg.ipa`).
 
 **Hecho y aprobado por el dueño:**
 
@@ -1141,13 +1143,27 @@ construye igual y luego no se instala en ningún móvil. Se verifica con `apksig
   no se instala encima. La primera vez hay que desinstalar, y ahí se pierde la colección
   local. De ahí en adelante las actualizaciones ya no piden nada.
 
-**Para que el APK publicado vaya firmado así** hay que meter el keystore en los secretos de
-GitHub (en base64) y que el flujo lo escriba antes de compilar. **No está hecho**: la
-descarga de `apk-latest` sigue siendo la de depuración.
+**ESTÁ HECHO Y COMPROBADO.** Los tres secretos los puso él, y el APK que se publica sale
+firmado con la clave de release. El flujo lo verifica con `apksigner verify` en cada vuelta:
 
-**La primera release es la `0.1.0`** (`versionCode` 1), y la puso él: *"a esta primera
-release llámala la versión de nombre 0.1.0, y luego ya iremos subiendo según vayamos
-avanzando"*.
+    V2 Signer: certificate DN: CN=P4P.CG, OU=P4P.CG, O=P4P.CG, L=Madrid, ST=Madrid, C=ES
+    V2 Signer: certificate SHA-256: 715ea8031951fe18fc9fcbffb554e83a09d93165f86b26ce33f2719a327a4d43
+
+Ese número es el del `juego-release.keystore`, y **siempre va a ser el mismo**: el flujo no
+elige, escribe el keystore desde `ANDROID_KEYSTORE_B64` antes de compilar. Mientras no se
+toquen los tres secretos, cada APK se instala encima como actualización.
+
+**LA 0.1.0 YA ESTÁ PUBLICADA**, y la mandó sacar él —*"acaba y saca la release 0.1.0"*—.
+Está en `v0.1.0`, con el APK firmado y el `.ipa`, apuntando al commit desde el que se
+construyó. La puso él con ese nombre: *"a esta primera release llámala la versión de nombre
+0.1.0, y luego ya iremos subiendo según vayamos avanzando"*.
+
+**HAY DOS PUBLICACIONES Y NO SON LO MISMO.** `apk-latest` se borra y se rehace en cada
+empujón: sirve para "dame lo último", pero su APK cambia debajo, así que no vale para volver
+a una versión concreta. `v0.1.0` —y las que vengan— **no se toca nunca más**: el paso
+"Publicar la versión" sólo la crea **si no existe**, porque rehacerla cambiaría el archivo
+que alguien ya se bajó con ese número y entonces el número no significaría nada. Para sacar
+otra hay que **SUBIR LA VERSIÓN**.
 
 **"SUBE LA VERSIÓN"** es la frase para subir el `versionCode` de `android/app/build.gradle`
 —+1— y ponerle un `versionName` nuevo. Eso es lo que hace que Android trate el APK como una
