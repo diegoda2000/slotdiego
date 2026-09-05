@@ -2356,7 +2356,12 @@ function ajustarRejillas(){
     const porFila=(alto-HUECO*(filas-1))/filas;
     let ancho=(porFila-PIE)*620/877;
     const tope=(g.parentElement.clientWidth-HUECO*(cols-1))/cols;
-    ancho=Math.max(46, Math.min(ancho, tope));
+    /* SE REDONDEA HACIA ABAJO, nunca hacia arriba. El ancho sale de una división y cae en
+       decimales; al alto de cada fila se le aplica la proporción de la carta y esas décimas
+       se multiplican por las filas, así que la rejilla podía pasarse del hueco por un
+       píxel. Con el suelo entero nunca se pasa: como mucho sobra. Vetos venía dando ese
+       píxel de más. */
+    ancho=Math.floor(Math.max(46, Math.min(ancho, tope)));
     g.style.setProperty('--rejilla', (ancho*cols+HUECO*(cols-1)).toFixed(1)+'px');
     /* LA REJILLA OCUPA LO QUE OCUPA, y no el hueco entero. Antes se le fijaba el alto y
        lo que sobraba se repartía entre las filas: con la hoja llena colaba, pero en cuanto
