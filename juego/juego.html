@@ -651,11 +651,14 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
   padding-top:5px}
 .tira .hueco{flex:1 1 0;min-width:0;display:flex;flex-direction:column;
   align-items:stretch;justify-content:flex-end;gap:4px}
-.tira .hueco + .hueco{margin-left:-11px}
+/* El solape va CORTO. A -11 px la carta de al lado tapaba media letra del nombre de la
+   anterior y la tira se leía a trozos; a -4 se sigue viendo que es un montón y los nombres
+   se leen enteros. */
+.tira .hueco + .hueco{margin-left:-4px}
 .tira .hueco > .carta{width:100%}
 /* La del medio, más grande y por delante: es la que manda en el boceto. */
 .tira .hueco.jefa{z-index:2}
-.tira .hueco.jefa > .carta{transform:scale(1.10);transform-origin:bottom center}
+.tira .hueco.jefa > .carta{transform:scale(1.06);transform-origin:bottom center}
 .tira .hueco:not(.jefa) > .carta{filter:brightness(.86)}
 .tira .med{text-align:center}
 .tira .med{font-family:var(--titulo);font-size:12px;font-weight:800;color:var(--acc2);

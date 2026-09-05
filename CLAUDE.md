@@ -300,7 +300,22 @@ tamaños medidos sobre el boceto se quedarían cortos. Con 108,7% —que es 0,69
 letra vuelve a medir en pantalla lo que mide en el boceto sin tocar ni un `font-size`. Si un
 WebView viejo lo ignora, el texto sale un 8% más pequeño y ya está.
 
-**LOS EMBLEMAS SON LOS DEL BOCETO, recortados de su propio archivo.** Lo pidió así:
+**CUATRO EMBLEMAS SON YA LOS DE VERDAD, y los pasó él**: colección, sets, reciclaje e
+intercambio, en `originales/emblemas-v2/`. Los prepara
+`herramientas/preparar-emblemas-v2.py`. **Colección es la CAJA y sets son las CARTAS con la
+estrella** —él dejó la elección abierta: la caja es donde se guardan todas y un set es un
+grupo concreto—.
+
+**Se normalizan por PESO VISUAL, no por alto.** Puestos todos al mismo alto, el de
+intercambio —dos flechas anchas y bajas— se ve enorme al lado de la caja, que es alta y
+estrecha. Lo que tiene que medir lo mismo es la TINTA: se cuenta el área opaca de cada uno y
+se escala para que su raíz sea la misma en los cuatro.
+
+**Los otros cinco siguen recortados del boceto** —SBC, desafíos, eventos, pase y logros— y
+se nota: son de baja resolución y llevan color (morado, azul, rojo, verde) al lado del oro
+de los nuevos. **Están pendientes de que él los pase.**
+
+**LOS EMBLEMAS DEL BOCETO, recortados de su propio archivo.** Lo pidió así:
 *"intenta copiar, por ejemplo, los logos de desafíos, eventos, colección, sets, no me pongas
 esos logos de mierda"*. Los saca `herramientas/sacar-emblemas.py` y viven en
 `juego/arte/emblemas/` —nueve: colección, sets, reciclaje, intercambio, SBC, desafíos,
