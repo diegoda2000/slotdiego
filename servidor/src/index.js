@@ -62,10 +62,22 @@ export default {
    Correo, contraseña y nombre de usuario. Lo pidió así el dueño, y Google queda para más
    adelante porque su login no funciona dentro de un WebView y hace falta el nativo.
 
-   LA CONTRASEÑA NO SE GUARDA NUNCA. Se guarda PBKDF2-SHA256 con 150.000 vueltas y una sal
+   LA CONTRASEÑA NO SE GUARDA NUNCA. Se guarda PBKDF2-SHA256 con 100.000 vueltas y una sal
    de 16 bytes distinta para cada cuenta. Con la sal por cuenta, dos personas con la misma
-   contraseña tienen hashes distintos, y las 150.000 vueltas hacen que probar contraseñas a
-   lo bruto cueste tiempo de verdad. Todo con WebCrypto, que el Worker ya trae dentro.
+   contraseña tienen hashes distintos, y las vueltas hacen que probar contraseñas a lo bruto
+   cueste tiempo de verdad. Todo con WebCrypto, que el Worker ya trae dentro.
+
+   LAS 100.000 SON EL TECHO DE CLOUDFLARE, no una elección. Workers rechaza PBKDF2 por
+   encima de esa cifra —"iteration counts above 100000 are not supported"—, y esto costó una
+   vuelta entera: iba a 150.000, `wrangler dev` NO comprueba el límite y pasaba en local, y
+   el worker desplegado devolvía 500 al registrarse. Por eso hay una comprobación en
+   test-cuentas.mjs que sujeta el número: lo que no reproduce el entorno de pruebas hay que
+   dejarlo escrito donde se vea.
+
+   Está por debajo de lo que recomienda OWASP hoy (600.000 para SHA-256), y desde aquí no se
+   puede subir. Si algún día hace falta más, la salida es encadenar amasados de 100.000 —el
+   resultado de uno entra como contraseña del siguiente, y el trabajo se suma—, no subir el
+   número. No se hace ahora porque cada amasado son ~16 ms de CPU y Workers los cuenta.
 
    Y LA COMPARACIÓN ES EN TIEMPO CONSTANTE. Comparar dos hashes con === se sale en el
    primer byte distinto, y de cuánto tarda en salirse se puede deducir el hash a base de
@@ -82,10 +94,12 @@ const enc = new TextEncoder();
 const aHex = b => [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, '0')).join('');
 const deHex = h => new Uint8Array(h.match(/../g).map(x => parseInt(x, 16)));
 
+// El techo de Cloudflare. Subirlo NO es una decisión de diseño: es un 500 al registrarse.
+export const VUELTAS = 100000;
 async function amasar(clave, salHex) {
   const base = await crypto.subtle.importKey('raw', enc.encode(clave), 'PBKDF2', false, ['deriveBits']);
   const bits = await crypto.subtle.deriveBits(
-    { name: 'PBKDF2', salt: deHex(salHex), iterations: 150000, hash: 'SHA-256' }, base, 256);
+    { name: 'PBKDF2', salt: deHex(salHex), iterations: VUELTAS, hash: 'SHA-256' }, base, 256);
   return aHex(bits);
 }
 // Dos cadenas de la misma longitud, mirándolas enteras siempre.

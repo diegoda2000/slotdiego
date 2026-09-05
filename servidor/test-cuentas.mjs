@@ -1,6 +1,6 @@
 /* Prueba la clase Cuentas del Worker fuera de Cloudflare, con un almacén de mentira que
    se comporta como ctx.storage: get(clave) y put(objeto o clave,valor). */
-import { Cuentas } from './src/index.js';
+import { Cuentas, VUELTAS } from './src/index.js';
 
 const almacen = new Map();
 const ctx = { storage: {
@@ -85,6 +85,12 @@ ok(a.sal!==b.sal, 'cada cuenta tiene su propia sal');
 const gordo = {partidas:1, coleccion:Array.from({length:5000},(_,i)=>({iid:'i'+i,cid:'ilia-topuria-m3'}))};
 [s] = await leer(await pide('/cuenta/subir',{cuerpo:{estado:gordo}, token:tokenD}));
 ok(s===200, 'sube un estado de 5.000 cartas ('+(JSON.stringify(gordo).length/1024).toFixed(0)+' KB)');
+
+/* 11. EL TECHO DE CLOUDFLARE. Workers rechaza PBKDF2 por encima de 100.000 vueltas, y
+   `wrangler dev` NO lo comprueba: con 150.000 esto pasaba en local y el worker desplegado
+   devolvía 500 al registrarse. Lo que el entorno de pruebas no reproduce, se sujeta aquí. */
+ok(VUELTAS <= 100000, `las vueltas de PBKDF2 caben en el techo de Cloudflare (${VUELTAS} de 100.000)`);
+ok(VUELTAS >= 50000, `y siguen siendo bastantes como para que probar a lo bruto duela (${VUELTAS})`);
 
 console.log(fallos ? `\n${fallos} FALLOS` : '\nTodo bien');
 process.exit(fallos?1:0);

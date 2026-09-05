@@ -604,9 +604,17 @@ no vale: hace falta un sitio donde el nombre y el correo sean únicos **de verda
 se puede comprobar si cada cuenta vive en su propio objeto sin hablar con las demás. Para
 una alfa sobra; el día que haya miles se parte por letra inicial.
 
-- **La contraseña NO se guarda nunca.** PBKDF2-SHA256, 150.000 vueltas, **sal de 16 bytes
-  distinta por cuenta** —así dos personas con la misma contraseña tienen hashes distintos—.
-  Todo con WebCrypto, que el Worker ya trae.
+- **La contraseña NO se guarda nunca.** PBKDF2-SHA256, **100.000 vueltas**, **sal de 16
+  bytes distinta por cuenta** —así dos personas con la misma contraseña tienen hashes
+  distintos—. Todo con WebCrypto, que el Worker ya trae.
+- **Las 100.000 son EL TECHO DE CLOUDFLARE, no una elección.** Workers rechaza PBKDF2 por
+  encima —*"iteration counts above 100000 are not supported"*—, y esto costó una vuelta:
+  iban 150.000, **`wrangler dev` no comprueba el límite** y pasaba en local, y el worker
+  desplegado devolvía **500** al registrarse. Por eso hay una comprobación en
+  `test-cuentas.mjs` que sujeta el número: lo que el entorno de pruebas no reproduce hay que
+  dejarlo escrito donde se vea. Si algún día hace falta más, la salida es **encadenar**
+  amasados de 100.000 —el resultado de uno entra como contraseña del siguiente y el trabajo
+  se suma—, no subir el número.
 - **La comparación es en tiempo constante.** Con `===` se sale en el primer byte distinto, y
   de cuánto tarda en salirse se deduce el hash a base de intentos.
 - **El mismo error si la cuenta no existe y si la contraseña está mal.** Decir "ese usuario

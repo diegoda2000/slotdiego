@@ -160,11 +160,15 @@ const pideCuenta = async (ruta, { metodo = 'POST', cuerpo, token } = {}) => {
   return { estado: r.status, cuerpo: await r.json().catch(() => null) };
 };
 const quien = 'prueba' + Date.now().toString(36);
+/* UN FALLO TIENE QUE DECIR QUÉ HA CONTESTADO EL SERVIDOR. Ver sólo "500" costó una vuelta
+   entera: el error de verdad —PBKDF2 por encima del techo de Cloudflare— venía en el cuerpo
+   y no se estaba mirando. */
+const porque = r => r.cuerpo && r.cuerpo.error ? ` — ${r.cuerpo.error}` : '';
 const alta = await pideCuenta('/cuenta/registro', { cuerpo: {
   usuario: quien, correo: quien + '@ejemplo.invalid', clave: 'contrasena-de-prueba',
   estado: { partidas: 3, coleccion: [{ iid: 'i1', cid: 'ilia-topuria-m3' }] } } });
 comprobar(alta.estado === 200 && !!alta.cuerpo.token,
-  `se crea una cuenta y devuelve sesión (${alta.estado})`);
+  `se crea una cuenta y devuelve sesión (${alta.estado}${porque(alta)})`);
 
 if (alta.cuerpo && alta.cuerpo.token) {
   // AL CREAR LA CUENTA SE SUBE LO QUE YA TIENE: eso lo decidió él, y aquí se comprueba.
@@ -174,7 +178,7 @@ if (alta.cuerpo && alta.cuerpo.token) {
 
   const sube = await pideCuenta('/cuenta/subir',
     { cuerpo: { estado: { partidas: 9, coleccion: [] } }, token: alta.cuerpo.token });
-  comprobar(sube.estado === 200, 'la colección se sube con la sesión puesta');
+  comprobar(sube.estado === 200, `la colección se sube con la sesión puesta (${sube.estado}${porque(sube)})`);
 
   const vuelve = await pideCuenta('/cuenta/entrar',
     { cuerpo: { quien: quien + '@EJEMPLO.invalid', clave: 'contrasena-de-prueba' } });
