@@ -71,8 +71,8 @@ android {
            cambien ni el applicationId ni la firma, la colección del jugador —que vive en
            el localStorage del WebView— no se toca. `versionName` es sólo lo que se lee.
            La frase acordada con el dueño para pedirlo es "sube la versión". */
-        versionCode 1
-        versionName "0.1.0"
+        versionCode 2
+        versionName "0.1.1"
     }
 
     signingConfigs {

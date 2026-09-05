@@ -1763,7 +1763,10 @@ const scroll = await movil.evaluate(async () => {
   S.coleccion = [...S.coleccion, ...extra, ...extra.slice(0, 40).map((x, i) => ({ iid: 'r' + i, cid: x.cid }))];
   autoPlantilla(S, true); S.fichas = 5; guardar();
   const desborda = () => document.documentElement.scrollHeight - innerHeight;
-  for (const v of ['coleccion', 'reciclaje', 'plantilla']) { tmp = {}; ir(v); out[v] = desborda(); }
+  /* La pantalla de VENDER se desplaza A PROPÓSITO —"que aquí sí sea scroll hacia abajo"—,
+     así que no entra en esta lista. Lo suyo se comprueba abajo: que el total y el botón no
+     se muevan al bajar. */
+  for (const v of ['coleccion', 'plantilla']) { tmp = {}; ir(v); out[v] = desborda(); }
   tmp = {}; ir('retosdetalle'); tmp.reto = 'r1'; render(); out.sbc = desborda();
   out.plantillaCompleta = plantillaCompleta();
   empezarPartida(null); elegirRol('atacar'); render(); out.vetos = desborda();
@@ -1784,7 +1787,7 @@ for (const [pantalla, px] of Object.entries(scroll)) {
 }
 comprobar(erroresMovil.length === 0,
   `y ninguna de esas pantallas da un error (${erroresMovil.join(' | ') || 'ninguno'})`);
-await movil.close();
+// (la página de móvil se cierra al final de 2p, que también la usa)
 
 /* ── 2o. Lo que el jugador LEE coincide con lo que el juego DA ───────────────────────
    El tutorial anunciaba "un sobre de oro" y entregaba un épico: el texto se quedó del
@@ -1893,8 +1896,8 @@ const venta = await page.evaluate(() => {
   const bueno = ROSTER.find(c => tramoDe(c) === 'corona');
   S.coleccion.push({ iid: 'a1', cid: bueno.id }, { iid: 'a2', cid: bueno.id });
   S.plantilla = {}; guardar();
-  // vendible() dice que sí a las dos —hay repetidos—, y es vender() quien para en una
-  r.primeraNoSeVende = true;
+  // La copia de la colección no se vende: con dos copias hay UNA repetida.
+  r.primeraNoSeVende = repetidasDe(bueno.id) === 1;
   const antes = S.coleccion.length;
   const hecho = vender(['a1', 'a2']);
   r.venta = { oro: hecho.oro, cuantas: hecho.cuantas, quedan: S.coleccion.length,
@@ -1924,11 +1927,113 @@ comprobar(Object.values(venta.revender).every(v => v < 0.4),
 comprobar(Object.values(venta.morralla).every(v => v < 0.15),
   `y la morralla de un sobre no paga otro sobre (${Object.entries(venta.morralla).map(([k, v]) => k + ' ' + Math.round(v * 100) + '%').join(', ')})`);
 comprobar(venta.primeraNoSeVende,
-  'la primera copia de un peleador no se vende nunca');
+  'con dos copias hay una repetida: la copia de la colección no se vende nunca');
 comprobar(venta.venta.cuantas === 1 && venta.venta.quedan === 1 && venta.venta.divisa === venta.venta.oro,
-  `vender cobra y se lleva sólo la repetida (${venta.venta.cuantas} vendida, ${venta.venta.oro} de oro, quedan ${venta.venta.quedan})`);
-comprobar(venta.venta.contadas === 1, 'y se cuenta para el logro del Chatarrero');
+  `vender se lleva la repetida y deja la de la colección (${venta.venta.cuantas} vendida, ${venta.venta.oro} de oro, queda ${venta.venta.quedan})`);
+comprobar(venta.venta.contadas === venta.venta.cuantas, 'y se cuenta para el logro del Chatarrero');
 comprobar(venta.jugable, 'y la partida sigue jugable después de vender');
+
+/* La pantalla de vender, tal y como la aprobó: una casilla por peleador y SOLO repetidos,
+   el deslizador para elegir cuántas, la selección acumulada entre peleadores, el total
+   abajo con Vender debajo y sin moverse, y los precios detrás de una (i). */
+const pantVenta = await movil.evaluate(async () => {
+  const r = {};
+  S.coleccion = []; let i = 0;
+  ROSTER.slice(0, 20).forEach(c => S.coleccion.push({ iid: 's' + (i++), cid: c.id }));
+  // 30 con repetidas: las suficientes para que la lista desborde y haya scroll que medir
+  ROSTER.slice(30, 60).forEach(c => { for (let k = 0; k < 4; k++) S.coleccion.push({ iid: 'd' + (i++), cid: c.id }); });
+  S.plantilla = {}; S.divisa = 0; S.vendidas = 0; tmp = {}; guardar(); ir('reciclaje');
+
+  const cel = () => [...document.querySelectorAll('.venta-cel')];
+  r.soloRepetidos = { casillas: cel().length, distintos: new Set(S.coleccion.map(x => x.cid)).size,
+    todasConRepes: cel().every(e => S.coleccion.filter(x => x.cid === e.dataset.vsel).length > 1) };
+
+  // una casilla por PELEADOR, no por copia
+  r.unaPorPeleador = cel().length === new Set(cel().map(e => e.dataset.vsel)).size;
+  r.columnas = new Set(cel().map(e => Math.round(e.getBoundingClientRect().left))).size;
+
+  // el deslizador ofrece todas menos una, nunca más
+  const uno = cel()[0].dataset.vsel;
+  const copias = S.coleccion.filter(x => x.cid === uno).length;
+  ovVenta(uno);
+  const sl = document.querySelector('#v-desliz');
+  /* Con N copias hay N-1 REPETIDAS, y se venden todas: la de la colección se queda. Él lo
+     dejó claro: "una de tu colección se guarda, y todas las que sean iguales adicionales
+     son repetidas". */
+  r.desliz = { max: +sl.max, copias, correcto: +sl.max === copias - 1 };
+
+  // se elige una cantidad y se acumula con la de otro peleador
+  sl.value = 2; sl.dispatchEvent(new Event('input', { bubbles: true }));
+  document.querySelector('[data-a="ponercopias"]').click();
+  const otro = cel().find(e => e.dataset.vsel !== uno).dataset.vsel;
+  ovVenta(otro);
+  const sl2 = document.querySelector('#v-desliz');
+  sl2.value = 1; sl2.dispatchEvent(new Event('input', { bubbles: true }));
+  document.querySelector('[data-a="ponercopias"]').click();
+  r.acumula = { ...tmp.venta };
+
+  /* LO QUE PROMETE EL PIE ES LO QUE COBRA. Aquí se coló un fallo: `vendible()` dice que sí
+     a TODAS las copias, así que el pie ofrecía una de más y `vender()` sólo se llevaba las
+     que podía. */
+  const pie = document.querySelector('.venta-pie');
+  r.pieFijo = getComputedStyle(pie).position === 'fixed';
+  // y vive FUERA de #app: dentro, la animación de entrada le pone un transform al padre y
+  // un position:fixed pasa a anclarse a él en vez de a la pantalla
+  r.pieFueraDeApp = !document.querySelector('#app').contains(pie);
+  r.botonDebajoDelTotal = pie.querySelector('.arriba .tot') !== null
+    && pie.querySelector('[data-a="vender"]') !== null
+    && pie.querySelector('.arriba').getBoundingClientRect().bottom
+       <= pie.querySelector('[data-a="vender"]').getBoundingClientRect().top;
+  const prometido = +pie.querySelector('.tot').textContent.replace(/[^\d]/g, '');
+  const antesOro = S.divisa, antesCartas = S.coleccion.length;
+  const antesDistintos = new Set(S.coleccion.map(x => x.cid)).size;
+  document.querySelector('[data-a="vender"]').click();
+  // vender no puede hacer desaparecer a nadie de la colección
+  r.nadieACero = new Set(S.coleccion.map(x => x.cid)).size === antesDistintos;
+  r.cobro = { prometido, cobrado: S.divisa - antesOro, quitadas: antesCartas - S.coleccion.length,
+              vendidas: S.vendidas, selVacia: Object.keys(tmp.venta || {}).length === 0 };
+
+  /* El pie no se mueve al bajar del todo. Se vuelve a buscar el elemento: el de antes es
+     el de ANTES de vender, y render() lo sustituyó — medir un nodo ya desprendido del
+     documento devuelve ceros y la comprobación fallaba sin que nada estuviera roto. */
+  const pie2 = document.querySelector('.venta-pie');
+  const antesArriba = Math.round(pie2.getBoundingClientRect().top);
+  window.scrollTo(0, 99999);
+  await new Promise(x => setTimeout(x, 60));
+  r.noSeMueve = Math.round(document.querySelector('.venta-pie').getBoundingClientRect().top) === antesArriba;
+  r.seDesplaza = document.documentElement.scrollHeight > innerHeight;
+
+  // y los precios están detrás de la (i), no en la pantalla
+  window.scrollTo(0, 0);
+  cerrarOv();          // la ficha de "+X vendidas" tapa la lectura de la siguiente
+  r.sinTablaEnPantalla = !/por carta/i.test(document.querySelector('#app').textContent);
+  document.querySelector('[data-a="preciosventa"]').click();
+  r.laIAbre = /cuánto vale cada carta/i.test((document.querySelector('#ov') || document.body).textContent);
+  cerrarOv();
+  return r;
+});
+
+comprobar(pantVenta.soloRepetidos.todasConRepes && pantVenta.soloRepetidos.casillas === 30,
+  `sólo salen las repetidas: ${pantVenta.soloRepetidos.casillas} casillas de ${pantVenta.soloRepetidos.distintos} peleadores`);
+comprobar(pantVenta.nadieACero,
+  'y vender no borra a nadie de la colección: la copia de tu colección se queda');
+comprobar(pantVenta.unaPorPeleador && pantVenta.columnas === 4,
+  `una casilla por peleador y cuatro por fila, como en la colección (${pantVenta.columnas} columnas)`);
+comprobar(pantVenta.desliz.correcto,
+  `el deslizador ofrece todas las REPETIDAS (${pantVenta.desliz.max} de ${pantVenta.desliz.copias} copias)`);
+comprobar(Object.keys(pantVenta.acumula).length === 2,
+  `la selección se acumula entre peleadores distintos (${JSON.stringify(pantVenta.acumula)})`);
+comprobar(pantVenta.pieFijo && pantVenta.botonDebajoDelTotal && pantVenta.pieFueraDeApp,
+  'el total va abajo con el botón Vender debajo, fijo y fuera de #app');
+comprobar(pantVenta.noSeMueve && pantVenta.seDesplaza,
+  'la lista se desplaza y el botón no se mueve ni un píxel');
+comprobar(pantVenta.cobro.prometido === pantVenta.cobro.cobrado
+  && pantVenta.cobro.quitadas === pantVenta.cobro.vendidas,
+  `lo que promete el pie es lo que cobra (${pantVenta.cobro.prometido} prometidos, ${pantVenta.cobro.cobrado} cobrados, ${pantVenta.cobro.quitadas} cartas)`);
+comprobar(pantVenta.cobro.selVacia, 'y la selección se vacía al vender');
+comprobar(pantVenta.sinTablaEnPantalla && pantVenta.laIAbre,
+  'los precios van escondidos detrás de la (i), como los de los sobres');
+await movil.close();
 
 /* ── 3. Partidas completas ────────────────────────────────────────────── */
 console.log(`\n3. ${N_PARTIDAS} partidas completas`);

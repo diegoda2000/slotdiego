@@ -1169,6 +1169,38 @@ th{color:var(--dim2);font-size:11px;text-transform:uppercase;letter-spacing:.04e
   transform:rotate(45deg)}
 /* Puesto se nota: filete y letra en oro. Un filtro activo que se ve igual que uno apagado
    es la forma de que alguien crea que le faltan cartas. */
+/* ── LA PANTALLA DE VENDER ──
+   Cuatro columnas, del mismo tamaño que el álbum, pero AQUÍ SÍ se desplaza: lo pidió él.
+   Una casilla por PELEADOR, no por copia: con cinco repetidos del mismo, cinco casillas
+   iguales no dicen nada y llenan la hoja. */
+.venta-cel{position:relative}
+/* Cuántas tienes, arriba a la izquierda. Discreta: es un dato, no un premio. */
+.venta-cel .copias{position:absolute;top:3px;left:3px;z-index:3;font-family:var(--titulo);
+  font-size:10px;font-weight:800;padding:1px 5px;border-radius:99px;
+  background:rgba(0,0,0,.72);border:1px solid var(--line);color:var(--dim)}
+/* Cuántas has elegido, abajo a la derecha y en oro: eso sí es una decisión tuya. */
+.venta-cel .elegidas{position:absolute;bottom:3px;right:3px;z-index:3;font-family:var(--titulo);
+  font-size:11px;font-weight:800;padding:1px 6px;border-radius:99px;
+  background:var(--acc);color:var(--bg);border:1px solid var(--acc2)}
+.venta-cel.on .carta{outline:2px solid var(--acc);outline-offset:1px}
+/* EL TOTAL VA FIJO Y POR ENCIMA DE LAS PESTAÑAS, con el botón debajo. En `sticky` dentro
+   de #app se queda DEBAJO de la barra de pestañas —#app es una capa propia (z-index:1) y
+   #nav va por encima—, que es la misma trampa que escondió la flecha de la apertura. */
+.venta-pie{position:fixed;left:0;right:0;bottom:calc(64px + env(safe-area-inset-bottom));
+  z-index:70;padding:8px 12px 10px;background:var(--bg);border-top:1px solid var(--filo)}
+.venta-pie .arriba{display:flex;align-items:center;gap:10px;margin-bottom:7px}
+.venta-pie .tot{margin-left:auto;font-family:var(--titulo);font-size:20px;font-weight:800;
+  color:var(--acc2);font-variant-numeric:tabular-nums}
+/* El deslizador. El pulgar es de 26 px porque se maneja con el dedo, no con un ratón. */
+.desliz{-webkit-appearance:none;appearance:none;width:100%;height:30px;background:none}
+.desliz::-webkit-slider-runnable-track{height:6px;border-radius:3px;background:var(--bg3);
+  border:1px solid var(--line)}
+.desliz::-webkit-slider-thumb{-webkit-appearance:none;width:26px;height:26px;border-radius:50%;
+  background:linear-gradient(180deg,var(--acc2),var(--acc));border:2px solid var(--bg);
+  margin-top:-11px;box-shadow:0 2px 8px rgba(0,0,0,.6)}
+.desliz::-moz-range-track{height:6px;border-radius:3px;background:var(--bg3);border:1px solid var(--line)}
+.desliz::-moz-range-thumb{width:26px;height:26px;border-radius:50%;border:2px solid var(--bg);
+  background:var(--acc)}
 .filtros .filtro.on select{border-color:var(--acc);color:var(--acc2)}
 .filtros .filtro.on::after{border-color:var(--acc2)}
 textarea.campo{resize:vertical;line-height:1.35;font-family:var(--texto)}
@@ -1221,6 +1253,12 @@ textarea.campo{resize:vertical;line-height:1.35;font-family:var(--texto)}
 </div>
 <div id="escena" class="escena"></div>
 <div id="app"></div>
+<!-- EL PIE DE LA VENTA VIVE FUERA DE #app, y no es manía: render() le pone a #app la clase
+     .flash, cuya animación lleva un `transform`, y un elemento con transform se convierte en
+     el bloque contenedor de cualquier `position:fixed` que tenga dentro. Resultado: el total
+     y el botón Vender se descolocaban medio segundo después de cada repintado. Aquí fuera
+     está anclado a la pantalla siempre, igual que la barra de pestañas. -->
+<div id="pie"></div>
 <div id="nav"></div>
 
 <script src="roster.js"></script>
@@ -1723,6 +1761,25 @@ function vendible(iid){
   return reciclable(iid) && precioVenta(PORID[it.cid], it.gratis)>0;
 }
 
+/* CUÁNTAS REPETIDAS TIENES DE UN PELEADOR. Y ésa es la palabra exacta, que aquí estuvo el
+   lío: si tienes SEIS copias, una es la de tu colección y las otras CINCO son las
+   repetidas. Se venden las cinco enteras, no cuatro.
+
+   Él lo dejó claro: "no lo puede borrar porque en reciclaje solo pueden salir las cartas
+   repetidas, una de tu colección se guarda, y todas las que sean iguales adicionales son
+   repetidas". Así que el peleador NUNCA desaparece de la colección, y la pantalla no
+   "retiene" nada: enseña repetidas y las vende todas.
+
+   Se cuenta en un solo sitio y de ahí beben el tope del deslizador, la casilla y el total:
+   cuando esto y `vender()` no contaban igual, el pie prometía una carta más de las que
+   luego cobraba. */
+function repetidasDe(cid){
+  const copias=S.coleccion.filter(x=>x.cid===cid);
+  if(copias.length<2) return 0;        // con una sola no hay repetidas: no sale en la lista
+  // La de la colección se queda; de las demás, las que se puedan vender.
+  return Math.min(copias.length-1, copias.filter(x=>vendible(x.iid)).length);
+}
+
 // Lo que se llevaría por lo seleccionado, y el desglose por tramos para enseñarlo.
 function cuentaVenta(iids){
   let oro=0; const detalle={};
@@ -1739,17 +1796,16 @@ function cuentaVenta(iids){
 /* Vender de verdad. Sólo se van las que se pagan: una carta que no vale nada no se
    destruye ni por error, que sería cobrarle al jugador por nada. */
 function vender(iids){
-  /* SE GUARDA SIEMPRE UNA COPIA DE CADA PELEADOR. `vendible()` mira si HAY repetidos, pero
-     eso es verdad para las DOS copias a la vez: seleccionando las dos se vendían las dos y
-     el peleador desaparecía de la colección. Lo cazó la suite antes de que llegara a nadie.
-     Aquí se cuenta cuántas quedan de cada carta y se para en una. */
+  /* LA COPIA DE LA COLECCIÓN NO SE VENDE NUNCA. Se venden las REPETIDAS, que son todas las
+     demás: con seis copias se van cinco y queda la tuya. Así el peleador no desaparece de la
+     colección por vender, que es lo que él dejó claro. */
   const quedan={};
   for(const x of S.coleccion) quedan[x.cid]=(quedan[x.cid]||0)+1;
   const validos=[];
   for(const iid of iids){
     if(!vendible(iid)) continue;
     const cid=inst(iid).cid;
-    if(quedan[cid]<=1) continue;          // ésta es la última: no se toca
+    if(quedan[cid]<=1) continue;          // ésta es la de la colección
     quedan[cid]--; validos.push(iid);
   }
   const {oro}=cuentaVenta(validos);
@@ -2244,6 +2300,8 @@ function render(){
   if(vista==='sobre') esc.classList.add('puesta');
   else { esc.className='escena'; esc.removeAttribute('style'); }
   $('#app').innerHTML=f();
+  // El pie de la venta, fuera de #app por lo del transform (ver el comentario del hueco).
+  $('#pie').innerHTML = vista==='reciclaje' ? pieVenta() : '';
   $('#app').classList.remove('flash'); void $('#app').offsetWidth; $('#app').classList.add('flash');
   ajustarRejillas();    // antes de medir: cambia lo anchas que son las cartas
   medirCartas();
@@ -3659,55 +3717,98 @@ function elegirParaSlot(divId){
 /* ── MÁS ── */
 /* ── RECICLAJE ── */
 function vReciclaje(){
-  const sel=tmp.sel||[];
-  // Solo repetidos: la primera copia de una carta no se recicla jamás.
-  const lista=[];
-  for(const x of S.coleccion) if(vendible(x.iid)) lista.push({x,c:PORID[x.cid]});
-  lista.sort((a,b)=>comparar(a.c,b.c));
-  const {oro,detalle}=cuentaVenta(sel);
-  // Por páginas, igual que la colección: los repetidos se cuentan por decenas y una
-  // lista que hay que recorrer con el dedo no deja ver lo que estás triturando.
-  const POR_PAG=16;                 // 4x4, igual que la colección
-  const pags=Math.max(1, Math.ceil(lista.length/POR_PAG));
-  if(tmp.pag===undefined) tmp.pag=0;
-  tmp.pag=Math.max(0, Math.min(tmp.pag, pags-1));
-  const hoja=lista.slice(tmp.pag*POR_PAG,(tmp.pag+1)*POR_PAG);
-  /* La tabla dice CUÁNTO VALE CADA COSA, que es la pregunta que trae a quien entra aquí.
-     Va por tramos de ranking, en el mismo orden que todo lo demás del juego. */
-  /* La tabla dice CUÁNTO VALE CADA COSA, que es la pregunta que trae a quien entra aquí.
-     Los sin ranking van con horquilla, porque no valen todos lo mismo. */
-  const filas=NIVELES.map(n=>{
-    const d=detalle[n.id];
-    const pre=n.id==='sinrank' ? MONEDA_TXT+' '+NR_PRECIO[0]+'–'+NR_PRECIO[1]
-                               : MONEDA_TXT+' '+VENTA[n.id].toLocaleString('es-ES');
-    return `<tr><td>${n.n}</td><td style="text-align:right">${pre}</td>
-      <td style="text-align:right">${d?`${d.n} → <b>${d.oro.toLocaleString('es-ES')}</b>`:'—'}</td></tr>`;
-  }).join('');
-  return `${cabecera('Vender','data-nav="club"')}
-    <div class="sub mb"><b>Solo repetidos</b>, y nunca la última copia. El precio sale de
-    dónde está en su división. Lo de un <b>sobre gratis</b> vale ${MONEDA_TXT} ${VENTA_GRATIS.sinrank}.</div>
-    <div class="card-panel">
-      <table style="width:100%"><tr><th>Tramo</th><th style="text-align:right">Por carta</th><th style="text-align:right">Elegidas</th></tr>${filas}</table>
-      <div class="divider"></div>
-      <div class="row" style="align-items:center">
-        <div style="flex:2"><b>${sel.length} seleccionadas</b>
-          <div class="sub">${oro?MONEDA_TXT+' '+oro.toLocaleString('es-ES'):'sin valor de venta'}</div></div>
-        <button class="btn sm" data-a="vender" ${oro<1?'disabled':''}>Vender</button>
-      </div>
-    </div>
-    ${hoja.length?`
-      <div class="grid fit" style="--cols:4" data-fit="4,4">${hoja.map(o=>cartaHTML(o.c,{
-        attr:`data-rec="${o.x.iid}"`,sel:sel.includes(o.x.iid),
-        copias:S.coleccion.filter(y=>y.cid===o.x.cid).length})).join('')}</div>
-      ${pags>1?`<div class="album-nav">
-        <button class="btn gho sm" data-a="pag" data-v="-1" ${tmp.pag?'':'disabled'}>‹</button>
-        <span class="pag">HOJA ${tmp.pag+1} DE ${pags}</span>
-        <button class="btn gho sm" data-a="pag" data-v="1" ${tmp.pag<pags-1?'':'disabled'}>›</button>
-      </div>`:''}`
-      :'<div class="card-panel sub">No tienes ningún repetido. Solo se reciclan repetidos.</div>'}`;
+  /* UNA CASILLA POR PELEADOR, no por copia: con cinco repetidos del mismo, cinco casillas
+     iguales no dicen nada y llenan la hoja. Cada una enseña cuántas tienes y cuántas has
+     elegido, y lo elegido se acumula entre peleadores distintos. */
+  const eleg=tmp.venta||(tmp.venta={});
+  const grupos={};
+  for(const x of S.coleccion){ if(!vendible(x.iid)) continue;
+    (grupos[x.cid]=grupos[x.cid]||[]).push(x); }
+  const lista=Object.keys(grupos).map(cid=>({c:PORID[cid], iids:grupos[cid],
+      max:repetidasDe(cid),
+      total:S.coleccion.filter(y=>y.cid===cid).length}))
+    .filter(g=>g.max>0)
+    .sort((a,b)=>comparar(a.c,b.c));
+  // Lo elegido que ya no exista —vendido, intercambiado— se cae solo.
+  for(const cid of Object.keys(eleg)) if(!grupos[cid]) delete eleg[cid];
+
+  return `${cabecera('Vender','data-nav="club"',
+      `<button class="info" data-a="preciosventa" style="position:static;margin-left:auto"
+        aria-label="Cuánto vale cada carta">i</button>`)}
+    ${lista.length?`
+      <div class="grid" style="--cols:4;padding-bottom:104px">${lista.map(g=>{
+        const n=Math.min(eleg[g.c.id]||0, g.max);
+        return `<div class="venta-cel ${n?'on':''}" data-vsel="${g.c.id}">
+          ${cartaHTML(g.c,{attr:`data-vsel="${g.c.id}"`})}
+          <span class="copias">${g.max} rep.</span>
+          ${n?`<span class="elegidas">${n}</span>`:''}
+        </div>`;}).join('')}</div>`
+      :`<div class="card-panel sub">No tienes repetidos que vender. Los que salgan de más
+        al abrir sobres aparecen aquí.</div>`}
+`;
 }
 
-/* ── SETS ── */
+/* EL PIE DE LA VENTA: el total y, debajo, el botón. Se pinta aparte porque vive fuera de
+   #app —lo pidió la física del CSS, no el gusto: ver el comentario del hueco #pie—. Y se
+   pinta SIEMPRE, aunque no haya nada elegido, para que no aparezca y desaparezca: "que
+   nunca se mueva el botón de vender y demás, todo abajo". */
+function pieVenta(){
+  const eleg=tmp.venta||{};
+  let cartas=0, oro=0, peleadores=0;
+  for(const [cid,n0] of Object.entries(eleg)){
+    const n=Math.min(n0, repetidasDe(cid));
+    if(n<1) continue;
+    const suyas=S.coleccion.filter(x=>x.cid===cid&&vendible(x.iid));
+    cartas+=n; peleadores++;
+    oro+=n*precioVenta(PORID[cid], suyas.length?suyas[0].gratis:false);
+  }
+  return `<div class="venta-pie">
+      <div class="arriba">
+        <div style="min-width:0"><b style="font-size:14px">${cartas} carta${cartas===1?'':'s'}</b>
+          <div class="sub" style="font-size:11.5px">${
+            cartas?`de ${peleadores} peleador${peleadores===1?'':'es'}`
+                  :'toca una carta para elegir cuántas'}</div></div>
+        <span class="tot">${MONEDA_TXT} ${oro.toLocaleString('es-ES')}</span>
+      </div>
+      <button class="btn" data-a="vender" style="width:100%" ${oro<1?'disabled':''}>Vender</button>
+    </div>`;
+}
+
+
+/* La ficha de un peleador repetido: el deslizador para elegir CUÁNTAS vender. Con una sola
+   vendible no hace falta deslizar nada, así que el toque la pone y la quita. */
+function ovVenta(cid){
+  const c=PORID[cid]; if(!c) return;
+  const iids=S.coleccion.filter(x=>x.cid===cid&&vendible(x.iid));
+  const max=repetidasDe(cid);
+  if(!max) return;
+  const total=S.coleccion.filter(x=>x.cid===cid).length;
+  const eleg=tmp.venta||(tmp.venta={});
+  const puesto=Math.min(eleg[cid]||0, max);
+  if(max===1){ eleg[cid]=puesto?0:1; render(); return; }
+  const precio=precioVenta(c, iids[0].gratis);
+  const n=puesto||max;      // se abre con todas puestas: es lo que se suele querer
+  ov(`<div class="center">
+      <div style="max-width:140px;margin:0 auto 10px">${cartaHTML(c)}</div>
+      <h3 style="margin-bottom:2px">${esc(c.nombre)}</h3>
+      <div class="sub mb">${total} copias: la de tu colección se queda y las ${max} repetidas se venden.</div>
+      <div id="v-num" style="font-family:var(--titulo);font-size:46px;font-weight:800;
+        color:var(--acc2);line-height:1">${n}</div>
+      <div class="sub mb">de ${max} repetida${max===1?'':'s'}</div>
+      <input type="range" class="desliz" id="v-desliz" min="0" max="${max}" value="${n}"
+        data-cid="${cid}" data-precio="${precio}">
+      <div style="display:flex;justify-content:space-between;margin-bottom:14px" class="tiny">
+        <span style="color:var(--dim2)">0</span><span style="color:var(--dim2)">${max}</span></div>
+      <div class="card-panel" style="margin-bottom:12px">
+        <div class="row" style="align-items:center">
+          <div style="flex:2;text-align:left"><span class="sub" id="v-cuenta">${n} × ${MONEDA_TXT} ${precio}</span></div>
+          <b style="font-size:20px;color:var(--acc2)" id="v-oro">${MONEDA_TXT} ${(n*precio).toLocaleString('es-ES')}</b></div>
+      </div>
+      <button class="btn" data-a="ponercopias" data-cid="${cid}" style="width:100%">Añadir a la venta</button>
+      <button class="btn gho" data-a="cerrarov" style="width:100%;margin-top:8px">Cancelar</button>
+    </div>`);
+}
+
 function vSets(){
   return `${cabecera('Sets de colección','data-nav="club"')}
     <div class="sub mb">Es lo que da valor a las cartas flojas: un 62 que te completa un set tiene
@@ -4837,8 +4938,20 @@ document.addEventListener('change',e=>{
   tmp[t.dataset.f]=t.value; tmp.pag=0; render();
 });
 
+/* EL DESLIZADOR SE ACTUALIZA A MANO, sin repintar. Un render() en cada movimiento del dedo
+   rehace el HTML, y con él se va el propio <input> que estás arrastrando: el deslizador se
+   suelta a la primera. Se tocan sólo los tres números. */
+document.addEventListener('input',e=>{
+  const t=e.target.closest('#v-desliz'); if(!t) return;
+  const n=+t.value, precio=+t.dataset.precio;
+  const num=$('#v-num'), cuenta=$('#v-cuenta'), oro=$('#v-oro');
+  if(num) num.textContent=n;
+  if(cuenta) cuenta.textContent=`${n} × ${MONEDA_TXT} ${precio}`;
+  if(oro) oro.textContent=`${MONEDA_TXT} ${(n*precio).toLocaleString('es-ES')}`;
+});
+
 document.addEventListener('click',e=>{
-  const t=e.target.closest('[data-nav],[data-a],[data-carta],[data-slot],[data-poner],[data-rec],[data-rol],[data-veto],[data-dsel],[data-ssel],[data-cambio],[data-camaleon],[data-incomodo],[data-especialista],[data-eleccion],[data-pido],[data-ofrezco],[data-vetstat]');
+  const t=e.target.closest('[data-nav],[data-a],[data-carta],[data-slot],[data-poner],[data-rec],[data-vsel],[data-rol],[data-veto],[data-dsel],[data-ssel],[data-cambio],[data-camaleon],[data-incomodo],[data-especialista],[data-eleccion],[data-pido],[data-ofrezco],[data-vetstat]');
   if(!t) return;
   const d=t.dataset;
 
@@ -4846,6 +4959,7 @@ document.addEventListener('click',e=>{
   if(d.carta){ detalleCarta(d.carta); return; }
   if(d.slot&&vista==='plantilla'){ elegirParaSlot(d.slot); return; }
   if(d.poner){ S.plantilla[d.div]=d.poner; guardar(); cerrarOv(); render(); return; }
+  if(d.vsel){ ovVenta(d.vsel); return; }        // una carta de la pantalla de vender
   if(d.rec){
     tmp.sel=tmp.sel||[];
     tmp.sel=tmp.sel.includes(d.rec)?tmp.sel.filter(x=>x!==d.rec):[...tmp.sel,d.rec];
@@ -5170,6 +5284,29 @@ document.addEventListener('click',e=>{
       break; }
     case 'pag':                          // pasar hoja del álbum de la colección
       tmp.pag=(tmp.pag||0)+Number(d.v); window.scrollTo(0,0); render(); break;
+    case 'ponercopias':{
+      const cid=d.cid, sl=$('#v-desliz'); if(!cid) break;
+      tmp.venta=tmp.venta||{};
+      tmp.venta[cid]=sl?+sl.value:0;
+      cerrarOv(); render(); break; }
+    /* Los precios, detrás de una (i) como la de los sobres: es una tabla que se consulta
+       una vez y luego estorba en la pantalla todos los días. */
+    case 'preciosventa':
+      ov(`<h3>Cuánto vale cada carta</h3>
+        <div class="sub mb">Solo salen tus <b>repetidas</b>: la copia de tu colección se queda siempre, y todas las demás se venden.</div>
+        <table style="width:100%">
+          <tr><th>Tramo</th><th style="text-align:right">Por carta</th></tr>
+          ${NIVELES.map(n=>`<tr><td>${n.n}</td><td style="text-align:right">${
+            n.id==='sinrank' ? MONEDA_TXT+' '+NR_PRECIO[0]+'–'+NR_PRECIO[1]
+                             : MONEDA_TXT+' '+VENTA[n.id].toLocaleString('es-ES')}</td></tr>`).join('')}
+        </table>
+        <div class="divider"></div>
+        <div class="sub mb">Entre los que no están rankeados manda lo bueno que sea: no valen
+        todos lo mismo.</div>
+        <div class="sub mb">Lo que salga de un <b>sobre gratis</b> vale ${MONEDA_TXT} ${VENTA_GRATIS.sinrank}.
+        Si valiera más, abrir sobres gratis pagaría mejor que jugar.</div>
+        <button class="btn" data-a="cerrarov" style="width:100%">Vale</button>`);
+      break;
     case 'limpiarfiltros':
       tmp.fTipo=tmp.fAtr=tmp.fPeso=''; tmp.pag=0; render(); break;
 
@@ -5198,7 +5335,14 @@ document.addEventListener('click',e=>{
       window.scrollTo(0,0); render(); break;
     case 'autoplantilla': autoPlantilla(S,true); guardar(); render(); break;
     case 'vender':{
-      const v=vender(tmp.sel||[]); tmp.sel=[]; tmp.pag=0;
+      /* De {peleador: cuántas} a los identificadores concretos. Se cogen las primeras
+         vendibles de cada uno; da igual cuáles, son la misma carta. */
+      const pedir=tmp.venta||{}, iids=[];
+      for(const [cid,n] of Object.entries(pedir)){
+        const suyas=S.coleccion.filter(x=>x.cid===cid&&vendible(x.iid));
+        for(let k=0;k<Math.min(n,suyas.length);k++) iids.push(suyas[k].iid);
+      }
+      const v=vender(iids); tmp.venta={}; tmp.pag=0;
       ov(`<div class="center"><div style="font-size:38px">${MONEDA_TXT}</div>
         <h3>+${v.oro.toLocaleString('es-ES')}</h3>
         <div class="sub mb">${v.cuantas} carta${v.cuantas===1?'':'s'} vendida${v.cuantas===1?'':'s'}.</div>
