@@ -32,19 +32,31 @@ def copiarJuego = tasks.register('copiarJuego', Copy) {
    (android/keystore.properties) están los dos en .gitignore y NO se suben: el repositorio
    es público, y una clave de firma publicada deja de servir para nada.
 
-   Por eso esto es condicional. Si los dos archivos están, el release se firma con la clave
-   de verdad; si no están —una máquina recién clonada, o el flujo de GitHub—, no se define
-   ninguna firma y Gradle hace lo de siempre. El flujo compila `assembleDebug`, así que no
-   se entera.
+   Por eso esto es condicional. Si el keystore está —en una máquina de casa, o escrito por
+   el flujo desde su secreto— el release se firma con la clave de verdad; si no está, no se
+   define ninguna firma y Gradle hace lo de siempre.
 
-   PARA QUE EL APK PUBLICADO VAYA FIRMADO ASÍ hay que meter el keystore en los secretos de
-   GitHub (en base64) y que el flujo lo escriba antes de compilar. No está hecho: hoy la
-   descarga de apk-latest sigue siendo la de depuración. */
-def fPropsFirma = rootProject.file('keystore.properties')
+   EL APK PUBLICADO VA FIRMADO ASÍ. El flujo guarda el keystore en un secreto cifrado de
+   GitHub (ANDROID_KEYSTORE_B64), lo escribe en su sitio antes de compilar y hace
+   `assembleRelease`. Si el secreto falta, compila `assembleDebug` como antes y la descarga
+   sigue saliendo: quedarse sin APK por no tener firma sería peor. */
 def fKeystore = rootProject.file('juego-release.keystore')
-def hayFirma = fPropsFirma.exists() && fKeystore.exists()
+def fPropsFirma = rootProject.file('keystore.properties')
+
+/* La contraseña y el alias salen de DOS sitios, y en este orden:
+
+   1. `android/keystore.properties`, que es lo que hay en una máquina de casa y no se sube.
+   2. Las variables de entorno FIRMA_PASS y FIRMA_ALIAS, que es como llegan en el flujo de
+      GitHub: el keystore viaja en un secreto cifrado, el flujo lo escribe en su sitio y
+      pasa la contraseña por el entorno. Así el APK publicado va firmado con la clave de
+      verdad sin que ni el archivo ni la contraseña entren nunca en el repositorio.
+
+   Si no hay ninguno de los dos, no se define firma y Gradle hace lo de siempre. */
 def propsFirma = new Properties()
-if (hayFirma) fPropsFirma.withInputStream { propsFirma.load(it) }
+if (fPropsFirma.exists()) fPropsFirma.withInputStream { propsFirma.load(it) }
+def clavePass = System.getenv('FIRMA_PASS') ?: propsFirma.getProperty('storePassword')
+def claveAlias = System.getenv('FIRMA_ALIAS') ?: propsFirma.getProperty('keyAlias')
+def hayFirma = fKeystore.exists() && clavePass && claveAlias
 
 android {
     namespace 'com.jaulaabierta.juego'
@@ -54,17 +66,24 @@ android {
         applicationId "com.jaulaabierta.juego"
         minSdk 26
         targetSdk 35
+        /* SUBIR LA VERSIÓN es subir `versionCode` en uno. Es lo único que mira Android
+           para saber que un APK es una actualización y no otra aplicación, y mientras no
+           cambien ni el applicationId ni la firma, la colección del jugador —que vive en
+           el localStorage del WebView— no se toca. `versionName` es sólo lo que se lee.
+           La frase acordada con el dueño para pedirlo es "sube la versión". */
         versionCode 1
-        versionName "0.1-prototipo"
+        versionName "0.1.0"
     }
 
     signingConfigs {
         release {
             if (hayFirma) {
                 storeFile fKeystore
-                storePassword propsFirma.getProperty('storePassword')
-                keyAlias propsFirma.getProperty('keyAlias')
-                keyPassword propsFirma.getProperty('keyPassword')
+                storePassword clavePass
+                keyAlias claveAlias
+                /* PKCS12 no admite una contraseña distinta para la clave: es la misma del
+                   almacén. keytool lo avisa al crearlo y no hay forma de separarlas. */
+                keyPassword clavePass
             }
         }
     }

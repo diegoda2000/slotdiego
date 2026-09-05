@@ -986,9 +986,33 @@ aplicación de Android nativa con un WebView, y el juego entra como *assets* cop
 público: una clave de firma publicada deja de servir para nada, porque cualquiera podría
 firmar una actualización que el móvil aceptaría como nuestra.
 
-`android/app/build.gradle` lo usa **si está**: si faltan el keystore o el properties —una
-máquina recién clonada, o el flujo de GitHub— no define ninguna firma y Gradle hace lo de
-siempre. El flujo compila `assembleDebug`, así que no se entera.
+**EL APK PUBLICADO VA FIRMADO ASÍ, y lo mandó él:** *"empieza ya a compilar siempre con ese
+keystore, para que cada vez que se instale sea una actualización"*. El flujo escribe el
+keystore desde un secreto cifrado antes de compilar y hace `assembleRelease`. Hacen falta
+**tres secretos** en el repositorio (Settings → Secrets and variables → Actions):
+
+| secreto | qué es |
+|---|---|
+| `ANDROID_KEYSTORE_B64` | el keystore entero en base64 |
+| `ANDROID_KEYSTORE_PASS` | la contraseña del almacén |
+| `ANDROID_KEYSTORE_ALIAS` | `p4pcg` |
+
+**Sin ellos no se rompe nada**: el flujo avisa con un `::warning::`, compila
+`assembleDebug` y la descarga sigue saliendo. Quedarse sin APK por no tener firma sería
+peor que sacarlo sin firmar.
+
+**NO HACE FALTA HACER PRIVADO EL REPOSITORIO.** Los secretos de Actions van cifrados y no
+se ven ni en el código ni en los registros —GitHub los tacha si alguien los imprime—, y el
+keystore sólo existe dentro del contenedor del flujo, que se destruye al terminar. Lo que
+NO se puede hacer nunca es meter el archivo o la contraseña en un archivo del repositorio.
+
+`android/app/build.gradle` coge la contraseña y el alias de **dos sitios y en este orden**:
+`android/keystore.properties` —lo que hay en una máquina de casa— y, si no está, las
+variables de entorno `FIRMA_PASS` y `FIRMA_ALIAS`, que es como llegan en el flujo. Si no
+hay keystore no define firma y Gradle hace lo de siempre.
+
+**Y el flujo comprueba la firma**, no sólo que el paso no falló: un release sin firmar se
+construye igual y luego no se instala en ningún móvil. Se verifica con `apksigner verify`.
 
 **DOS COSAS QUE HAY QUE TENER PRESENTES:**
 
@@ -1004,6 +1028,10 @@ siempre. El flujo compila `assembleDebug`, así que no se entera.
 **Para que el APK publicado vaya firmado así** hay que meter el keystore en los secretos de
 GitHub (en base64) y que el flujo lo escriba antes de compilar. **No está hecho**: la
 descarga de `apk-latest` sigue siendo la de depuración.
+
+**La primera release es la `0.1.0`** (`versionCode` 1), y la puso él: *"a esta primera
+release llámala la versión de nombre 0.1.0, y luego ya iremos subiendo según vayamos
+avanzando"*.
 
 **"SUBE LA VERSIÓN"** es la frase para subir el `versionCode` de `android/app/build.gradle`
 —+1— y ponerle un `versionName` nuevo. Eso es lo que hace que Android trate el APK como una

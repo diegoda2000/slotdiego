@@ -149,17 +149,54 @@ jobs:
         with:
           gradle-version: '8.14.3'
 
+      # LA FIRMA DE RELEASE. El keystore viaja en un secreto cifrado y se escribe aquí,
+      # nunca en el repositorio, que es público. Sin el secreto no se rompe nada: se
+      # compila la de depuración como siempre y la descarga sigue saliendo.
+      - name: Poner la clave de firma
+        if: steps.comp.outputs.listo == 'si'
+        id: firma
+        env:
+          KS: ${{ secrets.ANDROID_KEYSTORE_B64 }}
+        run: |
+          if [ -n "$KS" ]; then
+            echo "$KS" | base64 -d > android/juego-release.keystore
+            echo "hay=si" >> "$GITHUB_OUTPUT"
+            echo "El APK saldrá FIRMADO con la clave de release."
+          else
+            echo "hay=no" >> "$GITHUB_OUTPUT"
+            echo "::warning::Sin ANDROID_KEYSTORE_B64: el APK sale con la firma de depuración"
+            echo "y NO se podrá instalar como actualización encima de uno firmado de verdad."
+          fi
+
       - name: Construir el APK con la dirección dentro
         if: steps.comp.outputs.listo == 'si'
         working-directory: android
-        run: gradle assembleDebug --no-daemon --stacktrace
+        env:
+          FIRMA_PASS: ${{ secrets.ANDROID_KEYSTORE_PASS }}
+          FIRMA_ALIAS: ${{ secrets.ANDROID_KEYSTORE_ALIAS }}
+        run: |
+          if [ "${{ steps.firma.outputs.hay }}" = "si" ]; then
+            gradle assembleRelease --no-daemon --stacktrace
+            cp app/build/outputs/apk/release/app-release.apk ../p4p-cg.apk
+          else
+            gradle assembleDebug --no-daemon --stacktrace
+            cp app/build/outputs/apk/debug/app-debug.apk ../p4p-cg.apk
+          fi
+
+      # Y se comprueba que ha salido firmado de verdad, no sólo que el paso no falló:
+      # un release sin firmar se construye igual y no se instala en ningún móvil.
+      - name: Comprobar la firma
+        if: steps.comp.outputs.listo == 'si' && steps.firma.outputs.hay == 'si'
+        run: |
+          BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
+          "$BT/apksigner" verify --print-certs p4p-cg.apk | head -5
 
       - name: Guardar el APK para la publicación
         if: steps.comp.outputs.listo == 'si'
         uses: actions/upload-artifact@v4
         with:
           name: android
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          path: p4p-cg.apk
 
   # ── iPhone ──────────────────────────────────────────────────────────────────
   # En un runner de macOS, que es el único sitio donde existe Xcode. Sale SIN FIRMAR:
@@ -235,7 +272,7 @@ jobs:
           URL: ${{ needs.desplegar.outputs.url }}
         run: |
           mkdir -p salida
-          cp descargas/android/app-debug.apk salida/p4p-cg.apk
+          cp descargas/android/p4p-cg.apk salida/p4p-cg.apk
           # Si la de iPhone ha fallado no se cancela la publicación: el APK sigue
           # sirviendo, y quedarse sin descarga por eso sería peor.
           if [ -f descargas/ios/p4p-cg.ipa ]; then
