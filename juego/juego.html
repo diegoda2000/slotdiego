@@ -1260,32 +1260,34 @@ const cartaDe=iid=>{const i=inst(iid);return i?PORID[i.cid]:null};
 /* CUÁNTAS CARTAS TRAE CADA SOBRE ya no es un número único: el boceto le da a cada uno las
    suyas —5, 6, 8, 10 y 10— y va escrito en TIPOS_SOBRE, en el campo `cartas`. */
 
-/* Los niveles de un sobre NO son los tramos de estatus. El estatus ordena la colección
-   y pone el precio del reciclaje, y va por bloques de cinco puestos. Aquí hace falta más
-   fino: el sobre básico tiene que poder repartir un 12-15 de vez en cuando sin repartir
-   nunca un 11, así que el corte está donde manda el reparto, no donde manda el orden. */
+/* CUATRO TRAMOS, Y LO ÚNICO QUE LOS SEPARA ES EL RANKING.
+
+   Aquí había otra cosa: el sobre sorteaba primero CUÁNTOS OROS traía y luego, para cada
+   oro, de qué nivel era; el resto se llenaba con platas, partidas a su vez en altas y
+   bajas por la suma de stats. Eso se acabó, y lo dijo él con todas las letras: "YA NO HAY
+   OROS JODER, QUE TE QUEDE CLARO, DE MOMENTO TODAS SON COMUNES". Mientras todas las cartas
+   sean comunes, oro y plata no significan nada para quien abre un sobre; lo único que hace
+   bueno a un peleador es dónde está en su división.
+
+   Así que ahora es UNA SOLA TIRADA POR CARTA sobre estos cuatro tramos, y ya está. Lo que
+   pidió: "LA MAYORÍA QUE TIENE QUE TOCAR SON PELEADORES MEDIOCRES, QUE NO ESTÉN RANKEADOS,
+   MUY RARA VEZ ALGUNO ENTRE TOP 15-10, CASI IMPOSIBLE ENTRE TOP 10-5 Y EL RESTO
+   PRÁCTICAMENTE IMPOSIBLE".
+
+   Los cortes son los que ya traía la base de datos: campeón y top 5 van juntos porque en
+   la tabla de probabilidades siempre han ido juntos. De las 402 cartas, 68 son corona,
+   66 top 6-11, 44 top 12-15 y 224 no tienen ranking. */
 const NIVELES=[
   {id:'corona',  n:'Campeón o Top 5', cumple:c=>c.rk===0||(c.rk>=1&&c.rk<=5)},
   {id:'top611',  n:'Top 6-11',        cumple:c=>c.rk>=6&&c.rk<=11},
   {id:'top1215', n:'Top 12-15',       cumple:c=>c.rk>=12&&c.rk<=15},
-  {id:'oro',     n:'Oro sin rankear', cumple:c=>c.rareza==='oro'&&!c.rk&&c.rk!==0},
+  /* OJO CON EL null: en JavaScript `null >= 0` es TRUE —null se convierte en 0—, así que
+     un `!(c.rk>=0)` no encontraba ni un peleador sin ranking. La bolsa salía vacía,
+     cartaDeNivel se iba al tramo de al lado sin decir nada, y un sobre común que sorteaba
+     98,4% de mediocres repartía cinco rankeados. Se compara contra null a pelo. */
+  {id:'sinrank', n:'Sin ranking',     cumple:c=>c.rk===null||c.rk===undefined},
 ];
 const NIVEL_IDS=NIVELES.map(n=>n.id);
-
-/* Y las platas también se parten en dos. El sobre de plata está para cerrar la colección
-   de platas, y si repartiera por igual las buenas y las malas dejaría de tener recorrido:
-   lo que cuesta completar son las de arriba. El corte va por la suma interna de las seis
-   stats —la misma que desempata en el orden— y deja arriba un tercio. */
-const PLATAS=[
-  {id:'plataAlta', n:'Plata alta'},
-  {id:'plataBaja', n:'Plata baja'},
-];
-const PLATA_IDS=PLATAS.map(p=>p.id);
-let CORTE_PLATA=0;
-function calcularCortePlata(){
-  const sumas=ROSTER.filter(c=>c.rareza==='plata').map(c=>c.suma).sort((a,b)=>a-b);
-  CORTE_PLATA=sumas.length?sumas[Math.floor(sumas.length*2/3)]:0;
-}
 
 /* Los tres sobres NO son el mismo sobre a distintos precios: cada uno hace una cosa.
 
@@ -1381,67 +1383,50 @@ function corto(n){
    pantalla de Eventos, que todavía no existe. El arte ya está preparado en
    juego/sobres/evento.webp esperando.
 
-   LO QUE REPARTE CADA UNO ESTÁ SIN CERRAR Y HAY QUE HABLARLO. Los nombres, los precios,
-   las cartas y los textos son del boceto; las tres tablas de cada sobre —cuántos oros
-   trae, de qué nivel y qué platas— NO están en el boceto y las he tenido que poner para
-   que los cinco funcionen. Escalan de común a ultimate y no se pueden dejar como estaban:
-   las de antes repartían de 7 a 9 oros, y un sobre común de 5 cartas no puede traer 7.
+   `tramos` ES LA PROBABILIDAD DE CADA CARTA, en porcentaje y sumando 100. Se tira una vez
+   por carta: no hay "cuántos oros trae" ni platas altas y bajas, que era el reparto viejo.
 
-   EL TEXTO DE CADA SOBRE ES SÓLO CUÁNTAS CARTAS TRAE, y lo pidió él así. El boceto ponía
-   además la garantía —"1 plata o superior"—, pero eso hablaba de unas rarezas que se
-   acaban de eliminar y que no vuelven hasta la MIGRACIÓN DE RAREZAS. Cuando se migre se
-   podrá volver a prometer un suelo, y ahí se reescriben estas tablas. */
+   EL COMÚN Y EL RARO LOS APROBÓ ÉL, con estos números exactos, después de verlos medidos:
+
+     común (gratis, 5 cartas)      raro (6 cartas)
+       sin ranking      98,400%      sin ranking      78,0%
+       top 12-15         1,500%      top 12-15        17,0%
+       top 6-11          0,092%      top 6-11          4,5%
+       campeón o top 5   0,008%      campeón o top 5   0,5%
+
+   En sobre entero eso es: en el común, un 12-15 cada 14 sobres, un 6-11 cada 218 y un
+   campeón cada 2.500; en el raro, algún rankeado el 77% de las veces y un campeón uno de
+   cada 34. El común queda por debajo del básico de antes en todo, que era la condición
+   que puso: "los porcentajes que tenía antes el básico, o incluso más estrictos".
+
+   LOS TRES DE ARRIBA SIGUEN SIENDO MÍOS Y ESTÁN SIN APROBAR. Épico, legendario y ultimate
+   tenían que pasar al modelo nuevo sí o sí —con el viejo no funcionaban— y se han puesto
+   escalando entre el raro y algo claramente mejor. Hay que cerrarlos con él.
+
+   EL TEXTO DE CADA SOBRE ES SÓLO CUÁNTAS CARTAS TRAE, y lo pidió él así. */
 const TIPOS_SOBRE={
-  /* EL COMÚN NO PUEDE SER MÁS BLANDO QUE EL BÁSICO DE ANTES, y lo mandó él:
-     "asegúrate de poner al sobre común los porcentajes que tenía antes el básico, o
-     incluso más estrictos". El básico eran 9 cartas, de 3 a 6 oros y platas 40/60.
-     Medido con 400.000 sobres de cada uno, el común es más estricto en todo:
-
-                                      básico de antes   común
-       oros por sobre                        4,50        2,00
-       % de cartas que son oro               50,0        40,0
-       rankeados por sobre                  0,180       0,080
-       % de sobres con algún rankeado       16,77        7,80
-       % de sobres con campeón o top 5      0,046       0,021
-       % de cartas que son plata alta        20,0        19,8
-
-     La tabla de `nivel` es LA MISMA del básico, cifra por cifra: lo que decide si un oro
-     es campeón, top 6-11 o top 12-15 no se ha tocado. Lo que baja es cuántos oros caen.
-
-     Y las platas van 33/67 y no 35/65 por esa última línea: el común tiene más huecos de
-     plata (60% frente al 50%), así que con 35 la plata alta salía al 20,9% de las cartas
-     —una décima por encima del básico— y con 33 se queda en el 19,8%. */
-  comun     :{n:'Sobre común', coste:1000, cartas:5,
-    desc:'5 cartas',
-    oros  :{1:30, 2:40, 3:30},
-    nivel :{corona:0.01, top611:0.09, top1215:3.9, oro:96},
-    platas:{plataAlta:33, plataBaja:67}},
-  raro      :{n:'Sobre raro', coste:2000, cartas:6,
-    desc:'6 cartas',
-    oros  :{2:30, 3:40, 4:30},
-    nivel :{corona:0.10, top611:0.90, top1215:20, oro:79},
-    platas:{plataAlta:45, plataBaja:55}},
-  epico     :{n:'Sobre épico', coste:4000, cartas:8,
-    desc:'8 cartas',
-    oros  :{4:25, 5:45, 6:30},
-    nivel :{corona:0.30, top611:2, top1215:40, oro:57.7},
-    platas:{plataAlta:55, plataBaja:45}},
-  legendario:{n:'Sobre legendario', coste:7500, cartas:10, pronto:true,
-    desc:'10 cartas',
-    oros  :{6:25, 7:45, 8:30},
-    nivel :{corona:0.60, top611:3.20, top1215:46.2, oro:50},
-    platas:{plataAlta:65, plataBaja:35}},
-  ultimate  :{n:'Sobre ultimate', coste:12500, cartas:10, pronto:true,
-    desc:'10 cartas',
-    oros  :{8:30, 9:45, 10:25},
-    nivel :{corona:1.50, top611:6, top1215:52, oro:40.5},
-    platas:{plataAlta:80, plataBaja:20}},
+  /* GRATIS Y SIN LÍMITE, y lo mandó él: "PON EL SOBRE COMÚN GRATIS EN LA TIENDA". Es lo
+     que permite empezar y seguir sin gastar una moneda, así que es el que tiene que ser
+     más duro de todos. */
+  comun     :{n:'Sobre común', coste:0, cartas:5, desc:'5 cartas',
+    tramos:{sinrank:98.400, top1215:1.500, top611:0.092, corona:0.008}},
+  raro      :{n:'Sobre raro', coste:2000, cartas:6, desc:'6 cartas',
+    tramos:{sinrank:78, top1215:17, top611:4.5, corona:0.5}},
+  epico     :{n:'Sobre épico', coste:4000, cartas:8, desc:'8 cartas',
+    tramos:{sinrank:55, top1215:30, top611:12, corona:3}},
+  legendario:{n:'Sobre legendario', coste:7500, cartas:10, pronto:true, desc:'10 cartas',
+    tramos:{sinrank:35, top1215:38, top611:22, corona:5}},
+  ultimate  :{n:'Sobre ultimate', coste:12500, cartas:10, pronto:true, desc:'10 cartas',
+    tramos:{sinrank:20, top1215:40, top611:30, corona:10}},
 };
-/* Y una red de seguridad: si alguien toca una tabla y deja el sobre pidiendo más oros de
-   los que caben, el sobre repartiría más cartas de las que anuncia. Salta al arrancar. */
+/* Una red de seguridad: una tabla que no sume 100 no rompe nada —sortearClave normaliza—
+   pero deja de querer decir lo que dice, y entonces los porcentajes que se le enseñan al
+   jugador serían mentira. Salta al arrancar. */
 for(const [k,T] of Object.entries(TIPOS_SOBRE)){
-  const max=Math.max(...Object.keys(T.oros).map(Number));
-  if(max>T.cartas) console.error(`El sobre ${k} anuncia ${T.cartas} cartas y puede repartir ${max} oros`);
+  const suma=Object.values(T.tramos).reduce((a,b)=>a+b,0);
+  if(Math.abs(suma-100)>0.001) console.error(`Los tramos del sobre ${k} suman ${suma}, no 100`);
+  for(const id of Object.keys(T.tramos))
+    if(!NIVEL_IDS.includes(id)) console.error(`El sobre ${k} nombra un tramo que no existe: ${id}`);
 }
 
 /* CÓMO SE LLAMABAN ANTES. Lo guardado apunta a basico/plata/oro, y esos tipos ya no
@@ -1451,15 +1436,18 @@ const SOBRES_VIEJOS={basico:'comun', plata:'raro', oro:'epico',
   /* Y los del primer día con los cinco, cuando las claves iban en inglés. */
   rare:'raro', epic:'epico', legendary:'legendario'};
 
-/* EL SOBRE GRATIS NO ESTÁ EN LA TIENDA. En el boceto la tienda son cinco sobres de pago y
-   el gratis vive en la ACTIVIDAD DIARIA de Inicio, que es de donde se reclama. Sigue
-   siendo el común y sigue sin límite: es lo que permite empezar sin dinero, y ponerle un
-   reloj sería inventarse una regla de juego que él no ha dado. */
-const GRATIS=[{id:'g1', tipo:'comun', espera:0}];
-const listoGratis=g=>g.espera===0||Date.now()-(S.gratis[g.id]||0)>=g.espera;
-const restaGratis=g=>Math.max(0,g.espera-(Date.now()-(S.gratis[g.id]||0)));
-// El ilimitado no cuenta para el aviso del menú: estaría encendido siempre.
-const nGratisListos=()=>GRATIS.filter(g=>g.espera>0&&listoGratis(g)).length;
+/* DOS COSAS DISTINTAS, Y ANTES ERAN UNA.
+
+   EL COMÚN ES GRATIS Y SIN LÍMITE, Y ESTÁ EN LA TIENDA: "PON EL SOBRE COMÚN GRATIS EN LA
+   TIENDA". Cuesta 0, así que no hace falta ninguna máquina aparte: se toca y se abre.
+
+   Y EL DE INICIO ES UN RARO, UNA SOLA VEZ: "HAZ QUE EL QUE SE RECLAMA EN INICIO SEA UN
+   SOBRE RARO, PERO NO REPETIDAMENTE, SINO UNA VEZ POR HABER INICIADO EL JUEGO". No lleva
+   reloj ni se repite: se reclama y se acabó. La marca se guarda dentro de `S.gratis`, que
+   ya existía, para que a quien ya tenga partida guardada le siga saliendo sin migrar nada.
+   Al reclamarlo va al inventario, y se abre desde Mis sobres como cualquier otro. */
+const BIENVENIDA={tipo:'raro'};
+const bienvenidaPendiente=()=>!S.gratis.bienvenida;
 function reloj(ms){
   const s=Math.ceil(ms/1000), h=Math.floor(s/3600), m=Math.floor(s%3600/60), r=s%60;
   return h?`${h}:${String(m).padStart(2,'0')}:${String(r).padStart(2,'0')}`
@@ -1474,31 +1462,21 @@ const sortearClave=tabla=>{
   return claves[claves.length-1];
 };
 
-/* Reparto del sobre: cuántos oros y de qué nivel cada uno. Se saca aparte de la
+/* Reparto del sobre: UNA TIRADA POR CARTA sobre los cuatro tramos. Se saca aparte de la
    apertura para poder comprobarlo con miles de tiradas sin tocar la colección. */
 function repartoSobre(tipo){
-  const T=TIPOS_SOBRE[tipo];
-  const nOros=+sortearClave(T.oros);
-  const niveles=[];
-  for(let i=0;i<nOros;i++) niveles.push(sortearClave(T.nivel));
-  // Y el resto, platas: cada sobre tiene su propia mezcla de altas y bajas.
-  while(niveles.length<T.cartas) niveles.push(sortearClave(T.platas));
-  return niveles;
+  const T=TIPOS_SOBRE[tipo], salida=[];
+  for(let i=0;i<T.cartas;i++) salida.push(sortearClave(T.tramos));
+  return salida;
 }
 
-const poolNivel=nivelId=>{
-  if(nivelId==='plataAlta') return ROSTER.filter(c=>c.rareza==='plata'&&c.suma>=CORTE_PLATA);
-  if(nivelId==='plataBaja') return ROSTER.filter(c=>c.rareza==='plata'&&c.suma< CORTE_PLATA);
-  if(nivelId==='plata')     return ROSTER.filter(c=>c.rareza==='plata');
-  return ROSTER.filter(NIVELES.find(n=>n.id===nivelId).cumple);
-};
-const esPlata=nivelId=>nivelId==='plata'||PLATA_IDS.includes(nivelId);
+const poolNivel=nivelId=>ROSTER.filter(NIVELES.find(n=>n.id===nivelId).cumple);
 
-/* Un sobre no repite carta dentro de sí mismo. Si el nivel sorteado se queda sin
-   candidatos nuevos —pasa en corona, que es un pool corto— se baja al nivel de al
+/* Un sobre no repite carta dentro de sí mismo. Si el tramo sorteado se queda sin
+   candidatos nuevos —pasa en corona, que es un pool corto— se baja al tramo de al
    lado en vez de saltar a cualquier cosa: una sorpresa así parece un fallo. */
 function cartaDeNivel(nivelId,yaEnElSobre){
-  const orden=[...NIVEL_IDS,...PLATA_IDS];
+  const orden=NIVEL_IDS;
   const i=orden.indexOf(nivelId);
   for(let d=0;d<orden.length;d++){
     for(const j of (d===0?[i]:[i+d,i-d])){
@@ -1528,18 +1506,14 @@ function abrirSobre(tipo){
    de escribirla a mano. */
 function pctCorona(tipo){
   const T=TIPOS_SOBRE[tipo];
-  const totOros=Object.values(T.oros).reduce((a,b)=>a+b,0);
-  const totNiv=Object.values(T.nivel).reduce((a,b)=>a+b,0);
-  const pCorona=T.nivel.corona/totNiv;
-  let p=0;
-  for(const [n,peso] of Object.entries(T.oros))
-    p+=(peso/totOros)*(1-Math.pow(1-pCorona,+n));
-  return p*100;
+  return pTramoSobre(T,'corona')*100;
 }
-const orosTexto=tipo=>{
-  const k=Object.keys(TIPOS_SOBRE[tipo].oros).map(Number).sort((a,b)=>a-b);
-  return `${k[0]}-${k[k.length-1]} oros`;
-};
+/* La probabilidad de que en un sobre entero salga AL MENOS UNA carta de un tramo. Con una
+   tirada por carta es una binomial: 1 menos la de que ninguna lo sea. */
+function pTramoSobre(T,id){
+  const tot=Object.values(T.tramos).reduce((a,b)=>a+b,0);
+  return 1-Math.pow(1-(T.tramos[id]||0)/tot,T.cartas);
+}
 
 /* ── RECICLAJE ────────────────────────────────────────────────────────────
    Dos reglas duras:
@@ -1938,7 +1912,7 @@ const PESTANAS=[
   ['perfil',  'persona','Perfil',  ['ajustes','redes']],
 ];
 function navHTML(){
-  const pend=S.sobres.length+nGratisListos();
+  const pend=S.sobres.length;
   return PESTANAS.map(([v,i,t,dentro])=>{
     // La insignia va en Tienda, que es de donde ahora se abren los sobres.
     const b=v==='tienda'&&pend?`<span class="badge">${pend}</span>`:'';
@@ -2174,17 +2148,20 @@ function fichaJugador(){
 }
 
 /* ACTIVIDAD DIARIA. De las tres celdas del boceto solo una tiene sistema detrás: el sobre
-   gratis, que existe y se reclama. El desafío diario y la racha no existen todavía. */
+   de bienvenida, que existe y se reclama. El desafío diario y la racha no existen todavía.
+
+   ES UN RARO Y ES DE UNA VEZ: "haz que el que se reclama en Inicio sea un sobre raro, pero
+   no repetidamente, sino una vez por haber iniciado el juego". Antes era el común, sin
+   límite; el común ahora es gratis en la tienda, que es donde lo puso él. */
 function bloqueDiaria(){
-  const g=GRATIS.find(x=>x.tipo==='comun');
-  const listo=g&&listoGratis(g);
+  const listo=bienvenidaPendiente();
   return `<div class="blq crece" style="flex-grow:1.47">
     <div class="bt"><h3>Actividad diaria</h3>
       <span class="reloj">${icono('reloj')}<span class="pdte">Sin reloj</span></span></div>
     <div class="cuerpo"><div class="diaria">
-      <div><span class="et">Sobre gratis</span>${icono('regalo')}
-        <button class="btn ${listo?'':'gho'} sm" data-a="versobre" data-t="comun"
-          ${listo?'':'disabled'}>${listo?'Reclamar':'Abierto'}</button></div>
+      <div><span class="et">De bienvenida</span>${icono('regalo')}
+        <button class="btn ${listo?'':'gho'} sm" data-a="bienvenida"
+          ${listo?'':'disabled'}>${listo?'Reclamar':'Reclamado'}</button></div>
       <div><span class="et">Desafío diario</span>${icono('diana')}
         <span class="pdte">Pendiente</span></div>
       <div><span class="et">Racha</span>${icono('llama')}
@@ -2526,13 +2503,9 @@ function vRedes(){
 
 /* ── SOBRES ── */
 
-// Lo que de verdad quiere saber quien va a gastarse la divisa es dos cosas: cuántos
-// oros trae y cuánto de improbable es la carta gorda. Las dos se calculan del reparto
-// real, no se escriben a mano, para que no puedan mentir si mañana se retoca la tabla.
-const fichaSobre=t=>`${orosTexto(t)} de 9 · ${pctCorona(t).toFixed(2)}% de campeón o top 5`;
 const desgloseSobre=t=>{
-  const T=TIPOS_SOBRE[t], tot=Object.values(T.nivel).reduce((a,b)=>a+b,0);
-  return NIVELES.map(n=>`${n.n} ${(T.nivel[n.id]/tot*100).toFixed(n.id==='corona'?2:0)}%`).join(' · ');
+  const T=TIPOS_SOBRE[t], tot=Object.values(T.tramos).reduce((a,b)=>a+b,0);
+  return NIVELES.map(n=>`${n.n} ${(T.tramos[n.id]/tot*100).toFixed(2)}%`).join(' · ');
 };
 
 /* ── TIENDA ──
@@ -2570,19 +2543,26 @@ function vTienda(){
    decisión y se toma en la tienda, no en el resumen de un sobre recién abierto. */
 /* ¿Queda otro de este tipo GUARDADO? Solo eso. Comprar se decide en la tienda; ofrecer
    "abrir otro" porque hay dinero convierte el resumen en un mostrador. */
-function puedeOtro(t){ return S.sobres.some(s=>s.tipo===t); }
 
-/* Cobrar y guardar el sobre. En una función y no en el manejador porque ahora se llega
-   por dos caminos —el gratis directo y la compra confirmada— y el cobro tiene que ser
-   exactamente el mismo por los dos. */
+
+/* Cobrar y guardar el sobre. En una función y no en el manejador para que el cobro sea
+   exactamente el mismo se llegue por donde se llegue. */
 function hacerCompra(t){
-  const T=TIPOS_SOBRE[t]; if(!T||T.pronto) return;
-  const g=GRATIS.find(x=>x.tipo===t);
-  if(g&&listoGratis(g)){ if(g.espera>0) S.gratis[g.id]=Date.now(); }
-  else if(T.coste>0&&S.divisa>=T.coste) S.divisa-=T.coste;
-  else return;                           // no llega: no pasa nada y no se cobra nada
+  const T=TIPOS_SOBRE[t]; if(!T||T.pronto||T.coste<=0) return;
+  if(S.divisa<T.coste) return;           // no llega: no pasa nada y no se cobra nada
+  S.divisa-=T.coste;
   S.sobres.push({tipo:t});
   guardar(); tmp.sub='mios'; window.scrollTo(0,0); render();
+}
+
+/* EL SOBRE DE BIENVENIDA, UNA SOLA VEZ. Va al inventario como cualquier otro, y de ahí se
+   abre: guardarlo primero es lo que hace que se pueda abrir cuando se quiera y que la
+   insignia de la tienda lo cuente. */
+function reclamarBienvenida(){
+  if(!bienvenidaPendiente()) return;
+  S.gratis.bienvenida=Date.now();
+  S.sobres.push({tipo:BIENVENIDA.tipo});
+  guardar(); vista='tienda'; tmp={sub:'mios'}; window.scrollTo(0,0); render();
 }
 
 
@@ -2595,21 +2575,19 @@ const ORDEN_TIENDA=()=>Object.keys(TIPOS_SOBRE).sort((a,b)=>TIPOS_SOBRE[a].coste
 
    La (i) es un botón aparte DENTRO de la fila, y es la única excepción a que la fila
    entera sea el botón: se para el toque para que no dispare también la fila. */
-/* El GRATIS no pasa por el inventario: se toca y va derecho al sobre en grande, que es
-   lo que se ha ido a buscar. Guardarlo primero para tener que ir a "Mis sobres" a abrirlo
-   es un paso de trámite sobre algo que no cuesta nada y que se reclama para abrirlo ya.
+/* EL COMÚN NO PASA POR EL INVENTARIO: es gratis y sin límite, así que se toca y va derecho
+   al sobre en grande, que es lo que se ha ido a buscar. Guardarlo primero para tener que ir
+   a "Mis sobres" a abrirlo es un paso de trámite sobre algo que no cuesta nada.
    Los de pago sí se guardan: pagar y abrir son dos decisiones distintas. */
 /* La tarjeta entera y su precio hacen lo mismo, para que no haya que buscar dónde tocar.
-   Lo que protege de gastar 600 sin querer ya no es el tamaño del blanco, sino la
+   Lo que protege de gastar 2.000 sin querer ya no es el tamaño del blanco, sino la
    confirmación: pagar pide un sí. El gratis y abrir lo que ya tienes no lo piden, porque
    no gastan nada y pedirlo sería un trámite. */
 function tiendaComprar(){
   return ORDEN_TIENDA().map(k=>{
     const T=TIPOS_SOBRE[k];
-    const g=GRATIS.find(x=>x.tipo===k);
-    const espera=g&&g.espera>0&&!listoGratis(g);
     const caro=T.coste>0&&S.divisa<T.coste;
-    const off=caro||espera||T.pronto;
+    const off=caro||T.pronto;
     return `<div class="sobre-fila ${off?'apagada':''} ${T.pronto?'pronto':''}">
       <button class="fila" ${off?'disabled':''} data-a="${T.coste?'comprar':'versobre'}" data-t="${k}">
         <span class="sobre-art"><img src="sobres/${k}.webp" alt="" loading="lazy"></span>
@@ -2617,8 +2595,7 @@ function tiendaComprar(){
           <span class="sub">${T.desc}</span></span>
       </button>
       <button class="precio" ${off?'disabled':''} data-a="${T.coste?'comprar':'versobre'}"
-        data-t="${k}" ${espera?`data-reloj="${g.id}"`:''}>${
-        espera?reloj(restaGratis(g)):(T.coste?MONEDA+`<span>${miles(T.coste)}</span>`:'GRATIS')}</button>
+        data-t="${k}">${T.coste?MONEDA+`<span>${miles(T.coste)}</span>`:'GRATIS'}</button>
       <button class="info" data-a="probs" data-t="${k}" aria-label="Probabilidades">i</button>
       ${T.pronto?'<span class="cartel">Próximamente</span>':''}
     </div>`;
@@ -2659,8 +2636,8 @@ function tiendaMios(){
 function vSobre(){
   const t=tmp.sobre; const T=TIPOS_SOBRE[t]; if(!T) return vTienda();
   const tengo=S.sobres.filter(s=>s.tipo===t).length;
-  const g=GRATIS.find(x=>x.tipo===t), gratisListo=!!(g&&listoGratis(g));
-  const puedo=tengo>0||gratisListo;
+  // El común es gratis y sin límite: siempre se puede abrir, tengas o no guardados.
+  const puedo=tengo>0||T.coste===0;
   return `${cabecera(T.n,'data-a="volvertienda"',tengo>1?`<span class="sub">te quedan ${tengo}</span>`:'')}
     <div class="pila libre">
       <button class="sobre-toque" data-a="abrirsobre" data-t="${t}" ${puedo?'':'disabled'}>
@@ -2670,43 +2647,36 @@ function vSobre(){
     </div>`;
 }
 
-/* Las probabilidades, cuando se piden. Aquí sí caben enteras y con sitio para leerlas. */
+/* Las probabilidades, cuando se piden. Aquí sí caben enteras y con sitio para leerlas.
+
+   DOS COLUMNAS, Y LAS DOS HACEN FALTA. La de la izquierda es lo que vale cada carta, que
+   es el número que define el sobre; la de la derecha es la de que salga al menos una en
+   el sobre entero, que es lo que de verdad quiere saber quien lo va a abrir. Con sólo la
+   primera, un 0,008% no dice nada. */
 function ovProbabilidades(t){
   const T=TIPOS_SOBRE[t]; if(!T) return;
-  const tot=Object.values(T.nivel).reduce((a,b)=>a+b,0);
+  const tot=Object.values(T.tramos).reduce((a,b)=>a+b,0);
+  const pinta=x=>x>=1?x.toFixed(1)+'%':x>=0.01?x.toFixed(2)+'%':x.toFixed(3)+'%';
   ov(`<div style="text-align:left">
-    <h3>${T.ic} ${T.n}</h3>
-    <div class="sub mb">${T.cartas} cartas, y ninguna se repite dentro del mismo sobre.
-      De ellas, ${orosTexto(t)}.</div>
-    <table><tr><th>Nivel</th><th style="text-align:right">Por carta de oro</th></tr>
-    ${NIVELES.map(n=>`<tr><td>${n.n}</td><td style="text-align:right">${
-      (T.nivel[n.id]/tot*100).toFixed(n.id==='corona'?2:1)}%</td></tr>`).join('')}
+    <h3>${T.n}</h3>
+    <div class="sub mb">${T.cartas} cartas, y ninguna se repite dentro del mismo sobre.</div>
+    <table><tr><th>Tramo</th><th style="text-align:right">Por carta</th>
+      <th style="text-align:right">En el sobre</th></tr>
+    ${NIVELES.map(n=>`<tr><td>${n.n}</td>
+      <td style="text-align:right">${pinta(T.tramos[n.id]/tot*100)}</td>
+      <td style="text-align:right">${pinta(pTramoSobre(T,n.id)*100)}</td></tr>`).join('')}
     </table>
-    <div class="tiny" style="margin:8px 0 12px">Campeón o top 5 en el sobre entero:
-      <b>${pctCorona(t).toFixed(2)}%</b></div>
-    <button class="btn" data-a="cerrarov" style="width:100%">Vale</button></div>`);
+    <button class="btn" data-a="cerrarov" style="width:100%;margin-top:12px">Vale</button></div>`);
 }
 
-// Los relojes se refrescan solos sin volver a pintar la pantalla entera:
-// un render completo cada segundo se comería los toques del jugador.
+/* YA NO HAY NINGÚN RELOJ. El común es gratis y sin límite —no espera a nada— y el de
+   bienvenida es de una vez, así que no hay cuenta atrás que refrescar. Lo único que queda
+   vivo aquí es la insignia de la pestaña Tienda, que cuenta los sobres sin abrir: se
+   actualiza sola sin repintar la pantalla, porque un render entero cada segundo se comería
+   los toques del jugador. */
 function actualizarRelojes(){
-  for(const g of GRATIS){
-    const e=document.querySelector(`[data-reloj="${g.id}"]`);
-    if(!e) continue;
-    const ok=listoGratis(g);
-    // El reloj vive en el hueco del precio: mientras corre se lee la cuenta atrás donde
-    // los otros sobres llevan su coste, y al llegar a cero se convierte en el 0 del gratis.
-    e.textContent=ok?'0':reloj(restaGratis(g));
-    const fila=e.closest('.fila');
-    if(fila){ fila.classList.toggle('apagada',!ok); fila.disabled=!ok; }
-  }
-  const listos=nGratisListos();
-  if(actualizarRelojes.ultimo===undefined) actualizarRelojes.ultimo=listos;
-  if(listos!==actualizarRelojes.ultimo){    // acaba de caducar un reloj: repinta
-    actualizarRelojes.ultimo=listos; render(); return;
-  }
   const badge=document.querySelector('#nav .badge');
-  const n=S.sobres.length+listos;
+  const n=S.sobres.length;
   if(badge && badge.textContent!==String(n)) badge.textContent=n;
 }
 
@@ -2759,17 +2729,6 @@ const SONIDO={
     src.start(t0);
   },
 
-  /* Un dato que cae. Cada uno entra más agudo que el anterior, así que la propia
-     escalera de tonos va contando cuánto queda para ver la carta. El del ranking
-     —el último y el que más dice— entra más fuerte y con un golpe detrás. */
-  dato(i, total, nivel, gordo){
-    const N=NIVEL_APERTURA[nivel]||NIVEL_APERTURA.oro;
-    const paso=total>1?i/(total-1):1;
-    const f=N.hz[0]+(N.hz[1]-N.hz[0])*paso;
-    this.tono({f, t:0.20, tipo:'triangle', vol:gordo?0.15:0.10});
-    this.tono({f:f*2, t:0.11, tipo:'sine', vol:gordo?0.09:0.05});
-    if(gordo) this.golpe({t:0.14, vol:0.14, corte:N.corte});
-  },
   /* El impacto de cuando la carta aterriza. */
   impacto(nivel){
     const N=NIVEL_APERTURA[nivel]||NIVEL_APERTURA.oro;
@@ -2825,67 +2784,43 @@ const SONIDO={
 };
 
 
-/* Lo que define cada nivel en la apertura: cuánto dura el aviso, de qué color es,
-   y a qué suena. Una sola tabla para animación y sonido, para que no puedan
-   contarte cosas distintas. */
+/* A QUÉ SUENA CADA CARTA AL DESTAPARLA. Sólo sonido: cuanto mejor es la carta, más
+   grave y más larga suena. Se lee al dar la vuelta a una carta, o sea que suena por lo
+   que YA estás viendo y no adelanta nada.
+
+   Aquí había además `paso`, `anuncio` y dos colores por nivel: eran del aviso viejo —la
+   carta llenándose por partes y el resplandor del walkout—, que ya no existe, y no los
+   leía nadie. */
 const NIVEL_APERTURA={
-  /* Campeón y top 5 llevan el anuncio, y entonces manda el clip: la carta se llena a su
-     ritmo y no al revés. Los momentos están puestos sobre la propia forma del audio —
-     la voz entra a los 0,9 s, y entre el 5,7 y el 6,4 hay un valle antes del tramo
-     final—, y van indexados por cuántos pasos tiene la revelación: seis cuando el
-     peleador tiene foto, cinco cuando no. Con foto, las stats se adelantan al final del
-     valle y la CARA entra en el tramo final, que es el remate del clip. */
-  corona:{n:'corona', paso:700, hz:[150,760], pegada:0.34, corte:2600,
-          luz:'#ffd24a', luz2:'#ff4a3d',
-          anuncio:true},
-  top5  :{n:'top5',   paso:560, hz:[150,620], pegada:0.28, corte:2100,
-          luz:'#ffcf3f', luz2:'#e8a021',
-          anuncio:true},
-  top10 :{n:'top10',  paso:430, hz:[160,500], pegada:0.22, corte:1700,
-          luz:'#dfe6ee', luz2:'#9fb4c8'},
-  top15 :{n:'top15',  paso:430, hz:[160,440], pegada:0.19, corte:1500,
-          luz:'#cfd6de', luz2:'#8d9aa8'},
-  oro   :{n:'oro',    paso:340, hz:[170,370], pegada:0.16, corte:1200,
-          luz:'#b9c1ca', luz2:'#79838f'},
-  plata :{n:'plata',  paso:340, hz:[170,330], pegada:0.14, corte:1100,
-          luz:'#aab2bb', luz2:'#6e7883'},
+  corona:{n:'corona', hz:[150,760], pegada:0.34, corte:2600},
+  top5  :{n:'top5',   hz:[150,620], pegada:0.28, corte:2100},
+  top10 :{n:'top10',  hz:[160,500], pegada:0.22, corte:1700},
+  top15 :{n:'top15',  hz:[160,440], pegada:0.19, corte:1500},
+  oro   :{n:'oro',    hz:[170,370], pegada:0.16, corte:1200},
+  plata :{n:'plata',  hz:[170,330], pegada:0.14, corte:1100},
 };
 
 /* ── APERTURA DE SOBRES ──
-   Pantalla propia con su propio estado, para que el atrás funcione en cualquier
-   momento. Las cartas ya están en la colección antes de revelarse: salir a medias
-   no pierde nada, solo se salta la animación.
-
-   Dos pasos y ya: la mejor carta del sobre a pantalla casi completa, se toca, y sale
-   el sobre entero. Antes se iban pasando las nueve una a una, que para nueve cartas
-   son ocho toques de trámite. */
-/* El nivel de una tanda lo marca su MEJOR carta, que es la primera: la lista viene ya
-   ordenada de mejor a peor. Estaba metido dentro de abrirTanda y ahora hace falta antes,
-   para saber de qué color va el resplandor del walkout y a qué suena el golpe. */
-function nivelDe(items){
-  const mejor=items.length?PORID[items[0].cid]:null;
-  if(!mejor) return 'plata';
-  if(mejor.estatus==='campeon') return 'corona';
-  if(mejor.estatus==='top5') return 'top5';
-  return mejor.estatus;
-}
+   Pantalla propia con su propio estado, para que la salida funcione en cualquier
+   momento. Las cartas ya están en la colección antes de verse: salir a medias no pierde
+   nada, sólo se salta la animación. */
 /* LA APERTURA. Es la que aprobó el dueño; la maqueta de referencia está en
-   originales/apertura/apertura-que-quiere.html.
+   originales/apertura/apertura-que-quiere.html, y a partir de ahora es LO ÚNICO que hay:
+   "borra cualquier rastro del sistema viejo y deja solo el nuevo".
 
-   El sobre se rasga —la abertura AVANZA, no aparece de golpe—, la solapa se va, el cuerpo
-   cae y las cartas suben desde dentro en un montón, todas boca abajo. Un toque da la
-   vuelta a la de arriba EN SU SITIO; otro la manda al fondo del montón. Cuando ya se han
-   visto todas y se pasa la última, se va al resumen.
+   Se toca el sobre en la pantalla anterior y aquí se rasga solo —la abertura AVANZA, no
+   aparece de golpe—, la solapa se va, el cuerpo cae y las cartas suben desde dentro en un
+   montón, todas boca abajo. Un toque da la vuelta a la de arriba EN SU SITIO; otro la
+   manda al fondo del montón. Y no se acaba: se pasa en círculo hasta que se sale por la
+   flecha.
 
    Todo esto NO se repinta: la escena se monta una vez y a partir de ahí sólo se cambian
    clases y variables. Repintar a mitad de una transición la corta en seco. */
 function abrirTanda(items,tipo){
+  if(!items.length){ ir('tienda'); return; }
   vista='apertura';
-  tmp={ap:{items,tipo,resumen:items.length===0,
-    nivel:nivelDe(items),
-    nuevas:items.filter(it=>S.coleccion.filter(x=>x.cid===it.cid).length===1).map(it=>it.iid)}};
+  tmp={ap:{items,tipo}};
   window.scrollTo(0,0); render();
-  if(!items.length) return;
   montarApertura();
 }
 
@@ -2951,22 +2886,27 @@ function montarApertura(){
   colocarNaipes();
   medirCartas();
   avisaApertura();
+  /* Y SE RASGA SOLO. El toque que rasga es el que se dio sobre el sobre en la pantalla
+     anterior; pedir otro aquí eran dos toques para lo mismo. Van dos fotogramas de espera
+     —no un temporizador— para que la escena esté pintada antes de que empiece el rasgado:
+     rasgar sobre un sobre que todavía no se ha dibujado no se ve. */
+  requestAnimationFrame(()=>requestAnimationFrame(rasgarSobre));
 }
 
 function avisaApertura(){
   const a=tmp.ap; if(!a) return;
   const c=$('#ap-cuenta'), p=$('#ap-pista');
   if(!c||!p) return;
-  if(a.fase==='cerrado'){
-    c.classList.remove('on');
-    p.textContent='Toca el sobre'; p.classList.add('on'); return;
+  /* Mientras está cerrado no se dice nada: dura dos fotogramas, los que tarda en
+     arrancar el rasgado, y un cartel que aparece y desaparece es un parpadeo. */
+  if(a.fase==='cerrado'||a.fase==='rasgando'){
+    c.classList.remove('on'); p.classList.remove('on'); return;
   }
   /* Cuenta POR LA QUE VAS, no por las que llevas vistas: antes de dar la vuelta a la
      primera ponía "0 de 5", que se lee como que no hay nada. */
   c.textContent=`${Math.min(a.vistas+(a.fase==='tapada'?1:0),a.items.length)} de ${a.items.length}`;
   c.classList.add('on');
-  p.textContent=a.fase==='tapada'?'Toca para darle la vuelta'
-    :a.vistas>=a.items.length?'Toca para ver el sobre entero':'Toca para pasarla';
+  p.textContent=a.fase==='tapada'?'Toca para darle la vuelta':'Toca para pasarla';
   p.classList.add('on');
 }
 
@@ -2978,8 +2918,11 @@ function rasgarSobre(){
   $('#ap-pista').classList.remove('on');
   s.classList.add('toque');
   setTimeout(()=>s.classList.remove('toque'),140);
-  const N=NIVEL_APERTURA[a.nivel]||NIVEL_APERTURA.oro;
-  SONIDO.golpe({t:N.pegada, vol:.18, corte:N.corte});
+  /* UN GOLPE IGUAL PARA TODOS. Antes se elegía por la mejor carta del sobre, así que el
+     sonido del rasgado te decía lo que venía antes de ver una sola carta. Eso era del
+     sistema viejo —el walkout—: rasgar un sobre suena igual traiga lo que traiga. Los
+     valores son los que ya usaba de reserva. */
+  SONIDO.golpe({t:NIVEL_APERTURA.oro.pegada, vol:.18, corte:NIVEL_APERTURA.oro.corte});
   const DUR=900, t0=performance.now();
   (function paso(t){
     if(!tmp.ap||tmp.ap.fase!=='rasgando') return;
@@ -3007,7 +2950,7 @@ function soltarSobre(){
 
 /* Un toque: rasga, o da la vuelta, o pasa al fondo. */
 function toqueApertura(){
-  const a=tmp.ap; if(!a||a.resumen) return;
+  const a=tmp.ap; if(!a) return;
   if(a.fase==='cerrado'){ rasgarSobre(); return; }
   if(a.fase==='rasgando'||a.fase==='pasando') return;
   const arriba=a.pila&&a.pila[0]; if(!arriba) return;
@@ -3030,9 +2973,12 @@ function toqueApertura(){
   }
 
   if(a.fase==='vista'){
-    /* Vistas todas, el siguiente toque lleva al resumen: en el juego la apertura termina,
-       no da vueltas para siempre como en la maqueta. */
-    if(a.vistas>=a.items.length){ a.resumen=true; render(); return; }
+    /* NUNCA SE ACABA, como en la maqueta que pasó él: se sigue pasando en círculo y las
+       ya vistas siguen boca arriba, así que dar otra vuelta es repasarlas todas. Aquí
+       había un salto a una pantalla de resumen con las cartas en rejilla y scroll, que
+       era del sistema viejo y lo mandó fuera: "lo que tiene que quedar simplemente es el
+       montón de cartas que si pulso vayan pasando de forma normal". Se sale por la
+       flecha de arriba a la izquierda. */
     /* Sale por el lado y hacia abajo y se mete por detrás. Se queda delante hasta que ha
        salido del montón —si no, se metería por debajo nada más empezar— y ahí se le baja
        el orden. */
@@ -3040,7 +2986,7 @@ function toqueApertura(){
     arriba.style.setProperty('--fin',a.pila.length-1);
     arriba.classList.add('pasando');
     setTimeout(()=>{ arriba.style.zIndex=0; },260);
-    pasarCarta.t=setTimeout(()=>{
+    toqueApertura.t=setTimeout(()=>{
       if(!tmp.ap||tmp.ap.fase!=='pasando') return;
       a.pila.push(a.pila.shift());
       arriba.classList.remove('pasando');
@@ -3052,66 +2998,23 @@ function toqueApertura(){
     },580);
   }
 }
-const pasarCarta=toqueApertura;   // el nombre viejo, para el reparto de toques
-
-/* El aviso: la carta se destapa por partes, y en un orden que va de lo que menos
-   dice a lo que más — nacionalidad, peso, récord, ranking, nombre y stats, y la FOTO
-   al final del todo. Cada dato que cae estrecha el cerco: cuando ya sabes que es un
-   pesado invicto, el ranking es la última carta boca abajo.
-
-   El color de todo el bloque va del nivel que viene, así que además de los datos
-   la pantalla te está diciendo desde el principio si viene algo bueno. Es a
-   propósito: esa tensión es el momento que engancha, más que la carta en sí.
-
-   Dos condiciones para que no canse: dura poco —1,4 s por una plata, 1,7 s por un oro—
-   y **se salta tocando**. Quien va por su sobre número cuarenta no puede estar obligado
-   a mirarlo entero.
-
-/* Corta la revelación entera: los pasos que faltaban y el anuncio si estaba sonando.
-   Vale para las dos salidas —el final de siempre y el salto del jugador— porque al
-   final natural el clip ya ha terminado y cortarlo no hace nada. */
-/* Sólo existe para colgarle el temporizador del compás entre el toque y la apertura.
-   Una función vacía es más barata que una variable suelta que haya que declarar arriba. */
-function abrirsobre(){}
-
+/* Al salir de la apertura hay que cortar lo que estuviera corriendo: el rasgado y la
+   salida de las cartas, la que se estaba yendo al fondo, y el anuncio si sonaba. Sin
+   esto, un temporizador de una apertura ya cerrada sigue tocando el DOM de la pantalla
+   siguiente. */
 function pararAviso(){
-  clearTimeout(abrirsobre.t);          // y el encendido del sobre, si estaba a medias
   clearTimeout(abrirTanda.t);          // el rasgado y la salida de las cartas
-  clearTimeout(pasarCarta.t);          // y la que se estaba yendo al fondo
+  clearTimeout(toqueApertura.t);       // y la que se estaba yendo al fondo
   SONIDO.cortarAnuncio();
 }
 
+/* LA APERTURA NO TIENE MÁS PANTALLA QUE ÉSTA. Aquí había un resumen —las cartas en
+   rejilla, con "nueva/repetida" y un botón de abrir otro— al que se saltaba tras ver la
+   última. Era del sistema viejo y lo mandó fuera: "lo que tiene que quedar simplemente es
+   el montón de cartas que si pulso vayan pasando de forma normal como mientras lo estoy
+   abriendo". Con él se van `a.resumen`, `a.nuevas` y `puedeOtro()`. */
 function vApertura(){
   const a=tmp.ap;
-  const barra=`<div class="row mb" style="align-items:center">
-      <button class="btn gho sm" data-a="salirapertura" style="flex:none">← Salir</button>
-      <div class="tiny center" style="flex:2">${a.items.length} CARTAS</div>
-      <div style="flex:none;width:64px"></div>
-    </div>`;
-
-  if(a.resumen){
-    const nuevas=a.nuevas.length;
-    return barra+`
-      <div class="center mb"><h2>${TIPOS_SOBRE[a.tipo].ic} ${TIPOS_SOBRE[a.tipo].n}</h2>
-        <div class="sub">${nuevas} nueva${nuevas===1?'':'s'} de ${a.items.length}</div></div>
-      <div class="grid fit mb" style="--cols:3" data-fit="3,3" data-pie="12">${a.items.map(it=>{
-        const c=PORID[it.cid];
-        return `<div>${cartaHTML(c,{attr:`data-carta="${it.iid}"`})}
-          <div class="pie-carta">${a.nuevas.includes(it.iid)?'nueva':'repetida'}</div></div>`;
-      }).join('')}</div>
-      ${/* "Abrir otro" NO abre nada: devuelve a la PANTALLA DEL SOBRE, con el sobre otra
-             vez ahí para pulsar encima. El mismo gesto siempre, y el cobro siempre en el
-             mismo sitio. Un botón que abriera desde aquí sería un atajo que se salta la
-             pantalla donde se ve qué trae y cuánto cuesta.
-             Solo aparece si de verdad queda otro: uno guardado, el gratis listo, o dinero
-             para pagarlo. Si no, solo Atrás. */
-        ''}
-      <div class="row" style="gap:8px">
-        <button class="btn sec" data-a="volvertienda" style="flex:1">Atrás</button>
-        ${puedeOtro(a.tipo)
-          ? `<button class="btn" data-a="versobre" data-t="${a.tipo}" data-mio="1" style="flex:1">Abrir otro</button>` : ''}
-      </div>`;
-  }
 
   /* LA ESCENA DE LA APERTURA. Se pinta UNA vez y a partir de ahí sólo se le cambian
      clases y variables: repintar a mitad de una transición la corta en seco.
@@ -4551,6 +4454,7 @@ document.addEventListener('click',e=>{
        donde acaba de aparecer, para que se vea que la compra ha surtido efecto. */
     /* Comprar pide un sí antes de cobrar. Solo cuando cuesta: el gratis se reclama sin
        preguntar, porque no hay nada que confirmar. */
+    case 'bienvenida': reclamarBienvenida(); break;
     case 'comprar':{
       const T=TIPOS_SOBRE[d.t]; if(!T) break;
       if(T.coste>0&&S.divisa<T.coste) break;      // no llega: ni se pregunta ni se cobra
@@ -4594,37 +4498,25 @@ document.addEventListener('click',e=>{
     case 'abrirsobre':{
       const t=d.t, T=TIPOS_SOBRE[t]; if(!T) break;
       const desde=tmp.desde||'mios';
-      /* Aquí no se cobran fichas: lo que se gasta es el sobre. Primero el guardado —que
-         ya está pagado— y, si no hay, el gratis, que se reclama justo al abrirlo. */
+      /* Aquí no se cobra: lo que se gasta es el sobre. Primero el guardado —que ya está
+         pagado— y, si no hay, sólo se abre si es gratis, que es el común. */
       const i=S.sobres.findIndex(s=>s.tipo===t);
-      const g=GRATIS.find(x=>x.tipo===t);
       if(i>=0) S.sobres.splice(i,1);
-      else if(g&&listoGratis(g)){ if(g.espera>0) S.gratis[g.id]=Date.now(); }
-      else break;                        // no queda ninguno: no pasa nada
+      else if(T.coste!==0) break;        // no queda ninguno y no es gratis: no pasa nada
       guardar();
       const items=abrirSobre(t);
-      /* Del toque al walkout, sin escala intermedia. Antes había un compás de 850 ms en el
-         que se encendían del color del nivel unos arcos de fondo, y eso te contaba lo que
-         venía antes de ver la carta. Los arcos se han quitado, y con ellos el compás: lo
-         único que queda entre el dedo y el walkout es el golpe, que sí sigue sonando
-         distinto según lo que toque. */
-      const caja=document.querySelector('.sobre-toque');
-      const N=NIVEL_APERTURA[nivelDe(items)]||NIVEL_APERTURA.oro;
-      const seguir=()=>{ abrirTanda(items,t); tmp.ap.desde=desde; };
-      SONIDO.golpe({t:N.pegada, vol:.18, corte:N.corte});
-      if(!caja){ seguir(); break; }
-      caja.disabled=true;                // un segundo toque mientras arranca no hace nada
-      const pie=caja.querySelector('.sobre-pie');
-      if(pie) pie.textContent='';
-      /* Un cuarto de segundo, lo justo para que el toque se vea y el golpe entre antes de
-         que cambie la pantalla. Menos que esto y el sobre desaparece bajo el dedo. */
-      abrirsobre.t=setTimeout(seguir, 240);
+      /* ESTE TOQUE ES EL QUE RASGA. Antes había dos: éste, que hacía un compás con un
+         golpe elegido por lo mejor que traía el sobre —o sea que te contaba lo que venía
+         antes de ver nada—, y otro dentro de la apertura para rasgar. Dos toques sobre dos
+         sobres distintos, uno del sistema viejo y otro del nuevo. Se queda el nuevo: se
+         entra en la escena y el sobre se rasga solo, porque el toque ya está dado. */
+      abrirTanda(items,t); tmp.ap.desde=desde;
       break; }
     case 'pag':                          // pasar hoja del álbum de la colección
       tmp.pag=(tmp.pag||0)+Number(d.v); window.scrollTo(0,0); render(); break;
 
     case 'pasarcarta':                   // el montón: voltear y pasar al fondo
-      pasarCarta(); break;
+      toqueApertura(); break;
 
     case 'mudo':
       S.mudo=!S.mudo; guardar();
@@ -4727,7 +4619,6 @@ document.addEventListener('click',e=>{
    12. ARRANQUE
    ══════════════════════════════════════════════════════════════════════════ */
 generarRoster();
-calcularCortePlata();   // el corte entre plata alta y baja sale del roster ya cargado
 SETS=construirSets();
 if(!cargar()) S=estadoNuevo();
 if(!S.sets) S.sets=[];

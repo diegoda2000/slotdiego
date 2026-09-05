@@ -1,3 +1,12 @@
+# LA FIRMA DEL APK DE RELEASE, QUE NO SE SUBE NUNCA.
+# El repositorio es público: una clave de firma publicada deja de servir para nada, y con
+# ella cualquiera podría publicar una actualización que el móvil aceptaría como nuestra.
+# Y ojo al revés: si se pierde el archivo, no hay manera de volver a firmar igual y NINGÚN
+# móvil aceptará una actualización encima de lo ya instalado. Hay que guardarlo aparte.
+*.keystore
+*.jks
+android/keystore.properties
+
 # Salidas de compilación de Android
 android/build/
 android/app/build/

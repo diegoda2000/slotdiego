@@ -26,6 +26,26 @@ def copiarJuego = tasks.register('copiarJuego', Copy) {
     into assetsJuego
 }
 
+/* LA FIRMA DEL APK DE RELEASE.
+
+   El keystore (android/juego-release.keystore) y sus contraseñas
+   (android/keystore.properties) están los dos en .gitignore y NO se suben: el repositorio
+   es público, y una clave de firma publicada deja de servir para nada.
+
+   Por eso esto es condicional. Si los dos archivos están, el release se firma con la clave
+   de verdad; si no están —una máquina recién clonada, o el flujo de GitHub—, no se define
+   ninguna firma y Gradle hace lo de siempre. El flujo compila `assembleDebug`, así que no
+   se entera.
+
+   PARA QUE EL APK PUBLICADO VAYA FIRMADO ASÍ hay que meter el keystore en los secretos de
+   GitHub (en base64) y que el flujo lo escriba antes de compilar. No está hecho: hoy la
+   descarga de apk-latest sigue siendo la de depuración. */
+def fPropsFirma = rootProject.file('keystore.properties')
+def fKeystore = rootProject.file('juego-release.keystore')
+def hayFirma = fPropsFirma.exists() && fKeystore.exists()
+def propsFirma = new Properties()
+if (hayFirma) fPropsFirma.withInputStream { propsFirma.load(it) }
+
 android {
     namespace 'com.jaulaabierta.juego'
     compileSdk 35
@@ -38,9 +58,21 @@ android {
         versionName "0.1-prototipo"
     }
 
+    signingConfigs {
+        release {
+            if (hayFirma) {
+                storeFile fKeystore
+                storePassword propsFirma.getProperty('storePassword')
+                keyAlias propsFirma.getProperty('keyAlias')
+                keyPassword propsFirma.getProperty('keyPassword')
+            }
+        }
+    }
+
     buildTypes {
         release {
             minifyEnabled false
+            if (hayFirma) signingConfig signingConfigs.release
         }
     }
 

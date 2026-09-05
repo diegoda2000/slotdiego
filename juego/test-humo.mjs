@@ -176,131 +176,120 @@ comprobar(Object.values(sobres.porTipo).every(x => x.repetidasDentro === 0),
 comprobar(Object.values(sobres.porTipo).every(x => x.ordenadas),
   'las cartas salen ordenadas de mejor a peor');
 
-// El reparto declarado tiene que ser el reparto real. Se tiran miles de sobres y se
-// compara con la tabla: si algún día se retoca un número y se olvida el otro, aquí salta.
-const reparto = await page.evaluate(() => {
+/* EL SOBRE YA NO REPARTE ORO Y PLATA, sino RANKING. Lo dijo él: "YA NO HAY OROS JODER,
+   QUE TE QUEDE CLARO, DE MOMENTO TODAS SON COMUNES". Se tira una vez por carta sobre los
+   cuatro tramos —sin ranking, top 12-15, top 6-11, campeón o top 5— y ya está: ni cuántos
+   oros trae ni platas altas y bajas.
+
+   El reparto declarado tiene que ser el reparto real: se tiran miles de sobres y se
+   compara con la tabla, así que si algún día se retoca un número y se olvida el otro, aquí
+   salta. */
+const TRAMOS = ['sinrank', 'top1215', 'top611', 'corona'];
+const reparto = await page.evaluate((TRAMOS) => {
   const out = {};
   for (const t of Object.keys(TIPOS_SOBRE)) {
-    const T = TIPOS_SOBRE[t];
-    let oros = 0, coronas = 0, huecos = 0;
-    const N = 4000;
+    const T = TIPOS_SOBRE[t], N = 20000;
+    const c = {}; let huecos = 0, conRank = 0, conCorona = 0;
     for (let i = 0; i < N; i++) {
       const r = repartoSobre(t);
       huecos += r.length;
-      oros += r.filter(x => !esPlata(x)).length;
-      coronas += r.filter(x => x === 'corona').length;
+      for (const x of r) c[x] = (c[x] || 0) + 1;
+      if (r.some(x => x !== 'sinrank')) conRank++;
+      if (r.includes('corona')) conCorona++;
     }
-    const esperadosOros = Object.entries(T.oros)
-      .reduce((a, [n, p]) => a + (+n) * p, 0) / Object.values(T.oros).reduce((a, b) => a + b, 0);
-    const totNiv = Object.values(T.nivel).reduce((a, b) => a + b, 0);
-    out[t] = { debe: T.cartas, huecos: huecos / N, oros: oros / N, esperadosOros,
-      coronas: coronas / N, esperadasCoronas: (oros / N) * T.nivel.corona / totNiv };
+    const tot = Object.values(T.tramos).reduce((a, b) => a + b, 0);
+    out[t] = { debe: T.cartas, huecos: huecos / N,
+      suma: tot,
+      medido: Object.fromEntries(TRAMOS.map(k => [k, (c[k] || 0) / (N * T.cartas) * 100])),
+      declarado: Object.fromEntries(TRAMOS.map(k => [k, T.tramos[k] / tot * 100])),
+      pctRank: conRank / N * 100, pctCorona: conCorona / N * 100,
+      rankPorSobre: TRAMOS.slice(1).reduce((a, k) => a + (c[k] || 0), 0) / N };
   }
   return out;
-});
+}, TRAMOS);
 for (const [t, r] of Object.entries(reparto)) {
   comprobar(Math.abs(r.huecos - r.debe) < 0.001, `${t}: siempre ${r.debe} huecos`);
-  comprobar(Math.abs(r.oros - r.esperadosOros) < 0.12,
-    `${t}: ${r.oros.toFixed(2)} oros por sobre (declarado ${r.esperadosOros.toFixed(2)})`);
-  comprobar(Math.abs(r.coronas - r.esperadasCoronas) < 0.02,
-    `${t}: campeones o top 5 al ritmo declarado (${(r.coronas * 100).toFixed(2)} por cada 100 sobres)`);
+  comprobar(Math.abs(r.suma - 100) < 0.001, `${t}: los cuatro tramos suman 100 (${r.suma})`);
+  const peor = Math.max(...TRAMOS.map(k => Math.abs(r.medido[k] - r.declarado[k])));
+  comprobar(peor < 0.6,
+    `${t}: lo que sale es lo que dice la tabla (la que más baila, ${peor.toFixed(2)} puntos)`);
 }
 
-/* Cada sobre hace UNA cosa, y esto lo fija para que no se deshaga sin querer:
-   el básico da oros para montarse un equipo pero casi nunca uno alto, el de plata
-   está para cerrar la colección de platas, y el de oro es el que reparte arriba. */
-const oficio = await page.evaluate(() => {
-  const N = 60000, out = {};
-  for (const tipo of Object.keys(TIPOS_SOBRE)) {
-    let oros = 0, platas = 0, conAlto = 0;
-    for (let i = 0; i < N; i++) {
-      const s = repartoSobre(tipo);
-      let alto = 0;
-      for (const n of s) {
-        if (esPlata(n)) platas++; else oros++;
-        if (n === 'corona' || n === 'top611') alto++;
-      }
-      if (alto) conAlto++;
-    }
-    out[tipo] = { oros: oros / N, platas: platas / N, pctAlto: conAlto / N * 100 };
+/* Y LO QUE DE VERDAD IMPORTA: que la carta que sale sea del tramo que se sorteó.
+   Aquí se coló un fallo que el sorteo no podía ver. El tramo "sin ranking" preguntaba
+   `!(c.rk >= 0)`, y en JavaScript `null >= 0` es TRUE —null se convierte en 0—, así que
+   la bolsa de los sin ranking salía VACÍA. cartaDeNivel se iba al tramo de al lado sin
+   decir nada, y un sobre común que sorteaba 98,4% de mediocres repartía cinco rankeados.
+   El sorteo daba bien y las cartas no: hay que mirar las cartas. */
+const bolsas = await page.evaluate((TRAMOS) => {
+  const dentro = { sinrank: c => c.rk === null || c.rk === undefined,
+    top1215: c => c.rk >= 12 && c.rk <= 15, top611: c => c.rk >= 6 && c.rk <= 11,
+    corona: c => c.rk === 0 || (c.rk >= 1 && c.rk <= 5) };
+  const tam = Object.fromEntries(TRAMOS.map(k => [k, poolNivel(k).length]));
+  let mal = 0, n = 0;
+  for (const k of TRAMOS) for (let i = 0; i < 400; i++) {
+    const c = cartaDeNivel(k, new Set()); n++;
+    if (!c || !dentro[k](c)) mal++;
   }
-  /* Y la cifra exacta, salida de la propia tabla en vez de a base de tiradas: con
-     60.000 sobres el muestreo baila una décima, y el límite del GDD es justo el 1%. */
-  out.exacto = {};
-  for (const tipo of Object.keys(TIPOS_SOBRE)) {
-    const T = TIPOS_SOBRE[tipo];
-    const totN = Object.values(T.nivel).reduce((a, b) => a + b, 0);
-    const p = (T.nivel.corona + T.nivel.top611) / totN;
-    const totO = Object.values(T.oros).reduce((a, b) => a + b, 0);
-    let q = 0;   // probabilidad de NO sacar ninguna alta, pesada por cuántos oros trae
-    for (const [n, peso] of Object.entries(T.oros)) q += (peso / totO) * Math.pow(1 - p, +n);
-    out.exacto[tipo] = (1 - q) * 100;
-  }
-  return out;
-});
-/* LOS CINCO SOBRES SON UNA ESCALERA, no tres sobres con oficios distintos. Antes el
-   básico era el gratis para montarse un equipo, el de plata cerraba la colección de platas
-   y el de oro era el caro; ahora van de común a ultimate y cada uno tiene que ser mejor
-   que el de debajo, que es lo que dice el boceto con sus precios de 1.000 a 12.500. */
-const ESCALERA = ['comun', 'raro', 'epico', 'legendario', 'ultimate'];
-comprobar(oficio.comun.oros >= 1.5,
-  `el común da oros para ir montando el equipo (${oficio.comun.oros.toFixed(2)} por sobre)`);
-comprobar(oficio.exacto.comun <= 1,
-  `pero un oro alto es casi imposible, el 1% o menos que manda el GDD (${oficio.exacto.comun.toFixed(2)}% de los sobres)`);
-comprobar(Math.abs(oficio.comun.pctAlto - oficio.exacto.comun) < 0.25,
-  `y las tiradas dan lo que dice la tabla (${oficio.comun.pctAlto.toFixed(2)}% medido)`);
-const subeOros = ESCALERA.every((k, i) => i === 0 || oficio[k].oros > oficio[ESCALERA[i - 1]].oros);
-comprobar(subeOros,
-  `y cada escalón trae más oros que el de debajo (${ESCALERA.map(k => oficio[k].oros.toFixed(1)).join(' · ')})`);
+  // y un sobre común entero, abierto de verdad: casi todo tiene que ser sin ranking
+  let sin = 0, tot = 0;
+  for (let i = 0; i < 2000; i++)
+    for (const it of abrirSobre('comun')) { tot++; if (PORID[it.cid].rk === null) sin++; }
+  return { tam, mal, n, pctSin: sin / tot * 100 };
+}, TRAMOS);
+comprobar(TRAMOS.every(k => bolsas.tam[k] > 40),
+  `las cuatro bolsas tienen cartas (${TRAMOS.map(k => k + ' ' + bolsas.tam[k]).join(' · ')})`);
+comprobar(bolsas.mal === 0,
+  `y la carta que sale es siempre del tramo pedido (${bolsas.n} tiradas, ${bolsas.mal} fuera)`);
+comprobar(bolsas.pctSin > 97,
+  `abriendo comunes de verdad, el ${bolsas.pctSin.toFixed(1)}% son peleadores sin ranking`);
 
-/* Lo que define a cada sobre, escrito para que no se deshaga sin querer. */
-const perfil = await page.evaluate(() => {
-  const N = 120000, out = {};
-  for (const tipo of Object.keys(TIPOS_SOBRE)) {
-    const c = {}; let conRank = 0;
-    for (let i = 0; i < N; i++) {
-      const s = repartoSobre(tipo); let rk = 0;
-      for (const n of s) { c[n] = (c[n] || 0) + 1;
-        if (n === 'corona' || n === 'top611' || n === 'top1215') rk++; }
-      if (rk) conRank++;
-    }
-    const oros = (c.corona || 0) + (c.top611 || 0) + (c.top1215 || 0) + (c.oro || 0);
-    const pl = (c.plataAlta || 0) + (c.plataBaja || 0);
-    out[tipo] = { pctOro: oros / (oros + pl) * 100,
-      pctRank: conRank / N * 100,
-      deLosRank1215: (c.top1215 || 0) / ((c.corona || 0) + (c.top611 || 0) + (c.top1215 || 0)) * 100,
-      pctPlataAlta: (c.plataAlta || 0) / pl * 100 };
-  }
-  return out;
+/* LO QUE ÉL PIDIÓ PARA EL COMÚN, palabra por palabra: "LA MAYORÍA QUE TIENE QUE TOCAR SON
+   PELEADORES MEDIOCRES, QUE NO ESTÉN RANKEADOS, MUY RARA VEZ ALGUNO ENTRE TOP 15-10, CASI
+   IMPOSIBLE ENTRE TOP 10-5 Y EL RESTO PRÁCTICAMENTE IMPOSIBLE". */
+comprobar(reparto.comun.medido.sinrank > 97,
+  `el común es casi todo mediocres sin ranking (${reparto.comun.medido.sinrank.toFixed(1)}%)`);
+comprobar(reparto.comun.pctRank < 10,
+  `un rankeado es raro: uno cada ${Math.round(100 / reparto.comun.pctRank)} sobres`);
+comprobar(reparto.comun.pctCorona < 0.1,
+  `y un campeón o top 5, uno cada ${Math.round(100 / reparto.comun.pctCorona)} sobres`);
+/* El límite del GDD para el sobre de entrada: una carta alta —corona o top 6-11— en el 1%
+   de los sobres o menos. Se calcula de la tabla, no a base de tiradas, porque con muestreo
+   baila una décima y el límite es justo el 1%. */
+const altaComun = await page.evaluate(() => {
+  const T = TIPOS_SOBRE.comun, tot = Object.values(T.tramos).reduce((a, b) => a + b, 0);
+  const p = (T.tramos.corona + T.tramos.top611) / tot;
+  return (1 - Math.pow(1 - p, T.cartas)) * 100;
 });
-comprobar(perfil.comun.pctOro > 30 && perfil.comun.pctOro < 55,
-  `el común reparte más plata que oro, sin llegar a ser sólo plata (${perfil.comun.pctOro.toFixed(1)}% de oro)`);
-comprobar(perfil.comun.pctRank < 25,
-  `y un rankeado es raro: uno cada ${Math.round(100 / perfil.comun.pctRank)} sobres`);
-comprobar(perfil.comun.deLosRank1215 > 90,
-  `cuando cae uno, casi siempre es de los últimos puestos (${perfil.comun.deLosRank1215.toFixed(1)}% son del 12-15)`);
-const bandas = await page.evaluate(() =>
-  ({ alta: poolNivel('plataAlta').length, baja: poolNivel('plataBaja').length }));
-comprobar(bandas.alta > 20 && bandas.baja > 20,
-  `y las dos bandas de plata tienen fondo de sobra (${bandas.alta} altas · ${bandas.baja} bajas)`);
-const subeAlta = ESCALERA.every((k, i) => i === 0 || oficio.exacto[k] > oficio.exacto[ESCALERA[i - 1]]);
-comprobar(subeAlta,
-  `y la carta alta sube en cada escalón (${ESCALERA.map(k => oficio.exacto[k].toFixed(2) + '%').join(' · ')})`);
-const subePlataAlta = ESCALERA.every((k, i) => i === 0 || perfil[k].pctPlataAlta >= perfil[ESCALERA[i - 1]].pctPlataAlta);
-comprobar(subePlataAlta,
-  `y hasta las platas son mejores arriba (${ESCALERA.map(k => perfil[k].pctPlataAlta.toFixed(0) + '%').join(' · ')})`);
+comprobar(altaComun <= 1,
+  `una carta alta en el común es casi imposible, el 1% o menos que manda el GDD (${altaComun.toFixed(2)}%)`);
+
+/* Y EL DE BIENVENIDA MEJOR, que es lo que pidió: "haz que el que se reclama en Inicio sea
+   un sobre raro... y ahí aumenta las probabilidades". */
+comprobar(reparto.raro.pctRank > 60,
+  `el raro casi siempre trae algún rankeado (${reparto.raro.pctRank.toFixed(0)}% de los sobres)`);
+
+/* LOS CINCO SON UNA ESCALERA: cada uno mejor que el de debajo, que es lo que dicen sus
+   precios en el boceto. Se mide por los dos números que importan: cuántos rankeados trae
+   y cuántas veces sale un campeón. */
+const ESCALERA = ['comun', 'raro', 'epico', 'legendario', 'ultimate'];
+const sube = (f, q) => comprobar(
+  ESCALERA.every((k, i) => i === 0 || f(reparto[k]) > f(reparto[ESCALERA[i - 1]])),
+  `${q} (${ESCALERA.map(k => f(reparto[k]).toFixed(2)).join(' · ')})`);
+sube(r => r.rankPorSobre, 'cada escalón trae más rankeados que el de debajo');
+sube(r => r.pctCorona, 'y el campeón sube en cada escalón');
 
 /* ── La Tienda y el flujo de apertura ──────────────────────────────────
-   Un solo camino para los tres sobres: fila → pantalla del sobre → toque encima del
-   sobre → walkout → resumen. Sin atajos y sin abrir varios de golpe. */
+   Un solo camino: fila → pantalla del sobre → toque encima del sobre → la apertura.
+   Sin atajos y sin abrir varios de golpe. */
 console.log('\n2c-ter. La tienda y el flujo de apertura');
 const tienda = await page.evaluate(() => {
   S.gratis = {}; S.sobres = []; S.divisa = 1000; S.coleccion = [];
   ir('tienda');
-  // se listan por la tarjeta, no por la acción: el gratis lleva "versobre" y los de pago
-  // "comprar", justamente porque el gratis no pasa por el inventario
-  /* Ahora el botón es EL PRECIO, no la tarjeta: leer lo que trae un sobre de 600 no puede
-     costar 600. Así que se lista por tarjeta y el dato se saca de su precio. */
+  /* El botón es EL PRECIO, no la tarjeta: leer lo que trae un sobre de 2.000 no puede
+     costar 2.000. Así que se lista por tarjeta y el dato se saca de su precio.
+     El COMÚN lleva "versobre" y no "comprar" porque es gratis y no pasa por el
+     inventario; los de pago se guardan primero. */
   const tarjetas = [...document.querySelectorAll('.sobre-fila')];
   const precios = tarjetas.map(t => t.querySelector('.precio'));
   return {
@@ -310,10 +299,10 @@ const tienda = await page.evaluate(() => {
     // el precio es un BOTÓN y la tarjeta no: tocar el nombre no compra
     precioEsBoton: precios.every(b => b.tagName === 'BUTTON'),
     precios: precios.map(b => b.textContent.trim()),
-    /* EL SOBRE GRATIS YA NO ESTÁ EN LA TIENDA: en el boceto la tienda son cinco sobres de
-       pago y el gratis se reclama en la ACTIVIDAD DIARIA de Inicio. */
-    gratisEnInicio: (() => { ir('inicio');
-      const b = document.querySelector('[data-a="versobre"][data-t="comun"]');
+    /* EL COMÚN ES GRATIS Y ESTÁ EN LA TIENDA —"PON EL SOBRE COMÚN GRATIS EN LA TIENDA"—,
+       y lo que se reclama en Inicio es un RARO de bienvenida, una sola vez. */
+    bienvenidaEnInicio: (() => { ir('inicio');
+      const b = document.querySelector('[data-a="bienvenida"]');
       const txt = b ? b.textContent.trim() : '';
       ir('tienda'); return txt; })(),
     // "Mis sobres" vacío lo dice y enlaza a Comprar
@@ -328,12 +317,14 @@ comprobar(tienda.orden.join(',') === 'comun,raro,epico,legendario,ultimate',
   `las cinco filas del boceto, de barata a cara (${tienda.orden.join(', ')})`);
 comprobar(tienda.precioEsBoton,
   'la tarjeta y su precio hacen lo mismo, para no tener que buscar dónde tocar');
-comprobar(tienda.acciones.every(a => a === 'comprar'),
-  `los cinco se compran: en la tienda ya no hay nada gratis (${tienda.acciones.join(', ')})`);
-comprobar(/reclamar/i.test(tienda.gratisEnInicio),
-  `el sobre gratis se reclama en Inicio, no en la tienda ("${tienda.gratisEnInicio}")`);
-comprobar(tienda.precios.every(p => /\d\.\d{3}/.test(p)),
-  `y los precios van con su punto de millar (${tienda.precios.join(' · ')})`);
+comprobar(tienda.acciones[0] === 'versobre' && tienda.acciones.slice(1).every(a => a === 'comprar'),
+  `el común se abre y ya —es gratis—, y los otros cuatro se compran (${tienda.acciones.join(', ')})`);
+comprobar(tienda.precios[0] === 'GRATIS',
+  `y el común lo dice en el hueco del precio ("${tienda.precios[0]}")`);
+comprobar(/reclamar/i.test(tienda.bienvenidaEnInicio),
+  `el de bienvenida se reclama en Inicio ("${tienda.bienvenidaEnInicio}")`);
+comprobar(tienda.precios.slice(1).every(p => /\d\.\d{3}/.test(p)),
+  `y los de pago van con su punto de millar (${tienda.precios.slice(1).join(' · ')})`);
 comprobar(tienda.vacio.dice && tienda.vacio.enlace,
   'sin sobres guardados, "Mis sobres" lo dice y enlaza a Comprar');
 
@@ -352,7 +343,7 @@ const laI = await page.evaluate(() => {
   document.querySelector('.info[data-t="epico"]').click();
   const capa = document.querySelector('.ov, #ov, .overlay') || document.body;
   const texto = capa.textContent;
-  const abrio = /por carta de oro/i.test(texto);
+  const abrio = /por carta/i.test(texto) && /sin ranking/i.test(texto);
   const sigueEnTienda = vista === 'tienda';
   cerrarOv();
   return { enLaFila, i, dentroDeLaFila, abrio, sigueEnTienda };
@@ -363,11 +354,10 @@ comprobar(laI.i === 5 && laI.dentroDeLaFila === 0,
 comprobar(laI.abrio, 'y tocarla saca las probabilidades');
 comprobar(laI.sigueEnTienda, 'sin salir de la tienda ni comprar nada');
 
-/* La pantalla del sobre es el sobre sobre un fondo liso, y del toque se pasa al walkout
-   sin escala intermedia. Antes cruzaban la pantalla unos arcos que se encendían del color
-   del nivel y contaban lo que venía antes de ver la carta; se quitaron, y con ellos el
-   compás de 850 ms que existía para enseñarlos. Lo que queda es que el toque bloquea el
-   sobre y que en menos de medio segundo ya se está en el walkout. */
+/* La pantalla del sobre es el sobre sobre un fondo liso, y EL TOQUE VA DERECHO A LA
+   APERTURA. Ya no hay compás ni golpe elegido por lo mejor que trae el sobre: eso era del
+   sistema viejo, y él lo mandó fuera —"borra cualquier rastro del sistema viejo y deja
+   solo el nuevo"—. Un toque, y ese mismo toque es el que rasga. */
 const flor = await page.evaluate(async () => {
   S.divisa = 9000; S.sobres = [{ tipo: 'epico' }]; ir('tienda'); tmp.sub = 'mios'; render();
   document.querySelector('[data-a="versobre"][data-t="epico"]').click();
@@ -376,18 +366,20 @@ const flor = await page.evaluate(async () => {
   const fondoPuesto = esc.classList.contains('puesta');
   const trazos = esc.querySelectorAll('svg path').length;
   document.querySelector('[data-a="abrirsobre"]').click();
-  const alInstante = { bloqueada: caja.disabled, vista };
+  const alInstante = { vista, gastado: S.sobres.length };
   await new Promise(x => setTimeout(x, 500));
-  const trasMedioSegundo = vista;
+  const rasgando = tmp.ap && tmp.ap.fase;
   pararAviso();
-  return { fondoPuesto, trazos, alInstante, trasMedioSegundo };
+  return { fondoPuesto, trazos, alInstante, rasgando };
 });
 comprobar(flor.fondoPuesto, 'la pantalla del sobre pone su fondo');
 comprobar(flor.trazos === 0,
   `y ya no lleva florituras dibujadas encima (${flor.trazos} trazos)`);
-comprobar(flor.alInstante.bloqueada, 'el toque bloquea el sobre, un segundo toque no hace nada');
-comprobar(flor.trasMedioSegundo === 'apertura',
-  `y en medio segundo ya se está en el walkout (${flor.trasMedioSegundo})`);
+comprobar(flor.alInstante.vista === 'apertura',
+  `el toque lleva a la apertura EN EL ACTO, sin compás de por medio (${flor.alInstante.vista})`);
+comprobar(flor.alInstante.gastado === 0, 'y gasta el sobre');
+comprobar(flor.rasgando !== 'cerrado',
+  `y el sobre se rasga solo, sin pedir un segundo toque (fase "${flor.rasgando}")`);
 
 const arte = await page.evaluate(() => window.__arte || []);
 comprobar(arte.length === 5 && arte.every(a => /^sobres\/.+\.webp$/.test(a)),
@@ -470,12 +462,12 @@ comprobar(!abrir.hablaDePrecio, 'y ahí no se habla de precio: no hay nada que p
 comprobar(abrir.tras.div === 1000 && abrir.tras.sobres === 0,
   `abrir gasta el sobre y NO el dinero (${abrir.tras.div} monedas intactas)`);
 comprobar(abrir.tras.vista === 'apertura',
-  'y tras encenderse las florituras arranca el walkout');
+  'y el mismo toque lleva a la apertura');
 
-/* Pagar pide un sí. Lo que protege de gastar 600 sin querer ya no es el tamaño del
+/* Pagar pide un sí. Lo que protege de gastar 2.000 sin querer ya no es el tamaño del
    blanco, sino la confirmación — y por eso la tarjeta entera puede volver a valer.
-   El gratis y abrir lo que ya tienes NO preguntan: no gastan nada, y preguntarlo sería
-   un trámite delante de algo que no tiene consecuencia. */
+   El común, que es gratis, y abrir lo que ya tienes NO preguntan: no gastan nada, y
+   preguntarlo sería un trámite delante de algo que no tiene consecuencia. */
 const confirma = await page.evaluate(() => {
   const hayOv = () => !!document.querySelector('[data-a="confirmarcompra"]');
   S.divisa = 3000; S.sobres = []; S.gratis = {}; S.coleccion = []; ir('tienda');
@@ -487,8 +479,8 @@ const confirma = await page.evaluate(() => {
   const desdeElPrecio = hayOv();
   document.querySelector('[data-a="confirmarcompra"]').click();
   const comprado = { div: S.divisa, sobres: S.sobres.length, sub: tmp.sub };
-  ir('inicio');
-  document.querySelector('[data-a="versobre"][data-t="comun"]').click();
+  ir('tienda');
+  document.querySelector('.fila[data-a="versobre"][data-t="comun"]').click();
   const gratis = { vista, pregunta: hayOv() };
   ir('tienda'); tmp.sub = 'mios'; render();
   document.querySelector('.fila[data-a="versobre"][data-t="raro"]').click();
@@ -504,13 +496,13 @@ comprobar(confirma.comprado.div === 1000 && confirma.comprado.sobres === 1,
   `confirmando sí se cobra y aparece el sobre (${confirma.comprado.div} monedas)`);
 comprobar(confirma.comprado.sub === 'mios', 'y salta a "Mis sobres", que es donde ha aparecido');
 comprobar(!confirma.gratis.pregunta && confirma.gratis.vista === 'sobre',
-  'el gratis de Inicio no pregunta: no hay nada que confirmar');
+  'el común de la tienda no pregunta: es gratis, no hay nada que confirmar');
 comprobar(!confirma.abrir.pregunta && confirma.abrir.vista === 'sobre',
   'y abrir uno del inventario tampoco');
 
 /* Sin fichas: la fila se lee entera, no responde y no da error. */
 const pobre = await page.evaluate(() => {
-  S.divisa = 0; S.sobres = []; S.gratis = { g1: Date.now() }; ir('tienda');
+  S.divisa = 0; S.sobres = []; S.gratis = {}; ir('tienda');
   const f = document.querySelector('.precio[data-t="ultimate"]');
   const fuera = f.closest('.sobre-fila');
   const antes = { div: S.divisa, cartas: S.coleccion.length, vista };
@@ -601,13 +593,14 @@ comprobar(avatar.quitada.guardado === '' && !avatar.quitada.foto, 'y se puede qu
 comprobar(!(await page.evaluate(() => document.body.innerHTML.includes('abrirtodo'))),
   'no hay ninguna forma de abrir varios sobres de golpe');
 
-/* El GRATIS no pasa por el inventario: se toca y va derecho al sobre en grande. Guardarlo
-   primero, para tener que ir a "Mis sobres" a abrirlo, es un paso de trámite sobre algo
-   que no cuesta nada y que se reclama justamente para abrirlo ya. */
+/* EL COMÚN ES GRATIS Y ESTÁ EN LA TIENDA —"PON EL SOBRE COMÚN GRATIS EN LA TIENDA"—, y no
+   pasa por el inventario: se toca y va derecho al sobre en grande. Guardarlo primero, para
+   tener que ir a "Mis sobres" a abrirlo, es un paso de trámite sobre algo que no cuesta
+   nada. Y sin límite: con 0 monedas se abre igual. */
 const gratis = await page.evaluate(async () => {
   S.gratis = {}; S.sobres = []; S.divisa = 0; S.coleccion = [];
-  ir('inicio');
-  document.querySelector('[data-a="versobre"][data-t="comun"]').click();
+  ir('tienda');
+  document.querySelector('.fila[data-a="versobre"][data-t="comun"]').click();
   const enSobre = { vista, guardados: S.sobres.length };
   document.querySelector('[data-a="abrirsobre"]').click();
   await new Promise(r => setTimeout(r, 950));
@@ -615,7 +608,7 @@ const gratis = await page.evaluate(async () => {
   pararAviso(); return r;
 });
 comprobar(gratis.enSobre.vista === 'sobre' && gratis.enSobre.guardados === 0,
-  'el gratis va derecho al sobre en grande, sin pasar por el inventario');
+  'el común gratis va derecho al sobre en grande, sin pasar por el inventario');
 const nComun = await page.evaluate(() => TIPOS_SOBRE.comun.cartas);
 comprobar(gratis.vista === 'apertura' && gratis.cartas === nComun && gratis.guardados === 0,
   `y el toque lo abre ahí mismo, entregando sus ${nComun} cartas`);
@@ -630,7 +623,7 @@ const apertura = await page.evaluate(async () => {
   ir('tienda'); tmp.sub = 'mios'; render();
   document.querySelector('[data-a="versobre"][data-t="epico"]').click();
   document.querySelector('[data-a="abrirsobre"]').click();
-  await new Promise(r => setTimeout(r, 400));
+  await new Promise(r => setTimeout(r, 60));
 
   const naipes = () => [...document.querySelectorAll('.monton .naipe')];
   const out = { cartas: naipes().length, debe: TIPOS_SOBRE.epico.cartas };
@@ -638,9 +631,11 @@ const apertura = await page.evaluate(async () => {
      suyas —5, 6, 8, 10 y 10— y lo que sale tiene que coincidir. */
   out.bocabajo = naipes().filter(n => n.classList.contains('bocabajo')).length;
 
-  // Se rasga: la abertura avanza, así que el recorte cambia entre un momento y otro.
+  /* SE RASGA SOLO, sin pedir otro toque: el toque que rasga es el que se dio sobre el
+     sobre en la pantalla anterior. Y se rasga DE VERDAD: la abertura avanza, así que el
+     recorte cambia entre un momento y otro. */
   const alto = document.querySelector('#sobre-abre .alto');
-  toqueApertura();
+  out.rasgaSola = tmp.ap.fase === 'rasgando';
   await new Promise(r => setTimeout(r, 120));
   const corte1 = alto.style.clipPath;
   await new Promise(r => setTimeout(r, 260));
@@ -668,14 +663,26 @@ const apertura = await page.evaluate(async () => {
   out.alFondo = tmp.ap.pila[tmp.ap.pila.length - 1] === arriba;
   out.arribaOtra = tmp.ap.pila[0] !== arriba;
   out.tapadaOtraVez = tmp.ap.pila[0].classList.contains('bocabajo');
+
+  /* Y NO SE ACABA NUNCA. Aquí había un salto a una pantalla de resumen —las cartas en
+     rejilla, con scroll— cuando se habían visto todas. Era del sistema viejo y lo mandó
+     fuera: "lo que tiene que quedar simplemente es el montón de cartas que si pulso vayan
+     pasando de forma normal". Se dan dos vueltas enteras y se comprueba que sigue siendo
+     el montón. */
+  for (let i = 0; i < out.debe * 4 + 4; i++) { toqueApertura(); await new Promise(r => setTimeout(r, 90)); }
+  out.sigueEnElMonton = vista === 'apertura' && !!document.querySelector('.monton .naipe');
+  out.montonEntero = document.querySelectorAll('.monton .naipe').length;
+  out.sinRejilla = !document.querySelector('.grid');
   return out;
 });
 comprobar(apertura.cartas === apertura.debe,
   `el montón trae las cartas del sobre (${apertura.cartas} de ${apertura.debe})`);
 comprobar(apertura.bocabajo === apertura.debe,
   'y todas salen boca abajo');
+comprobar(apertura.rasgaSola,
+  'el sobre se rasga solo al entrar: el toque ya se dio en la pantalla anterior');
 comprobar(apertura.rasgaAvanza,
-  `el sobre se rasga de verdad: la abertura avanza (${apertura.vertices} vértices)`);
+  `y se rasga de verdad: la abertura avanza (${apertura.vertices} vértices)`);
 comprobar(apertura.fase === 'tapada' && apertura.sobreFuera,
   `acabado el rasgado el sobre se va y queda el montón (${apertura.fase})`);
 comprobar(apertura.fuera === apertura.debe,
@@ -686,6 +693,8 @@ comprobar(apertura.sigueViva && apertura.alFondo,
   'y otro la manda AL FONDO del montón: no desaparece');
 comprobar(apertura.arribaOtra && apertura.tapadaOtraVez,
   'dejando arriba la siguiente, todavía boca abajo');
+comprobar(apertura.sigueEnElMonton && apertura.montonEntero === apertura.debe && apertura.sinRejilla,
+  `y vistas todas se sigue pasando en círculo: ni resumen ni rejilla (${apertura.montonEntero} cartas)`);
 
 /* Y el número de cartas de cada sobre es el que anuncia. */
 const cuantas = await page.evaluate(async () => {
@@ -706,16 +715,13 @@ comprobar(cuadran.length === 0,
   'el montón cuadra con el sobre en los cinco: ' +
   Object.entries(cuantas).map(([k, [a]]) => `${k} ${a}`).join(' · '));
 
-/* EL ANUNCIO SE QUEDA, pero ya no va con la revelación por pasos —que se fue con la
-   apertura nueva—: suena al destapar el campeón o el top 5, que es el momento que
-   premiaba. Aquí se comprueba que sigue reservado a esos dos. */
-const anuncio = await page.evaluate(() => ({
-  corona: !!NIVEL_APERTURA.corona.anuncio,
-  top5: !!NIVEL_APERTURA.top5.anuncio,
-  resto: ['top10', 'top15', 'oro', 'plata'].filter(k => NIVEL_APERTURA[k].anuncio),
-}));
-comprobar(anuncio.corona && anuncio.top5 && anuncio.resto.length === 0,
-  `el anuncio sigue siendo sólo del campeón y del top 5 (${anuncio.resto.join(', ') || 'nadie más'})`);
+/* EL ANUNCIO SE QUEDA y sigue reservado al campeón y al top 5, que es el momento que
+   premiaba. Ya no sale de una tabla —el campo `anuncio` era del aviso viejo—: lo decide
+   toqueApertura al destapar la carta, mirando su estatus. */
+const anuncio = await page.evaluate(() =>
+  toqueApertura.toString().replace(/\s+/g, ' '));
+comprobar(/estatus==='campeon'\|\|c\.estatus==='top5'/.test(anuncio) && /SONIDO\.anuncio\(\)/.test(anuncio),
+  'el anuncio suena sólo al destapar un campeón o un top 5');
 
 /* Este bloque abre y compra sobres a mano, así que deja la colección y la plantilla en
    un estado cualquiera. Se rehacen antes de seguir: lo que viene detrás cuenta con una
@@ -723,55 +729,78 @@ comprobar(anuncio.corona && anuncio.top5 && anuncio.resto.length === 0,
 await page.evaluate(() => { S = estadoNuevo(); for (let i = 0; i < 4; i++) abrirSobre('epico');
   autoPlantilla(S, true); guardar(); ir('inicio'); });
 
-/* ── 2c. Sobre gratis ilimitado ───────────────────────────────────────── */
-console.log('\n2c. Sobre gratis ilimitado');
+/* ── 2c. El común gratis y el de bienvenida ───────────────────────────── */
+console.log('\n2c. El común gratis y el sobre de bienvenida');
 const ilim = await page.evaluate(() => {
-  S.gratis = {}; S.sobres = []; ir('inicio');
-  const g = GRATIS.find(x => x.espera === 0);
+  S.gratis = {}; S.sobres = []; S.divisa = 0; ir('tienda');
   let cartas = 0;
-  for (let i = 0; i < 5; i++) {
-    if (!listoGratis(g)) return { fallo: 'dejó de estar disponible en la vuelta ' + i };
-    cartas += abrirSobre(g.tipo).length;
-  }
-  return { fallo: null, cartas, guardados: S.sobres.length, debe: TIPOS_SOBRE[g.tipo].cartas * 5 };
+  for (let i = 0; i < 5; i++) cartas += abrirSobre('comun').length;
+  const fila = document.querySelector('.precio[data-t="comun"]');
+  return { cartas, guardados: S.sobres.length, debe: TIPOS_SOBRE.comun.cartas * 5,
+    coste: TIPOS_SOBRE.comun.coste, apagada: !!(fila && fila.disabled) };
 });
-comprobar(!ilim.fallo, 'el sobre gratis sigue disponible por muchas veces que se abra');
+comprobar(ilim.coste === 0, 'el común es GRATIS en la tienda');
+comprobar(!ilim.apagada, 'y con cero monedas sigue encendido: es ilimitado');
 comprobar(ilim.cartas === ilim.debe, `cinco aperturas seguidas dan ${ilim.debe} cartas`);
 comprobar(ilim.guardados === 0, 'y ninguna se queda guardada sin abrir');
-comprobar(await page.evaluate(() => nGratisListos() <= 2),
-  'el ilimitado no infla el aviso del menú');
+
+/* EL DE BIENVENIDA ES UN RARO Y ES DE UNA SOLA VEZ: "haz que el que se reclama en Inicio
+   sea un sobre raro, pero no repetidamente, sino una vez por haber iniciado el juego". */
+const bienv = await page.evaluate(() => {
+  S = estadoNuevo(); ir('inicio');
+  const b = () => document.querySelector('[data-a="bienvenida"]');
+  /* Una partida nueva ya trae su bono de bienvenida —2 épicos y 2 raros—, así que lo
+     que se mira es lo que AÑADE el botón, no el inventario entero. */
+  const cuenta = () => S.sobres.filter(s => s.tipo === 'raro').length;
+  const antes = { hay: !!b(), off: b().disabled, texto: b().textContent.trim(),
+    raros: cuenta(), total: S.sobres.length };
+  b().click();
+  const tras = { raros: cuenta(), total: S.sobres.length };
+  ir('inicio');
+  const luego = { off: b().disabled, texto: b().textContent.trim() };
+  b().click();                       // un segundo intento no puede dar otro
+  return { antes, tras, luego, trasElSegundo: S.sobres.length, tipo: BIENVENIDA.tipo };
+});
+comprobar(bienv.antes.hay && !bienv.antes.off && /reclamar/i.test(bienv.antes.texto),
+  `en una partida nueva está para reclamar ("${bienv.antes.texto}")`);
+comprobar(bienv.tipo === 'raro' && bienv.tras.raros === bienv.antes.raros + 1
+  && bienv.tras.total === bienv.antes.total + 1,
+  `y lo que da es UN raro, al inventario (${bienv.antes.total} → ${bienv.tras.total} sobres)`);
+comprobar(bienv.luego.off && /reclamado/i.test(bienv.luego.texto),
+  `reclamado, se apaga ("${bienv.luego.texto}")`);
+comprobar(bienv.trasElSegundo === bienv.tras.total, 'y no se puede reclamar dos veces');
 
 // La distribución se mide sobre la salida REAL, abriendo sobres de verdad: un fallo en
 // el reparto no se ve leyendo la tabla de probabilidades.
 console.log('\n2c-bis. Distribución real de 2.000 sobres comunes');
 const dist = await page.evaluate(() => {
-  const cuenta = {}; let n = 0;
+  const cuenta = { sinrank: 0, top1215: 0, top611: 0, corona: 0 }; let n = 0;
   const guardada = S.coleccion.slice();
   for (let i = 0; i < 2000; i++) {
     for (const it of abrirSobre('comun')) {
-      const e = PORID[it.cid].estatus;
-      cuenta[e] = (cuenta[e] || 0) + 1; n++;
+      const c = PORID[it.cid];
+      const k = c.rk === null || c.rk === undefined ? 'sinrank'
+        : c.rk <= 5 ? 'corona' : c.rk <= 11 ? 'top611' : c.rk <= 15 ? 'top1215' : 'sinrank';
+      cuenta[k]++; n++;
     }
-    S.coleccion = guardada.slice();   // sin acumular 18.000 cartas de prueba
+    S.coleccion = guardada.slice();   // sin acumular 10.000 cartas de prueba
   }
-  const p = k => (cuenta[k] || 0) / n;
-  const T = TIPOS_SOBRE.comun, totO = Object.values(T.oros).reduce((a, b) => a + b, 0);
-  const mediaOros = Object.entries(T.oros).reduce((a, [k, w]) => a + (+k) * w, 0) / totO;
-  return { n, cuenta, corona: p('campeon') + p('top5'), plata: p('plata'),
-    oro: 1 - p('plata'), cartas: T.cartas, esperado: mediaOros / T.cartas,
-    // los nombres viajan con el resultado: dentro del navegador sí existen
-    orden: ORDEN_ESTATUS.map(e => [e, EST[e].n]) };
+  const T = TIPOS_SOBRE.comun, tot = Object.values(T.tramos).reduce((a, b) => a + b, 0);
+  return { n, cuenta,
+    declarado: Object.fromEntries(Object.keys(cuenta).map(k => [k, T.tramos[k] / tot])) };
 });
-for (const [e, nombre] of dist.orden)
-  console.log(`     ${nombre.padEnd(11)} ${((dist.cuenta[e] || 0) / dist.n * 100).toFixed(2)}%`);
-comprobar(dist.corona <= 0.005,
-  `campeón o top 5 por debajo del 0,5% de las cartas (${(dist.corona * 100).toFixed(3)}%)`);
+for (const k of ['sinrank', 'top1215', 'top611', 'corona'])
+  console.log(`     ${k.padEnd(9)} ${(dist.cuenta[k] / dist.n * 100).toFixed(3)}%  ` +
+              `(declarado ${(dist.declarado[k] * 100).toFixed(3)}%)`);
 /* Lo que se comprueba es que el ritmo REAL sea el DECLARADO, sea cual sea: el número sale
    de la propia tabla del sobre, no escrito a mano, para que no haya que tocar la prueba
    cada vez que se retoca el reparto. */
-comprobar(Math.abs(dist.oro - dist.esperado) < 0.04,
-  `los oros salen al ritmo declarado (${(dist.oro * dist.cartas).toFixed(2)} de ${dist.cartas}, declarados ${(dist.esperado * dist.cartas).toFixed(2)})`);
-comprobar(dist.plata > 0.2, `y el resto son platas (${(dist.plata * 100).toFixed(1)}%)`);
+const peorTramo = Math.max(...['sinrank', 'top1215', 'top611', 'corona']
+  .map(k => Math.abs(dist.cuenta[k] / dist.n - dist.declarado[k])));
+comprobar(peorTramo < 0.01,
+  `abriendo 2.000 sobres de verdad sale lo declarado (la que más baila, ${(peorTramo * 100).toFixed(2)} puntos)`);
+comprobar(dist.cuenta.sinrank / dist.n > 0.97,
+  `y son casi todo mediocres sin ranking (${(dist.cuenta.sinrank / dist.n * 100).toFixed(1)}%)`);
 
 // La escalera de calidad tiene que subir de un sobre al siguiente.
 const escalera = await page.evaluate(() =>

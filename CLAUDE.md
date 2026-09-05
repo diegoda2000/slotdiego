@@ -91,8 +91,31 @@ PRIMERO en esa maqueta y después en el juego.**
 
 Cómo va: se toca el sobre → **la rasgadura AVANZA** por el dentado → la solapa se va y el
 cuerpo cae → las cartas suben desde dentro, **todas boca abajo** → un toque voltea la de
-arriba **en su sitio** → otro la manda **al fondo del montón** → y cuando se han visto
-todas, el siguiente toque lleva al resumen.
+arriba **en su sitio** → otro la manda **al fondo del montón** → y **no se acaba nunca**:
+se sigue pasando en círculo, y como las vistas se quedan boca arriba, dar otra vuelta es
+repasarlas todas. Se sale por la flecha.
+
+**SE BORRÓ TODO RASTRO DEL SISTEMA VIEJO, y lo mandó él dos veces:** *"al acabar la
+apertura no lo has dejado como te dije, has hecho un scroll hacia abajo, cuando lo que
+tiene que quedar simplemente es el montón de cartas que si pulso vayan pasando de forma
+normal"* y *"has hecho una mezcla entre el sistema viejo y nuevo a la hora de pulsar el
+sobre, BORRA CUALQUIER RASTRO DEL SISTEMA VIEJO Y DEJA SOLO EL NUEVO"*. Lo que se fue:
+
+- **La pantalla de resumen.** Las cartas en rejilla con "nueva/repetida", el botón de abrir
+  otro y su scroll. Con ella se fueron `a.resumen`, `a.nuevas` y `puedeOtro()`.
+- **El doble toque.** Se tocaba el sobre en su pantalla —y ahí sonaba un golpe elegido por
+  la MEJOR carta del sobre, o sea que te contaba lo que venía antes de ver nada, más un
+  compás de 240 ms— y luego había que tocar OTRA VEZ dentro de la apertura para rasgar. Dos
+  toques sobre dos sobres distintos. Ahora el toque de la pantalla del sobre es el que
+  rasga: se entra y **se rasga solo**, con dos fotogramas de espera —`requestAnimationFrame`
+  anidado, no un temporizador— para que la escena esté pintada antes de empezar.
+- **El golpe ya no depende de lo que traiga el sobre.** Rasgar un sobre suena igual traiga
+  lo que traiga.
+- **`SONIDO.dato()`**, los campos `paso` y `anuncio` de `NIVEL_APERTURA` y sus dos colores
+  por nivel: eran de la revelación por partes y del resplandor del walkout, y no los leía
+  nadie. La tabla se queda sólo con lo que suena al destapar una carta.
+- **`abrirsobre()`**, una función vacía que existía sólo para colgarle el temporizador del
+  compás.
 
 **Tres cosas de la maqueta que no son cosméticas y hay que respetar:**
 
@@ -419,7 +442,7 @@ desborda.
 
 | sobre | archivo de origen | precio | cartas | |
 |---|---|---|---|---|
-| común | `1-basico.png` | 1.000 | 5 | |
+| común | `1-basico.png` | **GRATIS** | 5 | sin límite |
 | raro | `2-azul.png` | 2.000 | 6 | |
 | épico | `3-morado.png` | 4.000 | 8 | |
 | legendario | `4-oro.png` | 7.500 | 10 | **PRÓXIMAMENTE** |
@@ -465,28 +488,43 @@ la (i) arriba a la derecha y el TIENDA grande en cursiva.
   eso, a quien tuviera sobres sin abrir se le quedaban en el inventario sin nombre, sin
   arte y sin poder abrirlos.
 - **`CARTAS_POR_SOBRE` ya no existe**: cada sobre trae las suyas, en `TIPOS_SOBRE.cartas`.
-- **LAS TABLAS DE REPARTO NO SALEN DEL BOCETO Y HAY QUE CERRARLAS CON ÉL.** Las viejas
-  repartían de 7 a 9 oros, y un sobre común de 5 cartas no puede traer 7, así que hubo que
-  escribir cinco que escalan de común a ultimate. Hay una comprobación al arrancar que
-  avisa si un sobre puede repartir más oros de los que anuncia. **Los números de los cuatro
-  de arriba no se los ha dado nadie: son míos.**
-- **EL COMÚN SÍ TIENE ANCLA, Y LA PUSO ÉL:** *"asegúrate de poner al sobre común los
-  porcentajes que tenía antes el básico, o incluso más estrictos"*. El básico de antes eran
-  9 cartas, de 3 a 6 oros, `nivel` 0,01 / 0,09 / 3,9 / 96 y platas 40/60. Medido con
-  400.000 sobres de cada uno, el común es **más estricto en todo**: 2,00 oros por sobre
-  frente a 4,50; 40% de cartas de oro frente al 50%; 0,080 rankeados por sobre frente a
-  0,180; 7,8% de sobres con algún rankeado frente al 16,8%; y 0,021% con campeón o top 5
-  frente al 0,046%. **La tabla de `nivel` es la MISMA del básico, cifra por cifra** —lo que
-  decide si un oro es campeón o top 12-15 no se ha tocado—; lo que baja es cuántos oros
-  caen. Las platas pasaron de 35/65 a **33/67** por lo mismo: el común tiene más huecos de
-  plata (60% frente al 50%), así que con 35 la plata alta salía al 20,9% de las cartas, una
-  décima por encima del básico, y con 33 se queda en el 19,8%.
-- **`fichaSobre()` es código muerto y trae un "de 9" caducado** —de cuando todos los sobres
-  traían nueve cartas—. No lo llama nadie: lo que ve el jugador lo pinta
-  `ovProbabilidades()`, que sí usa `T.cartas`. No se ha tocado; queda dicho.
-- **El sobre gratis salió de la tienda**: en el boceto son cinco de pago, así que se
-  reclama en la ACTIVIDAD DIARIA de Inicio. Sigue siendo el común y sigue sin límite —es lo
-  que permite empezar sin dinero, y ponerle un reloj sería inventarse una regla de juego—.
+- **YA NO HAY ORO NI PLATA EN EL SOBRE.** Lo dijo así: *"YA NO HAY OROS JODER, QUE TE
+  QUEDE CLARO, DE MOMENTO TODAS SON COMUNES"*. Se acabó el reparto en dos pasos —cuántos
+  oros trae y de qué nivel es cada uno, y el resto platas partidas en altas y bajas—. Ahora
+  es **una sola tirada por carta sobre cuatro tramos de RANKING**: sin ranking (224
+  cartas), top 12-15 (44), top 6-11 (66) y campeón o top 5 (68). Con todas las cartas
+  comunes, oro y plata no le dicen nada a quien abre un sobre; lo único que hace bueno a un
+  peleador es dónde está en su división.
+- **EL COMÚN Y EL RARO LOS APROBÓ ÉL**, con estos números por carta —se los pasé medidos y
+  dijo *"visto bueno a los sobres dado"*:
+
+  | por carta | común (gratis, 5) | raro (6) |
+  |---|---|---|
+  | sin ranking | 98,400% | 78,0% |
+  | top 12-15 | 1,500% | 17,0% |
+  | top 6-11 | 0,092% | 4,5% |
+  | campeón o top 5 | 0,008% | 0,5% |
+
+  En sobre entero: en el común, un 12-15 cada 14 sobres, un 6-11 cada 218 y un campeón cada
+  2.500; en el raro, algún rankeado el 77% de las veces y un campeón uno de cada 34. El
+  común queda por debajo del básico de antes en todo, que era la condición que había puesto.
+- **ÉPICO, LEGENDARIO Y ULTIMATE SIGUEN SIENDO MÍOS Y SIN APROBAR.** Tenían que pasar al
+  modelo nuevo sí o sí, y están puestos escalando entre el raro y algo claramente mejor.
+  Hay que cerrarlos con él.
+- **OJO CON EL `null`:** el tramo "sin ranking" se escribió primero como `!(c.rk>=0)`, y en
+  JavaScript **`null >= 0` es TRUE** —null se convierte en 0—, así que la bolsa salía vacía,
+  `cartaDeNivel` se iba al tramo de al lado sin decir nada y un sobre común que sorteaba
+  98,4% de mediocres repartía cinco rankeados. **El sorteo daba bien y las cartas no.** Hay
+  una comprobación en la suite que abre sobres de verdad y mira las cartas, no el sorteo.
+- **EL COMÚN ES GRATIS Y ESTÁ EN LA TIENDA** —*"PON EL SOBRE COMÚN GRATIS EN LA TIENDA"*—,
+  sin límite y sin reloj: es lo que permite empezar y seguir sin gastar una moneda. No pasa
+  por el inventario: se toca y se abre.
+- **Y EL DE INICIO ES UN RARO, UNA SOLA VEZ** —*"HAZ QUE EL QUE SE RECLAMA EN INICIO SEA UN
+  SOBRE RARO, PERO NO REPETIDAMENTE, SINO UNA VEZ POR HABER INICIADO EL JUEGO"*—. Se
+  reclama en la ACTIVIDAD DIARIA, va al inventario y se acabó. La marca vive en
+  `S.gratis.bienvenida`, dentro de un campo que ya existía, para no tener que migrar nada
+  de lo guardado. **Ya no queda ningún reloj en el juego**, así que `actualizarRelojes()` se
+  quedó sólo con la insignia de la pestaña Tienda.
 - Los premios de SBC, el bono de bienvenida y el premio del tutorial usan los nombres nuevos.
 - **`servidor.yml` comprobaba `sobres/oro.webp`**, que ya no existe; ahora comprueba
   `sobres/ultimate.webp`. Los tres archivos viejos se borraron.
@@ -934,6 +972,45 @@ Cuando añadas un tipo de recurso nuevo, hay que copiarlo en **dos** sitios:
 **Y ojo con el paso de comprobación del `.ipa`**, que lista archivos concretos
 (`test -s ios/juego-assets/arte/jugar.webp`, …). Si renombras o mueves uno de ésos, el flujo
 falla ahí. Pasó al sacar `luchador.webp` de `juego/arte/`.
+
+### La firma del APK
+
+**La tecnología es Gradle con el plugin de Android (AGP 8.7.3)**, Java 17, `compileSdk` y
+`targetSdk` 35, `minSdk` 26. No hay React Native, ni Capacitor, ni Cordova: es una
+aplicación de Android nativa con un WebView, y el juego entra como *assets* copiados desde
+`juego/` por la tarea `copiarJuego`.
+
+**Hay un keystore de release, y NO está en el repositorio.** Lo pidió él: se llama
+`android/juego-release.keystore`, con su alias y su contraseña en
+`android/keystore.properties`, y **los dos están en `.gitignore`**. El repositorio es
+público: una clave de firma publicada deja de servir para nada, porque cualquiera podría
+firmar una actualización que el móvil aceptaría como nuestra.
+
+`android/app/build.gradle` lo usa **si está**: si faltan el keystore o el properties —una
+máquina recién clonada, o el flujo de GitHub— no define ninguna firma y Gradle hace lo de
+siempre. El flujo compila `assembleDebug`, así que no se entera.
+
+**DOS COSAS QUE HAY QUE TENER PRESENTES:**
+
+- **Si se pierde el archivo, no hay vuelta atrás.** Ningún móvil aceptará una actualización
+  encima de lo ya instalado, porque la firma no coincidirá. Y el contenedor se reinicia y
+  se lleva lo que no esté commiteado, así que **el archivo tiene que estar guardado fuera
+  de aquí**. Se le mandó por el chat el día que se creó.
+- **Cambiar de firma obliga a desinstalar, y desinstalar borra la partida.** Lo que hay
+  instalado hoy va firmado con la clave de depuración; un APK de release firmado con ésta
+  no se instala encima. La primera vez hay que desinstalar, y ahí se pierde la colección
+  local. De ahí en adelante las actualizaciones ya no piden nada.
+
+**Para que el APK publicado vaya firmado así** hay que meter el keystore en los secretos de
+GitHub (en base64) y que el flujo lo escriba antes de compilar. **No está hecho**: la
+descarga de `apk-latest` sigue siendo la de depuración.
+
+**"SUBE LA VERSIÓN"** es la frase para subir el `versionCode` de `android/app/build.gradle`
+—+1— y ponerle un `versionName` nuevo. Eso es lo que hace que Android trate el APK como una
+actualización y no como otra aplicación. **El progreso no se toca**: la colección vive en el
+`localStorage` del WebView bajo la clave `jaula-abierta-v1`, y eso sobrevive a cualquier
+actualización mientras no cambien ni el `applicationId` (`com.jaulaabierta.juego`) ni la
+firma. Lo que sí lo borra todo es desinstalar.
 
 ---
 

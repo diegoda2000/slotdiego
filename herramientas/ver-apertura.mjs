@@ -41,20 +41,20 @@ await pag.evaluate(t => {
 }, TIPO);
 await pag.waitForTimeout(300); await tira('sobre');
 
+/* Un solo toque, el de la pantalla del sobre: la escena entra ya rasgándose, porque ese
+   toque es el que rasga. Pedir otro aquí eran dos toques para lo mismo. */
 await pag.evaluate(() => document.querySelector('[data-a="abrirsobre"]').click());
-await pag.waitForTimeout(400); await tira('montado');
-// El sobre no se rasga solo: hay que tocarlo.
-await pag.evaluate(() => toqueApertura());
+await pag.waitForTimeout(40); await tira('montado');
 for (const [ms, et] of [[130, 'rasga1'], [110, 'rasga2'], [110, 'rasga3'],
                         [110, 'rasga4'], [120, 'rasga5'], [140, 'rasga6'],
                         [180, 'rasga7'], [260, 'cae']]) {
   await pag.waitForTimeout(ms); await tira(et);
 }
 await pag.waitForTimeout(600); await tira('monton');
-await pag.evaluate(() => pasarCarta());
+await pag.evaluate(() => toqueApertura());
 await pag.waitForTimeout(150); await tira('volteo-medio');
 await pag.waitForTimeout(340); await tira('volteada');
-await pag.evaluate(() => pasarCarta());
+await pag.evaluate(() => toqueApertura());
 await pag.waitForTimeout(190); await tira('yendose');
 await pag.waitForTimeout(430); await tira('siguiente');
 
