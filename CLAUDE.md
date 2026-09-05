@@ -234,13 +234,53 @@ sitio, démosle ese sitio"*. Va la última porque no es un modo de juego, y con 
 mientras el tutorial esté sin hacer. En el Perfil, bajo ese rótulo, **ya solo queda Mis
 redes**.
 
-**EL "ATRÁS" DEL PIE SE FUE DE JUGAR: ahora es una flecha arriba, a la izquierda del
-título.** Lo pidió así: *"quita el botón de abajo de atrás, y en lugar de eso por arriba a
-la izquierda de JUGAR, una flecha"*. Es `.pcab .volver`, y **lleva `align-self:center` a
-propósito**: `.pcab` alinea por línea base, y la línea base de una caja que sólo lleva un
-SVG dentro es su canto de abajo, así que alineada como el resto la flecha se montaba por
-encima del texto. **De momento sólo JUGAR**: las demás pantallas con `.pcab` siguen con su
-botón "Atrás" abajo, porque él nombró ésa.
+**EL "ATRÁS" DEL PIE SE FUE DE TODAS LAS PANTALLAS: ahora es una flecha arriba, a la
+izquierda del título.** Lo pidió en dos veces: *"quita el botón de abajo de atrás, y en
+lugar de eso por arriba a la izquierda de JUGAR, una flecha"* y después *"la flecha en
+todas las pantallas"*. Ya **no queda ni un botón "Atrás" o "Volver" al pie**.
+
+Lo pinta **`cabecera(titulo, volver, extra)`**, en un solo sitio. `volver` son los
+atributos del botón tal cual —`data-nav="club"`, `data-a="atras"`, o los dos a la vez, que
+el Volver de un SBC necesita `nav` y `a`—, igual que el `attr` de `tarjeta()` y de
+`cartaHTML()`. Sin `volver` no se pinta flecha.
+
+**Lleva `align-self:center` a propósito**: `.pcab` alinea por línea base, y la línea base de
+una caja que sólo lleva un SVG dentro es su canto de abajo, así que alineada como el resto
+la flecha se montaba por encima del texto.
+
+**Cada flecha vuelve a donde cuelga esa pantalla**, y cinco no tenían botón ninguno —se
+salía por las pestañas de abajo—: Colección, Plantilla, Sets, Reciclaje y la lista de SBC.
+
+| pantalla | la flecha va a |
+|---|---|
+| Jugar | Inicio |
+| Aprende · Draft · Partida en directo | Jugar |
+| Colección · Plantilla · Sets · Reciclaje · Intercambio | Club |
+| Logros · lista de SBC | Desafíos |
+| detalle de un SBC | la lista, soltando las cartas elegidas (`salirreto`) |
+| Reglas | Aprende |
+| Notas | Ajustes |
+| pantalla del sobre | la tienda (`volvertienda`) |
+| **Ajustes · Mis redes** | **a donde estuvieras** |
+
+**Ajustes es el único que no tiene destino fijo, y por eso existe `vistaPrevia`.** El
+engranaje está en la cabecera de las cinco pestañas, así que Ajustes se abre desde
+cualquier sitio y cualquier destino escrito sería mentira la mayoría de las veces: `ir()`
+apunta de dónde venías y `data-a="atras"` te devuelve ahí.
+
+**Tres destinos estaban mal y se arreglaron con la flecha, porque una flecha que va donde
+no es está rota:**
+
+- **Draft** llevaba a Inicio, de cuando era una tarjeta suelta de allí; vive dentro de
+  Jugar desde el rediseño y se me pasó al moverlo. Lo mandó arreglar él.
+- **Logros** llevaba a Inicio por lo mismo: se fue a Desafíos con el rediseño y su Atrás se
+  quedó apuntando al sitio viejo.
+- **Mis redes** volvía siempre a Ajustes, pero desde el rediseño se llega también desde el
+  Perfil. Tiene dos puertas, así que usa `atras` como Ajustes.
+
+**Dos sitios que NO llevan flecha, y no es un olvido:** la **apertura del sobre**, que trae
+su propia barra "← Salir" y es la que montó él, y el **final de partida**, cuyo "Volver al
+inicio" no es volver atrás sino cerrar la partida.
 
 **LA FOTO DE PERFIL EMPIEZA VACÍA Y LA ELIGE ÉL.** Se toca la cara —en Inicio o en
 Perfil— y sale una rejilla con los peleadores de tu colección, recortados en octógono para
