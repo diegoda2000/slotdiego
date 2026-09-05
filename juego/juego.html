@@ -888,6 +888,120 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
    y eso ya está arreglado en el lienzo. La carta es la misma en todas las pantallas y
    enseña lo mismo en todas: una sola carta que escala. */
 
+/* ══ LA APERTURA DEL SOBRE ════════════════════════════════════════════════
+   Es la que aprobó el dueño, montada y vista en
+   originales/apertura/apertura-que-quiere.html. Si hay que cambiar algo, se cambia
+   PRIMERO ahí y luego aquí.
+
+   EL RASGADO no es cortar el dibujo en dos trozos y apartar uno. La rasgadura AVANZA:
+   hay una línea de dientes generada una sola vez, y en cada fotograma sólo está abierta
+   hasta donde ha llegado; lo que queda por delante sigue pegado. La solapa se levanta
+   girando sobre EL PUNTO EXACTO donde va el desgarro en ese momento, que es lo que hace
+   una bolsa de verdad: la esquina se despega primero y el corte corre hacia el otro lado.
+
+   Eso obliga a recalcular el recorte en cada fotograma —el polígono cambia de número de
+   vértices—, así que va con requestAnimationFrame y NO con una transición de CSS, que no
+   sabe interpolar dos polígonos con distinta cantidad de puntos.
+
+   LAS CARTAS salen todas BOCA ABAJO en un montón. Se toca y la de arriba se da la vuelta
+   EN SU SITIO; se toca otra vez y esa se va AL FONDO DEL MONTÓN, dejando arriba la
+   siguiente, todavía boca abajo. Ninguna se va a ninguna parte.
+
+   Sólo transform y opacity. */
+
+/* La escena ocupa la pantalla entera y por debajo de la barra de abajo: la apertura es
+   pantalla completa, no una tarjeta dentro del contenido. */
+.ap-escena{position:fixed;inset:0;z-index:2;display:grid;place-items:center;
+  background:radial-gradient(120% 90% at 50% 44%,#14120c 0%,#060707 68%);
+  cursor:pointer;-webkit-tap-highlight-color:transparent}
+
+/* ── EL SOBRE ── */
+.sobre-abre{position:relative;width:min(80vw,calc(52vh * 1024 / 1536));aspect-ratio:1024/1536;
+  transition:transform .16s ease}
+.sobre-abre.toque{transform:scale(.975)}
+.sobre-abre .parte{position:absolute;inset:0;background-size:100% 100%;
+  background-position:center;background-repeat:no-repeat;
+  filter:drop-shadow(0 26px 60px rgba(0,0,0,.85))}
+/* Cuando la rasgadura llega al final, la solapa ya suelta se va y el cuerpo cae. */
+.sobre-abre.suelta .alto{animation:vuela .46s cubic-bezier(.35,.05,.6,1) forwards}
+@keyframes vuela{to{transform:translate3d(26%,-56%,0) rotate(34deg);opacity:0}}
+.sobre-abre.suelta .bajo{animation:cae .8s cubic-bezier(.4,0,.7,1) .16s forwards}
+@keyframes cae{to{transform:translate3d(0,38%,0) rotate(2deg);opacity:0}}
+
+/* ── EL MONTÓN ──
+   Todas las cartas viven en el mismo sitio; lo único que cambia es su puesto en la pila,
+   y de ahí salen su desplazamiento, su escala y su orden. Pasar una al fondo es cambiarle
+   el puesto, no llevársela a otra parte. */
+.monton{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none}
+.naipe{position:absolute;width:min(74vw,calc(52vh * 1054 / 1492));aspect-ratio:1054/1492;
+  transform-style:preserve-3d;
+  /* LA PERSPECTIVA VA AQUÍ, en la carta, y no en la escena: puesta arriba se aplica sólo
+     a los hijos directos, y entre medias hay dos capas que aplanan el 3D. Sin ella el
+     giro no es un giro, es la carta encogiéndose de ancho y volviendo a crecer. */
+  perspective:1150px;
+  --i:0;                       /* puesto en la pila: 0 es la de arriba */
+  transform:translate3d(0,calc(var(--i) * 1.2%),0) scale(calc(1 - var(--i) * .028));
+  z-index:calc(50 - var(--i));
+  transition:transform .42s cubic-bezier(.25,.8,.3,1);
+  will-change:transform}
+/* Al salir del sobre nacen dentro del cuerpo y suben a su puesto, en cascada. */
+.naipe.dentro{transform:translate3d(0,46%,0) scale(.34);opacity:0}
+.monton.sale .naipe{transition:transform .55s cubic-bezier(.2,.85,.3,1) var(--r),
+                               opacity .3s ease var(--r)}
+
+/* PASAR UNA AL FONDO. No desaparece ni se encoge en el sitio: sale por el lado y hacia
+   abajo, da la vuelta y se mete por detrás, que es lo que hace la mano cuando pasas la de
+   arriba a la parte de atrás del montón. --fin es el puesto al que va. */
+.naipe.pasando{animation:pasar .58s cubic-bezier(.42,0,.35,1) forwards}
+@keyframes pasar{
+  0%  {transform:translate3d(0,0,0) scale(1) rotate(0deg)}
+  46% {transform:translate3d(64%,17%,0) scale(.94) rotate(9deg)}
+  78% {transform:translate3d(30%,10%,0) scale(.90) rotate(4deg)}
+  100%{transform:translate3d(0,calc(var(--fin) * 1.2%),0)
+                scale(calc(1 - var(--fin) * .028)) rotate(0deg)}}
+
+/* Las dos caras. */
+.naipe .gira{position:absolute;inset:0;transform-style:preserve-3d;
+  transition:transform .62s cubic-bezier(.42,.02,.28,1)}
+.naipe.bocabajo .gira{transform:rotateY(180deg)}
+/* NO NOS FIAMOS DE backface-visibility: con el estilo calculado correcto, Chromium pintaba
+   el dorso ENCIMA de la cara y todas salían boca abajo. En el WebView de Android esa
+   propiedad ha ido mal históricamente. El cambio de cara se hace a mano, de golpe y a
+   mitad del giro, que es cuando la carta está de canto.
+   Y las dos caras van SEPARADAS EN PROFUNDIDAD, 5 px cada una a su lado: así la carta es
+   un objeto con grosor y no dos dibujos pegados, y al pasar de canto se nota. */
+.naipe .cara{position:absolute;inset:0;
+  backface-visibility:hidden;-webkit-backface-visibility:hidden;
+  transition:opacity 0s linear .275s}
+.naipe .cara.frente{transform:translateZ(5px)}
+.naipe .cara.dorso{transform:rotateY(180deg) translateZ(5px)}
+.naipe .frente{opacity:1}
+.naipe .dorso{opacity:0}
+.naipe.bocabajo .frente{opacity:0}
+.naipe.bocabajo .dorso{opacity:1}
+.naipe .cara > .recorte{position:absolute;inset:0;overflow:hidden}
+.naipe .cara.dorso > .recorte{background:url(marcos/comun-reverso.webp) center/100% 100% no-repeat}
+
+/* El reflejo que cruza la carta mientras gira: es lo que la hace parecer una lámina y no
+   una imagen. Va sólo durante el giro, y el destello cae justo cuando pasa de canto. */
+.naipe .lustre{position:absolute;inset:0;pointer-events:none;opacity:0;
+  background:linear-gradient(104deg,transparent 28%,rgba(255,255,255,.42) 47%,
+             rgba(255,255,255,.06) 58%,transparent 72%)}
+.naipe.volteando .lustre{animation:destello .62s ease-out}
+@keyframes destello{
+  0%{opacity:0;transform:translateX(-38%)}
+  46%{opacity:.9}
+  100%{opacity:0;transform:translateX(38%)}}
+
+/* Los dos rótulos, fijos a la pantalla y por encima de todo. */
+.ap-cuenta,.ap-pista{position:fixed;left:0;right:0;text-align:center;z-index:80;
+  font-family:var(--titulo);pointer-events:none;opacity:0;transition:opacity .3s ease}
+.ap-cuenta{top:calc(64px + env(safe-area-inset-top));font-size:13px;letter-spacing:.22em;
+  color:var(--dim2)}
+.ap-pista{bottom:calc(78px + env(safe-area-inset-bottom));font-size:15px;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--dim)}
+.ap-cuenta.on,.ap-pista.on{opacity:1}
+
 /* La carta que enseña el sobre manda en la pantalla: se lleva todo el alto que queda
    por debajo de la barra, y el ancho sale de ahí por la proporción de la carta, así que
    ocupa lo máximo posible sin deformarse ni salirse por abajo. */
@@ -898,104 +1012,9 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 .apertura-tit{font-size:15px;font-weight:800;letter-spacing:.1em;color:var(--warn)}
 .apertura-pie{opacity:.75}
 
-/* ── El aviso, la carta llenándose ──
-   Todo pasa DENTRO de la carta: no hay panel aparte. Se pinta el marco entero y se
-   destapa por partes, cada una en su hueco. Las clases se acumulan desde JS —ve-pais,
-   ve-peso, ve-record, ve-rk, ve-todo, ve-foto— en vez de usar un selector por nivel,
-   porque así funciona en cualquier motor, incluidos los WebView viejos.
-
-   LA FOTO ES SIEMPRE LA ÚLTIMA. Antes se veía desde el primer fotograma, así que la
-   revelación iba destapando datos de alguien a quien ya le estabas viendo la cara: el
-   ranking dejaba de ser una sorpresa porque el peleador ya estaba ahí. Ahora entra
-   después de las stats, que es el remate. */
-.aviso{gap:12px}
-.aviso .apertura-carta{filter:drop-shadow(0 0 30px color-mix(in srgb,var(--luz) 55%,transparent))}
-.aviso .aviso-et{font-family:var(--titulo);letter-spacing:.1em;text-transform:uppercase;
-  font-size:11px;color:var(--luz)}
-
-/* De partida, todo lo que se destapa después está oculto. */
-.carta.revelando .c-foto,
-.carta.revelando .c-ban,
-.carta.revelando .c-peso,
-.carta.revelando .c-apodo,
-.carta.revelando .c-rk,
-.carta.revelando .c-nom,
-.carta.revelando .c-stats{opacity:0;visibility:hidden}
-
-/* Y cada clase enciende su parte. */
-.carta.ve-pais   .c-ban,
-.carta.ve-peso   .c-peso,
-.carta.ve-apodo  .c-apodo,
-.carta.ve-rk     .c-rk,
-.carta.ve-todo   .c-nom,
-.carta.ve-todo   .c-stats,
-.carta.ve-foto   .c-foto{opacity:1;visibility:visible;animation:aparece .5s ease both}
-/* Desvanecido puro: solo opacidad. Cualquier salto o cambio de tamaño aquí se lee como
-   un parpadeo de la carta, que es justo lo contrario de lo que tiene que parecer —el
-   dato apareciendo de la nada, como un desvanecido al revés. */
-@keyframes aparece{from{opacity:0}to{opacity:1}}
-
-/* ── Nada de esto puede parpadear ──
-   La carta está en pantalla de principio a fin y no se mueve. Lo único que ocurre es que
-   sus partes APARECEN —el efecto contrario a desvanecerse—, y para eso solo se toca la
-   opacidad: ni saltos, ni escalas, ni temblores. Cualquier cosa que mueva o redibuje la
-   carta entera se lee como un parpadeo, que es justo lo que no se quiere. */
-.apertura-carta{position:relative;transition:filter .5s ease}
-.aviso .apertura-carta{filter:drop-shadow(0 0 22px color-mix(in srgb,var(--luz) 40%,transparent))}
-.aviso.suelta .apertura-carta{filter:drop-shadow(0 0 34px color-mix(in srgb,var(--luz) 62%,transparent))}
-/* El aura del nivel: entra desvaneciéndose hacia dentro y se queda quieta. No late. */
-.aviso .apertura-carta::before{content:'';position:absolute;inset:-12%;z-index:-1;
-  border-radius:50%;pointer-events:none;opacity:0;
-  background:radial-gradient(closest-side,color-mix(in srgb,var(--luz) 40%,transparent),transparent 72%);
-  animation:aparece .9s ease both}
-/* El título de corona o top 5, apagado hasta que la carta está entera. */
-.apertura-tit{transition:opacity .5s ease}
-.apertura-tit.apagado{opacity:0;visibility:hidden}
-
-/* El destello final: una franja de luz que barre la carta entera una sola vez, cuando ya
-   está completa. Es lo que la remata, y es lo único que se mueve en toda la pantalla. */
-.destello{position:absolute;inset:0;pointer-events:none;border-radius:9px;
-  overflow:hidden;mix-blend-mode:screen;opacity:0}
-.suelta .destello{opacity:1}
-.suelta .destello::after{content:'';position:absolute;top:-60%;bottom:-60%;width:46%;left:-60%;
-  transform:skewX(-18deg);
-  background:linear-gradient(90deg,
-    rgba(255,255,255,0), rgba(255,255,255,.16) 34%,
-    rgba(255,255,255,.62) 50%, rgba(255,255,255,.16) 66%, rgba(255,255,255,0));
-  animation:barrido .9s .1s cubic-bezier(.3,0,.2,1) both}
-@keyframes barrido{from{left:-60%}to{left:118%}}
-/* La corona se lleva un segundo barrido, más tenue y del color de su nivel. */
-.suelta .apertura-carta.n-corona .destello::before{content:'';position:absolute;
-  top:-60%;bottom:-60%;width:30%;left:-60%;transform:skewX(-18deg);
-  background:linear-gradient(90deg,rgba(255,255,255,0),
-    color-mix(in srgb,var(--luz) 55%,transparent) 50%,rgba(255,255,255,0));
-  animation:barrido 1.05s .5s cubic-bezier(.3,0,.2,1) both}
-
-/* Quien pide menos movimiento en su móvil no tiene por qué tragarse nada de esto. */
-@media (prefers-reduced-motion: reduce){
-  .carta.ve-pais .c-ban,.carta.ve-peso .c-peso,.carta.ve-apodo .c-apodo,
-  .carta.ve-rk .c-rk,.carta.ve-todo .c-nom,
-  .carta.ve-todo .c-stats,.carta.ve-foto .c-foto{animation-duration:.01ms}
-  .aviso .apertura-carta::before{animation:none;opacity:1}
-  .suelta .destello::after,.suelta .apertura-carta.n-corona .destello::before{animation:none;opacity:0}
-}
-
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(108px,1fr));gap:8px}
-.grid.g3{grid-template-columns:repeat(3,1fr)}
-
-/* Rejillas que caben en pantalla: el número de columnas lo fija cada pantalla y el
-   ancho total lo calcula ajustarRejillas() midiendo el hueco que queda. */
-.grid.fit{grid-template-columns:repeat(var(--cols,3),1fr);gap:6px;
-  max-width:var(--rejilla,100%);margin:0 auto;align-content:space-between}
-.grid.fit .pie-carta{margin-top:1px;font-size:8px;line-height:1.1;text-align:center;
-  color:var(--dim2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.grid.fit>div{display:flex;flex-direction:column;min-width:0}
-
-/* El álbum de la colección: páginas de 4×4 que se pasan, nunca scroll. */
-.album-nav{display:flex;align-items:center;justify-content:center;gap:14px;margin-top:8px}
-.album-nav .pag{font-family:var(--titulo);font-size:12px;color:var(--dim);
-  letter-spacing:.06em;min-width:96px;text-align:center}
-.album-nav button{flex:none;min-width:52px}
+/* La apertura vieja —la carta llenándose por partes, con sus resplandores y su
+   revelación paso a paso— se fue con la apertura nueva, que es la que aprobó el dueño.
+   Si alguna vez se quiere recuperar, está en el historial. */
 
 /* ── varios ── */
 .chip{font-family:var(--titulo);letter-spacing:.05em;display:inline-block;background:var(--bg3);border:1px solid var(--line);border-radius:6px;
@@ -1835,11 +1854,7 @@ function cartaHTML(c,o={}){
   const bnd=banderaSrc(c.pais);
   const foto=fotoSrc(c.persona, c.division);
   const nCop=o.copias&&o.copias>1?`<div class="c-copias">×${o.copias}</div>`:'';
-  /* Destapado por partes, para la apertura de sobres. Las clases se acumulan: con
-     've-rk' puesta ya están puestas también 've-pais' y 've-peso'. Se hace con clases y
-     no con un selector por nivel para que funcione en cualquier motor. */
-  const rev=o.rev?('revelando '+o.rev.map(k=>'ve-'+k).join(' ')):'';
-  return `<div class="carta ${foto?'confoto':''} ${o.sel?'sel':''} ${rev}" ${o.attr||''}>
+  return `<div class="carta ${foto?'confoto':''} ${o.sel?'sel':''}" ${o.attr||''}>
    <div class="lienzo">
     <img class="marco" src="marcos/comun.webp" alt="">
     <div class="hueco">
@@ -1983,8 +1998,12 @@ function ajustarRejillas(){
 function medirCartas(raiz){
   const cartas=(raiz||document).querySelectorAll('.carta');
   if(!cartas.length) return;
+  /* offsetWidth Y NO getBoundingClientRect: el segundo devuelve el ancho YA
+     TRANSFORMADO, y en la apertura las cartas nacen dentro del sobre a escala 0,34.
+     Midiendo así, --k salía tres veces más pequeño de la cuenta y las cartas se pintaban
+     en miniatura en su esquina. */
   const anchos=new Array(cartas.length);
-  for(let i=0;i<cartas.length;i++) anchos[i]=cartas[i].getBoundingClientRect().width;
+  for(let i=0;i<cartas.length;i++) anchos[i]=cartas[i].offsetWidth;
   for(let i=0;i<cartas.length;i++)
     if(anchos[i]) cartas[i].style.setProperty('--k', (anchos[i]/620).toFixed(5));
 }
@@ -2750,17 +2769,6 @@ const SONIDO={
   },
 };
 
-/* Lo que dura el anuncio, medido sobre el propio archivo. Los momentos de la
-   revelación de abajo están puestos contra él. */
-const ANUNCIO_MS=8890;
-/* Los momentos de la revelación con anuncio, por número de pasos. */
-const MOMENTOS_ANUNCIO={
-  5:[900,2100,3400,4900,6500,ANUNCIO_MS],
-  6:[900,2100,3400,4900,6300,7600,ANUNCIO_MS],
-};
-
-// El temporizador del encendido del sobre, para poder cortarlo si el jugador se va.
-function abrirsobre(){}
 
 /* Lo que define cada nivel en la apertura: cuánto dura el aviso, de qué color es,
    y a qué suena. Una sola tabla para animación y sonido, para que no puedan
@@ -2774,10 +2782,10 @@ const NIVEL_APERTURA={
      valle y la CARA entra en el tramo final, que es el remate del clip. */
   corona:{n:'corona', paso:700, hz:[150,760], pegada:0.34, corte:2600,
           luz:'#ffd24a', luz2:'#ff4a3d',
-          anuncio:true, momentos:MOMENTOS_ANUNCIO},
+          anuncio:true},
   top5  :{n:'top5',   paso:560, hz:[150,620], pegada:0.28, corte:2100,
           luz:'#ffcf3f', luz2:'#e8a021',
-          anuncio:true, momentos:MOMENTOS_ANUNCIO},
+          anuncio:true},
   top10 :{n:'top10',  paso:430, hz:[160,500], pegada:0.22, corte:1700,
           luz:'#dfe6ee', luz2:'#9fb4c8'},
   top15 :{n:'top15',  paso:430, hz:[160,440], pegada:0.19, corte:1500,
@@ -2806,16 +2814,190 @@ function nivelDe(items){
   if(mejor.estatus==='top5') return 'top5';
   return mejor.estatus;
 }
+/* LA APERTURA. Es la que aprobó el dueño; la maqueta de referencia está en
+   originales/apertura/apertura-que-quiere.html.
+
+   El sobre se rasga —la abertura AVANZA, no aparece de golpe—, la solapa se va, el cuerpo
+   cae y las cartas suben desde dentro en un montón, todas boca abajo. Un toque da la
+   vuelta a la de arriba EN SU SITIO; otro la manda al fondo del montón. Cuando ya se han
+   visto todas y se pasa la última, se va al resumen.
+
+   Todo esto NO se repinta: la escena se monta una vez y a partir de ahí sólo se cambian
+   clases y variables. Repintar a mitad de una transición la corta en seco. */
 function abrirTanda(items,tipo){
   vista='apertura';
-  const mejor=items.length?PORID[items[0].cid]:null;
   tmp={ap:{items,tipo,resumen:items.length===0,
     nivel:nivelDe(items),
-    fase:items.length?'aviso':'resumen',
     nuevas:items.filter(it=>S.coleccion.filter(x=>x.cid===it.cid).length===1).map(it=>it.iid)}};
   window.scrollTo(0,0); render();
-  arrancarAviso();
+  if(!items.length) return;
+  montarApertura();
 }
+
+/* ── LA RASGADURA ──
+   Los dientes se generan UNA vez, así que la línea es siempre la misma y los dos trozos
+   encajan diente con diente por construcción. Lo que cambia en cada fotograma es hasta
+   dónde está abierta. */
+const CORTE_SOBRE=11.5;              // % del alto: justo bajo la banda de pliegues
+const DIENTES=Array.from({length:35},(_,i)=>{
+  const x=100*i/34;
+  // Alternos y desiguales: un peine regular no parece un desgarro.
+  const v=(i%2?-1:1)*(0.75+0.55*Math.abs(Math.sin(i*2.7)));
+  return {x, y:CORTE_SOBRE+v};
+});
+
+/* El recorte de cada trozo cuando la rasgadura ha llegado a p (0..1). Por delante de p los
+   dos trozos siguen pegados: el corte de la solapa baja recto hasta el borde de arriba y
+   el del cuerpo sube por el mismo sitio, así que no queda hueco entre ellos. */
+function recortesSobre(p){
+  const hasta=p*100;
+  const linea=DIENTES.filter(d=>d.x<=hasta);
+  // El punto exacto donde va el desgarro ahora mismo, interpolado entre dos dientes.
+  const j=Math.min(DIENTES.length-1, linea.length);
+  const a=DIENTES[Math.max(0,j-1)], b=DIENTES[j];
+  const u=b.x===a.x?0:(hasta-a.x)/(b.x-a.x);
+  const punta={x:hasta, y:a.y+(b.y-a.y)*u};
+  if(!linea.length||linea[linea.length-1].x<hasta) linea.push(punta);
+  const pts=linea.map(d=>`${d.x.toFixed(2)}% ${d.y.toFixed(2)}%`);
+  return {
+    alto:`polygon(0% 0%, ${hasta.toFixed(2)}% 0%, ${pts.slice().reverse().join(', ')})`,
+    bajo:`polygon(${pts.join(', ')}, ${hasta.toFixed(2)}% 0%, 100% 0%, 100% 100%, 0% 100%)`,
+    punta,
+  };
+}
+function pintaRasgadura(p){
+  const s=$('#sobre-abre'); if(!s) return;
+  const alto=s.querySelector('.alto'), bajo=s.querySelector('.bajo');
+  const r=recortesSobre(p);
+  alto.style.clipPath=r.alto;
+  bajo.style.clipPath=r.bajo;
+  /* La solapa se levanta girando sobre el punto donde ESTÁ el desgarro: la esquina se
+     despega primero y el giro crece según avanza. El pliegue del plástico se sugiere con
+     un poco de skew.
+     El giro crece casi desde el principio: con p al cuadrado, a media rasgadura son cuatro
+     grados y no se ve nada. */
+  alto.style.transformOrigin=`${(p*100).toFixed(2)}% ${r.punta.y.toFixed(2)}%`;
+  alto.style.transform=`rotate(${(-34*Math.pow(p,.85)).toFixed(2)}deg) `
+    +`skewX(${(-6*p).toFixed(2)}deg) translateY(${(-1.6*p).toFixed(2)}%)`;
+  bajo.style.transform=`rotate(${(0.9*p).toFixed(2)}deg)`;   // el cuerpo acusa el tirón
+}
+
+/* ── EL MONTÓN ── */
+const colocarNaipes=()=>{
+  const a=tmp.ap; if(!a||!a.pila) return;
+  a.pila.forEach((el,i)=>el.style.setProperty('--i',i));
+};
+
+function montarApertura(){
+  const a=tmp.ap; if(!a) return;
+  a.fase='cerrado'; a.vistas=0;
+  pintaRasgadura(0);
+  a.pila=[...document.querySelectorAll('.monton .naipe')];
+  colocarNaipes();
+  medirCartas();
+  avisaApertura();
+}
+
+function avisaApertura(){
+  const a=tmp.ap; if(!a) return;
+  const c=$('#ap-cuenta'), p=$('#ap-pista');
+  if(!c||!p) return;
+  if(a.fase==='cerrado'){
+    c.classList.remove('on');
+    p.textContent='Toca el sobre'; p.classList.add('on'); return;
+  }
+  /* Cuenta POR LA QUE VAS, no por las que llevas vistas: antes de dar la vuelta a la
+     primera ponía "0 de 5", que se lee como que no hay nada. */
+  c.textContent=`${Math.min(a.vistas+(a.fase==='tapada'?1:0),a.items.length)} de ${a.items.length}`;
+  c.classList.add('on');
+  p.textContent=a.fase==='tapada'?'Toca para darle la vuelta'
+    :a.vistas>=a.items.length?'Toca para ver el sobre entero':'Toca para pasarla';
+  p.classList.add('on');
+}
+
+/* Rasga de verdad: la abertura AVANZA con el tiempo, no aparece de golpe. */
+function rasgarSobre(){
+  const a=tmp.ap, s=$('#sobre-abre');
+  if(!a||a.fase!=='cerrado'||!s) return;
+  a.fase='rasgando';
+  $('#ap-pista').classList.remove('on');
+  s.classList.add('toque');
+  setTimeout(()=>s.classList.remove('toque'),140);
+  const N=NIVEL_APERTURA[a.nivel]||NIVEL_APERTURA.oro;
+  SONIDO.golpe({t:N.pegada, vol:.18, corte:N.corte});
+  const DUR=900, t0=performance.now();
+  (function paso(t){
+    if(!tmp.ap||tmp.ap.fase!=='rasgando') return;
+    const u=Math.min(1,(t-t0)/DUR);
+    // Cuesta arrancar y luego corre: es como se abre una bolsa de verdad.
+    const q=u<.32?(u/.32)*.16:.16+.84*Math.pow((u-.32)/.68,.75);
+    pintaRasgadura(q);
+    if(u<1) requestAnimationFrame(paso); else soltarSobre();
+  })(t0);
+}
+
+function soltarSobre(){
+  const a=tmp.ap, s=$('#sobre-abre'); if(!a||!s) return;
+  s.classList.add('suelta');
+  abrirTanda.t=setTimeout(()=>{
+    const m=$('#monton'); if(!m) return;
+    m.classList.add('sale');
+    a.pila.forEach(el=>el.classList.remove('dentro'));
+    abrirTanda.t=setTimeout(()=>{
+      if(s) s.style.display='none';
+      if(tmp.ap){ tmp.ap.fase='tapada'; avisaApertura(); }
+    },620);
+  },170);
+}
+
+/* Un toque: rasga, o da la vuelta, o pasa al fondo. */
+function toqueApertura(){
+  const a=tmp.ap; if(!a||a.resumen) return;
+  if(a.fase==='cerrado'){ rasgarSobre(); return; }
+  if(a.fase==='rasgando'||a.fase==='pasando') return;
+  const arriba=a.pila&&a.pila[0]; if(!arriba) return;
+
+  if(a.fase==='tapada'){
+    arriba.classList.remove('bocabajo');       // se le da la vuelta EN SU SITIO
+    arriba.classList.add('volteando');
+    setTimeout(()=>arriba.classList.remove('volteando'),640);
+    if(!arriba.dataset.vista){
+      arriba.dataset.vista='1'; a.vistas++;
+      const c=PORID[a.items[+arriba.dataset.k].cid];
+      const gorda=c.estatus==='campeon'||c.estatus==='top5';
+      SONIDO.impacto(gorda?(c.estatus==='campeon'?'corona':'top5'):c.estatus);
+      /* EL ANUNCIO SE QUEDA. Antes iba con la revelación por partes, que la apertura
+         nueva ya no tiene; ahora suena al destapar el campeón o el top 5, que es el
+         momento que premiaba. Si sonara en cada sobre dejaría de significar nada. */
+      if(gorda) SONIDO.anuncio();
+    }
+    a.fase='vista'; avisaApertura(); return;
+  }
+
+  if(a.fase==='vista'){
+    /* Vistas todas, el siguiente toque lleva al resumen: en el juego la apertura termina,
+       no da vueltas para siempre como en la maqueta. */
+    if(a.vistas>=a.items.length){ a.resumen=true; render(); return; }
+    /* Sale por el lado y hacia abajo y se mete por detrás. Se queda delante hasta que ha
+       salido del montón —si no, se metería por debajo nada más empezar— y ahí se le baja
+       el orden. */
+    a.fase='pasando';
+    arriba.style.setProperty('--fin',a.pila.length-1);
+    arriba.classList.add('pasando');
+    setTimeout(()=>{ arriba.style.zIndex=0; },260);
+    pasarCarta.t=setTimeout(()=>{
+      if(!tmp.ap||tmp.ap.fase!=='pasando') return;
+      a.pila.push(a.pila.shift());
+      arriba.classList.remove('pasando');
+      arriba.style.zIndex='';
+      arriba.style.removeProperty('--fin');
+      colocarNaipes();
+      a.fase=a.pila[0].classList.contains('bocabajo')?'tapada':'vista';
+      avisaApertura();
+    },580);
+  }
+}
+const pasarCarta=toqueApertura;   // el nombre viejo, para el reparto de toques
 
 /* El aviso: la carta se destapa por partes, y en un orden que va de lo que menos
    dice a lo que más — nacionalidad, peso, récord, ranking, nombre y stats, y la FOTO
@@ -2830,105 +3012,18 @@ function abrirTanda(items,tipo){
    y **se salta tocando**. Quien va por su sobre número cuarenta no puede estar obligado
    a mirarlo entero.
 
-   La excepción es el campeón y el top 5, que van con el anuncio y duran los 8,9 s que
-   dura el clip. Ahí la espera ES el premio, y por eso mismo no se le da a nada más: si
-   sonara en cada sobre dejaría de significar que ha caído algo gordo. Y se sigue
-   pudiendo saltar, que corta el anuncio con un fundido. */
-function pasosAviso(c){
-  // Nacionalidad, peso, apodo, ranking, nombre y stats, y la cara al final. Cada uno
-  // aparece EN SU SITIO de la carta, no en una lista aparte: lo que se está viendo
-  // es la carta llenándose.
-  const p=[
-    {k:'pais',   et:'Nacionalidad'},
-    {k:'peso',   et:'Peso'},
-  ];
-  /* El récord se fue de la carta, y con él su paso. En su sitio va el APODO, y solo si lo
-     tiene: 162 de 355 lo tienen, y encender un hueco vacío se lee como que algo falla. */
-  if(c.apodo) p.push({k:'apodo', et:'Apodo'});
-  // El ranking solo si lo tiene. En una carta sin rankear no hay nada que destapar,
-  // y una pestaña vacía encendiéndose sería peor: parecería que falla algo.
-  if(c.rk===0||c.rk) p.push({k:'rk', et:'Ranking', gordo:true});
-  p.push({k:'todo', et:'Nombre y stats', gordo:true});
-  /* La foto, la última, y por el mismo motivo que el ranking: solo si la hay. A un
-     peleador sin foto un paso de más le dejaría la carta quieta medio segundo al final,
-     justo en el remate, y parecería que se ha colgado. */
-  if(fotoSrc(c.persona, c.division)) p.push({k:'foto', et:'El peleador', gordo:true});
-  return p;
-}
-/* Cuándo sale cada paso, en milisegundos desde que arranca la revelación. La lista tiene
-   un valor más que pasos: el último es cuándo se suelta la carta. */
-function momentosAviso(N,n){
-  if(N.anuncio){
-    /* Los momentos van por número de pasos: con foto son seis y sin ella cinco, y las
-       dos listas están puestas sobre la misma forma del audio. */
-    const m=N.momentos&&N.momentos[n];
-    if(m&&m.length===n+1) return m;
-    /* Reparto de emergencia. Si algún día cambian los pasos y la lista de momentos se
-       queda corta, lo importante es que el anuncio y la revelación sigan acabando a la
-       vez; descuadrados quedan mucho peor que mal repartidos. */
-    return Array.from({length:n+1},(_,i)=>Math.round(ANUNCIO_MS*(i+1)/(n+1)));
-  }
-  return Array.from({length:n+1},(_,i)=>i*N.paso);
-}
-/* Los pasos se programan TODOS de golpe contra el mismo cero, no uno detrás de otro.
-   Encadenándolos, cada retraso del navegador se sumaba al siguiente y la revelación se
-   iba estirando; con el anuncio eso sería fatal, porque acabaría descuadrada del audio.
-   Programándolos contra un cero común, un tirón atrasa un paso y no arrastra a los demás. */
-function arrancarAviso(){
-  pararAviso();
-  const a=tmp.ap; if(!a||a.fase!=='aviso') return;
-  const N=NIVEL_APERTURA[a.nivel]||NIVEL_APERTURA.oro;
-  const pasos=pasosAviso(PORID[a.items[0].cid]);
-  const cuando=momentosAviso(N,pasos.length);
-  a.paso=N.anuncio?0:(a.paso||0);
-  if(N.anuncio) SONIDO.anuncio();
-  arrancarAviso.t=pasos.map((p,i)=>setTimeout(()=>{
-    if(!tmp.ap||tmp.ap!==a||a.fase!=='aviso') return;
-    // Con anuncio, el clip ES el sonido: los tonos encima solo estorbarían.
-    if(!N.anuncio) SONIDO.dato(i, pasos.length, a.nivel, p.gordo);
-    /* Se le añade la clase A LA CARTA QUE YA ESTÁ, no se repinta la pantalla. Repintando,
-       el navegador crea elementos nuevos y vuelve a lanzar la animación de entrada de todo
-       lo que ya estaba visible: la carta entera parpadea en cada paso. */
-    const carta=document.querySelector('.aviso .carta');
-    if(carta) carta.classList.add('ve-'+p.k);
-    else render();
-    a.paso=i+1;
-  }, cuando[i]));
-  arrancarAviso.t.push(setTimeout(soltarCarta, cuando[pasos.length]));
-}
 /* Corta la revelación entera: los pasos que faltaban y el anuncio si estaba sonando.
    Vale para las dos salidas —el final de siempre y el salto del jugador— porque al
    final natural el clip ya ha terminado y cortarlo no hace nada. */
+/* Sólo existe para colgarle el temporizador del compás entre el toque y la apertura.
+   Una función vacía es más barata que una variable suelta que haya que declarar arriba. */
+function abrirsobre(){}
+
 function pararAviso(){
   clearTimeout(abrirsobre.t);          // y el encendido del sobre, si estaba a medias
-  const t=arrancarAviso.t;
-  if(Array.isArray(t)) t.forEach(clearTimeout); else clearTimeout(t);
-  arrancarAviso.t=[];
+  clearTimeout(abrirTanda.t);          // el rasgado y la salida de las cartas
+  clearTimeout(pasarCarta.t);          // y la que se estaba yendo al fondo
   SONIDO.cortarAnuncio();
-}
-/* Soltar la carta NO repinta nada. Se le añaden a la que ya está en pantalla las clases
-   que faltan y se cambian los dos textos a mano. Repintar aquí destruiría la carta y la
-   volvería a crear, y eso se ve como un parpadeo justo en el momento importante. */
-function soltarCarta(){
-  const a=tmp.ap; if(!a||a.fase!=='aviso'){ pararAviso(); return; }
-  const N=NIVEL_APERTURA[a.nivel]||NIVEL_APERTURA.oro;
-  pararAviso();
-  a.fase='carta';
-  // Con anuncio no hay golpe de aterrizaje: el propio clip es el remate.
-  if(!N.anuncio) SONIDO.impacto(a.nivel);
-  const caja=document.querySelector('.apertura.aviso');
-  const carta=caja&&caja.querySelector('.carta');
-  if(!caja||!carta){ render(); return; }
-  const c=PORID[a.items[0].cid];
-  for(const p of pasosAviso(c)) carta.classList.add('ve-'+p.k);
-  caja.classList.add('suelta');
-  caja.dataset.a='revelar';
-  const tit=caja.querySelector('.apertura-tit');
-  if(tit&&(c.estatus==='campeon'||c.estatus==='top5')) tit.classList.remove('apagado');
-  const et=caja.querySelector('.aviso-et');
-  if(et) et.textContent=`${DIV[c.division].n} · ${c.pais||''} · ${c.record||''}`;
-  const pie=caja.querySelector('.apertura-pie');
-  if(pie) pie.textContent='Toca la carta para ver el sobre entero';
 }
 
 function vApertura(){
@@ -2963,34 +3058,38 @@ function vApertura(){
       </div>`;
   }
 
-  const N=NIVEL_APERTURA[a.nivel]||NIVEL_APERTURA.oro;
+  /* LA ESCENA DE LA APERTURA. Se pinta UNA vez y a partir de ahí sólo se le cambian
+     clases y variables: repintar a mitad de una transición la corta en seco.
 
-  /* El aviso. La carta ya está ahí, en grande, pero vacía: se va llenando por partes
-     —nacionalidad, peso, récord, ranking, y al final el peleador con sus stats—. El
-     resplandor va del nivel que viene, así que además la pantalla ya está avisando. */
-  /* Aviso y carta comparten EXACTAMENTE el mismo armazón: la misma carta, en el mismo
-     sitio, desde el primer momento hasta el final. Lo único que cambia son clases y dos
-     textos. Si el HTML fuera distinto, pasar de una fase a otra volvería a crear los
-     nodos y la carta desaparecería y volvería un fotograma después: eso es el parpadeo.
-     Nunca se sustituye la carta. Solo se le van encendiendo las partes. */
-  const c=PORID[a.items[0].cid];
-  const todos=pasosAviso(c);
-  const enAviso=a.fase==='aviso';
-  /* Con anuncio la carta empieza VACÍA: el marco solo, esperando a que entre la voz a los
-     0,9 s. Sin anuncio se ve ya el primer dato, que es como ha sido siempre. */
-  const vistos=enAviso ? todos.slice(0, N.anuncio ? (a.paso||0) : Math.max(1, a.paso||1)) : todos;
-  const ult=vistos[vistos.length-1];
-  const gorda=c.estatus==='campeon'||c.estatus==='top5';
-  return barra+`
-    <div class="apertura aviso${enAviso?'':' suelta'}" data-a="${enAviso?'saltaraviso':'revelar'}"
-      style="--luz:${N.luz};--luz2:${N.luz2}">
-      <div class="apertura-tit${gorda&&!enAviso?'':' apagado'}">★ ${gorda?EST[c.estatus].n.toUpperCase():''} ★</div>
-      <div class="apertura-carta n-${a.nivel}">${cartaHTML(c,{rev:vistos.map(p=>p.k)})}<i class="destello"></i></div>
-      <div class="sub center aviso-et">${enAviso?(ult?ult.et:'')
-        :`${DIV[c.division].n} · ${esc(c.pais||'')} · ${esc(c.record||'')}`}</div>
-      <div class="tiny center apertura-pie">${enAviso?'Toca para saltar':'Toca la carta para ver el sobre entero'}</div>
+     Las cartas van de PEOR A MEJOR de arriba abajo del montón —items viene ordenada al
+     revés—, así que la última en verse es la mejor, que es lo que se pidió. */
+  const orden=a.items.slice().reverse();
+  const naipes=orden.map((it,i)=>{
+    const c=PORID[it.cid];
+    const k=a.items.indexOf(it);
+    return `<div class="naipe dentro bocabajo" data-k="${k}" style="--r:${i*55}ms">
+      <div class="gira">
+        <div class="cara frente"><div class="recorte">${cartaHTML(c)}</div>
+          <span class="lustre"></span></div>
+        <div class="cara dorso"><div class="recorte"></div>
+          <span class="lustre"></span></div>
+      </div>
     </div>`;
+  }).join('');
+  return `<div class="ap-escena" data-a="pasarcarta">
+      <div id="sobre-abre" class="sobre-abre">
+        <div class="parte bajo" style="background-image:url(sobres/${a.tipo}.webp)"></div>
+        <div class="parte alto" style="background-image:url(sobres/${a.tipo}.webp)"></div>
+      </div>
+      <div id="monton" class="monton">${naipes}</div>
+    </div>
+    <div id="ap-cuenta" class="ap-cuenta"></div>
+    <div id="ap-pista" class="ap-pista">Toca el sobre</div>
+    <button class="btn gho sm" data-a="salirapertura"
+      style="position:fixed;left:12px;top:calc(12px + env(safe-area-inset-top));z-index:90;
+             width:auto">← Salir</button>`;
 }
+
 
 /* ── COLECCIÓN ── */
 /* SIN FILTROS. Eran tres filas de chips —estatus, alineables y las once divisiones— y se
@@ -4451,12 +4550,10 @@ document.addEventListener('click',e=>{
       break; }
     case 'pag':                          // pasar hoja del álbum de la colección
       tmp.pag=(tmp.pag||0)+Number(d.v); window.scrollTo(0,0); render(); break;
-    case 'saltaraviso':                  // el aviso siempre se puede saltar
-      soltarCarta(); break;
-    case 'revelar':                      // un toque en la carta y sale el sobre entero
-      if(!tmp.ap||tmp.ap.resumen) break;
-      pararAviso();
-      tmp.ap.resumen=true; window.scrollTo(0,0); render(); break;
+
+    case 'pasarcarta':                   // el montón: voltear y pasar al fondo
+      pasarCarta(); break;
+
     case 'mudo':
       S.mudo=!S.mudo; guardar();
       if(!S.mudo) SONIDO.clic();         // se oye al encenderlo, que es lo que se espera

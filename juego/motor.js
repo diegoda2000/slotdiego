@@ -91,11 +91,10 @@ function etiquetaEstatus(c){
   // Texto y no emoji: un 🏆 a este tamaño no se lee, y cada sistema lo dibuja distinto.
   if(c.rk===0) return '#C';
   if(c.rk) return '#'+c.rk;
-  // Sin ranking va '#SR', no vacío: el hueco del marco es un octágono con fondo negro y
-  // dejarlo en blanco se lee como una carta a medio pintar, no como un peleador sin
-  // clasificar. Lleva almohadilla como los demás para que las tres etiquetas —#C, #11 y
-  // #SR— se lean como la misma cosa y no como un texto suelto colado en el hueco.
-  return '#SR';
+  // Sin ranking va '#NR', no vacío: dejarlo en blanco se lee como una carta a medio
+  // pintar, no como un peleador sin clasificar. Lleva almohadilla como los demás para que
+  // las tres etiquetas —#C, #11 y #NR— se lean como la misma cosa. Lo pidió él así.
+  return '#NR';
 }
 
 /* Cuánto puede medir el nombre para llenar la barra sin salirse.

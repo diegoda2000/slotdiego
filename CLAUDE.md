@@ -76,6 +76,52 @@ encima. Decidido por el dueño:
 - Antonio deja de estar justificada: se eligió midiendo las etiquetas impresas del marco
   viejo, y el marco nuevo no imprime ninguna. La maqueta va con Saira Condensed.
 
+**LA APERTURA YA ESTÁ PUESTA, Y ES LA QUE ÉL MONTÓ.** La pasó hecha en un HTML y está
+guardada en `originales/apertura/apertura-que-quiere.html`: *"pero por qué te inventas ahora
+por la cara otra apertura? la apertura es esta"*. **Si hay que cambiar algo, se cambia
+PRIMERO en esa maqueta y después en el juego.**
+
+Cómo va: se toca el sobre → **la rasgadura AVANZA** por el dentado → la solapa se va y el
+cuerpo cae → las cartas suben desde dentro, **todas boca abajo** → un toque voltea la de
+arriba **en su sitio** → otro la manda **al fondo del montón** → y cuando se han visto
+todas, el siguiente toque lleva al resumen.
+
+**Tres cosas de la maqueta que no son cosméticas y hay que respetar:**
+
+- **La rasgadura no es cortar el dibujo en dos y apartar uno.** Hay una línea de dientes
+  generada UNA vez, y en cada fotograma sólo está abierta hasta donde ha llegado; lo que
+  queda por delante sigue pegado. La solapa gira sobre **el punto exacto donde va el
+  desgarro**. Como el polígono cambia de número de vértices, va con `requestAnimationFrame`
+  y **no** con una transición de CSS, que no sabe interpolar dos polígonos con distinta
+  cantidad de puntos.
+- **La perspectiva va en la carta, no en la escena.** Puesta arriba se aplica sólo a los
+  hijos directos, y entre medias hay dos capas que aplanan el 3D; sin ella el giro no es un
+  giro, es la carta encogiéndose de ancho y volviendo a crecer.
+- **No nos fiamos de `backface-visibility`.** Con el estilo calculado correcto, Chromium
+  pintaba el dorso ENCIMA de la cara y todas salían boca abajo. El cambio de cara se hace a
+  mano, con una transición de opacidad de duración CERO y retraso justo la mitad del giro,
+  que es cuando la carta está de canto. Y las dos caras van separadas 5 px en profundidad,
+  para que la carta sea un objeto con grosor.
+
+**Pasar una carta al fondo es cambiarle el puesto (`--i`), no llevársela a otra parte.**
+Todas viven en el mismo sitio y de su puesto salen desplazamiento, escala y orden.
+
+**Y `medirCartas()` mide con `offsetWidth`, no con `getBoundingClientRect`**: el segundo
+devuelve el ancho YA TRANSFORMADO, y en la apertura las cartas nacen dentro del sobre a
+escala 0,34. Midiendo mal, `--k` salía tres veces más pequeño y las cartas se pintaban en
+miniatura en su esquina.
+
+**El montón trae las cartas que anuncia el sobre** —5, 6, 8, 10 y 10— y hay una comprobación
+en la suite que lo verifica en los cinco.
+
+**Con la apertura nueva se fue la vieja**: la carta llenándose por partes, sus resplandores
+y toda la máquina de `ve-*`. **El anuncio (`its-time.mp3`) se queda**, pero ahora suena al
+destapar el campeón o el top 5, que es el momento que premiaba.
+
+**Cómo se mira.** `node herramientas/ver-apertura.mjs [carpeta]` fotografía la secuencia
+entera paso a paso: el sobre, el rasgado en siete momentos, el montón, el volteo a medias y
+del todo, y una carta yéndose al fondo.
+
 **La apertura con vídeo está DESCARTADA.** Se generó con Kling, se recortó a la columna
 del sobre —con lo que la marca de agua se quedaba fuera— y se montó en HTML; el dueño lo
 vio y dijo que no. El clip y el procedimiento se quedan en `originales/apertura/` y
@@ -84,11 +130,6 @@ vio y dijo que no. El clip y el procedimiento se quedan en `originales/apertura/
 Si vuelve a generar vídeo, la entrada va con `herramientas/preparar-entrada-video.mjs`:
 monta el sobre entero sobre un 9:16 de 1080x1920 con fondo de estudio. Dándole el PNG a
 pelo, el generador reencuadra por su cuenta y el sobre sale cortado.
-
-**La apertura del sobre, tal como la pidió:** se toca → la parte de arriba se rasga por el
-dentado y sale volando → el montón de cartas sube desde dentro del cuerpo → se revelan una
-a una → y **la última se queda boca abajo**, que es la que más posibilidades tiene de ser
-buena. Sin librerías: `transform` y `opacity`, que es lo único que va fino en el WebView.
 
 **Dónde cortan los tres escalones: DECIDIDO.** Y no sale de las medias ni de la suma de
 stats —lo dijo él—: sale de **la calidad del peleador**, o sea de dónde está en su división

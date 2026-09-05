@@ -620,94 +620,102 @@ const nComun = await page.evaluate(() => TIPOS_SOBRE.comun.cartas);
 comprobar(gratis.vista === 'apertura' && gratis.cartas === nComun && gratis.guardados === 0,
   `y el toque lo abre ahí mismo, entregando sus ${nComun} cartas`);
 
-/* La revelación tiene que ir POR PARTES también aquí. El walkout arranca después del
-   encendido de las florituras, y ese retraso no puede comerse los pasos.
-
-   Y LA FOTO ES LA ÚLTIMA. Se comprueba de dos maneras, porque una sola no basta: que
-   've-foto' llegue después que todo lo demás, y que mientras tanto la foto esté de
-   verdad oculta —una clase en su sitio con el CSS mal puesto dejaría la cara a la vista
-   desde el primer fotograma, que es justo el fallo que se está tapando aquí—. */
-const porPartes = await page.evaluate(async () => {
-  S.gratis = {}; S.sobres = []; S.coleccion = []; ir('inicio');
-  document.querySelector('[data-a="versobre"][data-t="comun"]').click();
+/* ── LA APERTURA ──
+   Es la que aprobó el dueño y está montada aparte en
+   originales/apertura/apertura-que-quiere.html: el sobre se rasga —la abertura AVANZA, no
+   aparece de golpe—, las cartas salen TODAS BOCA ABAJO en un montón, se voltean una a una
+   EN SU SITIO y cada una que se ve pasa AL FONDO del montón. Ninguna desaparece. */
+const apertura = await page.evaluate(async () => {
+  S.gratis = {}; S.sobres = [{ tipo: 'epico' }]; S.coleccion = [];
+  ir('tienda'); tmp.sub = 'mios'; render();
+  document.querySelector('[data-a="versobre"][data-t="epico"]').click();
   document.querySelector('[data-a="abrirsobre"]').click();
-  /* SE MIRA DESDE EL PRIMER MOMENTO, sin esperar al encendido. Antes se esperaban 900 ms
-     y luego se contaba: con la revelación de seis pasos daba igual, pero al quitarse el
-     paso del récord una carta sin apodo y sin ranking baja a cuatro pasos y para entonces
-     ya casi ha terminado, así que todas las clases se leían a la vez. */
-  const t0 = performance.now(), visto = {};
-  let conFoto = false, caraAntes = false;
-  const mira = () => { const k = document.querySelector('.apertura-carta .carta'); if (!k) return;
-    /* El récord se fue de la carta con el diseño nuevo, y su paso con él: en su sitio va
-       el APODO, que además solo aparece si el peleador tiene uno. */
-    for (const cl of ['ve-pais', 've-peso', 've-apodo', 've-rk', 've-todo', 've-foto'])
-      if (k.classList.contains(cl) && visto[cl] === undefined) visto[cl] = Math.round(performance.now() - t0);
-    const img = k.querySelector('.c-foto');
-    if (!img) return;
-    conFoto = true;
-    if (!k.classList.contains('ve-foto') && getComputedStyle(img).visibility !== 'hidden') caraAntes = true;
-  };
-  const iv = setInterval(mira, 10);
-  await new Promise(r => setTimeout(r, 3400));
-  clearInterval(iv); pararAviso();
-  return { visto, conFoto, caraAntes };
-});
-const pasos = Object.values(porPartes.visto);
-comprobar(pasos.length >= 4, `la carta se destapa por partes (${pasos.length} pasos)`);
-comprobar(pasos.length >= 2 && pasos[pasos.length - 1] - pasos[0] > 600,
-  `y separados en el tiempo, no de golpe (${pasos.join(', ')} ms)`);
-comprobar(!porPartes.conFoto || !porPartes.caraAntes,
-  'si la carta que ha tocado tiene foto, no se ve antes de tiempo');
+  await new Promise(r => setTimeout(r, 400));
 
-/* Y la comprobación de que la foto va LA ÚLTIMA, con una carta elegida a propósito: la
-   de arriba se juega la suerte de que el sobre traiga a alguien con foto, y hay
-   dieciséis peleadores que no la tienen. */
-const laFoto = await page.evaluate(async () => {
-  /* Ni campeón ni top 5: esos llevan el anuncio y su revelación dura los 8,9 s del clip,
-     que aquí serían ocho segundos de espera por una comprobación de orden. */
-  const c = ROSTER.find(x => fotoSrc(x.persona, x.division)
-    && x.estatus !== 'campeon' && x.estatus !== 'top5');
-  if (!c) return { sinNadie: true };
-  const it = { iid: 'iprueba', cid: c.id };
-  S.coleccion.push(it);
-  abrirTanda([it], 'comun');
-  const t0 = performance.now(), orden = [];
-  let caraAntes = false;
-  const mira = () => { const k = document.querySelector('.apertura-carta .carta'); if (!k) return;
-    for (const cl of ['ve-pais', 've-peso', 've-record', 've-rk', 've-todo', 've-foto'])
-      if (k.classList.contains(cl) && !orden.includes(cl)) orden.push(cl);
-    const img = k.querySelector('.c-foto');
-    if (img && !k.classList.contains('ve-foto') && getComputedStyle(img).visibility !== 'hidden')
-      caraAntes = true;
-  };
-  const iv = setInterval(mira, 10);
-  await new Promise(r => setTimeout(r, 2600));
-  clearInterval(iv); pararAviso();
-  return { nombre: c.nombre, orden, caraAntes, ms: Math.round(performance.now() - t0) };
-});
-comprobar(!laFoto.sinNadie && laFoto.orden.includes('ve-foto'),
-  `la carta con foto la destapa también (${laFoto.nombre})`);
-comprobar(laFoto.orden[laFoto.orden.length - 1] === 've-foto',
-  `y la foto es lo ÚLTIMO que aparece (${laFoto.orden.join(' → ')})`);
-comprobar(!laFoto.caraAntes, 'y hasta ese momento la cara no se ve');
+  const naipes = () => [...document.querySelectorAll('.monton .naipe')];
+  const out = { cartas: naipes().length, debe: TIPOS_SOBRE.epico.cartas };
+  /* EL MONTÓN TIENE LAS CARTAS DEL SOBRE, ni una más ni una menos: cada sobre anuncia las
+     suyas —5, 6, 8, 10 y 10— y lo que sale tiene que coincidir. */
+  out.bocabajo = naipes().filter(n => n.classList.contains('bocabajo')).length;
 
-/* Con anuncio la revelación se reparte a mano contra el audio, y esa lista va indexada
-   por cuántos pasos hay. Al meter la foto pasaron a ser seis, así que se comprueba que
-   la tabla tiene el reparto de seis y que sigue acabando cuando acaba el clip: si se
-   cayera al reparto de emergencia, la carta se soltaría descuadrada de la voz. */
-const conAnuncio = await page.evaluate(() => {
-  const c = ROSTER.find(x => x.estatus === 'campeon' && fotoSrc(x.persona, x.division));
-  if (!c) return { sinNadie: true };
-  const pasos = pasosAviso(c).map(p => p.k);
-  const cuando = momentosAviso(NIVEL_APERTURA.corona, pasos.length);
-  return { pasos, cuando, fin: ANUNCIO_MS };
+  // Se rasga: la abertura avanza, así que el recorte cambia entre un momento y otro.
+  const alto = document.querySelector('#sobre-abre .alto');
+  toqueApertura();
+  await new Promise(r => setTimeout(r, 120));
+  const corte1 = alto.style.clipPath;
+  await new Promise(r => setTimeout(r, 260));
+  const corte2 = alto.style.clipPath;
+  out.rasgaAvanza = !!corte1 && !!corte2 && corte1 !== corte2;
+  out.vertices = (corte2.match(/%/g) || []).length;
+
+  // Termina de rasgar y salen las cartas.
+  await new Promise(r => setTimeout(r, 1600));
+  out.fase = tmp.ap.fase;
+  out.sobreFuera = document.querySelector('#sobre-abre').style.display === 'none';
+  out.fuera = naipes().filter(n => !n.classList.contains('dentro')).length;
+
+  // Un toque da la vuelta a la de arriba, EN SU SITIO.
+  const arriba = tmp.ap.pila[0];
+  toqueApertura();
+  out.volteada = !arriba.classList.contains('bocabajo');
+  out.faseTrasVoltear = tmp.ap.fase;
+  await new Promise(r => setTimeout(r, 700));
+
+  // Otro toque la manda al FONDO del montón: sigue existiendo y queda la última.
+  toqueApertura();
+  await new Promise(r => setTimeout(r, 700));
+  out.sigueViva = document.body.contains(arriba);
+  out.alFondo = tmp.ap.pila[tmp.ap.pila.length - 1] === arriba;
+  out.arribaOtra = tmp.ap.pila[0] !== arriba;
+  out.tapadaOtraVez = tmp.ap.pila[0].classList.contains('bocabajo');
+  return out;
 });
-comprobar(!conAnuncio.sinNadie && conAnuncio.pasos[conAnuncio.pasos.length - 1] === 'foto',
-  `con anuncio la foto también va la última (${(conAnuncio.pasos || []).join(' → ')})`);
-comprobar(conAnuncio.cuando && conAnuncio.cuando.length === conAnuncio.pasos.length + 1
-  && conAnuncio.cuando.every((v, i, a) => i === 0 || v > a[i - 1])
-  && conAnuncio.cuando[conAnuncio.cuando.length - 1] === conAnuncio.fin,
-  `y los momentos siguen cuadrados con el clip (${(conAnuncio.cuando || []).join(', ')} ms)`);
+comprobar(apertura.cartas === apertura.debe,
+  `el montón trae las cartas del sobre (${apertura.cartas} de ${apertura.debe})`);
+comprobar(apertura.bocabajo === apertura.debe,
+  'y todas salen boca abajo');
+comprobar(apertura.rasgaAvanza,
+  `el sobre se rasga de verdad: la abertura avanza (${apertura.vertices} vértices)`);
+comprobar(apertura.fase === 'tapada' && apertura.sobreFuera,
+  `acabado el rasgado el sobre se va y queda el montón (${apertura.fase})`);
+comprobar(apertura.fuera === apertura.debe,
+  'y las cartas han salido de dentro del sobre');
+comprobar(apertura.volteada && apertura.faseTrasVoltear === 'vista',
+  'un toque da la vuelta a la de arriba');
+comprobar(apertura.sigueViva && apertura.alFondo,
+  'y otro la manda AL FONDO del montón: no desaparece');
+comprobar(apertura.arribaOtra && apertura.tapadaOtraVez,
+  'dejando arriba la siguiente, todavía boca abajo');
+
+/* Y el número de cartas de cada sobre es el que anuncia. */
+const cuantas = await page.evaluate(async () => {
+  const out = {};
+  for (const k of Object.keys(TIPOS_SOBRE)) {
+    S.sobres = [{ tipo: k }]; S.coleccion = [];
+    ir('tienda'); tmp.sub = 'mios'; render();
+    document.querySelector(`[data-a="versobre"][data-t="${k}"]`).click();
+    document.querySelector('[data-a="abrirsobre"]').click();
+    await new Promise(r => setTimeout(r, 380));
+    out[k] = [document.querySelectorAll('.monton .naipe').length, TIPOS_SOBRE[k].cartas];
+    pararAviso(); ir('tienda');
+  }
+  return out;
+});
+const cuadran = Object.entries(cuantas).filter(([, [a, b]]) => a !== b);
+comprobar(cuadran.length === 0,
+  'el montón cuadra con el sobre en los cinco: ' +
+  Object.entries(cuantas).map(([k, [a]]) => `${k} ${a}`).join(' · '));
+
+/* EL ANUNCIO SE QUEDA, pero ya no va con la revelación por pasos —que se fue con la
+   apertura nueva—: suena al destapar el campeón o el top 5, que es el momento que
+   premiaba. Aquí se comprueba que sigue reservado a esos dos. */
+const anuncio = await page.evaluate(() => ({
+  corona: !!NIVEL_APERTURA.corona.anuncio,
+  top5: !!NIVEL_APERTURA.top5.anuncio,
+  resto: ['top10', 'top15', 'oro', 'plata'].filter(k => NIVEL_APERTURA[k].anuncio),
+}));
+comprobar(anuncio.corona && anuncio.top5 && anuncio.resto.length === 0,
+  `el anuncio sigue siendo sólo del campeón y del top 5 (${anuncio.resto.join(', ') || 'nadie más'})`);
 
 /* Este bloque abre y compra sobres a mano, así que deja la colección y la plantilla en
    un estado cualquiera. Se rehacen antes de seguir: lo que viene detrás cuenta con una
