@@ -1039,6 +1039,9 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 .divider{height:1px;background:var(--line);margin:12px 0}
 .center{text-align:center}
 .mb{margin-bottom:10px}
+/* El tope del registro. 96 px son tres duelos: los suficientes para seguir el combate sin
+   que la lista se coma el sitio de las cartas. Por dentro se desplaza; la página, no. */
+.logbox{max-height:64px;overflow-y:auto;margin-top:8px}
 .log{font-size:12.5px;color:var(--dim);border-left:2px solid var(--line);padding:4px 0 4px 9px;margin-bottom:5px}
 .log b{color:var(--txt)}
 .log.win{border-color:var(--ok)} .log.lose{border-color:var(--acc)}
@@ -1086,6 +1089,37 @@ th{color:var(--dim2);font-size:11px;text-transform:uppercase;letter-spacing:.04e
 .chatm.mio{align-self:flex-end;background:#2a3a2f}
 .chatm b{color:var(--dim);font-weight:700;margin-right:4px}
 
+/* ── LA REJILLA DE CARTAS ──
+   FALTABA ENTERA. `.grid` se emitía en siete sitios —el álbum, el elegir carta de un SBC,
+   el reciclaje, el intercambio y la plantilla guiada— y NO tenía ni una regla de CSS, así
+   que las cartas caían una por fila a todo el ancho y la colección se iba a 5.500 px de
+   scroll. Y `ajustarRejillas()` llevaba todo ese tiempo calculando `--rejilla` y midiendo
+   `--cols` para nadie: los dos son suyos y nadie los leía.
+
+   Se repone modelada sobre `.pgrid`, que es la misma idea y sí sobrevivió: el ancho lo
+   manda `--rejilla` —lo que la rejilla puede ocupar sin que la carta se pase de alto— y el
+   `align-content:space-between` reparte lo que sobre entre las filas, para que cuando el
+   que se agota sea el ANCHO no quede un agujero debajo.
+
+   El 6 del hueco no es libre: `ajustarRejillas()` lo lee con getComputedStyle para restarlo
+   al repartir el alto. Si se cambia aquí, la cuenta lo sigue sola. */
+.grid{display:grid;grid-template-columns:repeat(var(--cols,3),1fr);gap:6px;
+  max-width:var(--rejilla,100%);margin:0 auto;align-content:start}
+.grid.g3{--cols:3}
+
+/* EL PASADOR DE HOJAS, CENTRADO. También le faltaba el CSS —`.album-nav` y `.pag` se
+   emitían y no existía ninguna regla—, así que las dos flechas y el "HOJA 1 DE 8" caían
+   sueltos y pegados a la izquierda. Lo cazó él: "lo de pasar hoja ponlo bien centrado en el
+   medio no ahí a la izquierda abajo".
+
+   Las flechas son de ancho fijo y el rótulo se queda el hueco de en medio, así que el texto
+   cae en el centro EXACTO de la pantalla y no se mueve al pasar de "HOJA 1 DE 8" a
+   "HOJA 10 DE 12". Centrar con `justify-content:center` a secas lo bailaría. */
+.album-nav{display:flex;align-items:center;gap:10px;margin-top:8px}
+.album-nav .btn{flex:0 0 42px;padding:6px 0}
+.album-nav .pag{flex:1;text-align:center;font-family:var(--titulo);font-size:12px;
+  letter-spacing:.14em;color:var(--dim)}
+
 /* ── PLANTILLA QUE CABE ──
    Cuatro columnas y tres filas para once divisiones. La altura de cada carta sale del
    alto de la ventana, así que entra entera en cualquier móvil sin scroll. */
@@ -1116,6 +1150,27 @@ th{color:var(--dim2);font-size:11px;text-transform:uppercase;letter-spacing:.04e
 .campo{width:100%;padding:11px 12px;border-radius:9px;background:var(--bg3);
   border:1px solid var(--line);color:var(--txt);font:inherit;font-size:16px;margin-bottom:9px}
 .campo:focus{outline:none;border-color:var(--acc)}
+/* LOS TRES DESPLEGABLES, en una línea. `appearance:none` porque el <select> de cada
+   sistema se pinta a su manera y en el WebView sale un cuadro gris de Android que no se
+   parece a nada del juego; la flecha se dibuja de fondo. El 16 px es el mismo suelo que en
+   los campos de la cuenta: por debajo, el WebView de iPhone hace zoom al enfocar.
+   `min-width:0` en el label es lo que deja que los tres se encojan por igual — sin él, un
+   hijo de un flex no baja de su ancho de contenido y "Cualquier atributo" empuja a los
+   otros dos fuera. */
+.filtros{display:flex;gap:6px;margin-bottom:8px}
+.filtros .filtro{flex:1 1 0;min-width:0;display:block;position:relative}
+.filtros select{width:100%;appearance:none;-webkit-appearance:none;
+  padding:8px 22px 8px 9px;border-radius:8px;background:var(--bg3);
+  border:1px solid var(--line);color:var(--dim);font:inherit;font-size:16px;
+  text-overflow:ellipsis;white-space:nowrap;overflow:hidden}
+.filtros .filtro::after{content:'';position:absolute;right:9px;top:50%;
+  width:6px;height:6px;margin-top:-4px;pointer-events:none;
+  border-right:1.6px solid var(--dim2);border-bottom:1.6px solid var(--dim2);
+  transform:rotate(45deg)}
+/* Puesto se nota: filete y letra en oro. Un filtro activo que se ve igual que uno apagado
+   es la forma de que alguien crea que le faltan cartas. */
+.filtros .filtro.on select{border-color:var(--acc);color:var(--acc2)}
+.filtros .filtro.on::after{border-color:var(--acc2)}
 textarea.campo{resize:vertical;line-height:1.35;font-family:var(--texto)}
 .campo::placeholder{color:var(--dim2)}
 .pcab .sub{font-size:11px}
@@ -1676,15 +1731,34 @@ let SETS=[];
 const setListo=s=>s.req.every(cid=>copias(cid)>0);
 
 // Retos (SBC): entregas cartas, recibes recompensa
+/* SIN RANKING Y RANKEADO, en un sitio y con el null a pelo.
+
+   OJO CON EL null, que ya mordió una vez: en JavaScript `null >= 0` es TRUE —null se
+   convierte en 0—, así que un `c.rk>=0` da rankeados a los que no lo están y un
+   `!(c.rk>=0)` no encuentra a ninguno. Se compara contra null y punto. */
+const sinRanking = c => c.rk===null||c.rk===undefined;
+const rankeado   = c => !sinRanking(c);
+const divsDistintas = (l,n) => new Set(l.map(c=>c.division)).size===n;
+
+/* LOS SBC HABLAN DEL RANKING, NO DE OROS Y PLATAS. Lo cazó él: "sigue pidiendo oros y
+   demás y ya no existen oro, platas, etc.".
+
+   Pedían "3 platas", "2 oros sin rankear" y "4 oros", que es vocabulario del sistema viejo
+   y que además NO se ve en ninguna parte: la carta enseña #C, #11 o #NR, o sea el puesto en
+   la división. Ahora piden eso mismo, que es lo que el jugador tiene delante y lo que ya
+   usan los sobres para repartir.
+
+   NO se ha tocado `RAREZAS` ni `ESTATUS` de motor.js: eso es la migración de rarezas, que
+   espera a la interfaz por orden suya. Esto sólo cambia lo que piden los cinco retos. */
 const RETOS=[
-  {id:'r1',n:'Cantera',   d:'Entrega 3 platas de divisiones distintas',
-   check:l=>l.length===3&&l.every(c=>c.estatus==='plata')&&new Set(l.map(c=>c.division)).size===3,
+  {id:'r1',n:'Cantera',   d:'Entrega 3 peleadores sin ranking, de divisiones distintas',
+   check:l=>l.length===3&&l.every(sinRanking)&&divsDistintas(l,3),
    premio:{sobre:'raro',divisa:120}},
-  {id:'r2',n:'Base sólida',d:'Entrega 2 oros sin rankear de divisiones distintas',
-   check:l=>l.length===2&&l.every(c=>c.estatus==='oro')&&new Set(l.map(c=>c.division)).size===2,
+  {id:'r2',n:'Base sólida',d:'Entrega 2 rankeados, de divisiones distintas',
+   check:l=>l.length===2&&l.every(rankeado)&&divsDistintas(l,2),
    premio:{sobre:'epico',divisa:0}},
-  {id:'r3',n:'Cartel completo',d:'Entrega 4 oros de 4 divisiones distintas',
-   check:l=>l.length===4&&l.every(c=>c.rareza==='oro')&&new Set(l.map(c=>c.division)).size===4,
+  {id:'r3',n:'Cartel completo',d:'Entrega 4 rankeados de 4 divisiones distintas',
+   check:l=>l.length===4&&l.every(rankeado)&&divsDistintas(l,4),
    premio:{sobre:'epico',divisa:400}},
   {id:'r4',n:'Caja de herramientas',d:'Entrega 3 cartas con atributo, los tres distintos',
    check:l=>l.length===3&&l.every(c=>c.rasgos.length)&&
@@ -2140,28 +2214,36 @@ function ajustarRejillas(){
     const HUECO=parseFloat(getComputedStyle(g).gap)||6;
     const PIE=g.dataset.pie?parseFloat(g.dataset.pie):0;   // el rótulo bajo cada carta
     const arriba=g.getBoundingClientRect().top;
-    /* Lo que ocupa lo que va DEBAJO de la rejilla, más el hueco que el body ya reserva
-       para la barra de navegación. Sumar además el alto de la barra sería contarla dos
-       veces, que es lo que dejaba las cartas más pequeñas de lo que podían ser. */
-    let abajo=parseFloat(getComputedStyle(document.body).paddingBottom)||0;
-    for(let e=g.nextElementSibling;e;e=e.nextElementSibling){
-      const r=e.getBoundingClientRect();
-      if(r.height) abajo+=r.height+8;
-    }
+    /* LO QUE HAY DEBAJO SE MIDE, NO SE SUMA. Antes se recorrían los hermanos sumando su
+       alto más ocho píxeles de margen a ojo, y eso fallaba por dos sitios: no veía lo que
+       cuelga por debajo de los PADRES —la rejilla de "¿quién pelea?" vive dentro de un
+       panel, y detrás del panel vienen el registro y el botón de rendirse— y los ocho
+       píxeles no eran los márgenes de verdad, así que la pantalla se pasaba entre 20 y 120.
+
+       Ahora se mide de una vez: desde el canto de abajo de la rejilla hasta el canto de
+       abajo de lo último que hay en #app. Eso mete dentro todos los márgenes, rellenos y
+       anidamientos tal y como están pintados, sin tener que adivinar ninguno. Más el hueco
+       que el body ya reserva para la barra de pestañas —sumar además el alto de la barra
+       sería contarla dos veces—. */
+    const suelo=document.getElementById('app').lastElementChild;
+    const abajo=(parseFloat(getComputedStyle(document.body).paddingBottom)||0)
+      + Math.max(0, (suelo?suelo.getBoundingClientRect().bottom:0) - g.getBoundingClientRect().bottom);
     const alto=Math.max(120, innerHeight-arriba-abajo-12);
     const porFila=(alto-HUECO*(filas-1))/filas;
     let ancho=(porFila-PIE)*620/877;
     const tope=(g.parentElement.clientWidth-HUECO*(cols-1))/cols;
     ancho=Math.max(46, Math.min(ancho, tope));
     g.style.setProperty('--rejilla', (ancho*cols+HUECO*(cols-1)).toFixed(1)+'px');
-    /* Y la rejilla se queda el hueco ENTERO, aunque las cartas no puedan crecer más.
-       Cuando el que se agota es el ANCHO —tres columnas en un móvil estrecho— la carta
-       deja de crecer y antes sobraba alto por debajo: la rejilla terminaba a media
-       pantalla y el botón de abajo se quedaba flotando en mitad de la nada, con un
-       agujero detrás. Fijando el alto, lo que sobra se reparte entre las filas
-       (align-content:space-between en el CSS) y lo que va después de la rejilla cae
-       donde tiene que caer, abajo del todo. */
-    g.style.height=alto.toFixed(1)+'px';
+    /* LA REJILLA OCUPA LO QUE OCUPA, y no el hueco entero. Antes se le fijaba el alto y
+       lo que sobraba se repartía entre las filas: con la hoja llena colaba, pero en cuanto
+       se filtra y quedan dos filas de cuatro, esas dos se iban a los extremos y quedaba
+       media pantalla de agujero en medio. Lo cazó él: "corrige eso de al filtrar dejar ese
+       hueco de por medio, siempre concéntralo en el menor espacio posible".
+
+       Y no se desplaza igualmente: el ancho ya está topado para que las `filas` quepan en
+       el hueco, así que el alto natural nunca lo pasa. Si el que se agota es el ANCHO, la
+       rejilla acaba antes y lo que sobra queda debajo, que es lo que él quiere. */
+    g.style.removeProperty('height');
   }
 }
 
@@ -3342,6 +3424,66 @@ function quedaOtro(tipo){
 }
 
 
+
+/* ── LOS TRES FILTROS ──────────────────────────────────────────────────────────────
+   Tipo de carta, atributo y peso, cada uno en su desplegable. Lo pidió así, con todas las
+   letras: "todas mediante un desplegable individual, nada de muchos botones
+   seleccionables".
+
+   Y es la forma correcta, además de la pedida: la versión de chips YA ESTUVO y se quitó
+   porque eran tres filas —estatus, alineables y las once divisiones— que se comían 250 px
+   de alto, o sea media hoja del álbum. Tres <select> en una línea ocupan 44.
+
+   EL TIPO ES EL RANKING, no el oro y la plata. Es lo que el jugador tiene delante en la
+   carta —#C, #11, #NR— y lo mismo que usan los sobres para repartir, así que se reutilizan
+   los NIVELES en vez de escribir otra tabla que se quedaría vieja aparte.
+
+   Viven en `tmp`, o sea que se olvidan al salir de la pantalla. Es lo que se espera de un
+   filtro de una vista: volver al álbum y encontrártelo recortado por algo que pusiste hace
+   media hora es peor que volver a elegir. */
+const filtrosPuestos=()=>!!(tmp.fTipo||tmp.fAtr||tmp.fPeso);
+
+function filtrarCartas(l, carta=o=>o){
+  let out=l;
+  if(tmp.fTipo){
+    const n=NIVELES.find(x=>x.id===tmp.fTipo);
+    if(n) out=out.filter(o=>n.cumple(carta(o)));
+  }
+  if(tmp.fAtr) out=out.filter(o=>{
+    const r=carta(o).rasgos||[];
+    // "sin" es una opción de verdad: buscar a los que NO tienen atributo es una búsqueda.
+    return tmp.fAtr==='sin' ? !r.length : r.some(x=>x.tipo===tmp.fAtr);
+  });
+  if(tmp.fPeso) out=out.filter(o=>carta(o).division===tmp.fPeso);
+  return out;
+}
+
+/* Un desplegable. La primera opción es siempre "todo", con valor vacío, que es lo que
+   apaga el filtro: un filtro sin forma de quitarlo es una trampa.
+
+   Y se llama por el campo —"Tipo", "Atributo", "Peso"— y no "Cualquier tipo": a tres por
+   línea en un móvil de 390 tocan 120 px cada uno, y "Cualquier atributo" salía cortado en
+   "Cualquier ...", que no dice nada. Elegido, el rótulo lo sustituye el valor y el filete
+   se pone en oro, que es lo que avisa de que el filtro está puesto. */
+const desplegable=(campo,todo,opciones)=>{
+  const v=tmp[campo]||'';
+  return `<label class="filtro${v?' on':''}">
+    <select data-f="${campo}">
+      <option value=""${v?'':' selected'}>${todo}</option>
+      ${opciones.map(([id,txt])=>
+        `<option value="${id}"${v===id?' selected':''}>${esc(txt)}</option>`).join('')}
+    </select></label>`;
+};
+
+function filtrosHTML(){
+  return `<div class="filtros">
+    ${desplegable('fTipo','Tipo', NIVELES.map(n=>[n.id,n.n]))}
+    ${desplegable('fAtr','Atributo',
+      [...Object.entries(RASGOS).map(([id,r])=>[id,r.n]), ['sin','Sin atributo']])}
+    ${desplegable('fPeso','Peso', DIVISIONES.map(d=>[d.id,d.n]))}
+  </div>`;
+}
+
 /* ── COLECCIÓN ── */
 /* SIN FILTROS. Eran tres filas de chips —estatus, alineables y las once divisiones— y se
    comían 250 px de alto, que en la colección es media hoja del álbum: las cartas salían a
@@ -3351,17 +3493,19 @@ function vColeccion(){
   let l=S.coleccion.map(x=>({x,c:PORID[x.cid]}));
   l.sort((a,b)=>comparar(a.c,b.c));      // siempre de mejor a peor
   const total=ROSTER.length, distintas=new Set(S.coleccion.map(x=>x.cid)).size;
+  const todas=l.length;
+  l=filtrarCartas(l,o=>o.c);
 
   /* La colección es un ÁLBUM, no una lista: páginas que se pasan. Una colección que se
      recorre con el dedo hacia abajo no se mira, se escanea, y aquí mirar las cartas es
      medio juego. Con páginas, cada una es una hoja del álbum.
 
-     TRES columnas y CUATRO filas, no cuatro y cuatro. Con cuatro columnas el ancho de la
-     pantalla se agotaba antes que el alto: las cartas salían a 92 px porque no cabían más
-     anchas, y las cuatro filas ocupaban poco más de media pantalla dejando un hueco vacío
-     debajo. Con tres columnas la carta crece hasta que lo que se agota es el ALTO, que es
-     la dimensión que aquí sobraba, y la hoja llena la pantalla. */
-  const POR_PAG=12;
+     CUATRO POR CUATRO, y lo mandó él: "pon el sistema de visualización viejo, en el
+     sentido de hacer filas de 4x4 en la colección". Estuvo a tres columnas por lo
+     contrario —con cuatro el ancho se agota antes que el alto, la carta se queda en unos
+     92 px y sobra hueco por debajo—, pero eso ya no molesta: la rejilla dejó de estirarse
+     para llenar la pantalla y ocupa lo que ocupa. Dieciséis por hoja en vez de doce. */
+  const POR_PAG=16;
   const pags=Math.max(1, Math.ceil(l.length/POR_PAG));
   if(tmp.pag===undefined) tmp.pag=0;
   tmp.pag=Math.max(0, Math.min(tmp.pag, pags-1));
@@ -3370,15 +3514,22 @@ function vColeccion(){
   return `${cabecera('Colección','data-nav="club"',
       `<span class="sub">${distintas} de ${total} distintas · ${S.coleccion.length} en total</span>`)}
     <div class="bar mb"><div style="width:${distintas/total*100}%"></div></div>
+    ${filtrosHTML()}
     ${l.length?`
-      <div class="grid fit" style="--cols:3" data-fit="3,4">${hoja.map(o=>
+      <div class="grid fit" style="--cols:4" data-fit="4,4">${hoja.map(o=>
         cartaHTML(o.c,{attr:`data-carta="${o.x.iid}"`})).join('')}</div>
       <div class="album-nav">
         <button class="btn gho sm" data-a="pag" data-v="-1" ${tmp.pag?'':'disabled'}>‹</button>
         <span class="pag">HOJA ${tmp.pag+1} DE ${pags}</span>
         <button class="btn gho sm" data-a="pag" data-v="1" ${tmp.pag<pags-1?'':'disabled'}>›</button>
       </div>`
-      :'<div class="card-panel sub">Todavía no tienes ninguna carta. Abre un sobre.</div>'}`;
+      :(filtrosPuestos()
+        /* NO ES LO MISMO no tener cartas que tenerlas y que el filtro no deje pasar
+           ninguna. Con el mismo cartel, quien filtra por un peso que no tiene cree que ha
+           perdido la colección. */
+        ? `<div class="card-panel sub">Ninguna de tus ${todas} cartas cumple ese filtro.
+           <button class="btn gho sm" data-a="limpiarfiltros" style="margin-top:10px">Quitar los filtros</button></div>`
+        : '<div class="card-panel sub">Todavía no tienes ninguna carta. Abre un sobre.</div>')}`;
 }
 
 function detalleCarta(iid){
@@ -3447,7 +3598,7 @@ function vReciclaje(){
   const {fichas,detalle}=cuentaReciclaje(sel);
   // Por páginas, igual que la colección: los repetidos se cuentan por decenas y una
   // lista que hay que recorrer con el dedo no deja ver lo que estás triturando.
-  const POR_PAG=12;
+  const POR_PAG=16;                 // 4x4, igual que la colección
   const pags=Math.max(1, Math.ceil(lista.length/POR_PAG));
   if(tmp.pag===undefined) tmp.pag=0;
   tmp.pag=Math.max(0, Math.min(tmp.pag, pags-1));
@@ -3471,7 +3622,7 @@ function vReciclaje(){
       </div>
     </div>
     ${hoja.length?`
-      <div class="grid fit" style="--cols:4" data-fit="4,3">${hoja.map(o=>cartaHTML(o.c,{
+      <div class="grid fit" style="--cols:4" data-fit="4,4">${hoja.map(o=>cartaHTML(o.c,{
         attr:`data-rec="${o.x.iid}"`,sel:sel.includes(o.x.iid),
         copias:S.coleccion.filter(y=>y.cid===o.x.cid).length})).join('')}</div>
       ${pags>1?`<div class="album-nav">
@@ -3518,13 +3669,26 @@ function vRetos(){
   const ok=r.check(cartas);
   const enPlantilla=new Set(Object.values(S.plantilla));
   const disp=S.coleccion.filter(x=>!enPlantilla.has(x.iid));
+  /* POR HOJAS, COMO EL ÁLBUM. Aquí se listaba la colección ENTERA de una vez: con 130
+     cartas eran 7.000 px de scroll y elegir tres se volvía una excursión. Mismo tamaño de
+     hoja y mismo pasador que la colección. */
+  const POR_PAG=16;
+  const pags=Math.max(1, Math.ceil(disp.length/POR_PAG));
+  if(tmp.pag===undefined) tmp.pag=0;
+  tmp.pag=Math.max(0, Math.min(tmp.pag, pags-1));
+  const hoja=disp.slice(tmp.pag*POR_PAG, (tmp.pag+1)*POR_PAG);
   return `${cabecera(r.n,'data-nav="retosdetalle" data-a="salirreto"')}
     <div class="sub mb">${r.d}</div>
     <div class="card-panel"><div class="row" style="align-items:center">
       <div style="flex:2"><b>${sel.length} entregadas</b><div class="sub">${ok?'Requisitos cumplidos':'Aún no cumple'}</div></div>
       <button class="btn sm" data-a="entregarreto" ${ok?'':'disabled'}>Entregar</button></div></div>
-    <div class="grid">${disp.map(x=>cartaHTML(PORID[x.cid],{attr:`data-rec="${x.iid}"`,sel:sel.includes(x.iid)})).join('')}</div>
-    `;
+    <div class="grid" style="--cols:4" data-fit="4,4">${hoja.map(x=>
+      cartaHTML(PORID[x.cid],{attr:`data-rec="${x.iid}"`,sel:sel.includes(x.iid)})).join('')}</div>
+    ${pags>1?`<div class="album-nav">
+      <button class="btn gho sm" data-a="pag" data-v="-1" ${tmp.pag?'':'disabled'}>‹</button>
+      <span class="pag">HOJA ${tmp.pag+1} DE ${pags}</span>
+      <button class="btn gho sm" data-a="pag" data-v="1" ${tmp.pag<pags-1?'':'disabled'}>›</button>
+    </div>`:''}`;
 }
 
 /* ── INTERCAMBIO ── */
@@ -3548,9 +3712,9 @@ function vIntercambio(){
   const disp=S.coleccion.filter(x=>!enPlantilla.has(x.iid)&&!x.notraspasable);
   return `<h2>Emparejado</h2><div class="sub mb">El otro jugador busca: ${s.deseos.map(d=>`<span class="chip">${esc(d)}</span>`).join(' ')}</div>
     <div class="card-panel"><h3>Lo que ofrece (elige hasta 3)</h3>
-      <div class="grid">${s.oferta.map((c,i)=>cartaHTML(c,{attr:`data-pido="${i}"`,sel:suyas.includes(c)})).join('')}</div></div>
+      <div class="grid" style="--cols:3">${s.oferta.map((c,i)=>cartaHTML(c,{attr:`data-pido="${i}"`,sel:suyas.includes(c)})).join('')}</div></div>
     <div class="card-panel"><h3>Lo que das (hasta 3)</h3>
-      <div class="grid">${disp.slice(0,18).map(x=>cartaHTML(PORID[x.cid],{attr:`data-ofrezco="${x.iid}"`,sel:mias.includes(x.iid)})).join('')}</div></div>
+      <div class="grid" style="--cols:4" data-fit="4,2">${disp.slice(0,8).map(x=>cartaHTML(PORID[x.cid],{attr:`data-ofrezco="${x.iid}"`,sel:mias.includes(x.iid)})).join('')}</div></div>
     ${!legal?'<div class="card-panel" style="border-color:var(--warn)"><b>Trueque no permitido.</b><div class="sub">Hay más de una banda de rareza de diferencia entre las cartas del intercambio.</div></div>':''}
     <button class="btn" data-a="proponer" ${(legal&&mias.length&&suyas.length)?'':'disabled'}>Proponer trueque</button>
     <div class="tiny center" style="margin-top:6px">${legal&&mias.length&&suyas.length?(acepta?'Parece que le puede interesar.':'Probablemente lo rechace.'):''}</div>
@@ -4011,8 +4175,13 @@ function marcadorHTML(){
     <div class="tiny" style="margin-top:7px">Desempate: <b>${DIV[P.vetoAzar].n}</b></div>
   </div>`;
 }
+/* EL REGISTRO VA EN CAJA, y ése era el scroll de las partidas. Son hasta catorce líneas
+   de 26 px que se van sumando según avanza el combate: al sexto duelo empujaban el botón
+   de rendirse 118 px por debajo del borde y la pantalla entera se iba con ellos. Ahora
+   tiene tope y se desplaza por dentro, como el chat de la partida en directo, así que la
+   PÁGINA no se mueve. Lo mandó él: "quita ese scroll en todos lados". */
 function logHTML(){
-  return P.log.slice(-14).reverse().map(l=>{
+  const filas=P.log.slice(-14).reverse().map(l=>{
     if(l.t==='sys') return `<div class="log">${esc(l.x)}</div>`;
     const gan=l.ganador==='j';
     const m=(l.margen!==undefined)?l.margen:Math.abs(l.vj-l.vr);
@@ -4023,6 +4192,7 @@ function logHTML(){
       <b>${DIV[l.div].n} · ${l.stat.toUpperCase()}</b> — ${esc(l.nj)} <b>${l.vj}</b> vs <b>${l.vr}</b> ${esc(l.nr)}<br>
       ${gan?'Ganas':'Pierdes'} por <b>${l.tipo}</b>${detalle}</div>`;
   }).join('');
+  return filas?`<div class="logbox">${filas}</div>`:'';
 }
 
 /* La revelación se cuela por delante de todo: después de cada duelo hay que verlo y
@@ -4116,7 +4286,7 @@ function pVetos(){
     <div class="card-panel"><div class="tiny mb">VETADAS</div>
       <div class="chips">${P.vetados.length?P.vetados.map(id=>`<span class="chip dead">${DIV[id].n}</span>`).join(''):'<span class="sub">ninguna todavía</span>'}</div></div>
     <div class="sub mb"><b>${turnoJ?'Te toca vetar.':'Veta el rival…'}</b> Van ${P.vetados.length} de 4.</div>
-    <div class="grid g3">${libres.map(d=>{
+    <div class="grid g3" data-fit="3,${Math.ceil(libres.length/3)}" data-pie="20">${libres.map(d=>{
       const c=P.cartas.j[d.id];
       return `<div ${turnoJ?`data-veto="${d.id}"`:''} style="${turnoJ?'':'opacity:.5'}">
         ${cartaHTML(c,{attr:turnoJ?`data-veto="${d.id}"`:''})}
@@ -4125,7 +4295,12 @@ function pVetos(){
 }
 
 /* ── DECLARAR: se elige tocando la carta, y luego la stat sobre la propia carta ──
-   Nada de etiquetas de filtro: primero eliges peleador, después con qué pelea. */
+   Nada de etiquetas de filtro: primero eliges peleador, después con qué pelea.
+
+   LAS FILAS SE CUENTAN, NO SE FIJAN. En la partida el número de cartas BAJA con cada duelo
+   —de once a una—, así que pedir cuatro filas siempre repartía el hueco entre cuatro
+   cuando sólo hacían falta dos, y las cartas salían a 38 px. En el álbum sí van fijas, que
+   ahí lo que se quiere es que la carta mida lo mismo en todas las hojas. */
 function cartaElegible(divId,sel){
   const c=P.cartas.j[divId], aj=P.ajustes.j[divId]||{};
   return `<div data-dsel="${divId}">
@@ -4158,7 +4333,7 @@ function pDuelos(){
   if(!d) return marcadorHTML()+
     `<div class="card-panel"><h3>¿Quién pelea?</h3>
       <div class="sub mb">Toca al peleador que quieras mandar a este duelo.</div>
-      <div class="grid g3">${libres.map(id=>cartaElegible(id,false)).join('')}</div>
+      <div class="grid g3" data-fit="3,${Math.ceil(libres.length/3)}" data-pie="20">${libres.map(id=>cartaElegible(id,false)).join('')}</div>
     </div>${logHTML()}
     ${botonRendirse()}`;
 
@@ -4577,6 +4752,18 @@ function avisoCuenta(titulo,txt){
 }
 function cerrarOv(){ const o=$('#ov'); if(o) o.remove(); }
 
+/* UN DESPLEGABLE NO SE PULSA, CAMBIA. El reparto de toques de todo el juego va por
+   'click', y un <select> no da un click útil: da un 'change' cuando se elige. Va por su
+   propio delegado, en el documento, igual que el otro.
+
+   Y VUELVE A LA PRIMERA HOJA. Sin eso, filtrando desde la hoja 4 te quedas en una página
+   que ya no existe y la colección se ve vacía —el álbum recorta a la última, pero por el
+   camino se ve el salto—. */
+document.addEventListener('change',e=>{
+  const t=e.target.closest('[data-f]'); if(!t) return;
+  tmp[t.dataset.f]=t.value; tmp.pag=0; render();
+});
+
 document.addEventListener('click',e=>{
   const t=e.target.closest('[data-nav],[data-a],[data-carta],[data-slot],[data-poner],[data-rec],[data-rol],[data-veto],[data-dsel],[data-ssel],[data-cambio],[data-camaleon],[data-incomodo],[data-especialista],[data-eleccion],[data-pido],[data-ofrezco],[data-vetstat]');
   if(!t) return;
@@ -4910,6 +5097,8 @@ document.addEventListener('click',e=>{
       break; }
     case 'pag':                          // pasar hoja del álbum de la colección
       tmp.pag=(tmp.pag||0)+Number(d.v); window.scrollTo(0,0); render(); break;
+    case 'limpiarfiltros':
+      tmp.fTipo=tmp.fAtr=tmp.fPeso=''; tmp.pag=0; render(); break;
 
     case 'pasarcarta':                   // el montón: voltear y pasar al fondo
       toqueApertura(); break;

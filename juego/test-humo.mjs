@@ -32,7 +32,8 @@ const fs = await import('fs');
    comprobar nada. */
 const MINIMO_MOVIL = '--blink-settings=minimumFontSize=8,minimumLogicalFontSize=8';
 const lanzar = { args: [MINIMO_MOVIL], ...(fs.existsSync(exe) ? { executablePath: exe } : {}) };
-const page = await (await chromium.launch(lanzar)).newPage();
+const navegador = await chromium.launch(lanzar);
+const page = await navegador.newPage();
 page.on('pageerror', e => errores.push(String(e)));
 page.on('console', m => { if (m.type() === 'error') errores.push('console: ' + m.text()); });
 
@@ -1582,6 +1583,208 @@ comprobar(sug.corta.dice && sug.corta.conserva && sug.corta.sigue === 'sugerenci
   'un texto de tres letras no se manda, se dice, y no se borra lo escrito');
 comprobar(/servidor/i.test(sug.sinServidor),
   `sin servidor se explica en vez de reventar ("${sug.sinServidor}")`);
+
+/* ── 2n. Los SBC en el idioma del ranking, los filtros y la rejilla ──────────────────
+   "hay que cambiar toda la parte de SBC, ya que sigue pidiendo oros y demás y ya no
+   existen oro, platas, etc. También hay que meter un filtro... por tipo de carta, por
+   atributo y por peso, todas mediante un desplegable individual". */
+console.log('\n2n. SBC sin oros, los tres filtros y la rejilla del álbum');
+
+const sbc = await page.evaluate(() => {
+  const r = {};
+  // Ni un "oro" ni una "plata" en lo que pide un reto.
+  r.textos = RETOS.map(x => x.d);
+  r.hablaDeMetales = RETOS.some(x => /\b(oro|oros|plata|platas|bronce)\b/i.test(x.d));
+  // Y los cheques miran el RANKING, que es lo que la carta enseña (#C, #11, #NR).
+  const conRk = n => ROSTER.filter(c => c.rk === n);
+  const sinRk = ROSTER.filter(c => c.rk === null);
+  const de = (l, n) => { // n cartas de divisiones distintas
+    const out = [], vistas = new Set();
+    for (const c of l) if (!vistas.has(c.division)) { vistas.add(c.division); out.push(c); if (out.length === n) break; }
+    return out;
+  };
+  const R = id => RETOS.find(x => x.id === id);
+  r.r1 = { ok: R('r1').check(de(sinRk, 3)), noRankeados: !R('r1').check(de(ROSTER.filter(c => c.rk === 0), 3)) };
+  const rankeados = ROSTER.filter(c => c.rk !== null);
+  r.r2 = { ok: R('r2').check(de(rankeados, 2)), noSinRank: !R('r2').check(de(sinRk, 2)) };
+  r.r3 = { ok: R('r3').check(de(rankeados, 4)), mismaDiv: !R('r3').check(rankeados.filter(c => c.division === 'm3').slice(0, 4)) };
+
+  /* LA TRAMPA DEL null OTRA VEZ: `null >= 0` es TRUE en JavaScript, así que un `c.rk>=0`
+     daría por rankeado a quien no lo está. Se comprueba con las cartas de verdad. */
+  r.null = { sinRankingCuenta: sinRk.length, ningunoRankeado: sinRk.every(c => !rankeado(c)),
+             campeonEsRankeado: conRk(0).every(c => rankeado(c)) };
+  // Los premios existen y ninguno es un sobre que no se pueda abrir.
+  r.premios = RETOS.every(x => TIPOS_SOBRE[x.premio.sobre] && !TIPOS_SOBRE[x.premio.sobre].pronto);
+  return r;
+});
+comprobar(!sbc.hablaDeMetales,
+  `ningún SBC pide ya oros ni platas (${sbc.textos.length} retos revisados)`);
+comprobar(sbc.r1.ok && sbc.r1.noRankeados, 'Cantera pide sin ranking, y no le valen campeones');
+comprobar(sbc.r2.ok && sbc.r2.noSinRank, 'Base sólida pide rankeados, y no le valen los que no lo están');
+comprobar(sbc.r3.ok && sbc.r3.mismaDiv, 'Cartel completo pide 4 rankeados de 4 divisiones distintas');
+comprobar(sbc.null.ningunoRankeado && sbc.null.campeonEsRankeado,
+  `y el null no cuela: los ${sbc.null.sinRankingCuenta} sin ranking no cuentan como rankeados`);
+comprobar(sbc.premios, 'y todos los premios son sobres que se pueden abrir de verdad');
+
+/* LOS TRES DESPLEGABLES. "nada de muchos botones seleccionables": tres <select>, no chips. */
+const filtro = await page.evaluate(() => {
+  const r = {};
+  /* Se AÑADE a la colección de arranque, no se sustituye: la de arranque trae una carta
+     por división y sin ella la plantilla se queda coja, JUGAR sale apagado y la sección de
+     partidas se queda esperando un botón que nunca se enciende. */
+  S.coleccion = [...S.coleccion,
+    ...shuffle(ROSTER.slice()).slice(0, 90).map((c, i) => ({ iid: 'x' + i, cid: c.id }))];
+  autoPlantilla(S, true); guardar(); ir('coleccion');
+  const sel = [...document.querySelectorAll('.filtros select')];
+  r.cuantos = sel.length;
+  r.campos = sel.map(s => s.dataset.f);
+  r.sonDesplegables = sel.every(s => s.tagName === 'SELECT');
+  // ninguna fila de chips: eso es lo que se quitó y lo que él no quiere
+  r.sinChips = document.querySelectorAll('#app .chip').length;
+  // la primera opción de cada uno apaga el filtro
+  r.primeraVacia = sel.every(s => s.options[0].value === '');
+  r.opciones = { tipo: sel[0].options.length, atr: sel[1].options.length, peso: sel[2].options.length };
+
+  const cuenta = () => document.querySelectorAll('.grid.fit .carta').length;
+  const total = S.coleccion.length;
+  // por peso
+  tmp.fPeso = 'm3'; tmp.pag = 0; render();
+  r.peso = [...document.querySelectorAll('.grid.fit .carta')].length &&
+    filtrarCartas(S.coleccion.map(x => ({ c: PORID[x.cid] })), o => o.c).every(o => o.c.division === 'm3');
+  // por tipo, encima del peso: se acumulan
+  tmp.fTipo = 'corona'; render();
+  r.acumulan = filtrarCartas(S.coleccion.map(x => ({ c: PORID[x.cid] })), o => o.c)
+    .every(o => o.c.division === 'm3' && (o.c.rk === 0 || o.c.rk <= 5));
+  // por atributo: "sin atributo" es una búsqueda de verdad
+  tmp.fTipo = ''; tmp.fPeso = ''; tmp.fAtr = 'sin'; render();
+  const soloSin = filtrarCartas(S.coleccion.map(x => ({ c: PORID[x.cid] })), o => o.c);
+  r.sinAtributo = soloSin.length > 0 && soloSin.every(o => !o.c.rasgos.length);
+  tmp.fAtr = 'camaleon'; render();
+  const conCam = filtrarCartas(S.coleccion.map(x => ({ c: PORID[x.cid] })), o => o.c);
+  r.conAtributo = conCam.every(o => o.c.rasgos.some(x => x.tipo === 'camaleon'));
+
+  // Filtrar desde la hoja 4 vuelve a la primera, o te quedas en una página que ya no existe.
+  tmp.fAtr = ''; tmp.pag = 3; render();
+  document.querySelector('[data-f="fPeso"]').value = 'm3';
+  document.querySelector('[data-f="fPeso"]').dispatchEvent(new Event('change', { bubbles: true }));
+  r.vuelveAHoja1 = tmp.pag === 0;
+
+  /* Un filtro que no deja pasar nada NO se dice igual que no tener cartas. El vacío se
+     construye a propósito y no a base de combinar filtros raros: con una colección al
+     azar, "peso mosca + campeón + camaleón" unas veces sale vacía y otras no, y una
+     prueba que depende de la suerte no prueba nada. Se deja UNA carta de una división y
+     se filtra por otra. */
+  const guardada = S.coleccion;
+  const unaDe = ROSTER.find(c => c.division === 'm3');
+  S.coleccion = [{ iid: 'solo1', cid: unaDe.id }];
+  tmp.fPeso = 'f1'; tmp.fTipo = ''; tmp.fAtr = ''; tmp.pag = 0; render();
+  const t = document.querySelector('#app').textContent;
+  r.vacio = { dice: /cumple ese filtro/i.test(t), noDiceQueNoTienes: !/no tienes ninguna carta/i.test(t),
+    hayBoton: !!document.querySelector('[data-a="limpiarfiltros"]') };
+  document.querySelector('[data-a="limpiarfiltros"]').click();
+  S.coleccion = guardada; render();
+  r.limpio = { puestos: filtrosPuestos(), cartas: cuenta() };
+  return r;
+});
+comprobar(filtro.cuantos === 3 && filtro.sonDesplegables && filtro.campos.join(',') === 'fTipo,fAtr,fPeso',
+  `tres desplegables y ni un chip: tipo, atributo y peso (${filtro.campos.join(', ')})`);
+comprobar(filtro.sinChips === 0, 'nada de botones seleccionables en la colección');
+comprobar(filtro.primeraVacia,
+  `cada uno se puede apagar desde su primera opción (${filtro.opciones.tipo}/${filtro.opciones.atr}/${filtro.opciones.peso} opciones)`);
+comprobar(filtro.peso && filtro.acumulan, 'filtran por separado y se acumulan entre ellos');
+comprobar(filtro.sinAtributo && filtro.conAtributo,
+  '"Sin atributo" es una búsqueda de verdad, no la ausencia de filtro');
+comprobar(filtro.vuelveAHoja1, 'cambiar un filtro vuelve a la primera hoja del álbum');
+comprobar(filtro.vacio.dice && filtro.vacio.noDiceQueNoTienes && filtro.vacio.hayBoton,
+  'un filtro que no deja pasar nada lo dice, y no como si no tuvieras cartas');
+comprobar(!filtro.limpio.puestos && filtro.limpio.cartas === 16,
+  `y se pueden quitar de un toque (${filtro.limpio.cartas} cartas de vuelta, 4x4)`);
+
+/* LA REJILLA DE CARTAS. Esta comprobación es la que faltaba: `.grid` no tenía NI UNA regla
+   de CSS —el álbum salía a una carta por fila y 5.500 px de scroll— y nadie se enteró,
+   porque la suite miraba el estado y no la forma. Aquí se mide la pantalla.
+
+   Y SE MIDE EN UNA PÁGINA DE TAMAÑO DE MÓVIL. La de la suite se abre con el viewport que
+   le dé la gana a Chromium —1280x720, un escritorio—, y ahí sobra alto por todos lados:
+   preguntar si algo se sale de la pantalla en un escritorio no dice NADA de lo que pasa en
+   un móvil. 390x844 es el iPhone de referencia, el mismo con el que se sacan las fotos. */
+const movil = await navegador.newPage({ viewport: { width: 390, height: 844 } });
+const erroresMovil = [];
+movil.on('pageerror', e => erroresMovil.push(String(e)));
+await movil.goto(URL_JUEGO);
+await movil.waitForFunction(() => typeof window.ROSTER !== 'undefined');
+await movil.waitForTimeout(300);
+const rejilla = await movil.evaluate(() => {
+  S.coleccion = [...S.coleccion,
+    ...shuffle(ROSTER.slice()).slice(0, 90).map((c, i) => ({ iid: 'x' + i, cid: c.id }))];
+  tmp = {}; guardar(); ir('coleccion');
+  const g = document.querySelector('.grid.fit');
+  const cs = [...document.querySelectorAll('.grid.fit .carta')];
+  const filas = new Set(cs.map(c => Math.round(c.getBoundingClientRect().top))).size;
+  const cols = new Set(cs.map(c => Math.round(c.getBoundingClientRect().left))).size;
+  const r = { cols, filas, cartas: cs.length,
+    ancho: Math.round(cs[0].getBoundingClientRect().width),
+    desborda: document.documentElement.scrollHeight - innerHeight,
+    lleno: g.classList.contains('lleno') };
+  /* Filtrada se concentra arriba: dos filas empujadas a los extremos dejaban media
+     pantalla de agujero en medio, y lo cazó él. */
+  tmp.fPeso = 'm3'; tmp.pag = 0; render();
+  const fs = [...document.querySelectorAll('.grid.fit .carta')];
+  r.filtradaFilas = new Set(fs.map(c => Math.round(c.getBoundingClientRect().top))).size;
+  r.filtradaCartas = fs.length;
+  r.filtradaDesborda = document.documentElement.scrollHeight - innerHeight;
+  // Concentradas = ni una fila más de las que hacen falta para las cartas que quedan.
+  r.concentrada = r.filtradaFilas === Math.ceil(fs.length / 4);
+  return r;
+});
+comprobar(rejilla.cols === 4 && rejilla.filas === 4 && rejilla.cartas === 16,
+  `el álbum es 4 columnas por 4 filas, como lo pidió (${rejilla.cols}x${rejilla.filas}, ${rejilla.cartas} cartas)`);
+comprobar(rejilla.desborda <= 0,
+  `y llena la pantalla sin desplazarse (desborda ${rejilla.desborda}px)`);
+comprobar(rejilla.ancho >= 80,
+  `con las cartas a un tamaño que se lee (${rejilla.ancho}px de ancho)`);
+comprobar(rejilla.concentrada && rejilla.filtradaDesborda <= 0,
+  `y filtrada se concentra arriba, sin hueco en medio (${rejilla.filtradaCartas} cartas en ${rejilla.filtradaFilas} filas)`);
+
+/* NINGUNA PANTALLA DE CARTAS SE DESPLAZA. "QUITA ESE SCROLL EN TODOS LADOS". Esta es la
+   comprobación que faltaba y que habría cazado que `.grid` no tenía CSS.
+
+   VA EN SU PROPIA PÁGINA, Y DE TAMAÑO DE MÓVIL. La página de la suite se abre con el
+   viewport que le dé la gana a Chromium —1280x720, o sea un escritorio—, y medir si algo
+   se sale de la pantalla en un escritorio no dice NADA de lo que pasa en un móvil: ahí
+   sobra alto por todos lados. 390x844 es el iPhone de referencia, el mismo con el que se
+   sacan las fotos de las pantallas. */
+const scroll = await movil.evaluate(async () => {
+  const out = {};
+  /* Se AÑADE a la colección de arranque en vez de sustituirla: la de arranque trae una
+     carta por división, y sin ella la plantilla se queda incompleta, empezarPartida() se
+     sale sin hacer nada y la partida que se iba a medir no existe. */
+  const extra = shuffle(ROSTER.slice()).slice(0, 90).map((c, i) => ({ iid: 'x' + i, cid: c.id }));
+  S.coleccion = [...S.coleccion, ...extra, ...extra.slice(0, 40).map((x, i) => ({ iid: 'r' + i, cid: x.cid }))];
+  autoPlantilla(S, true); S.fichas = 5; guardar();
+  const desborda = () => document.documentElement.scrollHeight - innerHeight;
+  for (const v of ['coleccion', 'reciclaje', 'plantilla']) { tmp = {}; ir(v); out[v] = desborda(); }
+  tmp = {}; ir('retosdetalle'); tmp.reto = 'r1'; render(); out.sbc = desborda();
+  out.plantillaCompleta = plantillaCompleta();
+  empezarPartida(null); elegirRol('atacar'); render(); out.vetos = desborda();
+  while (P && P.fase === 'vetos') { const l = DIVISIONES.map(x => x.id).filter(x => !P.vetados.includes(x)); vetar(l[0]); }
+  render(); out.duelos = desborda();
+  // y con el combate avanzado, que es cuando el registro crecía y lo empujaba todo
+  for (let i = 0; i < 4 && P && P.fase === 'duelos'; i++) {
+    const l = librePara(P, 'j'); if (!l.length) break;
+    try { enviarAlDuelo(P, 'j', l[0], P.statsVivas[0]); } catch (e) {}
+  }
+  render(); out.duelosAvanzada = desborda();
+  return out;
+});
+comprobar(scroll.plantillaCompleta, 'la partida de prueba arranca con las 11 divisiones puestas');
+for (const [pantalla, px] of Object.entries(scroll)) {
+  if (pantalla === 'plantillaCompleta') continue;
+  comprobar(px <= 2, `${pantalla} no se desplaza en un móvil de 390x844 (${px}px)`);
+}
+comprobar(erroresMovil.length === 0,
+  `y ninguna de esas pantallas da un error (${erroresMovil.join(' | ') || 'ninguno'})`);
+await movil.close();
 
 /* ── 3. Partidas completas ────────────────────────────────────────────── */
 console.log(`\n3. ${N_PARTIDAS} partidas completas`);
