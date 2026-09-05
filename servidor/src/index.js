@@ -27,7 +27,7 @@ const codigoNuevo = () => Array.from({ length: 6 },
 const CORS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type',
+  'Access-Control-Allow-Headers': 'Content-Type,Authorization',
 };
 const json = (o, s = 200) =>
   new Response(JSON.stringify(o), { status: s, headers: { 'Content-Type': 'application/json', ...CORS } });
@@ -42,6 +42,13 @@ export default {
 
     if (ruta === '/sala' && req.method === 'POST') return json({ codigo: codigoNuevo() });
 
+    /* LAS CUENTAS VIVEN EN UN SOLO DURABLE OBJECT. Uno global, no uno por usuario: hace
+       falta un sitio donde el nombre y el correo sean únicos de verdad, y eso no se puede
+       comprobar si cada cuenta vive en su propio objeto sin hablar con los demás. Para una
+       alfa sobra de largo; el día que haya miles de cuentas se parte por letra inicial. */
+    if (ruta.startsWith('/cuenta/'))
+      return env.CUENTAS.get(env.CUENTAS.idFromName('global')).fetch(req);
+
     const m = ruta.match(/^\/sala\/([A-Za-z0-9]{4,12})$/);
     if (m) {
       const codigo = m[1].toUpperCase();
@@ -50,6 +57,156 @@ export default {
     return json({ error: 'ruta desconocida' }, 404);
   },
 };
+
+/* ── LAS CUENTAS ──────────────────────────────────────────────────────────────
+   Correo, contraseña y nombre de usuario. Lo pidió así el dueño, y Google queda para más
+   adelante porque su login no funciona dentro de un WebView y hace falta el nativo.
+
+   LA CONTRASEÑA NO SE GUARDA NUNCA. Se guarda PBKDF2-SHA256 con 150.000 vueltas y una sal
+   de 16 bytes distinta para cada cuenta. Con la sal por cuenta, dos personas con la misma
+   contraseña tienen hashes distintos, y las 150.000 vueltas hacen que probar contraseñas a
+   lo bruto cueste tiempo de verdad. Todo con WebCrypto, que el Worker ya trae dentro.
+
+   Y LA COMPARACIÓN ES EN TIEMPO CONSTANTE. Comparar dos hashes con === se sale en el
+   primer byte distinto, y de cuánto tarda en salirse se puede deducir el hash a base de
+   intentos. Se comparan los 32 bytes siempre.
+
+   La sesión es un token aleatorio de 32 bytes. No caduca: para una alfa, obligar a volver
+   a entrar cada equis días es molestia sin ganancia.
+
+   PENDIENTE Y DICHO: no hay límite de intentos ni de registros por minuto. Un endpoint
+   público de registro sin freno se puede llenar de cuentas basura. Para la alfa vale;
+   antes de abrirlo a gente hay que ponerle un freno. */
+
+const enc = new TextEncoder();
+const aHex = b => [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, '0')).join('');
+const deHex = h => new Uint8Array(h.match(/../g).map(x => parseInt(x, 16)));
+
+async function amasar(clave, salHex) {
+  const base = await crypto.subtle.importKey('raw', enc.encode(clave), 'PBKDF2', false, ['deriveBits']);
+  const bits = await crypto.subtle.deriveBits(
+    { name: 'PBKDF2', salt: deHex(salHex), iterations: 150000, hash: 'SHA-256' }, base, 256);
+  return aHex(bits);
+}
+// Dos cadenas de la misma longitud, mirándolas enteras siempre.
+function igualExacto(a, b) {
+  if (typeof a !== 'string' || typeof b !== 'string' || a.length !== b.length) return false;
+  let d = 0;
+  for (let i = 0; i < a.length; i++) d |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return d === 0;
+}
+const azarHex = n => aHex(crypto.getRandomValues(new Uint8Array(n)));
+
+/* Qué vale como nombre, correo y contraseña. Se comprueba AQUÍ y no sólo en el móvil: lo
+   que valida el cliente es una comodidad, no una defensa —cualquiera puede llamar al
+   servidor a mano—. */
+const USUARIO_OK = /^[A-Za-z0-9_.-]{3,16}$/;
+const CORREO_OK  = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+function revisarAlta({ usuario, correo, clave }) {
+  if (!USUARIO_OK.test(usuario || ''))
+    return 'El nombre de usuario va de 3 a 16 caracteres, con letras, números, punto, guion o guion bajo.';
+  if (!CORREO_OK.test(correo || '')) return 'Ese correo no tiene buena pinta.';
+  if (typeof clave !== 'string' || clave.length < 8) return 'La contraseña necesita 8 caracteres o más.';
+  return null;
+}
+
+export class Cuentas {
+  constructor(ctx, env) { this.ctx = ctx; }
+
+  async fetch(req) {
+    const url = new URL(req.url);
+    const ruta = url.pathname.replace(/\/+$/, '');
+    try {
+      if (ruta === '/cuenta/registro' && req.method === 'POST') return await this.registro(req);
+      if (ruta === '/cuenta/entrar'   && req.method === 'POST') return await this.entrar(req);
+      if (ruta === '/cuenta/subir'    && req.method === 'POST') return await this.subir(req);
+      if (ruta === '/cuenta/bajar'    && req.method === 'GET')  return await this.bajar(req);
+      return json({ error: 'ruta desconocida' }, 404);
+    } catch (e) {
+      return json({ error: String(e && e.message || e) }, 500);
+    }
+  }
+
+  // El usuario y el correo se guardan tal cual se escribieron, pero se COMPARAN en
+  // minúsculas: "Diego" y "diego" no pueden ser dos cuentas distintas.
+  claveUsuario(u) { return 'usuario:' + String(u).toLowerCase(); }
+  claveCorreo(c)  { return 'correo:'  + String(c).toLowerCase(); }
+
+  async registro(req) {
+    const d = await req.json().catch(() => ({}));
+    const mal = revisarAlta(d);
+    if (mal) return json({ error: mal }, 400);
+
+    if (await this.ctx.storage.get(this.claveUsuario(d.usuario)))
+      return json({ error: 'Ese nombre de usuario ya está cogido.' }, 409);
+    if (await this.ctx.storage.get(this.claveCorreo(d.correo)))
+      return json({ error: 'Ya hay una cuenta con ese correo.' }, 409);
+
+    const sal = azarHex(16);
+    const cuenta = { usuario: d.usuario, correo: d.correo, sal,
+      hash: await amasar(d.clave, sal), creada: Date.now() };
+    const token = azarHex(32);
+    const uid = String(d.usuario).toLowerCase();
+
+    await this.ctx.storage.put({
+      [this.claveUsuario(d.usuario)]: cuenta,
+      [this.claveCorreo(d.correo)]: uid,
+      ['sesion:' + token]: uid,
+    });
+    /* AL CREAR LA CUENTA SE SUBE LO QUE YA TIENE, y lo decidió él: "cuando se crea una
+       cuenta sube lo que tiene". Nadie pierde su colección por registrarse. */
+    if (d.estado) await this.ctx.storage.put('estado:' + uid, d.estado);
+    return json({ token, cuenta: { usuario: cuenta.usuario, correo: cuenta.correo } });
+  }
+
+  async entrar(req) {
+    const d = await req.json().catch(() => ({}));
+    const quien = String(d.quien || '').trim();
+    // Se puede entrar con el nombre o con el correo: quien vuelve al mes no se acuerda
+    // de con cuál se registró, y obligarle a acertar no protege nada.
+    let clave = this.claveUsuario(quien);
+    let cuenta = await this.ctx.storage.get(clave);
+    if (!cuenta) {
+      const uid = await this.ctx.storage.get(this.claveCorreo(quien));
+      if (uid) cuenta = await this.ctx.storage.get('usuario:' + uid);
+    }
+    /* EL MISMO ERROR SI NO EXISTE LA CUENTA Y SI LA CONTRASEÑA ESTÁ MAL. Decir "ese
+       usuario no existe" es decirle a cualquiera qué correos están registrados. */
+    const malo = () => json({ error: 'El usuario o la contraseña no son correctos.' }, 401);
+    if (!cuenta) { await amasar(String(d.clave || ''), azarHex(16)); return malo(); }
+    if (!igualExacto(await amasar(String(d.clave || ''), cuenta.sal), cuenta.hash)) return malo();
+
+    const token = azarHex(32);
+    const uid = String(cuenta.usuario).toLowerCase();
+    await this.ctx.storage.put('sesion:' + token, uid);
+    const estado = await this.ctx.storage.get('estado:' + uid);
+    return json({ token, cuenta: { usuario: cuenta.usuario, correo: cuenta.correo }, estado: estado || null });
+  }
+
+  async quienEs(req) {
+    const cab = req.headers.get('Authorization') || '';
+    const token = cab.startsWith('Bearer ') ? cab.slice(7) : '';
+    if (!token) return null;
+    return (await this.ctx.storage.get('sesion:' + token)) || null;
+  }
+
+  async subir(req) {
+    const uid = await this.quienEs(req);
+    if (!uid) return json({ error: 'sesión no válida' }, 401);
+    const d = await req.json().catch(() => ({}));
+    if (!d || !d.estado) return json({ error: 'no viene estado' }, 400);
+    await this.ctx.storage.put('estado:' + uid, d.estado);
+    return json({ ok: true });
+  }
+
+  async bajar(req) {
+    const uid = await this.quienEs(req);
+    if (!uid) return json({ error: 'sesión no válida' }, 401);
+    const cuenta = await this.ctx.storage.get('usuario:' + uid);
+    return json({ estado: (await this.ctx.storage.get('estado:' + uid)) || null,
+      cuenta: cuenta ? { usuario: cuenta.usuario, correo: cuenta.correo } : null });
+  }
+}
 
 /* ── La sala ──────────────────────────────────────────────────────────────── */
 

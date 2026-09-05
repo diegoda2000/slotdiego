@@ -142,6 +142,53 @@ comprobar(A.errores.length === 0 && B.errores.length === 0,
   `el servidor no rechazó ninguna jugada legal (${[...A.errores, ...B.errores].join(' | ') || 'ninguna'})`);
 
 A.ws.close(); B.ws.close();
+
+/* ── Y LAS CUENTAS ─────────────────────────────────────────────────────────
+   Igual que la partida: que el despliegue termine en verde solo dice que el archivo se
+   subió. Esto crea una cuenta de verdad contra la dirección publicada, sube un estado,
+   sale y vuelve a entrar. Si esto falla, el APK no se publica.
+
+   La cuenta que crea es de usar y tirar —lleva la hora dentro del nombre—, así que cada
+   despliegue deja una. Son cuatro campos en un Durable Object; el día que estorben, se
+   les pone fecha de caducidad. */
+console.log('\nLas cuentas');
+const pideCuenta = async (ruta, { metodo = 'POST', cuerpo, token } = {}) => {
+  const r = await fetch(BASE + ruta, { method: metodo,
+    headers: { ...(cuerpo ? { 'Content-Type': 'application/json' } : {}),
+               ...(token ? { Authorization: 'Bearer ' + token } : {}) },
+    body: cuerpo ? JSON.stringify(cuerpo) : undefined });
+  return { estado: r.status, cuerpo: await r.json().catch(() => null) };
+};
+const quien = 'prueba' + Date.now().toString(36);
+const alta = await pideCuenta('/cuenta/registro', { cuerpo: {
+  usuario: quien, correo: quien + '@ejemplo.invalid', clave: 'contrasena-de-prueba',
+  estado: { partidas: 3, coleccion: [{ iid: 'i1', cid: 'ilia-topuria-m3' }] } } });
+comprobar(alta.estado === 200 && !!alta.cuerpo.token,
+  `se crea una cuenta y devuelve sesión (${alta.estado})`);
+
+if (alta.cuerpo && alta.cuerpo.token) {
+  // AL CREAR LA CUENTA SE SUBE LO QUE YA TIENE: eso lo decidió él, y aquí se comprueba.
+  const baja = await pideCuenta('/cuenta/bajar', { metodo: 'GET', token: alta.cuerpo.token });
+  comprobar(baja.estado === 200 && baja.cuerpo.estado && baja.cuerpo.estado.partidas === 3,
+    'lo que tenía el jugador se sube al crearla, y se baja igual');
+
+  const sube = await pideCuenta('/cuenta/subir',
+    { cuerpo: { estado: { partidas: 9, coleccion: [] } }, token: alta.cuerpo.token });
+  comprobar(sube.estado === 200, 'la colección se sube con la sesión puesta');
+
+  const vuelve = await pideCuenta('/cuenta/entrar',
+    { cuerpo: { quien: quien + '@EJEMPLO.invalid', clave: 'contrasena-de-prueba' } });
+  comprobar(vuelve.estado === 200 && vuelve.cuerpo.estado.partidas === 9,
+    'se vuelve a entrar con el correo, en otras mayúsculas, y baja lo último subido');
+
+  const mala = await pideCuenta('/cuenta/entrar',
+    { cuerpo: { quien, clave: 'no-es-esta' } });
+  comprobar(mala.estado === 401, `con la contraseña mala no se entra (${mala.estado})`);
+
+  const sinToken = await pideCuenta('/cuenta/subir', { cuerpo: { estado: {} } });
+  comprobar(sinToken.estado === 401, `y sin sesión no se sube nada (${sinToken.estado})`);
+}
+
 console.log(fallos === 0
   ? '\nEL SERVIDOR DESPLEGADO FUNCIONA\n'
   : `\n${fallos} COMPROBACIONES FALLIDAS\n`);

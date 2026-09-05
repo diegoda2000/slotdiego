@@ -145,6 +145,7 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 .btn.gho{background:transparent;border:1px solid var(--line);color:var(--dim)}
 .btn.sm{padding:7px 12px;font-size:13px;width:auto}
 .row{display:flex;gap:8px}
+.pulsable{cursor:pointer}
 .row>*{flex:1}
 .card-panel{background:var(--bg2);border:1px solid var(--line);border-radius:13px;padding:14px;margin-bottom:11px}
 
@@ -1092,6 +1093,13 @@ th{color:var(--dim2);font-size:11px;text-transform:uppercase;letter-spacing:.04e
 .pcab .volver{background:none;border:0;padding:0;margin:0 -1px 0 0;cursor:pointer;
   color:var(--acc);display:flex;align-items:center;align-self:center}
 .pcab .volver .ico{width:25px;height:25px;stroke-width:2.4}
+/* Los campos de una cuenta. El alto y el tamaño de letra no son a ojo: por debajo de
+   16 px, Safari y el WebView de iPhone HACEN ZOOM al enfocar un campo, y la pantalla se
+   queda descolocada al escribir. 16 px es el suelo. */
+.campo{width:100%;padding:11px 12px;border-radius:9px;background:var(--bg3);
+  border:1px solid var(--line);color:var(--txt);font:inherit;font-size:16px;margin-bottom:9px}
+.campo:focus{outline:none;border-color:var(--acc)}
+.campo::placeholder{color:var(--dim2)}
 .pcab .sub{font-size:11px}
 /* El TIENDA del boceto: grande y en cursiva, no el titulillo de una pantalla interior.
    Medido sobre el dibujo, 17 px de caja alta en un móvil de 273 de ancho. */
@@ -1153,6 +1161,12 @@ th{color:var(--dim2);font-size:11px;text-transform:uppercase;letter-spacing:.04e
    4. ESTADO DEL JUGADOR
    ══════════════════════════════════════════════════════════════════════════ */
 const KEY='jaula-abierta-v1';
+/* EL TOKEN DE LA SESIÓN VIVE APARTE, y no dentro de S. Dos motivos: S entero se SUBE al
+   servidor cuando hay cuenta, y mandarle al servidor la llave de la sesión que él mismo
+   nos dio no tiene ningún sentido; y así cerrar sesión es borrar una sola cosa. */
+const KEY_TOKEN='jaula-abierta-token';
+const leerToken=()=>{ try{ return localStorage.getItem(KEY_TOKEN)||'' }catch(e){ return '' } };
+const ponerToken=v=>{ try{ v?localStorage.setItem(KEY_TOKEN,v):localStorage.removeItem(KEY_TOKEN) }catch(e){} };
 let S=null;
 
 function estadoNuevo(){
@@ -1163,6 +1177,10 @@ function estadoNuevo(){
        Se guarda el `cid` de la carta y no la ruta de la foto: quien pelea en dos
        divisiones tiene una foto por división, y el cid las distingue. */
     avatar:'',
+    /* La cuenta: {usuario, correo} cuando se ha entrado, y '' cuando no. El juego entero
+       funciona sin ella —se puede jugar, coleccionar y abrir sobres sin registrarse—; lo
+       que da es que la colección no viva sólo en este móvil. */
+    cuenta:'',
     tutorialHecho:false,tutorCortado:false,mudo:false};
   /* Arranque garantizado: una plata por división. Sin repetir peleador — hay quien
      tiene carta de plata en dos divisiones, y si al sortear cae el mismo en las dos, una
@@ -1216,7 +1234,10 @@ function personaRepetida(s,cardInst,divId){
 // Si el navegador bloquea localStorage (origen opaco, modo privado), el juego sigue
 // funcionando en memoria durante la sesión en vez de reventar.
 let ALMACEN_OK=true;
-function guardar(){ try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){ALMACEN_OK=false} }
+function guardar(){
+  try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){ALMACEN_OK=false}
+  subirLuego();   // y si hay cuenta, a la nube; no en este guardado, en el último de la tanda
+}
 
 /* LOS SOBRES GUARDADOS SE TRADUCEN AL CARGAR. Los tipos basico/plata/oro dejaron de
    existir con los cinco del boceto, y un sobre guardado con un tipo que ya no está se
@@ -1738,6 +1759,71 @@ async function probarServidor(url){
     return {ok:false,txt:'No contesta. Comprueba que tienes conexión y vuelve a probar en un rato.'};
   }
 }
+/* ── LA CUENTA ─────────────────────────────────────────────────────────────────
+   Correo, contraseña y nombre de usuario, contra el Worker. Google queda para más
+   adelante: su inicio de sesión no funciona dentro de un WebView y hace falta el nativo
+   de Android.
+
+   EL JUEGO ENTERO FUNCIONA SIN CUENTA. Se puede jugar, coleccionar y abrir sobres sin
+   registrarse; lo que da la cuenta es que la colección no viva sólo en este móvil. Por eso
+   nada de esto bloquea ninguna pantalla ni sale al arrancar. */
+const hayCuenta=()=>!!(S&&S.cuenta&&S.cuenta.usuario);
+
+/* Nunca lanza: devuelve {error:'...'} o lo que conteste el servidor. Una llamada de red
+   que revienta dentro de un botón deja la pantalla a medias sin decir por qué. */
+async function apiCuenta(ruta,cuerpo){
+  const base=servidorURL();
+  if(!base) return {error:'No hay servidor. Ponlo en Ajustes avanzados, dentro de Jugar → Contra un amigo.'};
+  const cab={}, tk=leerToken();
+  if(tk) cab['Authorization']='Bearer '+tk;
+  if(cuerpo) cab['Content-Type']='application/json';
+  let r;
+  try{
+    r=await fetch(base+'/cuenta/'+ruta,{method:cuerpo?'POST':'GET',headers:cab,
+      body:cuerpo?JSON.stringify(cuerpo):undefined});
+  }catch(e){ return {error:'No hay conexión con el servidor. Prueba en un rato.'}; }
+  const j=await r.json().catch(()=>null);
+  if(!j) return {error:`El servidor ha contestado ${r.status} y no se entiende.`,codigo:r.status};
+  if(!r.ok) return {error:j.error||`Error ${r.status} del servidor.`,codigo:r.status};
+  return j;
+}
+
+/* LO QUE VIAJA ES EL ESTADO ENTERO MENOS LA DIRECCIÓN DEL SERVIDOR. Esa es de este móvil
+   —sirve para apuntar a uno de pruebas— y bajarla en otro le rompería el online. */
+const estadoParaSubir=()=>{ const c={...S}; delete c.servidor; return c; };
+
+/* Y al revés: lo bajado se monta SOBRE un estado nuevo, para que una partida guardada por
+   una versión vieja del juego llegue con los campos que le falten ya puestos. La dirección
+   del servidor de este móvil no se pisa. */
+function aplicarEstado(e){
+  const servidor=S.servidor;
+  S={...estadoNuevo(),...e,servidor};
+  guardar();
+}
+const resumenEstado=e=>`${(e&&e.coleccion||[]).length} cartas · ${(e&&e.partidas)||0} partidas`;
+// Nada más instalar no hay nada que perder: no se pregunta, se baja lo de la cuenta.
+const partidaVirgen=()=>S.partidas===0&&!S.tutorialHecho;
+
+/* La colección sube sola cuando cambia, pero NO en cada guardado: abrir un sobre guarda
+   varias veces seguidas. Se espera a que pare cuatro segundos y se sube una vez. */
+let subidaEnCola=null;
+function subirLuego(){
+  if(!hayCuenta()||!leerToken()) return;
+  clearTimeout(subidaEnCola);
+  subidaEnCola=setTimeout(async()=>{
+    const r=await apiCuenta('subir',{estado:estadoParaSubir()});
+    if(r.codigo===401) caducada();
+  },4000);
+}
+/* SI EL SERVIDOR YA NO CONOCE LA SESIÓN, se cierra aquí. Dejar la pantalla diciendo que
+   "se guarda sola en la nube" mientras el servidor rechaza cada subida es mentirle: la
+   colección de este móvil no se toca, pero deja de decir que está a salvo en ningún sitio.
+   Un fallo de red NO cuenta: sólo un 401, que es el servidor diciendo que no la conoce. */
+function caducada(){
+  ponerToken(''); S.cuenta=''; guardar();
+  if(vista==='cuenta'){ tmp.err='La sesión ha caducado. Vuelve a entrar.'; render(); }
+}
+
 function miId(){
   if(!S.jugadorId){ S.jugadorId='j'+Math.random().toString(36).slice(2,12); guardar(); }
   return S.jugadorId;
@@ -1957,7 +2043,7 @@ function render(){
   const f={inicio:vInicio,tienda:vTienda,club:vClub,desafios:vDesafios,perfil:vPerfil,
     sobre:vSobre,apertura:vApertura,
     jugar:vJugar,aprende:vAprende,logros:vLogros,reglas:vReglas,draft:vDraft,
-    ajustes:vAjustes,redes:vRedes,notas:vNotas,
+    ajustes:vAjustes,redes:vRedes,notas:vNotas,cuenta:vCuenta,
     coleccion:vColeccion,plantilla:vPlantilla,intercambio:vIntercambio,sets:vSets,
     reciclaje:vReciclaje,retosdetalle:vRetos,
     partida:vPartida,online:vOnline,directo:vDirecto}[vista]||vInicio;
@@ -2151,14 +2237,20 @@ function ovElegirAvatar(){
       ${S.avatar?'<button class="btn gho" data-a="quitaravatar">Quitarla</button>':''}
       <button class="btn sec" data-a="cerrarov">Cerrar</button></div>`);
 }
-const nombreJugador=()=>S.nombre||'JUGADOR';
+/* Con cuenta, el nombre que se ve es el de la cuenta: es su identidad y la eligió él.
+   Sin cuenta queda S.nombre, que hoy no lo escribe nadie, y de ahí el JUGADOR de reserva. */
+const nombreJugador=()=>(hayCuenta()&&S.cuenta.usuario)||S.nombre||'JUGADOR';
 
 /* La ficha de arriba: cara, nombre, nivel, barra de XP y chapa de temporada.
    NIVEL, XP Y TEMPORADA NO EXISTEN EN EL JUEGO: no hay de dónde sacarlos y no me los
    invento. El bloque está en su sitio, con su forma, y marcado PENDIENTE. */
 function fichaJugador(){
   const foto=avatarJugador();
-  return `<div class="blq"><div class="jug">
+  /* LA FICHA ENTERA LLEVA A LA CUENTA, y lo pidió él: se entra desde el Perfil "y también
+     tocando el banner del jugador en Inicio". La cara sigue siendo suya: el reparto de
+     clics va por el elemento más de dentro, así que tocar la cara abre las caras y tocar
+     el resto de la ficha abre la cuenta. */
+  return `<div class="blq pulsable" data-nav="cuenta"><div class="jug">
     <button class="cara" data-a="elegiravatar" aria-label="Tu foto de perfil"><i>${
           foto?caraImg(foto):icono('persona')}</i></button>
     <span class="qn">
@@ -2473,7 +2565,8 @@ function vPerfil(){
         filaLista({ic:'estrella', t:'Cartas favoritas', d:'Las que quieras tener a mano', pdte:true}))}
       ${grupo(
         filaLista({nav:'ajustes', ic:'engranaje', t:'Ajustes'}),
-        filaLista({ic:'persona', t:'Cuenta', pdte:true}),
+        filaLista({nav:'cuenta', ic:'persona', t:'Cuenta',
+          d:hayCuenta()?esc(S.cuenta.usuario):'Entrar o crear una cuenta'}),
         filaLista({ic:'ayuda', t:'Ayuda', pdte:true}))}
       <span class="rot">Sin colocar todavía</span>
       ${grupo(
@@ -2517,6 +2610,72 @@ function vDraft(){
       <div class="sub">Falta por decidir de dónde salen las opciones, cuántas derrotas
       aguanta y qué se lleva uno al terminar.</div>
     </div>`;
+}
+
+
+/* ── LA CUENTA ── se llega desde el Perfil y desde el banner del jugador en Inicio.
+
+   TIENE DOS PUERTAS, así que la flecha usa `atras` y no un destino fijo, igual que
+   Ajustes y Mis redes: escribir "vuelve al Perfil" sería mentira la mitad de las veces.
+
+   Lo que se escribe vive en tmp.f mientras dura la pantalla, porque render() rehace el
+   HTML entero y con él se irían los campos a medio escribir. */
+function vCuenta(){
+  const f=tmp.f||(tmp.f={}), modo=tmp.modo||'entrar', ocupado=!!tmp.cargando;
+  const err=tmp.err?`<div class="tiny" style="color:var(--warn);margin-bottom:9px">${esc(tmp.err)}</div>`:'';
+  const bien=tmp.bien?`<div class="tiny" style="color:var(--ok);margin-bottom:9px">${esc(tmp.bien)}</div>`:'';
+
+  if(hayCuenta()) return `${cabecera('Cuenta','data-a="atras"')}
+    <div class="card-panel">
+      <b>${esc(S.cuenta.usuario)}</b>
+      <div class="sub">${esc(S.cuenta.correo||'')}</div>
+      <div class="divider"></div>
+      <div class="sub mb">Tu colección se guarda sola en la nube cada vez que cambia. Si
+      entras con esta cuenta en otro móvil, te la encuentras allí.</div>
+      ${err}${bien}
+      <button class="btn" data-a="cuentasubir" style="width:100%"
+        ${ocupado?'disabled':''}>${ocupado?'Guardando…':'Guardar ahora'}</button>
+      <button class="btn gho" data-a="cuentasalir" style="width:100%;margin-top:8px">
+        Cerrar sesión</button>
+    </div>`;
+
+  const crear=modo==='crear';
+  return `${cabecera('Cuenta','data-a="atras"')}
+    <div class="row" style="margin-bottom:12px">
+      <button class="btn ${crear?'gho':''} sm" style="flex:1" data-a="cuentamodo" data-modo="entrar">Entrar</button>
+      <button class="btn ${crear?'':'gho'} sm" style="flex:1" data-a="cuentamodo" data-modo="crear">Crear cuenta</button>
+    </div>
+    <div class="card-panel">
+      <div class="sub mb">${crear
+        ? 'Lo que ya tienes en este móvil se sube a la cuenta al crearla. No se pierde nada.'
+        : 'Entra y te bajas tu colección. Si en este móvil ya tienes partida, te preguntamos con cuál te quedas.'}</div>
+      ${crear?`
+        <input class="campo" id="c-usuario" value="${esc(f.usuario||'')}" placeholder="Nombre de usuario"
+          autocapitalize="off" autocorrect="off" spellcheck="false" autocomplete="username">
+        <input class="campo" id="c-correo" value="${esc(f.correo||'')}" placeholder="Correo" type="email"
+          autocapitalize="off" autocorrect="off" spellcheck="false" autocomplete="email">
+        <input class="campo" id="c-clave" value="${esc(f.clave||'')}" placeholder="Contraseña (8 o más)"
+          type="password" autocomplete="new-password">
+      `:`
+        <input class="campo" id="c-quien" value="${esc(f.quien||'')}" placeholder="Usuario o correo"
+          autocapitalize="off" autocorrect="off" spellcheck="false" autocomplete="username">
+        <input class="campo" id="c-clave" value="${esc(f.clave||'')}" placeholder="Contraseña"
+          type="password" autocomplete="current-password">
+      `}
+      ${err}
+      <button class="btn" data-a="${crear?'cuentacrear':'cuentaentrar'}" style="width:100%"
+        ${ocupado?'disabled':''}>${ocupado?'Un momento…':(crear?'Crear cuenta':'Entrar')}</button>
+      <div class="tiny" style="margin-top:10px;color:var(--dim2)">La contraseña no se guarda
+      en ninguna parte: el servidor sólo se queda con un resumen del que no se puede sacar.</div>
+    </div>`;
+}
+
+// Los campos, a tmp, antes de que render() se los lleve por delante.
+function leerCampos(){
+  const v=id=>(($('#'+id)||{}).value||'').trim();
+  tmp.f={usuario:v('c-usuario'),correo:v('c-correo'),quien:v('c-quien'),
+    clave:(($('#c-clave')||{}).value||'')};   // la contraseña sin recortar: un espacio puede ser suya
+  return tmp.f;
 }
 
 function vRedes(){
@@ -4299,6 +4458,12 @@ function avisoCodigo(r){
       <button class="btn" data-a="cerrarov">Vale</button></div>`);
   }
 }
+// El aviso de la cuenta: un título y una línea. Los tres finales de "entrar" acaban aquí.
+function avisoCuenta(titulo,txt){
+  ov(`<div class="center"><div style="font-size:34px">✅</div><h3>${esc(titulo)}</h3>
+    <div class="sub mb">${esc(txt)}</div>
+    <button class="btn" data-a="cerrarov">Vale</button></div>`);
+}
 function cerrarOv(){ const o=$('#ov'); if(o) o.remove(); }
 
 document.addEventListener('click',e=>{
@@ -4355,6 +4520,84 @@ document.addEventListener('click',e=>{
 
   switch(d.a){
     case 'atras': ir(vistaPrevia); break;   // la flecha de Ajustes y de Mis redes
+    case 'cuentamodo': tmp.modo=d.modo; tmp.err=null; tmp.bien=null; render(); break;
+    case 'cuentacrear':{
+      const f=leerCampos();
+      tmp.err=null; tmp.bien=null; tmp.cargando=true; render();
+      /* AL CREAR LA CUENTA SE SUBE LO QUE YA TIENE, y lo decidió él: "cuando se crea una
+         cuenta sube lo que tiene". Nadie pierde su colección por registrarse. */
+      apiCuenta('registro',{usuario:f.usuario,correo:f.correo,clave:f.clave,
+        estado:estadoParaSubir()}).then(r=>{
+        tmp.cargando=false;
+        if(r.error){ tmp.err=r.error; return render(); }
+        ponerToken(r.token); S.cuenta=r.cuenta; tmp.f={}; guardar(); render();
+        ov(`<div class="center"><div style="font-size:34px">✅</div><h3>Cuenta creada</h3>
+          <div class="sub mb">Tu colección ya está subida. Entra con
+          <b>${esc(r.cuenta.usuario)}</b> en cualquier móvil y te la encuentras.</div>
+          <button class="btn" data-a="cerrarov">Vale</button></div>`);
+      });
+      break; }
+    case 'cuentaentrar':{
+      const f=leerCampos();
+      tmp.err=null; tmp.bien=null; tmp.cargando=true; render();
+      apiCuenta('entrar',{quien:f.quien,clave:f.clave}).then(r=>{
+        tmp.cargando=false;
+        if(r.error){ tmp.err=r.error; return render(); }
+        ponerToken(r.token);
+        /* TRES CASOS AL ENTRAR, y sólo uno pregunta:
+           - la cuenta no tiene nada guardado → sube lo de este móvil;
+           - este móvil está recién instalado → baja lo de la cuenta sin preguntar;
+           - hay partida en los dos sitios → SE PREGUNTA. Elegir por él una de las dos es
+             borrarle la otra sin avisar, y eso no se hace nunca. */
+        if(!r.estado){ S.cuenta=r.cuenta; guardar(); render();
+          return avisoCuenta('Sesión iniciada','La cuenta no tenía nada guardado, así que se ha subido lo de este móvil.'); }
+        if(partidaVirgen()){ aplicarEstado(r.estado); S.cuenta=r.cuenta; guardar(); render();
+          return avisoCuenta('Sesión iniciada','Se ha bajado tu colección de la cuenta.'); }
+        tmp.pendiente={estado:r.estado,cuenta:r.cuenta}; render();
+        ov(`<h3>Hay dos partidas</h3>
+          <div class="sub mb">Tienes una partida en este móvil y otra guardada en la cuenta.
+          Quédate con una: la otra se pierde.</div>
+          <div class="card-panel" style="margin-bottom:9px"><b>En este móvil</b>
+            <div class="sub">${esc(resumenEstado(S))}</div></div>
+          <div class="card-panel" style="margin-bottom:12px"><b>En la cuenta</b>
+            <div class="sub">${esc(resumenEstado(r.estado))}</div></div>
+          <button class="btn" data-a="cuentaquedarnube" style="width:100%">Quedarme con la de la cuenta</button>
+          <button class="btn gho" data-a="cuentaquedarmovil" style="width:100%;margin-top:8px">Quedarme con la de este móvil</button>`);
+      });
+      break; }
+    case 'cuentaquedarnube':{
+      const q=tmp.pendiente; if(!q) break;
+      aplicarEstado(q.estado); S.cuenta=q.cuenta; guardar();
+      tmp.pendiente=null; cerrarOv(); render();
+      avisoCuenta('Listo','Se ha bajado la partida de la cuenta.');
+      break; }
+    case 'cuentaquedarmovil':{
+      const q=tmp.pendiente; if(!q) break;
+      S.cuenta=q.cuenta; guardar();            // guardar() ya deja la subida en cola
+      tmp.pendiente=null; cerrarOv(); render();
+      avisoCuenta('Listo','Se queda la de este móvil, y se sube a la cuenta.');
+      break; }
+    case 'cuentasubir':{
+      tmp.err=null; tmp.bien=null; tmp.cargando=true; render();
+      apiCuenta('subir',{estado:estadoParaSubir()}).then(r=>{
+        tmp.cargando=false;
+        if(r.codigo===401) return caducada();
+        if(r.error) tmp.err=r.error; else tmp.bien='Guardado en la nube.';
+        render();
+      });
+      break; }
+    case 'cuentasalir':
+      ov(`<div class="center"><h3>¿Cerrar sesión?</h3>
+        <div class="sub mb">Tu colección se queda en este móvil y también en la cuenta.
+        Puedes volver a entrar cuando quieras.</div>
+        <button class="btn" data-a="cuentasalirya" style="width:100%">Cerrar sesión</button>
+        <button class="btn gho" data-a="cerrarov" style="width:100%;margin-top:8px">Dejarlo</button></div>`);
+      break;
+    case 'cuentasalirya':
+      clearTimeout(subidaEnCola);   // que no salga una subida con el token ya borrado
+      ponerToken(''); S.cuenta=''; guardar();
+      tmp={}; cerrarOv(); render();
+      break;
     case 'jugar': empezarPartida(null); break;
     case 'compartircodigo':{
       const txt=`Únete a mi partida de P4P.CG con el código ${SALA?SALA.codigo:''}`;
@@ -4654,6 +4897,7 @@ if(!S.retos) S.retos=[];
 if(!S.gratis) S.gratis={};        // partidas guardadas antes de los sobres gratis por niveles
 if(!S.amigos) S.amigos=[];        // ni antes de los amigos
 if(S.nombre===undefined) S.nombre='';
+if(S.cuenta===undefined) S.cuenta='';   // partidas guardadas de antes de que hubiera cuentas
 if(S.servidor===undefined) S.servidor='';
 guardar();
 render();

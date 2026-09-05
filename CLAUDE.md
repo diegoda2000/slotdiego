@@ -11,8 +11,8 @@ disculpas. Los nombres de funciones, variables y archivos también van en españ
 
 ## En qué punto está el trabajo
 
-Rama de trabajo: **`claude/diseno-carta-pendiente-vn5tw1`**. Lo último entregado: los
-nueve emblemas de verdad. (El número de commit no se apunta aquí: se quedaba viejo al
+Rama de trabajo: **`claude/diseno-carta-pendiente-vn5tw1`**. Lo último entregado: las
+cuentas con correo, contraseña y nombre de usuario. (El número de commit no se apunta aquí: se quedaba viejo al
 commit siguiente y despistaba más que ayudaba.)
 El APK se publica solo en cada push y se descarga de la publicación **`apk-latest`**
 (`p4p-cg.apk`, ~11,6 MB, y `p4p-cg.ipa`).
@@ -283,7 +283,7 @@ salía por las pestañas de abajo—: Colección, Plantilla, Sets, Reciclaje y l
 | Reglas | Aprende |
 | Notas | Ajustes |
 | pantalla del sobre | la tienda (`volvertienda`) |
-| **Ajustes · Mis redes** | **a donde estuvieras** |
+| **Ajustes · Mis redes · Cuenta** | **a donde estuvieras** |
 
 **Ajustes es el único que no tiene destino fijo, y por eso existe `vistaPrevia`.** El
 engranaje está en la cabecera de las cinco pestañas, así que Ajustes se abre desde
@@ -570,20 +570,89 @@ la (i) arriba a la derecha y el TIENDA grande en cursiva.
 
 **Lo que el boceto trae y sigue sin existir:** nivel y XP, gemas de verdad (hoy son las
 fichas), pase de temporada, actividad diaria con reloj y racha, novedades, eventos, rango,
-estadísticas e historial, cartas favoritas, cuenta y ayuda.
+estadísticas e historial, cartas favoritas y ayuda.
+
+**LAS CUENTAS YA ESTÁN: correo, contraseña y nombre de usuario.** Las pidió así —*"el
+tercero, correo, contraseña y nombre de usuario"*—, y están montadas enteras en el Worker,
+sin depender de nadie. **Google sigue aparcado** por orden suya: su inicio de sesión no
+funciona dentro de un WebView y haría falta el nativo de Android más un proyecto suyo en
+Google Cloud.
+
+**El juego entero funciona sin cuenta.** Se juega, se colecciona y se abren sobres sin
+registrarse; lo que da la cuenta es que la colección **no viva sólo en este móvil**. Por eso
+no bloquea ninguna pantalla ni salta al arrancar.
+
+**Dos puertas, y las dos las pidió él:** la fila *Cuenta* del Perfil —que estaba marcada
+PENDIENTE— y **tocar el banner del jugador en Inicio**. La cara sigue siendo suya: el
+reparto de clics va por el elemento de más adentro, así que tocar la cara abre las caras y
+tocar el resto de la ficha abre la cuenta. Como tiene dos puertas, **la flecha usa `atras`**
+y no un destino fijo, igual que Ajustes y Mis redes.
+
+**AL CREAR LA CUENTA SE SUBE LO QUE YA TIENE** —*"cuando se crea una cuenta sube lo que
+tiene"*—. Y al entrar hay **tres casos, y sólo uno pregunta**:
+
+| situación | qué pasa |
+|---|---|
+| la cuenta no tiene nada guardado | sube lo de este móvil |
+| este móvil está recién instalado (0 partidas, sin tutorial) | baja lo de la cuenta, sin preguntar |
+| hay partida en los dos sitios | **se pregunta**, enseñando las dos con sus cartas y partidas |
+
+Elegir por él una de las dos es borrarle la otra sin avisar, y eso no se hace.
+
+**Cómo está montado el servidor.** Un solo Durable Object global, `CUENTAS`. Uno por usuario
+no vale: hace falta un sitio donde el nombre y el correo sean únicos **de verdad**, y eso no
+se puede comprobar si cada cuenta vive en su propio objeto sin hablar con las demás. Para
+una alfa sobra; el día que haya miles se parte por letra inicial.
+
+- **La contraseña NO se guarda nunca.** PBKDF2-SHA256, 150.000 vueltas, **sal de 16 bytes
+  distinta por cuenta** —así dos personas con la misma contraseña tienen hashes distintos—.
+  Todo con WebCrypto, que el Worker ya trae.
+- **La comparación es en tiempo constante.** Con `===` se sale en el primer byte distinto, y
+  de cuánto tarda en salirse se deduce el hash a base de intentos.
+- **El mismo error si la cuenta no existe y si la contraseña está mal.** Decir "ese usuario
+  no existe" es decirle a cualquiera qué correos están registrados. Y cuando no existe se
+  amasa igualmente un hash de mentira, para que tampoco lo delate el tiempo.
+- **El usuario y el correo se guardan tal cual se escriben pero se COMPARAN en minúsculas**:
+  "Diego" y "diego" no pueden ser dos cuentas. Y se entra con cualquiera de los dos: quien
+  vuelve al mes no se acuerda de con cuál se registró.
+- **El token vive fuera de `S`**, en `jaula-abierta-token`. Dos motivos: `S` entero se sube
+  al servidor, y mandarle la llave que él mismo dio no tiene sentido; y así cerrar sesión es
+  borrar una sola cosa.
+
+**Lo que viaja es el estado entero MENOS la dirección del servidor.** Esa es de este móvil
+—sirve para apuntar a uno de pruebas— y bajarla en otro le rompería el online. Y lo que se
+baja **se monta sobre un estado nuevo**, para que una partida guardada por una versión vieja
+llegue con los campos que le falten ya puestos.
+
+**Sube sola, pero no en cada guardado.** Abrir un sobre guarda varias veces seguidas: se
+espera a que pare cuatro segundos y se sube una vez. **Y un 401 cierra la sesión**: dejar la
+pantalla diciendo "se guarda sola en la nube" mientras el servidor rechaza cada subida es
+mentirle. Un fallo de red no cuenta; sólo el 401, que es el servidor diciendo que no la
+conoce.
+
+**Los campos van a 16 px y eso no es cosmético:** por debajo de 16, Safari y el WebView de
+iPhone **hacen zoom al enfocar** y dejan la pantalla descolocada.
+
+**Cómo se prueba.** `node servidor/test-cuentas.mjs` ejerce la clase `Cuentas` con un
+almacén de mentira —22 comprobaciones, sin red ni Cloudflare—, la sección **2l** de la suite
+mira lo del móvil, y `servidor/prueba-en-vivo.mjs` **crea una cuenta de verdad contra el
+servidor ya desplegado**, sube, sale y vuelve a entrar. Esa última corre en Actions después
+de desplegar: **si falla, el APK no se publica**. Deja una cuenta de usar y tirar por
+despliegue —lleva la hora en el nombre—; el día que estorben, se les pone caducidad.
+
+**PENDIENTE Y DICHO: no hay freno de intentos ni de registros.** Un endpoint público de
+registro sin límite se puede llenar de cuentas basura, y uno de entrada sin límite se puede
+probar a lo bruto. Para la alfa vale; **antes de abrirlo a gente hay que ponerle un freno.**
+
+**Y un fallo de CSS que NO es mío pero está ahí:** `.btn.sec` pone fondo `--bg3` y **no toca
+el color del texto**, que sigue siendo el `color:var(--bg)` de `.btn` —casi negro—. Son 18
+botones en el juego con la letra oscura sobre fondo oscuro. En la pantalla de la cuenta se
+esquivó usando `.btn` y `.btn gho`; **el arreglo de fondo es una línea y no se ha tocado
+porque no se pidió.**
 
 **LO QUE ESTÁ EN MARCHA AHORA MISMO.**
 
-1. **LAS CUENTAS: correo, contraseña y nombre de usuario.** Aprobado y por hacer. Se entra
-   desde el Perfil **y también tocando el banner del jugador en Inicio**. Se monta entero en
-   el Worker, sin depender de nadie.
-   **DECIDIDO POR ÉL: al crear la cuenta SE SUBE lo que ya tiene** —*"cuando se crea una
-   cuenta sube lo que tiene"*—, no se empieza de cero. Nadie pierde su colección.
-   **Google se aparca**: *"lo de Google Cloud lo vamos a dejar para más adelante"*. Cuando
-   vuelva, hace falta un proyecto suyo en Google Cloud y el inicio de sesión NATIVO de
-   Android, porque Google bloquea su login dentro de un WebView.
-
-2. **El sobre de sugerencias de la cabecera, al lado del engranaje.** La gente escribe y le
+1. **El sobre de sugerencias de la cabecera, al lado del engranaje.** La gente escribe y le
    llega a su correo sin poner sus datos. **Quién y qué**: si ha iniciado sesión, su correo
    y su nombre de usuario; si no, el identificador anónimo del móvil.
    **Sigue bloqueado por una cosa suya:** un Worker de Cloudflare no manda correo solo.

@@ -9,6 +9,17 @@ compatibility_date = "2025-04-01"
 name = "SALAS"
 class_name = "Sala"
 
+# Y otro para las CUENTAS: uno solo, global. Hace falta un sitio donde el nombre de
+# usuario y el correo sean únicos de verdad, y eso no se puede comprobar si cada cuenta
+# vive en su propio objeto sin hablar con las demás.
+[[durable_objects.bindings]]
+name = "CUENTAS"
+class_name = "Cuentas"
+
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["Sala"]
+
+[[migrations]]
+tag = "v2"
+new_sqlite_classes = ["Cuentas"]

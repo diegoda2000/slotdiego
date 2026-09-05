@@ -1325,6 +1325,133 @@ const espejo = await page.evaluate(() => {
 comprobar(espejo.peor === 0,
   `en 60 partidas contra la IA no te toca ni una vez un peleador tuyo (${espejo.total} coincidencias)`);
 
+/* ── 2l. La cuenta ─────────────────────────────────────────────────────────
+   Correo, contraseña y nombre de usuario. Aquí NO se llama al servidor: lo del servidor
+   lo prueba servidor/test-cuentas.mjs con la clase de verdad. Lo que se mira aquí es lo
+   del móvil: que se llegue desde las dos puertas, que la flecha vuelva a la buena, que el
+   estado que viaja sea el correcto y que sin servidor lo diga en vez de reventar. */
+console.log('\n2l. La cuenta');
+
+const cuenta = await page.evaluate(async () => {
+  const $$ = q => document.querySelector(q);
+  const salida = {};
+
+  // 1. LAS DOS PUERTAS. Desde el Perfil, la fila deja de estar marcada Pendiente.
+  ir('perfil');
+  const filaCuenta = [...document.querySelectorAll('.fila')]
+    .find(f => /^Cuenta/.test(f.querySelector('b')?.textContent || ''));
+  salida.filaPerfil = filaCuenta?.dataset.nav;
+  salida.filaPendiente = !!filaCuenta?.querySelector('.pdte');
+  filaCuenta.click();
+  salida.desdePerfil = vista;
+  // y la flecha vuelve al Perfil, no a un sitio fijo
+  $$('.pcab .volver').click();
+  salida.vuelveAPerfil = vista;
+
+  // 2. Desde el banner del jugador en Inicio, y volviendo a Inicio.
+  ir('inicio');
+  const banner = $$('.blq[data-nav="cuenta"]');
+  salida.hayBanner = !!banner;
+  banner.click();
+  salida.desdeInicio = vista;
+  $$('.pcab .volver').click();
+  salida.vuelveAInicio = vista;
+
+  /* 3. TOCAR LA CARA SIGUE ABRIENDO LAS CARAS. El banner entero lleva a la cuenta y la
+     cara vive dentro: si el reparto de clics fuese al revés, elegir foto sería imposible. */
+  ir('inicio');
+  $$('.blq[data-nav="cuenta"] .cara').click();
+  salida.laCaraAbreCaras = !!$$('#ov') && vista === 'inicio';
+  cerrarOv();
+
+  // 4. Las dos solapas y sus campos.
+  ir('cuenta');
+  salida.campoEntrar = [...document.querySelectorAll('.campo')].map(c => c.id);
+  $$('[data-a="cuentamodo"][data-modo="crear"]').click();
+  salida.campoCrear = [...document.querySelectorAll('.campo')].map(c => c.id);
+  /* EL TAMAÑO DE LETRA DE UN CAMPO NO ES COSMÉTICO: por debajo de 16 px, Safari y el
+     WebView de iPhone hacen zoom al enfocarlo y dejan la pantalla descolocada. */
+  salida.letraCampos = [...document.querySelectorAll('.campo')]
+    .map(c => parseFloat(getComputedStyle(c).fontSize));
+
+  // 5. Lo escrito sobrevive a un render: el error se pinta y los campos no se vacían.
+  $$('#c-usuario').value = 'diego';
+  $$('#c-correo').value = 'diego@ejemplo.com';
+  leerCampos(); render();
+  salida.conserva = $$('#c-usuario').value + '|' + $$('#c-correo').value;
+
+  /* 6. SIN SERVIDOR NO SE REVIENTA: se dice qué falta. Se apagan las dos direcciones,
+     la de fábrica y la manual. */
+  const fabrica = window.SERVIDOR_POR_DEFECTO;
+  window.SERVIDOR_POR_DEFECTO = ''; S.servidor = '';
+  const r = await apiCuenta('entrar', { quien: 'x', clave: 'y' });
+  salida.sinServidor = r.error || '';
+  window.SERVIDOR_POR_DEFECTO = fabrica;
+
+  /* 7. LO QUE VIAJA. El estado entero menos la dirección del servidor: esa es de este
+     móvil —sirve para apuntar a uno de pruebas— y bajarla en otro le rompe el online. */
+  S.servidor = 'https://mi-servidor-de-pruebas.example';
+  S.divisa = 4242;
+  const sube = estadoParaSubir();
+  salida.subeSinServidor = sube.servidor === undefined;
+  salida.subeLaDivisa = sube.divisa === 4242;
+
+  // 8. Y al bajar, el estado se monta sobre uno nuevo: los campos que falten se rellenan,
+  //    y la dirección de ESTE móvil no se pisa con la del otro.
+  aplicarEstado({ divisa: 777, partidas: 5, servidor: 'https://el-de-otro.example' });
+  salida.bajado = { divisa: S.divisa, partidas: S.partidas, servidor: S.servidor,
+    tieneCampos: S.plantilla !== undefined && S.gratis !== undefined };
+
+  // 9. El nombre que se ve es el de la cuenta cuando la hay.
+  S.cuenta = ''; salida.sinCuenta = nombreJugador();
+  S.cuenta = { usuario: 'ElDiego', correo: 'a@b.co' }; salida.conCuenta = nombreJugador();
+  salida.hayCuenta = hayCuenta();
+  S.cuenta = ''; S.servidor = ''; guardar();
+
+  // 10. Sin cuenta, guardar() no deja ninguna subida en cola.
+  subidaEnCola = null; guardar();
+  salida.sinColaSinCuenta = subidaEnCola === null;
+
+  /* 11. Y si el servidor deja de conocer la sesión (401), se cierra sola: quedarse
+     diciendo "se guarda en la nube" mientras el servidor rechaza cada subida es mentira. */
+  S.cuenta = { usuario: 'ElDiego', correo: 'a@b.co' }; ponerToken('un-token');
+  ir('cuenta'); caducada();
+  salida.caducada = { cuenta: S.cuenta, token: leerToken(), vista,
+    dice: /caducado/i.test(document.querySelector('#app').textContent) };
+  return salida;
+});
+
+comprobar(cuenta.filaPerfil === 'cuenta' && !cuenta.filaPendiente,
+  'la fila "Cuenta" del Perfil ya lleva a algún sitio, y deja de estar marcada Pendiente');
+comprobar(cuenta.hayBanner && cuenta.desdePerfil === 'cuenta' && cuenta.desdeInicio === 'cuenta',
+  'se entra por las dos puertas: la fila del Perfil y el banner del jugador en Inicio');
+comprobar(cuenta.vuelveAPerfil === 'perfil' && cuenta.vuelveAInicio === 'inicio',
+  'y la flecha vuelve a donde estabas, que la cuenta no tiene destino fijo');
+comprobar(cuenta.laCaraAbreCaras,
+  'tocar la cara dentro del banner sigue abriendo las caras, no la cuenta');
+comprobar(cuenta.campoEntrar.join(',') === 'c-quien,c-clave',
+  `entrar pide usuario o correo, y contraseña (${cuenta.campoEntrar.join(', ')})`);
+comprobar(cuenta.campoCrear.join(',') === 'c-usuario,c-correo,c-clave',
+  `y crear cuenta pide los tres, como los pidió él (${cuenta.campoCrear.join(', ')})`);
+comprobar(cuenta.letraCampos.every(t => t >= 16),
+  `los campos van a 16 px o más, o el iPhone hace zoom al escribir (${cuenta.letraCampos.join('/')} px)`);
+comprobar(cuenta.conserva === 'diego|diego@ejemplo.com',
+  'lo escrito sobrevive a un render, que si no el error borra el formulario');
+comprobar(/servidor/i.test(cuenta.sinServidor),
+  `sin servidor se explica qué falta en vez de reventar ("${cuenta.sinServidor}")`);
+comprobar(cuenta.subeSinServidor && cuenta.subeLaDivisa,
+  'lo que sube es el estado entero menos la dirección del servidor');
+comprobar(cuenta.bajado.divisa === 777 && cuenta.bajado.partidas === 5 && cuenta.bajado.tieneCampos,
+  'lo que se baja se monta sobre un estado nuevo, y los campos que falten llegan puestos');
+comprobar(cuenta.bajado.servidor === 'https://mi-servidor-de-pruebas.example',
+  'y la dirección del servidor de este móvil no se pisa con la del otro');
+comprobar(cuenta.sinCuenta === 'JUGADOR' && cuenta.conCuenta === 'ElDiego' && cuenta.hayCuenta,
+  'con cuenta, el nombre que se ve es el de la cuenta');
+comprobar(cuenta.sinColaSinCuenta,
+  'y sin cuenta, guardar no deja ninguna subida en cola');
+comprobar(cuenta.caducada.cuenta === '' && cuenta.caducada.token === '' && cuenta.caducada.dice,
+  'un 401 del servidor cierra la sesión y lo dice, en vez de fingir que se está guardando');
+
 /* ── 3. Partidas completas ────────────────────────────────────────────── */
 console.log(`\n3. ${N_PARTIDAS} partidas completas`);
 const stats = { partidas: 0, victorias: 0, empates33: 0, duelos: 0,

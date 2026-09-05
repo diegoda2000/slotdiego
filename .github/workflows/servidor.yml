@@ -76,6 +76,13 @@ jobs:
         working-directory: servidor
         run: npm install --no-audit --no-fund
 
+      # Las cuentas se prueban ANTES de desplegar, no después: esto no necesita ni red ni
+      # Cloudflare —usa un almacén de mentira—, así que una clase Cuentas rota se caza sin
+      # llegar a subirla encima del servidor que está funcionando.
+      - name: Probar las cuentas
+        if: steps.comp.outputs.listo == 'si'
+        run: node servidor/test-cuentas.mjs
+
       # Se despliega desde servidor/ con el repositorio entero clonado: el worker importa
       # ../../juego/motor.js a propósito, para que servidor y juego compartan exactamente
       # el mismo reglamento y no puedan divergir.
