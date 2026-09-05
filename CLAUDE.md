@@ -201,11 +201,10 @@ de **cuatro píxeles**, no de uno, deshaciendo la mezcla con el blanco —si `P 
 medir **el radio real del logo** (553 px de 1013x974, frente a los 703 de la media diagonal
 de su caja): por eso llena el círculo de 66 dp en vez de quedarse corto.
 
-**La interfaz se reestructura, y NO es un cambio de colores.** Lo dijo con esas palabras:
-*"lo de los colores es lo de menos, la reestructuración es mucho más que simplemente
-cambiar los colores"*. Qué significa exactamente **está sin definir**: no inventes pantallas
-ni muevas nada por tu cuenta, que ya sabes cómo acaba eso. La paleta nueva, del logo y
-medida, es esto:
+**LA REESTRUCTURACIÓN DE LA INTERFAZ ESTÁ HECHA Y CERRADA.** Empezó con *"lo de los colores
+es lo de menos, la reestructuración es mucho más que simplemente cambiar los colores"* y
+acabó con **"eso ya lo hemos hecho, olvídalo"**. Ya no es un pendiente. La paleta, del logo
+y medida, es esto:
 
 | | |
 |---|---|
@@ -448,6 +447,40 @@ desborda.
 | legendario | `4-oro.png` | 7.500 | 10 | **PRÓXIMAMENTE** |
 | ultimate | `5-holo.png` | 12.500 | 10 | **PRÓXIMAMENTE** |
 
+**LOS PRECIOS SALEN DEL VALOR DE LO QUE TRAE EL SOBRE**, y los mandó revisar él: *"revisa
+todos los precios y la monetización del juego, y hazla mejor"*. El valor es cuántas cartas
+buenas trae pesando cada tramo por lo que vale —un 12-15 cuenta 1, un 6-11 cuenta 2,5 y un
+campeón o top 5 cuenta 8—. Los pesos son un juicio, pero es un juicio **escrito**, y con él
+los precios se calculan en vez de elegirse:
+
+| sobre | valor | precio | por punto | partidas |
+|---|---|---|---|---|
+| raro | 1,94 | 1.200 | 622 | 7,1 |
+| épico | 6,72 | 3.800 | 567 | 22,4 |
+| legendario | 13,25 | 7.000 | 527 | 41,2 |
+| ultimate | 19,52 | 10.000 | 512 | 58,8 |
+
+**El precio por punto BAJA al subir de escalón**: ahorrar para uno grande sale mejor que
+comprar tres pequeños, que es lo que hace que ahorrar tenga sentido. Hay una comprobación
+en la suite que lo sujeta.
+
+**ANTES ESTABA AL REVÉS.** Con 2.000/4.000/7.500/12.500 el raro salía a **1.033** el punto
+y el épico a **595**: el sobre de entrada de pago era el peor negocio de la tienda, casi el
+doble de caro por lo que da. Y costaba **11,8 partidas**, cuando ganar regalaba un raro la
+mitad de las veces: en esas 11,8 partidas caían tres raros gratis, así que comprarlo no
+tenía ningún sentido.
+
+**Por eso el premio por victoria baja de 1 de cada 2 a 1 DE CADA 4.** Jugar sigue dando
+sobres y comprar vuelve a ser el camino rápido. Una victoria da 180-320 de oro y una
+derrota 60-120: ganando la mitad de las partidas salen **170 de oro por partida**, que es
+la vara con la que se miden los precios.
+
+**LAS FICHAS (las gemas) SIGUEN COJAS, Y NO LAS HE TOCADO.** Sólo salen de reciclar
+repetidas —30 platas o 10 oros por ficha— y sólo sirven para UNA cosa: entrar en la sala
+de intercambio, que cuesta 1. Y hay un logro que pide **acumular 500**, o sea 15.000 platas
+repetidas: imposible. O las fichas ganan usos, o el logro baja, o las fichas salen de
+algún sitio más. **Está dicho y sin decidir.**
+
 **Los nombres van en español menos ultimate**, que él dijo que no se puede traducir. Las
 claves también: `comun`, `raro`, `epico`, `legendario`, `ultimate` —en este proyecto los
 identificadores van en español—, y `SOBRES_VIEJOS` traduce tanto los tres de antes como
@@ -508,9 +541,13 @@ la (i) arriba a la derecha y el TIENDA grande en cursiva.
   En sobre entero: en el común, un 12-15 cada 14 sobres, un 6-11 cada 218 y un campeón cada
   2.500; en el raro, algún rankeado el 77% de las veces y un campeón uno de cada 34. El
   común queda por debajo del básico de antes en todo, que era la condición que había puesto.
-- **ÉPICO, LEGENDARIO Y ULTIMATE SIGUEN SIENDO MÍOS Y SIN APROBAR.** Tenían que pasar al
-  modelo nuevo sí o sí, y están puestos escalando entre el raro y algo claramente mejor.
-  Hay que cerrarlos con él.
+- **EL ÉPICO LO DEFINIÓ ÉL DESPUÉS**, con palabras y no con números: *"en un sobre épico
+  ya mínimo casi garantizado que te toque un top quince-diez, y bastante más probabilidad
+  de que te toque un top diez-cinco, un top cinco o campeón"*. Medido con 120.000 sobres,
+  la tabla que había ya lo cumple: **99,1% con algún rankeado**, 94,3% con algún 12-15,
+  **64,2% con algún 6-11** (el raro, 24,1%) y **21,4% con campeón o top 5** (el raro,
+  2,9%). Legendario y ultimate escalan por encima. No se tocaron: cambiarlos sin motivo
+  habría sido peor que dejarlos.
 - **OJO CON EL `null`:** el tramo "sin ranking" se escribió primero como `!(c.rk>=0)`, y en
   JavaScript **`null >= 0` es TRUE** —null se convierte en 0—, así que la bolsa salía vacía,
   `cartaDeNivel` se iba al tramo de al lado sin decir nada y un sobre común que sorteaba
@@ -535,37 +572,39 @@ la (i) arriba a la derecha y el TIENDA grande en cursiva.
 fichas), pase de temporada, actividad diaria con reloj y racha, novedades, eventos, rango,
 estadísticas e historial, cartas favoritas, cuenta y ayuda.
 
-**LO ÚLTIMO QUE HA PEDIDO, Y ESTÁ SIN EMPEZAR.** Son tres cosas y ninguna se puede hacer
-entera todavía:
+**LO QUE ESTÁ EN MARCHA AHORA MISMO.**
 
-1. **Un sobre de sugerencias en la cabecera, al lado del engranaje.** La gente escribe ahí
-   y le llega **a su correo**, sin que el que escribe tenga que poner sus datos, y el
-   correo dice **quién** y **qué**. El icono, la pantalla y el envío se pueden hacer; lo que
-   falta es **por dónde sale el correo**, que un Worker de Cloudflare no manda correo solo:
-   o un servicio con clave de API —que iría en los secretos de GitHub, **nunca en un
-   archivo**, que el repositorio es público— o Cloudflare Email Routing, que no lleva clave
-   pero exige un dominio suyo en Cloudflare. **Está preguntado y sin contestar.** Mientras
-   tanto lo sensato es que el Worker los **guarde**, para no perder ninguno.
-
-2. **Cuentas: iniciar sesión y registrarse**, con Google o con correo y contraseña, desde el
-   Perfil **y también tocando el banner del jugador en Inicio**. Correo y contraseña se
-   monta en el Worker sin depender de nadie; **Google no**, porque Google bloquea su login
-   dentro de un WebView, así que hace falta el inicio de sesión nativo de Android y un
-   proyecto suyo en Google Cloud. **Está preguntado y sin contestar.**
+1. **LAS CUENTAS: correo, contraseña y nombre de usuario.** Aprobado y por hacer. Se entra
+   desde el Perfil **y también tocando el banner del jugador en Inicio**. Se monta entero en
+   el Worker, sin depender de nadie.
    **DECIDIDO POR ÉL: al crear la cuenta SE SUBE lo que ya tiene** —*"cuando se crea una
    cuenta sube lo que tiene"*—, no se empieza de cero. Nadie pierde su colección.
+   **Google se aparca**: *"lo de Google Cloud lo vamos a dejar para más adelante"*. Cuando
+   vuelva, hace falta un proyecto suyo en Google Cloud y el inicio de sesión NATIVO de
+   Android, porque Google bloquea su login dentro de un WebView.
 
-3. **Los sobres, sin oros.** *"YA NO HAY OROS JODER, QUE TE QUEDE CLARO, DE MOMENTO TODAS
-   SON COMUNES"*: el sobre deja de repartir en dos pasos —cuántos oros y de qué nivel— y
-   pasa a **una sola tirada por carta sobre el ranking**. La mayoría, mediocres sin
-   rankear; muy rara vez un 12-15; casi imposible un 6-11; prácticamente imposible un
-   campeón o top 5. Además, **el común pasa a ser GRATIS en la tienda** y **el que se
-   reclama en Inicio pasa a ser un RARO, una sola vez por haber empezado**, con las
-   probabilidades subidas. **Las dos tablas están propuestas y esperando su visto bueno**
-   —lo pidió así—: común 98,40 / 1,50 / 0,092 / 0,008 por carta, y raro 78 / 17 / 4,5 / 0,5.
+2. **El sobre de sugerencias de la cabecera, al lado del engranaje.** La gente escribe y le
+   llega a su correo sin poner sus datos. **Quién y qué**: si ha iniciado sesión, su correo
+   y su nombre de usuario; si no, el identificador anónimo del móvil.
+   **Sigue bloqueado por una cosa suya:** un Worker de Cloudflare no manda correo solo.
+   **Cloudflare Email Routing está DESCARTADO**: tiene dominio propio, pero en Google
+   Workspace, no en Cloudflare. Queda el camino del servicio de correo —Resend, gratis
+   hasta 3.000 al mes—, que necesita **una clave de API suya**, y esa clave va a los
+   secretos de GitHub, **nunca a un archivo**, que el repositorio es público.
+
+**LOS TRES SECRETOS DE LA FIRMA LOS TIENE QUE PONER ÉL, Y NO SABE CÓMO.** Dijo: *"lo de los
+tres secretos es que no sé cómo hacerlo, ¿no puedes hacerlo tú?"*. **NO SE PUEDE DESDE
+AQUÍ**: crear un secreto de Actions exige cifrarlo con la clave pública del repositorio y
+un token con permisos de administración, y aquí no hay ni `gh` ni esa API. Hay que
+explicárselo paso a paso, con los nombres exactos, cada vez que haga falta.
 
 **Lo que queda de lo anterior, y está esperando a que él lo diga:**
 
+0. **APARCADO POR ÉL, y no hay que sacarlo sin que lo diga:** las **caras** de los
+   campeones con cinturón (*"déjalo, de momento así como están está bien"*), los **apodos**
+   en 189 de 355 (*"de momento así están bien"*) y **Google** para el inicio de sesión. Y
+   **la reestructuración de la interfaz está CERRADA**: *"eso ya lo hemos hecho, olvídalo"*.
+   Lo que él quiere ahora es **sacar la primera release, aunque sea una alfa muy temprana**.
 1. **Las imágenes de los botones que faltan.** Él dijo: *"TIENES QUE SUSTITUIRLOS POR
    IMÁGENES QUE YO TE DÉ, COMO EN EL PRIMERO DE JUGAR"*. Van dos (Conor y Islam) de
    veinte. **Las pasa él; no busques ni propongas fotos.** Siguen con icono dibujado:

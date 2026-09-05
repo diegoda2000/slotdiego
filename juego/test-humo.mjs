@@ -279,6 +279,36 @@ const sube = (f, q) => comprobar(
 sube(r => r.rankPorSobre, 'cada escalón trae más rankeados que el de debajo');
 sube(r => r.pctCorona, 'y el campeón sube en cada escalón');
 
+/* LA MONETIZACIÓN TIENE QUE TENER SENTIDO, y él la mandó revisar: "revisa todos los
+   precios y la monetización del juego, y hazla mejor".
+
+   El valor de un sobre es lo que trae, pesando cada tramo por lo que vale: un 12-15
+   cuenta 1, un 6-11 cuenta 2,5 y un campeón o top 5 cuenta 8. Con eso, el PRECIO POR
+   PUNTO DE VALOR tiene que BAJAR al subir de escalón: ahorrar para uno grande sale mejor
+   que comprar tres pequeños, y eso es lo que hace que ahorrar tenga sentido.
+
+   Antes estaba al revés: el raro salía a 1.033 el punto y el épico a 595, o sea que el
+   sobre de entrada de pago era el peor negocio de la tienda. */
+const dinero = await page.evaluate(() => {
+  const PESO = { top1215: 1, top611: 2.5, corona: 8 };
+  const out = {};
+  for (const k of Object.keys(TIPOS_SOBRE)) {
+    const T = TIPOS_SOBRE[k], tot = Object.values(T.tramos).reduce((a, b) => a + b, 0);
+    const valor = T.cartas * Object.entries(PESO)
+      .reduce((a, [id, w]) => a + T.tramos[id] / tot * w, 0);
+    out[k] = { coste: T.coste, valor, punto: T.coste / valor };
+  }
+  return out;
+});
+const DEPAGO = ['raro', 'epico', 'legendario', 'ultimate'];
+comprobar(DEPAGO.every((k, i) => i === 0 || dinero[k].punto < dinero[DEPAGO[i - 1]].punto),
+  `el precio por punto de calidad baja en cada escalón: ${
+    DEPAGO.map(k => Math.round(dinero[k].punto)).join(' · ')}`);
+comprobar(DEPAGO.every((k, i) => i === 0 || dinero[k].coste > dinero[DEPAGO[i - 1]].coste),
+  `y aun así cada uno cuesta más que el de debajo: ${
+    DEPAGO.map(k => dinero[k].coste).join(' · ')}`);
+comprobar(dinero.comun.coste === 0, 'y el común no cuesta nada');
+
 /* ── La Tienda y el flujo de apertura ──────────────────────────────────
    Un solo camino: fila → pantalla del sobre → toque encima del sobre → la apertura.
    Sin atajos y sin abrir varios de golpe. */
@@ -433,9 +463,9 @@ const compra = await page.evaluate(() => {
   document.querySelector('.precio[data-a="comprar"][data-t="raro"]').click();
   document.querySelector('[data-a="confirmarcompra"]').click();   // pagar pide un sí
   return { antes, tras: { div: S.divisa, sobres: S.sobres.length, sub: tmp.sub, vista },
-           cartas: S.coleccion.length };
+           cartas: S.coleccion.length, cuesta: TIPOS_SOBRE.raro.coste };
 });
-comprobar(compra.tras.div === 1000 && compra.tras.sobres === 1,
+comprobar(compra.tras.div === compra.antes.div - compra.cuesta && compra.tras.sobres === 1,
   `la fila de Comprar paga y guarda el sobre (${compra.antes.div} → ${compra.tras.div})`);
 comprobar(compra.cartas === 0 && compra.tras.vista === 'tienda',
   'y no abre nada: comprar y abrir son dos decisiones distintas');
@@ -456,10 +486,10 @@ const abrir = await page.evaluate(async () => {
   S.coleccion = guardado.coleccion; S.plantilla = guardado.plantilla;
   return { enSobre, hablaDePrecio, tras };
 });
-comprobar(abrir.enSobre.vista === 'sobre' && abrir.enSobre.div === 1000 && abrir.enSobre.sobres === 1,
+comprobar(abrir.enSobre.vista === 'sobre' && abrir.enSobre.div === compra.tras.div && abrir.enSobre.sobres === 1,
   'entrar a la pantalla del sobre no cobra ni consume nada');
 comprobar(!abrir.hablaDePrecio, 'y ahí no se habla de precio: no hay nada que pagar');
-comprobar(abrir.tras.div === 1000 && abrir.tras.sobres === 0,
+comprobar(abrir.tras.div === compra.tras.div && abrir.tras.sobres === 0,
   `abrir gasta el sobre y NO el dinero (${abrir.tras.div} monedas intactas)`);
 comprobar(abrir.tras.vista === 'apertura',
   'y el mismo toque lleva a la apertura');
@@ -478,7 +508,8 @@ const confirma = await page.evaluate(() => {
   document.querySelector('.precio[data-a="comprar"][data-t="raro"]').click();
   const desdeElPrecio = hayOv();
   document.querySelector('[data-a="confirmarcompra"]').click();
-  const comprado = { div: S.divisa, sobres: S.sobres.length, sub: tmp.sub };
+  const comprado = { div: S.divisa, sobres: S.sobres.length, sub: tmp.sub,
+    cuesta: TIPOS_SOBRE.raro.coste };
   ir('tienda');
   document.querySelector('.fila[data-a="versobre"][data-t="comun"]').click();
   const gratis = { vista, pregunta: hayOv() };
@@ -492,7 +523,7 @@ comprobar(confirma.tarjeta.pregunta && confirma.tarjeta.div === 3000 && confirma
 comprobar(confirma.cancelado.div === 3000 && confirma.cancelado.sobres === 0,
   'cancelar no cobra ni deja sobre');
 comprobar(confirma.desdeElPrecio, 'y el precio hace exactamente lo mismo que la tarjeta');
-comprobar(confirma.comprado.div === 1000 && confirma.comprado.sobres === 1,
+comprobar(confirma.comprado.div === 3000 - confirma.comprado.cuesta && confirma.comprado.sobres === 1,
   `confirmando sí se cobra y aparece el sobre (${confirma.comprado.div} monedas)`);
 comprobar(confirma.comprado.sub === 'mios', 'y salta a "Mis sobres", que es donde ha aparecido');
 comprobar(!confirma.gratis.pregunta && confirma.gratis.vista === 'sobre',
@@ -508,12 +539,12 @@ const pobre = await page.evaluate(() => {
   const antes = { div: S.divisa, cartas: S.coleccion.length, vista };
   f.click();
   return { apagada: fuera.classList.contains('apagada'), desactivada: f.disabled,
-    precio: f.textContent.trim(),
+    precio: f.textContent.trim(), debe: miles(TIPOS_SOBRE.ultimate.coste),
     nombre: /ultimate/i.test(fuera.textContent),
     sigueIgual: vista === antes.vista && S.divisa === antes.div && S.coleccion.length === antes.cartas };
 });
 comprobar(pobre.apagada && pobre.desactivada, 'sin fichas, la fila sale apagada y no responde');
-comprobar(pobre.precio.includes('12.500') && pobre.nombre,
+comprobar(pobre.precio.includes(pobre.debe) && pobre.nombre,
   `y se sigue leyendo entera, con su precio (${pobre.precio})`);
 comprobar(pobre.sigueIgual, 'y tocarla no hace nada ni da ningún error');
 
