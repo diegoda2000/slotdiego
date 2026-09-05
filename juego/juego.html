@@ -1092,6 +1092,16 @@ th{color:var(--dim2);font-size:11px;text-transform:uppercase;letter-spacing:.04e
 /* Cabecera y botón, al mínimo: cada píxel que se ahorra aquí se lo quedan las cartas. */
 .pcab{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin:0 0 7px}
 .pcab h2{margin:0;font-size:19px}
+/* LA FLECHA DE VOLVER, a la izquierda del título. Sustituye al botón "Atrás" del pie, que
+   lo mandó fuera: "quita el botón de abajo de atrás, y en lugar de eso por arriba a la
+   izquierda de JUGAR, una flecha".
+
+   Va con `align-self:center` a propósito: .pcab alinea por LÍNEA BASE, y la línea base de
+   una caja que solo lleva un SVG dentro es su canto de abajo, así que alineada como el
+   resto la flecha se montaba medio dedo por encima del texto. */
+.pcab .volver{background:none;border:0;padding:0;margin:0 -1px 0 0;cursor:pointer;
+  color:var(--acc);display:flex;align-items:center;align-self:center}
+.pcab .volver .ico{width:25px;height:25px;stroke-width:2.4}
 .pcab .sub{font-size:11px}
 /* El TIENDA del boceto: grande y en cursiva, no el titulillo de una pantalla interior.
    Medido sobre el dibujo, 17 px de caja alta en un móvil de 273 de ancho. */
@@ -1331,6 +1341,7 @@ const ICONOS={
   ayuda:'<circle cx="12" cy="12" r="10" /> <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /> <path d="M12 17h.01" />',
   reloj:'<circle cx="12" cy="12" r="10" /> <polyline points="12 6 12 12 16 14" />',
   galon:'<path d="m9 18 6-6-6-6" />',
+  atras:'<path d="m15 18-6-6 6-6" />',
 };
 const icono=(n,cls='')=>`<svg class="ico ${cls}" viewBox="0 0 24 24" fill="none"
   stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
@@ -1774,9 +1785,17 @@ function salirDeSala(){
    ══════════════════════════════════════════════════════════════════════════ */
 /* Plantilla del rival de la IA, ajustada al nivel del jugador. Se mide con la suma de
    stats porque es lo único comparable que hay — y como es interna, sirve para esto
-   igual de bien que serviría una media, sin necesidad de inventarse una. */
-function plantillaIA(sumaObjetivo){
-  const out={}, personas=new Set();
+   igual de bien que serviría una media, sin necesidad de inventarse una.
+
+   `fuera` SON LOS PELEADORES DEL JUGADOR, y hay que pasarlos. La IA apunta a la media
+   de TU plantilla y se queda con uno de los cinco más cercanos a ese número: si la tuya
+   es buena, esos cinco son justo los tuyos, y te tocaba pelear contra tu propio equipo.
+   Y eso no es una partida: si los dos peleadores son el mismo, la stat vale lo mismo,
+   el margen es 0 y el duelo lo decide una moneda al aire. Entrando en el mismo Set que
+   ya impedía que la IA repitiera dentro de su plantilla, ninguna de las once casillas
+   puede caer en alguien tuyo. */
+function plantillaIA(sumaObjetivo,fuera){
+  const out={}, personas=new Set(fuera);
   for(const d of DIVISIONES){
     const pool=alineables().filter(c=>c.division===d.id&&!personas.has(c.persona));
     pool.sort((a,b)=>Math.abs(a.suma-sumaObjetivo)-Math.abs(b.suma-sumaObjetivo));
@@ -1893,9 +1912,9 @@ function cartaHTML(c,o={}){
 const PESTANAS=[
   ['tienda',  'carrito','Tienda',  ['apertura','sobre']],
   ['club',    'escudo', 'Club',    ['plantilla','coleccion','intercambio','sets','reciclaje','notas']],
-  ['inicio',  'casa',   'Inicio',  ['jugar','reglas','directo','online','partida','draft']],
+  ['inicio',  'casa',   'Inicio',  ['jugar','aprende','reglas','directo','online','partida','draft']],
   ['desafios','trofeo', 'Desafíos',['retosdetalle','logros']],
-  ['perfil',  'persona','Perfil',  ['ajustes','redes','aprende']],
+  ['perfil',  'persona','Perfil',  ['ajustes','redes']],
 ];
 function navHTML(){
   const pend=S.sobres.length+nGratisListos();
@@ -2211,10 +2230,19 @@ const abanico=()=>`<span class="abanico">
    la partida en directo, que juega de verdad. */
 /* EL DRAFT VIVE AQUÍ DENTRO. En la interfaz de antes era una tarjeta suelta en Inicio; el
    boceto no le da sitio propio y el dueño lo dijo claro: "lo de draft está dentro de la
-   parte de jugar". Que es donde tenía que estar: es otra manera de jugar, no otra sección. */
+   parte de jugar". Que es donde tenía que estar: es otra manera de jugar, no otra sección.
+
+   Y APRENDE A JUGAR TAMBIÉN. Estaba aparcada al final del Perfil, bajo el rótulo "Sin
+   colocar todavía", porque el boceto no la pinta en ninguna pantalla. El dueño le dio
+   sitio aquí: "mueve la pestaña tutorial dentro de la pestaña de jugar, ya que antes no
+   tenía sitio, démosle ese sitio". Va la última porque no es un modo de juego, y con su
+   marca roja mientras el tutorial esté sin hacer. En el Perfil ya solo queda Mis redes
+   sin colocar. */
 function vJugar(){
   const ok=plantillaCompleta();
-  return `<div class="pcab"><h2>Jugar</h2></div>
+  return `<div class="pcab">
+      <button class="volver" data-nav="inicio" aria-label="Atrás">${icono('atras')}</button>
+      <h2>Jugar</h2></div>
     <div class="pila">
       ${tarjeta({nav:'directo', ic:'antena', t:'PvP', d:'Crea una sala y juega en directo',
         off:!ok})}
@@ -2224,8 +2252,9 @@ function vJugar(){
         off:!ok})}
       ${tarjeta({nav:'draft', t:'Draft', d:'Elige tu plantilla y compite',
         dentro:abanico()+icono('dados','suelto')})}
-    </div>
-    <button class="btn sec" data-nav="inicio">Atrás</button>`;
+      ${tarjeta({nav:'aprende', ic:'birrete', t:'Aprende a jugar',
+        d:'El tutorial y las reglas', alerta:!S.tutorialHecho})}
+    </div>`;
 }
 
 /* Aprende a jugar: el tutorial y las reglas, en un sitio. Mientras el tutorial no se haya
@@ -2244,7 +2273,7 @@ function vAprende(){
       <span class="der">›</span></button>`;
   return `<div class="pcab"><h2>Aprende a jugar</h2></div>
     ${S.tutorialHecho?reglas+tuto:tuto+reglas}
-    <button class="btn sec" data-nav="inicio">Atrás</button>`;
+    <button class="btn sec" data-nav="jugar">Atrás</button>`;
 }
 
 /* ── LOGROS ──
@@ -2425,7 +2454,6 @@ function vPerfil(){
         filaLista({ic:'ayuda', t:'Ayuda', pdte:true}))}
       <span class="rot">Sin colocar todavía</span>
       ${grupo(
-        filaLista({nav:'aprende', ic:'birrete', t:'Aprende a jugar', alerta:!S.tutorialHecho}),
         filaLista({nav:'redes', ic:'megafono', t:'Mis redes'}))}
     </div>
   </div>`;
@@ -3572,12 +3600,18 @@ function vNotas(){
 function empezarPartida(amigo){
   const pj={};
   let sumaPl=0;
-  for(const d of DIVISIONES){ pj[d.id]=cartaDe(S.plantilla[d.id]); sumaPl+=pj[d.id].suma; }
+  const mios=new Set();
+  for(const d of DIVISIONES){
+    pj[d.id]=cartaDe(S.plantilla[d.id]); sumaPl+=pj[d.id].suma; mios.add(pj[d.id].persona);
+  }
   let pr,nombre;
   if(amigo){
+    /* Contra un amigo NO se le quita nada: son sus cartas de verdad, y si los dos tenéis
+       al mismo peleador, eso ha pasado de verdad. Sólo la IA se inventa la plantilla, y
+       sólo ella tiene que esquivarte. */
     pr={}; for(const id of amigo.cartas){ const c=PORID[id]; pr[c.division]=c; }
     nombre=amigo.nombre;
-  }else{ pr=plantillaIA(Math.round(sumaPl/11)+ri(-12,12)); nombre='El rival'; }
+  }else{ pr=plantillaIA(Math.round(sumaPl/11)+ri(-12,12),mios); nombre='El rival'; }
   P=nuevaPartida(pj,pr);
   P.rival=nombre; P.amigoId=amigo?amigo.id:null;
   ir('partida');
@@ -3598,10 +3632,18 @@ function empezarPartida(amigo){
    que ese concepto aparece en pantalla, y se puede cortar de un botón.
    ══════════════════════════════════════════════════════════════════════════ */
 
-// Plantilla legal (11 divisiones, sin repetir peleador) que además lleva sí o sí
-// los rasgos pedidos. Determinista: el catálogo es siempre el mismo.
-function plantillaGuiada(rasgosPedidos){
-  const pool=alineables(), usados=new Set(), out={};
+/* Plantilla legal (11 divisiones, sin repetir peleador) que además lleva sí o sí los
+   rasgos pedidos. Determinista: el catálogo es siempre el mismo.
+
+   `usados` ENTRA DESDE FUERA, Y NO ES UN DETALLE. Con un Set nuevo dentro de cada
+   llamada, las dos plantillas del tutorial salían IDÉNTICAS —misma función, mismo
+   catálogo, mismo orden—: 10 de las 11 divisiones tenían al mismo peleador en los dos
+   lados. Y si los dos peleadores son el mismo, la stat vale lo mismo, el margen es 0 y
+   el duelo se decide a cara o cruz: el tutorial explicaba finish, decisión y reñido sin
+   enseñar ni uno de los tres. Pasando el MISMO Set a las dos llamadas, la segunda no
+   puede repetir a nadie de la primera. */
+function plantillaGuiada(rasgosPedidos,usados=new Set()){
+  const pool=alineables(), out={};
   for(const t of rasgosPedidos){
     const c=pool.find(x=>!out[x.division]&&!usados.has(x.persona)
       && x.rasgos.some(r=>r.tipo===t&&!r.plus));
@@ -3617,8 +3659,10 @@ function plantillaGuiada(rasgosPedidos){
 }
 
 function empezarTutorial(){
-  P=nuevaPartida(plantillaGuiada(['veterano','especialista','camaleon']),
-                 plantillaGuiada(['incomodo','veterano']));
+  // EL MISMO Set en las dos: el Sparring no puede llevar a nadie de tu plantilla.
+  const usados=new Set();
+  P=nuevaPartida(plantillaGuiada(['veterano','especialista','camaleon'],usados),
+                 plantillaGuiada(['incomodo','veterano'],usados));
   P.rival='Sparring'; P.amigoId=null;
   P.tutorial=true; P.tutorVistos=[]; P.tutorPaso=null;
   ir('partida');

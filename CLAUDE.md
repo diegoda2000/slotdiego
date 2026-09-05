@@ -219,14 +219,28 @@ cualquier pantalla**.
 | **Inicio** | ficha del jugador · banner **JUGAR** con su botón · **ACTIVIDAD DIARIA** · **NOVEDADES** · **TU PROGRESO** |
 | **Club** | tira **MI PLANTILLA** con cinco cartas solapadas · COLECCIÓN · SETS · RECICLAJE · INTERCAMBIO |
 | **Desafíos** | SBC · DESAFÍOS · EVENTOS · **PASE DE TEMPORADA** · LOGROS |
-| **Perfil** | ficha con cifras · tres grupos de filas · y abajo, con su rótulo, lo que aún no tiene sitio |
+| **Perfil** | ficha con cifras · tres grupos de filas · y abajo, con su rótulo, lo que aún no tiene sitio (ya sólo Mis redes) |
 
 **NO SE COME NADA, y lo dijo él.** Draft está **dentro de JUGAR** —*"lo de draft está
-dentro de la parte de jugar"*—, junto a PvP, Contra un amigo y Contra la IA. **Aprende y
-Mis redes** no salen en el boceto y quedaron en *"ya veremos dónde lo metemos"*: están
-aparcados al final del Perfil, bajo el rótulo **SIN COLOCAR TODAVÍA**. SBC y Logros se
-fueron a Desafíos; Ajustes dejó de ser un botón del Club y vive en el engranaje y en el
+dentro de la parte de jugar"*—, junto a PvP, Contra un amigo y Contra la IA. SBC y Logros
+se fueron a Desafíos; Ajustes dejó de ser un botón del Club y vive en el engranaje y en el
 Perfil.
+
+**Y APRENDE A JUGAR TAMBIÉN ESTÁ DENTRO DE JUGAR**, la quinta y última tarjeta. Estuvo
+aparcada al final del Perfil, bajo el rótulo **SIN COLOCAR TODAVÍA**, porque el boceto no
+la pinta en ninguna pantalla y él lo dejó en *"ya veremos dónde lo metemos"*. Le dio sitio
+después: *"mueve la pestaña tutorial dentro de la pestaña de jugar, ya que antes no tenía
+sitio, démosle ese sitio"*. Va la última porque no es un modo de juego, y con su marca roja
+mientras el tutorial esté sin hacer. En el Perfil, bajo ese rótulo, **ya solo queda Mis
+redes**.
+
+**EL "ATRÁS" DEL PIE SE FUE DE JUGAR: ahora es una flecha arriba, a la izquierda del
+título.** Lo pidió así: *"quita el botón de abajo de atrás, y en lugar de eso por arriba a
+la izquierda de JUGAR, una flecha"*. Es `.pcab .volver`, y **lleva `align-self:center` a
+propósito**: `.pcab` alinea por línea base, y la línea base de una caja que sólo lleva un
+SVG dentro es su canto de abajo, así que alineada como el resto la flecha se montaba por
+encima del texto. **De momento sólo JUGAR**: las demás pantallas con `.pcab` siguen con su
+botón "Atrás" abajo, porque él nombró ésa.
 
 **LA FOTO DE PERFIL EMPIEZA VACÍA Y LA ELIGE ÉL.** Se toca la cara —en Inicio o en
 Perfil— y sale una rejilla con los peleadores de tu colección, recortados en octógono para
@@ -592,6 +606,33 @@ degradados separados por coma. Dejaba la página en blanco. Va partido en tres p
 ### La especificidad gana a las variables
 Un `linear-gradient` escrito a mano en una regla más específica anulaba el degradado del
 sistema y dejaba las casillas azules. Usa siempre `var(--tarjeta)`.
+
+### Dos llamadas a una función determinista dan lo MISMO, no dos cosas parecidas
+`empezarTutorial()` montaba las dos plantillas llamando dos veces a `plantillaGuiada()`,
+y cada llamada se creaba su propio `usados` dentro. Misma función, mismo catálogo, mismo
+orden: **10 de las 11 divisiones tenían al mismo peleador en los dos lados**. Y con el
+mismo peleador la stat vale lo mismo, el margen es 0 y el duelo lo decide una moneda al
+aire, así que el tutorial explicaba finish, decisión y reñido **sin enseñar ninguno de los
+tres** —y es lo primero que ve quien instala—. El arreglo es pasar **el mismo `Set` a las
+dos llamadas**. Medido después: 0 de 11 repetidos, y los 66 márgenes posibles salen 6%
+finish, 27% decisión, 53% reñido y 14% empate, o sea variados sin tocar el 496 ni inventar
+un número.
+
+Lo mismo en las partidas normales: **`plantillaIA()` recibe ahora los peleadores del
+jugador y no puede cogerlos**. Apunta a la media de TU plantilla y se queda con uno de los
+cinco más cercanos: si la tuya es buena, esos cinco eran los tuyos. **Contra un amigo NO
+se filtra**: son sus cartas de verdad, y si coincidís, ha pasado de verdad.
+
+### Una prueba que mira el estado de ANTES pasa sin probar nada
+El apartado "N partidas completas" de la suite pulsaba `[data-a="jugar"]` estando en
+Inicio. Ese botón es "Contra la IA" y **vive dentro de JUGAR**, así que no arrancaba nada
+—y no saltaba ninguna alarma, porque en `P` seguía la partida del tutorial, ya terminada:
+la prueba la encontraba en fase `fin`, la daba por buena y **la contaba N veces**. Verde
+anunciando veinte partidas sin jugar ni una, con las métricas de abajo midiendo el mismo
+tutorial una y otra vez. Venía así desde que la navegación pasó a tres pestañas
+(`e655244`). Ahora navega Inicio → JUGAR → Contra la IA y **exige una partida NUEVA**
+(`fase==='rol'` y `!P.tutorial`) antes de jugarla. Regla: comprobar el estado de algo que
+puede ser lo de antes no comprueba nada.
 
 ---
 

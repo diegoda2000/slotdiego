@@ -1133,8 +1133,12 @@ comprobar(rolFuera.dado === 0,
 console.log('\n2j. Partida tutorial');
 const tut = await page.evaluate(() => {
   S.tutorialHecho = false; S.tutorCortado = false;
-  const pj = plantillaGuiada(['veterano', 'especialista', 'camaleon']);
-  const pr = plantillaGuiada(['incomodo', 'veterano']);
+  /* SE MONTA LA PARTIDA DE VERDAD y se miran SUS dos plantillas. Antes esto llamaba a
+     plantillaGuiada() por su cuenta, dos veces, y comprobaba esas dos: o sea que probaba
+     una copia del código en vez del código, y por eso no vio nunca que el tutorial era un
+     espejo —10 de las 11 divisiones con el mismo peleador en los dos lados—. */
+  empezarTutorial();
+  const pj = P.cartas.j, pr = P.cartas.r;
   const legal = p => {
     const c = Object.values(p);
     return c.length === 11 && c.every(x => x && x.alineable)
@@ -1142,31 +1146,39 @@ const tut = await page.evaluate(() => {
       && new Set(c.map(x => x.persona)).size === 11;
   };
   const tiene = (p, t) => Object.values(p).some(c => c.rasgos.some(r => r.tipo === t));
+  const mios = new Set(Object.values(pj).map(c => c.persona));
   return { legalJ: legal(pj), legalR: legal(pr),
     vet: tiene(pj, 'veterano'), esp: tiene(pj, 'especialista'),
     cam: tiene(pj, 'camaleon'), inc: tiene(pr, 'incomodo'),
+    repes: Object.values(pr).filter(c => mios.has(c.persona)).length,
     pasos: TUTOR.length };
 });
 comprobar(tut.legalJ && tut.legalR, 'las dos plantillas del tutorial son legales: 11 divisiones, sin repetir peleador');
+comprobar(tut.repes === 0,
+  `y el Sparring no lleva NI UNO de los tuyos (${tut.repes} repetidos): con el mismo peleador ` +
+  'en los dos lados el margen es 0 y el duelo lo decide una moneda al aire');
 comprobar(tut.vet && tut.esp && tut.cam, 'la tuya lleva Veterano, Especialista y Camaleón garantizados');
 comprobar(tut.inc, 'y la del sparring lleva Incómodo, para que lo veas de verdad');
 
 /* El tutorial ya no cuelga de Inicio: vive dentro de "Aprende a jugar". Mientras no se
-   haya jugado, esa fila va marcada y el tutorial es lo primero de dentro.
+   haya jugado, esa tarjeta va marcada y el tutorial es lo primero de dentro.
 
-   Y "Aprende a jugar" ya no está en Inicio, sino en PERFIL: el boceto de la interfaz
-   nueva no le da sitio y el dueño lo dejó para más adelante -"lo de aprende, ya veremos
-   dónde lo metemos"-, así que se aparca ahí abajo, bajo su rótulo, sin comérselo. */
+   Y "Aprende a jugar" VIVE DENTRO DE JUGAR. Estuvo aparcada al final del Perfil, bajo el
+   rótulo "Sin colocar todavía", porque el boceto de la interfaz nueva no le da sitio; el
+   dueño se lo dio: "mueve la pestaña tutorial dentro de la pestaña de jugar, ya que antes
+   no tenía sitio, démosle ese sitio". */
 const sinHacer = await page.evaluate(() => {
-  S.tutorialHecho = false; ir('perfil');
+  S.tutorialHecho = false; ir('jugar');
   const mitad = document.querySelector('[data-nav="aprende"]');
   const roja = mitad && mitad.classList.contains('alerta');
   ir('aprende');
   const filas = [...document.querySelectorAll('.fila')];
   return { roja, primera: filas[0] && filas[0].dataset.a === 'tutorial',
+           enPerfil: (ir('perfil'), document.querySelectorAll('[data-nav="aprende"]').length),
            enInicio: (ir('inicio'), document.querySelectorAll('[data-a="tutorial"]').length) };
 });
-comprobar(sinHacer.roja, 'sin hacer el tutorial, "Aprende a jugar" va marcada en Perfil');
+comprobar(sinHacer.roja, 'sin hacer el tutorial, "Aprende a jugar" va marcada dentro de JUGAR');
+comprobar(sinHacer.enPerfil === 0, 'y ya no está aparcada en el Perfil');
 comprobar(sinHacer.primera, 'y dentro, el tutorial es la primera línea');
 comprobar(sinHacer.enInicio === 0, 'pero no cuelga de Inicio: Inicio solo lleva a la sección');
 await page.evaluate(() => { ir('aprende'); });
@@ -1218,7 +1230,7 @@ comprobar(finT.partidas === 0, 'y NO cuenta en tu registro de partidas: se juega
 /* Hecho el tutorial: deja el rojo, las reglas pasan delante — y el tutorial NO
    desaparece, se puede repetir. */
 const yaHecho = await page.evaluate(() => {
-  ir('perfil');
+  ir('jugar');
   const mitad = document.querySelector('[data-nav="aprende"]');
   const roja = mitad && mitad.classList.contains('alerta');
   ir('aprende');
@@ -1233,6 +1245,26 @@ comprobar(await page.evaluate(() => { vista = 'reglas'; render();
   return document.body.textContent.includes('Camaleón') && document.body.textContent.includes('55 de cada 100'); }),
   'y las reglas completas siguen a mano en su pantalla');
 
+/* ── 2k. Contra la IA tampoco te toca tu propio equipo ─────────────────── */
+console.log('\n2k. El rival de la IA no es tu plantilla');
+/* plantillaIA() apunta a la media de TU plantilla y se queda con uno de los cinco más
+   cercanos a ese número. Si la tuya es buena, esos cinco son los tuyos: te tocaba pelear
+   contra tu propio equipo, con todos los márgenes a 0. Ahora recibe tus peleadores y no
+   puede cogerlos. */
+const espejo = await page.evaluate(() => {
+  let peor = 0, total = 0;
+  for (let i = 0; i < 60; i++) {
+    empezarPartida(null);
+    const mios = new Set(Object.values(P.cartas.j).map(c => c.persona));
+    const repes = Object.values(P.cartas.r).filter(c => mios.has(c.persona)).length;
+    if (repes > peor) peor = repes;
+    total += repes;
+  }
+  return { peor, total };
+});
+comprobar(espejo.peor === 0,
+  `en 60 partidas contra la IA no te toca ni una vez un peleador tuyo (${espejo.total} coincidencias)`);
+
 /* ── 3. Partidas completas ────────────────────────────────────────────── */
 console.log(`\n3. ${N_PARTIDAS} partidas completas`);
 const stats = { partidas: 0, victorias: 0, empates33: 0, duelos: 0,
@@ -1246,8 +1278,27 @@ const clicVisible = async sel => {
 };
 
 for (let n = 0; n < N_PARTIDAS; n++) {
-  await page.evaluate(() => { vista = 'inicio'; render(); });
+  // Inicio -> JUGAR -> Contra la IA, que es el camino que hace el jugador de verdad.
+  // Se borra P a posta: así lo que se mire después no puede ser la partida de antes.
+  await page.evaluate(() => { vista = 'inicio'; render(); P = null; });
+  await clicVisible('[data-nav="jugar"]');
   await clicVisible('[data-a="jugar"]');
+
+  /* Y SE COMPRUEBA QUE HA ARRANCADO DE VERDAD, que es lo que faltaba.
+
+     Antes se pulsaba [data-a="jugar"] estando en Inicio, y ese botón no está en Inicio:
+     es "Contra la IA" y vive DENTRO de JUGAR. Así que no arrancaba nada. Y no saltaba
+     ninguna alarma porque en P seguía la partida del tutorial, ya terminada: la prueba
+     la encontraba en fase 'fin', la daba por buena y la contaba N veces. Verde con
+     veinte partidas anunciadas y ni una jugada, y con todas las métricas de abajo
+     midiendo el mismo tutorial una y otra vez. Mirar la fase de una partida que puede
+     ser la de antes no comprueba nada: hay que exigir una NUEVA. */
+  const arranca = await page.evaluate(() => P && { fase: P.fase, tutorial: !!P.tutorial });
+  if (!arranca || arranca.fase !== 'rol' || arranca.tutorial) {
+    console.log(`  ✗ la partida ${n + 1} no llegó a arrancar` +
+      (arranca ? ` (fase "${arranca.fase}"${arranca.tutorial ? ', y encima es la del tutorial' : ''})` : ''));
+    fallos++; break;
+  }
 
   // rol
   await clicVisible(Math.random() < .5 ? '[data-rol="vetar"]' : '[data-rol="declarar"]');
