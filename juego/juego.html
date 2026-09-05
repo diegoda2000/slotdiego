@@ -2315,9 +2315,10 @@ function tiraPlantilla(){
      Se reordena 5-3-1-2-4 para que las mejores queden hacia dentro. */
   const orden=[4,2,0,1,3].map(i=>cinco[i]).filter(Boolean);
   const medio=(orden.length-1)>>1;
+  /* SIN EL NÚMERO DEBAJO. Lo pidió él: la media ya está en la propia carta, y repetirla
+     bajo cada una llenaba la tira de cifras. */
   const huecos=orden.map((c,i)=>`<span class="hueco ${i===medio?'jefa':''}">
-      ${cartaHTML(c,{compacta:true})}
-      <span class="med">${Math.round(c.suma/6)}</span></span>`).join('')
+      ${cartaHTML(c,{compacta:true})}</span>`).join('')
     || '<span class="hueco"><span class="vacia"></span></span>'.repeat(5);
   return `<div class="blq">
     <div class="bt"><h3>Mi plantilla</h3>

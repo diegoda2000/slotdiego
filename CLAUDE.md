@@ -68,8 +68,14 @@ encima. Decidido por el dueño:
 - **El récord SE VA.** En el boceto no estaba y el dueño lo ha confirmado: la carta nueva
   no lo lleva. El campo sigue en `roster.js`, sólo deja de pintarse.
 - **Los apodos SÍ van**, y aprobó los que se usaron en la maqueta —THE NIGHTMARE, THE
-  BADDY, SUGA…—. El plantel tiene el campo `apodo` pero **vacío en los 355**: hay que
-  rellenarlo, y quien no tenga apodo deja la línea en blanco.
+  BADDY, SUGA…—. Están en `docs/apodos.json`: **189 de 355**. Él pidió que los tengan
+  **TODOS los que lo tengan**, y desde aquí no se puede terminar: el proxy deniega
+  ufcstats.com, ufc.com, sherdog.com y Wikipedia, así que no hay con qué comprobarlo.
+  Para eso está **`herramientas/importar-apodos.mjs`**, que los trae de ufcstats.com y
+  sólo AÑADE los que faltan —no toca los escritos a mano—; **hay que ejecutarla en una
+  máquina con internet normal**, como `importar-fotos.mjs`, y después volver a pasar
+  `importar-roster.mjs`. **Quien no tenga apodo deja la línea en blanco: inventarle uno a
+  alguien es peor que dejarlo vacío.**
 - **El monograma de la esquina SE QUITÓ.** Estaba de marca de agua y lo mandó fuera. El
   archivo se queda en `originales/marcos-v2/monograma.png` por si se recupera; no lo
   repongas.
