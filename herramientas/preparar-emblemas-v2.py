@@ -1,14 +1,14 @@
 """Deja listos los emblemas NUEVOS —los que pasó el dueño— para el juego.
 
 Van a juego/arte/emblemas/ y sustituyen a los que se habían recortado de su boceto, que
-salían de un dibujo de baja resolución y quedaban blandos. Los que todavía no ha pasado
-—SBC, desafíos, eventos, pase y logros— siguen siendo los recortados; los saca
-herramientas/sacar-emblemas.py.
+salían de un dibujo de baja resolución y quedaban blandos. YA ESTÁN LOS NUEVE: con SBC,
+desafíos, eventos, pase y logros no queda ni uno del boceto, así que
+herramientas/sacar-emblemas.py no hay que volver a pasarla.
 
 SE NORMALIZAN POR PESO VISUAL, NO POR ALTO. Puestos todos al mismo alto, el de intercambio
 —dos flechas anchas y bajas— se ve enorme al lado de la caja de la colección, que es alta y
 estrecha. Lo que tiene que medir lo mismo es LA TINTA: se cuenta el área opaca de cada uno y
-se escala para que la raíz de esa área sea la misma en los cuatro. Es la misma cuenta que se
+se escala para que la raíz de esa área sea la misma en los nueve. Es la misma cuenta que se
 usa para casar iconos de distinta forma en una barra.
 
 Uso:  python3 herramientas/preparar-emblemas-v2.py
@@ -18,10 +18,11 @@ import os
 
 ORIGEN = 'originales/emblemas-v2'
 SALIDA = 'juego/arte/emblemas'
-TINTA = 168          # raíz del área opaca, en px: fija el peso visual de los cuatro
+TINTA = 168          # raíz del área opaca, en px: fija el peso visual de los nueve
 TOPE = 420           # ninguno pasa de aquí de alto ni de ancho
 
-NOMBRES = ['reciclaje', 'intercambio', 'coleccion', 'sets']
+NOMBRES = ['reciclaje', 'intercambio', 'coleccion', 'sets',
+           'sbc', 'desafios', 'eventos', 'pase', 'logros']
 
 os.makedirs(SALIDA, exist_ok=True)
 for n in NOMBRES:

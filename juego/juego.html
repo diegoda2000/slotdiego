@@ -2342,11 +2342,12 @@ function filaLista({nav,a,ic,t,d,alerta,pdte,em}){
     ${em?emblema(em):''}
   </button>`;
 }
-/* LOS EMBLEMAS SON LOS DEL BOCETO, recortados de su propio archivo por
-   herramientas/sacar-emblemas.py. No son iconos parecidos: los dibujó él y los pidió tal
-   cual —"intenta copiar, por ejemplo, los logos de desafíos, eventos, colección, sets, no
-   me pongas esos logos de mierda"—. Van a 3x para que no se ablanden en un móvil que
-   pinta a doble densidad. */
+/* LOS NUEVE EMBLEMAS SON LOS SUYOS, pasados uno a uno y preparados por
+   herramientas/preparar-emblemas-v2.py. No son iconos parecidos: los pidió tal cual
+   —"intenta copiar, por ejemplo, los logos de desafíos, eventos, colección, sets, no me
+   pongas esos logos de mierda"—. Ya no queda ninguno recortado del boceto, que salían de
+   un dibujo de baja resolución y llevaban color. Van a 3x para que no se ablanden en un
+   móvil que pinta a doble densidad. */
 const emblema=n=>`<span class="em"><img src="arte/emblemas/${n}.webp" alt="" loading="lazy"></span>`;
 
 /* Varias filas dentro de un solo panel, separadas por una raya. Es lo que hace que

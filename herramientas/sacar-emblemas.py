@@ -1,5 +1,11 @@
 """Saca del boceto los emblemas de las filas y los deja listos para el juego.
 
+YA NO HACE FALTA, Y NO HAY QUE VOLVER A PASARLA. El dueño acabó pasando los nueve
+emblemas dibujados a resolución completa, así que en juego/arte/emblemas/ no queda ni
+uno recortado del boceto. Los prepara herramientas/preparar-emblemas-v2.py desde
+originales/emblemas-v2/. Esto se queda por si algún día hace falta volver a medir el
+boceto: pasarla ahora PISA los nueve buenos con los recortes de baja resolución.
+
 SON LOS DEL DUEÑO, NO ICONOS PARECIDOS. Los dibujó él en el boceto y lo pidió así:
 "intenta copiar, por ejemplo, los logos de desafíos, eventos, colección, sets, no me
 pongas esos logos de mierda". Así que se recortan de su archivo, no se sustituyen.

@@ -11,7 +11,9 @@ disculpas. Los nombres de funciones, variables y archivos también van en españ
 
 ## En qué punto está el trabajo
 
-Rama de trabajo: **`claude/diseno-carta-pendiente-vn5tw1`**. Último commit `d51d550`.
+Rama de trabajo: **`claude/diseno-carta-pendiente-vn5tw1`**. Lo último entregado: los
+nueve emblemas de verdad. (El número de commit no se apunta aquí: se quedaba viejo al
+commit siguiente y despistaba más que ayudaba.)
 El APK se publica solo en cada push y se descarga de la publicación **`apk-latest`**
 (`p4p-cg.apk`, ~11,6 MB, y `p4p-cg.ipa`).
 
@@ -306,30 +308,36 @@ tamaños medidos sobre el boceto se quedarían cortos. Con 108,7% —que es 0,69
 letra vuelve a medir en pantalla lo que mide en el boceto sin tocar ni un `font-size`. Si un
 WebView viejo lo ignora, el texto sale un 8% más pequeño y ya está.
 
-**CUATRO EMBLEMAS SON YA LOS DE VERDAD, y los pasó él**: colección, sets, reciclaje e
-intercambio, en `originales/emblemas-v2/`. Los prepara
-`herramientas/preparar-emblemas-v2.py`. **Colección es la CAJA y sets son las CARTAS con la
-estrella** —él dejó la elección abierta: la caja es donde se guardan todas y un set es un
-grupo concreto—.
+**LOS NUEVE EMBLEMAS SON YA LOS DE VERDAD, y los pasó él todos.** Están a resolución
+completa en `originales/emblemas-v2/` y los prepara `herramientas/preparar-emblemas-v2.py`.
+**Ya no queda ni uno recortado del boceto**, que eran de baja resolución y llevaban color
+(morado, azul, rojo, verde) al lado del oro de los suyos.
+
+Los cuatro primeros: **colección es la CAJA y sets son las CARTAS con la estrella** —él dejó
+la elección abierta: la caja es donde se guardan todas y un set es un grupo concreto—, más
+reciclaje e intercambio. **Los cinco últimos los repartió él**, que había dudas y se le
+preguntó:
+
+| emblema | va en |
+|---|---|
+| billete con el XP | **pase de temporada** —un pase es un billete— |
+| tres peleadores con las flechas girando | **SBC** |
+| calendario con la estrella | **eventos** |
+| diana con la flecha | **desafíos** |
+| copa con el laurel | **logros** |
 
 **Se normalizan por PESO VISUAL, no por alto.** Puestos todos al mismo alto, el de
 intercambio —dos flechas anchas y bajas— se ve enorme al lado de la caja, que es alta y
 estrecha. Lo que tiene que medir lo mismo es la TINTA: se cuenta el área opaca de cada uno y
-se escala para que su raíz sea la misma en los cuatro.
+se escala para que su raíz sea la misma en los nueve. El del pase es el único que topa con
+el límite de 420 px, porque es un billete muy apaisado; da igual, porque no va en una fila
+sino dentro del bloque del pase, a 38 px de alto y al lado del rótulo.
 
-**Los otros cinco siguen recortados del boceto** —SBC, desafíos, eventos, pase y logros— y
-se nota: son de baja resolución y llevan color (morado, azul, rojo, verde) al lado del oro
-de los nuevos. **Están pendientes de que él los pase.**
-
-**LOS EMBLEMAS DEL BOCETO, recortados de su propio archivo.** Lo pidió así:
-*"intenta copiar, por ejemplo, los logos de desafíos, eventos, colección, sets, no me pongas
-esos logos de mierda"*. Los saca `herramientas/sacar-emblemas.py` y viven en
-`juego/arte/emblemas/` —nueve: colección, sets, reciclaje, intercambio, SBC, desafíos,
-eventos, pase y logros—. El fondo del panel se quita por **luminancia** y no por umbral: el
-emblema es claro sobre negro, así que el alfa sale de lo claro que es cada píxel; con un
-umbral duro el canto quedaba dentado. Van a **3x** para que no se ablanden en un móvil que
-pinta a doble densidad, y tres de las cajas están apretadas a mano porque el filete de oro
-del panel se colaba dentro y salía una raya suelta encima del emblema. Entran en el APK
+**`herramientas/sacar-emblemas.py` ya no se pasa.** Es la que los recortaba del boceto por
+**luminancia** y no por umbral —el emblema es claro sobre negro, así que el alfa salía de lo
+claro que fuese cada píxel; con un umbral duro el canto quedaba dentado—, con tres cajas
+apretadas a mano porque el filete de oro del panel se colaba dentro. Se queda por si hay que
+volver a medir el boceto, pero **pasarla ahora pisa los nueve buenos**. Entran en el APK
 solos: `build.gradle` y `servidor.yml` ya se llevan `arte/**`.
 
 **Las medidas salen de medir el boceto, no de ajustar a ojo.** El móvil del dibujo son
