@@ -157,32 +157,22 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
   padding:calc(11px + env(safe-area-inset-top)) calc(14px + env(safe-area-inset-right)) 11px
           calc(14px + env(safe-area-inset-left));
   border-bottom:1px solid rgba(192,135,25,.20);position:sticky;top:0;z-index:50}
-/* El logotipo. Va con la tipografía de los botones —la misma var(--titulo)—, en cursiva
-   como el JUGAR del botón grande, y con los colores dichos por el dueño: las dos P en el
-   acento —que ahora es oro—, el 4 en el plata y el .CG en blanco y más pequeño.
+/* EL LOGO DEL JUEGO, no el nombre escrito. Lo mandó cambiar él: "cambia el P4P.CG de la
+   esquina superior izquierda por el logo del juego". Es el octógono que pasó, el mismo
+   dibujo que ya era el icono de la aplicación, y lo prepara
+   herramientas/preparar-logo-v2.mjs en juego/arte/logo-v2.webp.
 
-   EL DIBUJO YA NO ESTÁ EN LA CABECERA. El boceto de la interfaz nueva la enseña con el
-   nombre solo, en las cinco pantallas, y con cinco pestañas, dos monedas y el engranaje
-   el ancho ya no da para el dibujo. Con él se fueron los tres números que existían solo
-   para alinearlo: el top:10px del texto, el margen negativo de la imagen y el apoyo
-   abajo del bloque. Si vuelve el dibujo, hay que volver a medirlos. */
-#top .logo{font-family:var(--titulo);font-weight:800;font-size:24px;letter-spacing:.01em;
-  font-style:italic;text-transform:uppercase;margin-right:auto;
-  display:flex;align-items:center}
-/* EL PIE DEL NOMBRE, A LA MISMA LÍNEA QUE EL PIE DEL LOGO. Con align-items:flex-end no
-   basta: lo que se alinea es la caja del texto, y esa caja reserva sitio bajo la línea
-   base para las colas de las letras, así que los pies de las letras quedan por encima del
-   canto del dibujo. Los 10 px son ese hueco, medido pintando y mirando dónde acaba la
-   tinta, no calculado. El span propio existe para poder moverlo solo a él y para que el
-   P4P y el .CG, que tienen tamaños distintos, compartan línea base entre ellos. */
-#top .logo .txt{display:flex;align-items:baseline}
-#top .logo b{color:var(--acc)}
-/* El 4 va del gris del propio logo y no de --plata: --plata (#b9b2ad) es un gris cálido,
-   tira a beige, y al lado del dibujo cantaba. Este #a59e9f sale de medir el logotipo —los
-   píxeles sin color y con algo de luz— y quedarse con su cuartil alto, que es el metal de
-   los nudillos del guante. --plata no se toca, que la usan las cartas. */
-#top .logo em{color:#a59e9f}
-#top .logo i{color:#fff;font-size:.58em;letter-spacing:.02em}
+   CON EL NOMBRE ESCRITO SE VAN SUS CUATRO MEDIDAS, que ya no tienen contra qué resolverse
+   porque no queda ni una letra que alinear: el `top:10px` que bajaba el texto hasta que su
+   pie caía en la línea del dibujo, el gris #a59e9f del 4 —medido del propio logotipo—, el
+   .58em del .CG y la cursiva. Si algún día vuelve el nombre escrito, hay que volver a
+   medirlos: están en el historial, no en la cabeza de nadie.
+
+   35 px es EXACTAMENTE lo que medía el hueco que dejaba el nombre escrito, así que la
+   cabecera sigue midiendo sus 58 px y no crece. El archivo va a 4x —144 px— para que no se
+   ablande en un móvil que pinta a triple densidad. */
+#top .logo{flex:none;margin-right:auto;display:flex;align-items:center}
+#top .logo img{height:35px;width:auto;display:block}
 /* Las dos monedas del boceto: el oro y las gemas. Icono dibujado —no un emoji, que cambia
    de forma en cada sistema— y el número al lado. SIN CHAPA NI RECUADRO: en el boceto van
    sueltas sobre la banda negra. */
@@ -1143,7 +1133,7 @@ th{color:var(--dim2);font-size:11px;text-transform:uppercase;letter-spacing:.04e
 </style>
 
 <div id="top">
-  <div class="logo"><span class="txt"><b>P</b><em>4</em><b>P</b><i>.CG</i></span></div>
+  <div class="logo"><img src="arte/logo-v2.webp" alt="P4P.CG"></div>
   <div class="res" id="r-div"></div>
   <div class="res" id="r-fic"></div>
   <button class="engranaje" data-nav="ajustes" aria-label="Ajustes"></button>

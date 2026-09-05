@@ -1,6 +1,7 @@
 /* Deja listo el logo NUEVO —el octógono con el P4P.CG— para el icono de la aplicación:
 
      originales/logo-v2/logo-recortado.png                     el logo sin fondo, a resolución completa
+     juego/arte/logo-v2.webp                                   el de la cabecera del juego
      android/.../drawable-xxxhdpi/ic_launcher_foreground.png   el icono de Android
      ios/.../AppIcon.appiconset/icono-1024.png                 el icono de iPhone
 
@@ -31,6 +32,10 @@ import path from 'path';
 
 const ORIGEN = 'originales/logo-v2/logo.png';
 const SUELTO = 'originales/logo-v2/logo-recortado.png';
+const CABECERA = 'juego/arte/logo-v2.webp';
+/* La cabecera lo pinta a 36 px de alto —lo que mide el hueco de la banda, medido—, y va a
+   4x porque un móvil de triple densidad lo dibuja a 108 px reales y a 1x se ablanda. */
+const CAB_ALTO = 144;
 const AND = 'android/app/src/main/res/drawable-xxxhdpi/ic_launcher_foreground.png';
 const IOS = 'ios/JaulaAbierta/Assets.xcassets/AppIcon.appiconset/icono-1024.png';
 
@@ -150,6 +155,24 @@ const recortarFondo = ({ b64 }) => new Promise(res => {
   img.src = 'data:image/png;base64,' + b64;
 });
 
+/* El de la cabecera: el logo a pelo, sin lienzo cuadrado ni márgenes, sólo bajado de
+   tamaño. Aquí no hay máscara que esquivar —no lo recorta nadie—, así que lo que interesa
+   es que ocupe todo lo que pueda de su altura. */
+const componerCabecera = ({ b64, ALTO, ANCHO, ALTO_ORIG }) => new Promise(res => {
+  const img = new Image();
+  img.onerror = () => res(null);
+  img.onload = () => {
+    const c = document.createElement('canvas');
+    c.height = ALTO;
+    c.width = Math.round(ANCHO * ALTO / ALTO_ORIG);
+    const g = c.getContext('2d');
+    g.imageSmoothingQuality = 'high';
+    g.drawImage(img, 0, 0, c.width, c.height);
+    res({ d: c.toDataURL('image/webp', 0.94), w: c.width, h: c.height });
+  };
+  img.src = 'data:image/png;base64,' + b64;
+});
+
 /* El icono: el logo centrado y escalado para que su radio real quepa en el círculo. */
 const componerIcono = ({ b64, LADO, FONDO, SEGURO, RADIO, ANCHO, ALTO }) => new Promise(res => {
   const img = new Image();
@@ -179,7 +202,12 @@ const comun = { b64: s64, RADIO: out.radio, ANCHO: out.sw, ALTO: out.sh };
 const png = await pag.evaluate(componerIcono, { ...comun, LADO: 432, FONDO: null, SEGURO: 0.61 });
 /* El de iPhone no lo recorta nadie y Apple no admite transparencia: va sobre negro. */
 const ipng = await pag.evaluate(componerIcono, { ...comun, LADO: 1024, FONDO: '#000000', SEGURO: 0.90 });
+const cab = await pag.evaluate(componerCabecera,
+  { b64: s64, ALTO: CAB_ALTO, ANCHO: out.sw, ALTO_ORIG: out.sh });
 await nav.close();
+if (!cab) { console.log('no ha salido el de la cabecera'); process.exit(1); }
+fs.mkdirSync(path.dirname(CABECERA), { recursive: true });
+fs.writeFileSync(CABECERA, Buffer.from(cab.d.split(',')[1], 'base64'));
 
 for (const [ruta, datos] of [[AND, png], [IOS, ipng]]) {
   if (!datos) { console.log('no ha salido', ruta); process.exit(1); }
@@ -192,5 +220,6 @@ console.log(`${ORIGEN}  ${out.W}x${out.H}`);
 console.log(`  recortado a ${out.sw}x${out.sh}  ·  radio real ${out.radio.toFixed(1)} px ` +
             `(la media diagonal de la caja sería ${(Math.hypot(out.sw, out.sh) / 2).toFixed(1)})`);
 console.log(`  suelto    ${SUELTO}  ${kB(SUELTO)}`);
+console.log(`  cabecera  ${CABECERA}  ${cab.w}x${cab.h}  ${kB(CABECERA)}`);
 console.log(`  Android   ${AND}  432x432  ${kB(AND)}`);
 console.log(`  iPhone    ${IOS}  1024x1024  ${kB(IOS)}`);

@@ -497,6 +497,35 @@ la (i) arriba a la derecha y el TIENDA grande en cursiva.
 fichas), pase de temporada, actividad diaria con reloj y racha, novedades, eventos, rango,
 estadísticas e historial, cartas favoritas, cuenta y ayuda.
 
+**LO ÚLTIMO QUE HA PEDIDO, Y ESTÁ SIN EMPEZAR.** Son tres cosas y ninguna se puede hacer
+entera todavía:
+
+1. **Un sobre de sugerencias en la cabecera, al lado del engranaje.** La gente escribe ahí
+   y le llega **a su correo**, sin que el que escribe tenga que poner sus datos, y el
+   correo dice **quién** y **qué**. El icono, la pantalla y el envío se pueden hacer; lo que
+   falta es **por dónde sale el correo**, que un Worker de Cloudflare no manda correo solo:
+   o un servicio con clave de API —que iría en los secretos de GitHub, **nunca en un
+   archivo**, que el repositorio es público— o Cloudflare Email Routing, que no lleva clave
+   pero exige un dominio suyo en Cloudflare. **Está preguntado y sin contestar.** Mientras
+   tanto lo sensato es que el Worker los **guarde**, para no perder ninguno.
+
+2. **Cuentas: iniciar sesión y registrarse**, con Google o con correo y contraseña, desde el
+   Perfil **y también tocando el banner del jugador en Inicio**. Correo y contraseña se
+   monta en el Worker sin depender de nadie; **Google no**, porque Google bloquea su login
+   dentro de un WebView, así que hace falta el inicio de sesión nativo de Android y un
+   proyecto suyo en Google Cloud. **Está preguntado y sin contestar.**
+   **DECIDIDO POR ÉL: al crear la cuenta SE SUBE lo que ya tiene** —*"cuando se crea una
+   cuenta sube lo que tiene"*—, no se empieza de cero. Nadie pierde su colección.
+
+3. **Los sobres, sin oros.** *"YA NO HAY OROS JODER, QUE TE QUEDE CLARO, DE MOMENTO TODAS
+   SON COMUNES"*: el sobre deja de repartir en dos pasos —cuántos oros y de qué nivel— y
+   pasa a **una sola tirada por carta sobre el ranking**. La mayoría, mediocres sin
+   rankear; muy rara vez un 12-15; casi imposible un 6-11; prácticamente imposible un
+   campeón o top 5. Además, **el común pasa a ser GRATIS en la tienda** y **el que se
+   reclama en Inicio pasa a ser un RARO, una sola vez por haber empezado**, con las
+   probabilidades subidas. **Las dos tablas están propuestas y esperando su visto bueno**
+   —lo pidió así—: común 98,40 / 1,50 / 0,092 / 0,008 por carta, y raro 78 / 17 / 4,5 / 0,5.
+
 **Lo que queda de lo anterior, y está esperando a que él lo diga:**
 
 1. **Las imágenes de los botones que faltan.** Él dijo: *"TIENES QUE SUSTITUIRLOS POR
@@ -514,11 +543,13 @@ estadísticas e historial, cartas favoritas, cuenta y ayuda.
 
 ## Lo primero que hay que saber
 
-0. **El juego se llama P4P.CG.** El logotipo son las dos P en `--acc`, el 4 en gris/plata
-   y el `.CG` en blanco y más pequeño, en cursiva y con la tipografía de los botones
-   (`--titulo`). Lo eligió y lo especificó el dueño hasta el detalle; **no se retoca** —los
-   números exactos y por qué son ésos están en "La cabecera" más abajo—. Costó cuatro
-   tandas de propuestas rechazadas llegar a él. El nombre se cambió **solo donde lo ve
+0. **El juego se llama P4P.CG, y en la cabecera va SU LOGO, no el nombre escrito.** Es el
+   octógono que pasó él, el mismo dibujo que ya era el icono de la aplicación. Lo mandó
+   cambiar: *"cambia el P4P.CG de la esquina superior izquierda por el logo del juego"*.
+   El nombre escrito —las dos P en `--acc`, el 4 en gris y el `.CG` pequeño y en cursiva—
+   costó cuatro tandas de propuestas rechazadas y estuvo ahí hasta que llegó el logo; sus
+   cuatro medidas están en "La cabecera" más abajo, por si algún día vuelve. El nombre se
+   cambió **solo donde lo ve
    el jugador**: título de la página, cabecera, nombre de la aplicación, los archivos
    `p4p-cg.apk` / `.ipa`, el título de la publicación y el mensaje de invitación. **Los
    identificadores NO se tocan**: el paquete `com.jaulaabierta.juego`, el destino de Xcode,
@@ -758,15 +789,25 @@ arcos hubo una reja de octágono con textura de foto, que falló porque el sobre
 transparencia en sus zonas negras y la reja se colaba a través de él. **No lo intentes otra
 vez**: lo que el usuario quiere ahí es el sobre solo.
 
-### La cabecera: el logotipo y el nombre
+### La cabecera: el logo
 
 ```html
-<div class="logo"><img class="marca" src="arte/logo.webp" alt="">
-  <span class="txt"><b>P</b><em>4</em><b>P</b><i>.CG</i></span></div>
+<div class="logo"><img src="arte/logo-v2.webp" alt="P4P.CG"></div>
 ```
 
-Cuatro números que **salieron de medir, no de ajustar a ojo**, y que no hay que tocar sin
-volver a medir:
+**Es el octógono, y lo mandó él**: *"cambia el P4P.CG de la esquina superior izquierda por
+el logo del juego"*. Sale de `originales/logo-v2/logo.png` y lo prepara
+`herramientas/preparar-logo-v2.mjs`, que ahora escribe también `juego/arte/logo-v2.webp`
+—150x144— además del icono de Android y el de iPhone.
+
+**Va a 35 px de alto, y ese número no es a ojo:** era exactamente lo que medía la caja del
+nombre escrito, así que la cabecera sigue midiendo sus **58 px** y no crece ni un píxel. El
+archivo se guarda a **4x** (144 px de alto) porque un móvil de triple densidad lo dibuja a
+105 px reales y a 1x se ablanda.
+
+Con el nombre escrito **se fueron sus cuatro medidas**, que ya no tienen contra qué
+resolverse porque no queda ni una letra que alinear. Quedan aquí por si vuelve, y entonces
+hay que **volver a medirlas**, no copiarlas:
 
 - **`.txt{top:10px}`** — alinear con `align-items:flex-end` no vale: lo que se alinea es la
   CAJA del texto, que reserva sitio bajo la línea base para las colas de las letras, y los
@@ -781,6 +822,9 @@ volver a medir:
   píxeles sin color y con algo de luz, quedándose con su cuartil alto, que es el metal de
   los nudillos del guante. **`--plata` no se toca, que la usan las cartas.**
 - **`i{font-size:.58em}`** — el `.CG`, más pequeño que el `P4P`, como lo pidió.
+
+Lo de abajo es del DIBUJO VIEJO (`arte/logo.webp`), el que acompañaba al nombre escrito
+antes del rediseño. El archivo sigue ahí y no lo usa nadie.
 
 **El negro del dibujo se queda.** Se probó a volverlo transparente deshaciendo la
 premultiplicación (alfa = el canal más alto, color dividido por él), que es lo correcto
