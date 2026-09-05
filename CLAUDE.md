@@ -11,8 +11,10 @@ disculpas. Los nombres de funciones, variables y archivos también van en españ
 
 ## En qué punto está el trabajo
 
-Rama de trabajo: **`claude/diseno-carta-pendiente-vn5tw1`**. Lo último entregado: las
-cuentas con correo, contraseña y nombre de usuario, y **la release 0.1.0 publicada**. (El
+Rama de trabajo: **`claude/diseno-carta-pendiente-vn5tw1`**. Lo último entregado: la
+flecha y el "Abrir otro" de la apertura, el sobre de sugerencias, los SBC sin oros, los
+tres filtros de la colección y **la rejilla de cartas, que no tenía CSS**. Antes: las
+cuentas y **la release 0.1.0 publicada**. (El
 número de commit no se apunta aquí: se quedaba viejo al commit siguiente y despistaba más
 que ayudaba.)
 El APK se publica solo en cada push, **firmado con la clave de release**, y se descarga de
@@ -654,22 +656,103 @@ despliegue —lleva la hora en el nombre—; el día que estorben, se les pone c
 registro sin límite se puede llenar de cuentas basura, y uno de entrada sin límite se puede
 probar a lo bruto. Para la alfa vale; **antes de abrirlo a gente hay que ponerle un freno.**
 
-**Y un fallo de CSS que NO es mío pero está ahí:** `.btn.sec` pone fondo `--bg3` y **no toca
-el color del texto**, que sigue siendo el `color:var(--bg)` de `.btn` —casi negro—. Son 18
-botones en el juego con la letra oscura sobre fondo oscuro. En la pantalla de la cuenta se
-esquivó usando `.btn` y `.btn gho`; **el arreglo de fondo es una línea y no se ha tocado
-porque no se pidió.**
+**LA APERTURA SE QUEDA LA PANTALLA ENTERA, Y TIENE FLECHA Y "ABRIR OTRO".** Lo cazó él:
+"no has metido el botón del feedback ni la flecha para ir para atrás al acabar la apertura
+de sobre, además, tampoco el botón de Abrir otro abajo".
+
+**La flecha estaba puesta desde el principio y NO SE VEÍA NUNCA.** `#app` es una capa propia
+(`position:relative;z-index:1`), así que el `z-index:90` del botón quedaba atrapado **debajo
+de la cabecera** (`z-index:50`), justo detrás del logo. De la apertura sólo se salía por las
+pestañas de abajo. El arreglo es esconder cabecera y barra mientras dura: `.ap-escena` es
+`position:fixed;inset:0` y ya tapaba la página, sólo que el cromo le flotaba encima.
+
+**"ABRIR OTRO" sale al haber visto TODAS las cartas**, no antes: la apertura no termina sola
+—las cartas dan vueltas en círculo—, así que el final es haberlas visto todas, y ponerlo
+desde el primer fotograma sería un botón invitándote a saltarte lo que estás mirando. Se
+mira **por tipo** (`quedaOtro`): del común siempre queda —es gratis y sin límite—, de los
+demás sólo si hay uno guardado, y de los que llevan PRÓXIMAMENTE no se ofrece. Gasta el
+sobre, no cobra monedas y no vuelve a la tienda.
+
+**EL SOBRE DE SUGERENCIAS YA ESTÁ**, al lado del engranaje. Se **guarda siempre** en el
+Worker y se **manda por correo si se puede**, en ese orden: sin la clave de Resend, perder
+lo que ha escrito alguien porque falta una configuración es peor que no tener el botón.
+Quién firma sale del **token**, no de lo que diga el móvil: con sesión el usuario y el
+correo, sin ella el identificador anónimo del aparato, marcado como tal. Se enseña en
+pantalla antes de mandar. Ni el destino ni la clave van a un archivo —el repositorio es
+público—: `CORREO_SUGERENCIAS` y `RESEND_API_KEY`. Y para que guardarlas no sea guardarlas
+en un pozo, hay `GET /sugerencia/lista` detrás de `CLAVE_SUGERENCIAS`; **sin ese secreto
+puesto, la ruta no existe**.
+
+**LOS SBC HABLAN DEL RANKING, NO DE OROS Y PLATAS.** Lo cazó él: "sigue pidiendo oros y
+demás y ya no existen oro, platas, etc.". Pedían "3 platas", "2 oros sin rankear" y "4
+oros" —vocabulario del sistema viejo que además **no se ve en ninguna parte**, porque la
+carta enseña `#C`, `#11` o `#NR`—. Ahora piden sin ranking y rankeado, que es lo que el
+jugador tiene delante y lo que ya usan los sobres. **No se tocó `RAREZAS` ni `ESTATUS` de
+motor.js**: eso es la migración, que sigue esperando a la interfaz. Y `sinRanking`/`rankeado`
+viven en un solo sitio comparando contra `null` **a pelo**, que `null >= 0` es TRUE.
+
+**LOS TRES FILTROS DE LA COLECCIÓN: TIPO, ATRIBUTO Y PESO.** Los pidió con todas las letras:
+"todas mediante un desplegable individual, **nada de muchos botones seleccionables**". Y es
+además la forma correcta: la versión de chips ya estuvo y se quitó porque tres filas se
+comían 250 px; tres `<select>` en una línea ocupan 44.
+
+- **El tipo es el RANKING** y reutiliza los `NIVELES` de los sobres, para no tener dos
+  tablas que se separen con el tiempo. "Sin atributo" es una opción de verdad.
+- Van a **16 px** por lo mismo que los campos de la cuenta: por debajo, el WebView de
+  iPhone hace zoom al enfocar.
+- Se llaman **"Tipo", "Atributo", "Peso"** y no "Cualquier tipo": a tres por línea tocan
+  120 px y "Cualquier atributo" salía cortado en "Cualquier ...".
+- Puesto **se nota** —filete y letra en oro—, y un filtro que no deja pasar nada **lo dice**
+  con su botón para quitarlos: con el cartel de "no tienes cartas" parecería que has perdido
+  la colección.
+- Viven en `tmp`, o sea que se olvidan al salir. Y cambiar uno **vuelve a la hoja 1**.
+
+**4x4 Y SIN SCROLL EN NINGUNA PANTALLA DE CARTAS.** Lo mandó él: "QUITA ESE SCROLL EN TODOS
+LADOS... hacer filas de 4x4 en la colección... y lo de pasar hoja ponlo bien centrado en el
+medio no ahí a la izquierda abajo".
+
+- **La colección y el reciclaje van a 4x4**, 16 por hoja. Estuvieron a 3x4 por lo contrario
+  —con cuatro columnas el ancho se agota antes que el alto y sobra hueco debajo—, pero eso
+  dejó de importar cuando la rejilla dejó de estirarse.
+- **La rejilla ocupa lo que ocupa.** Antes se le fijaba el alto y lo que sobraba se repartía
+  entre las filas: al filtrar, dos filas se iban a los extremos y quedaba media pantalla de
+  agujero. "Siempre concéntralo en el menor espacio posible."
+- **El elegir carta de un SBC va por hojas.** Listaba la colección ENTERA: 130 cartas,
+  7.000 px, y elegir tres era una excursión.
+- **El registro de la partida va en caja con tope** (`.logbox`, 64 px). Ése era el scroll de
+  las partidas: catorce líneas de 26 px que se suman según avanza el combate y al sexto
+  duelo empujaban el botón de rendirse fuera de la pantalla.
+- **Las rejillas de partida cuentan sus filas**, no piden cuatro siempre: en la partida las
+  cartas bajan de once a una, y pidiendo cuatro filas salían a **38 px**. En el álbum sí van
+  fijas, que ahí se quiere que la carta mida lo mismo en todas las hojas.
+- **Lo que hay debajo de una rejilla se MIDE, no se suma a ojo.** Antes se recorrían los
+  hermanos sumando su alto más ocho píxeles de margen inventados, y no se veía lo que cuelga
+  de los **padres**: la rejilla de "¿quién pelea?" vive dentro de un panel y detrás del panel
+  vienen el registro y el botón de rendirse. Ahora se mide del canto de la rejilla al canto
+  de lo último que hay en `#app`, que mete dentro todos los márgenes tal y como están
+  pintados.
+
+Medido en 390x844: colección, reciclaje, plantilla, SBC, vetos y duelos, **todas a 0 px**.
+
+**TRES QUE SIGUEN CON SCROLL Y NO SE HAN TOCADO:** **Sets** (3.573 px), **Logros** (176) e
+**Intercambio** (100). Son listas largas y necesitan hojas como el álbum. No estaban en lo
+que se pidió; **está preguntado y sin contestar**.
+
+**Y un fallo de CSS que sigue ahí:** `.btn.sec` pone fondo `--bg3` y **no toca el color del
+texto**, que sigue siendo el `color:var(--bg)` de `.btn` —casi negro—. Son 18 botones con la
+letra oscura sobre fondo oscuro. En las pantallas nuevas se esquiva usando `.btn` y
+`.btn gho`; **el arreglo de fondo es una línea y no se ha tocado porque no se pidió.**
 
 **LO QUE ESTÁ EN MARCHA AHORA MISMO.**
 
-1. **El sobre de sugerencias de la cabecera, al lado del engranaje.** La gente escribe y le
-   llega a su correo sin poner sus datos. **Quién y qué**: si ha iniciado sesión, su correo
-   y su nombre de usuario; si no, el identificador anónimo del móvil.
-   **Sigue bloqueado por una cosa suya:** un Worker de Cloudflare no manda correo solo.
-   **Cloudflare Email Routing está DESCARTADO**: tiene dominio propio, pero en Google
-   Workspace, no en Cloudflare. Queda el camino del servicio de correo —Resend, gratis
-   hasta 3.000 al mes—, que necesita **una clave de API suya**, y esa clave va a los
-   secretos de GitHub, **nunca a un archivo**, que el repositorio es público.
+1. **Que las sugerencias LLEGUEN A SU CORREO.** El botón, la pantalla y el guardado están
+   hechos; lo que falta es el envío, y **sigue bloqueado por una cosa suya**: un Worker de
+   Cloudflare no manda correo solo. **Cloudflare Email Routing está DESCARTADO**: tiene
+   dominio propio, pero en Google Workspace, no en Cloudflare. Queda el servicio de correo
+   —Resend, gratis hasta 3.000 al mes—, que necesita **una clave de API suya**. En cuanto
+   ponga `RESEND_API_KEY` y `CORREO_SUGERENCIAS` en los secretos del Worker, empiezan a
+   llegar; mientras tanto **no se pierde ninguna**, quedan guardadas.
+   La clave va a los secretos, **nunca a un archivo**, que el repositorio es público.
 
 **LOS TRES SECRETOS DE LA FIRMA LOS TIENE QUE PONER ÉL, Y NO SABE CÓMO.** Dijo: *"lo de los
 tres secretos es que no sé cómo hacerlo, ¿no puedes hacerlo tú?"*. **NO SE PUEDE DESDE
@@ -863,6 +946,25 @@ Lo mismo en las partidas normales: **`plantillaIA()` recibe ahora los peleadores
 jugador y no puede cogerlos**. Apunta a la media de TU plantilla y se queda con uno de los
 cinco más cercanos: si la tuya es buena, esos cinco eran los tuyos. **Contra un amigo NO
 se filtra**: son sus cartas de verdad, y si coincidís, ha pasado de verdad.
+
+### Una regla de CSS que falta no la caza nadie mirando el estado
+`.grid` se emitía en SIETE sitios —el álbum, el elegir carta de un SBC, el reciclaje, el
+intercambio, la plantilla guiada, los vetos y los duelos— y **no existía ni una regla de
+CSS para ella**. Las cartas caían una por fila a todo el ancho y la colección se iba a
+**5.500 px de scroll**. Faltaban también `.album-nav` y `.pag`, que es por qué el pasador
+de hojas estaba suelto abajo a la izquierda. Y `ajustarRejillas()` llevaba todo ese tiempo
+calculando `--rejilla` y midiendo `--cols` **para nadie**.
+
+Lo cazó él, no la suite. **Y la suite no podía cazarlo**: se abría con `newPage()` sin
+viewport, o sea el escritorio de Chromium —1280x720—, donde sobra alto por todos lados.
+Preguntar ahí si algo se sale de la pantalla no dice NADA de un móvil. Ahora las medidas de
+forma van en una página aparte de **390x844**, el mismo iPhone con el que se sacan las
+fotos, y hay una comprobación por pantalla de cartas.
+
+**Regla: lo que se mide en un tamaño de pantalla que el jugador no tiene, no está medido.**
+Y si una clase se emite y nadie la define, el navegador no se queja: sólo se ve mirando.
+Para eso está el barrido —sacar las clases de los `class="…"` y restarles las del `<style>`—,
+que encuentra en un segundo lo que costó una tarde.
 
 ### Una prueba que mira el estado de ANTES pasa sin probar nada
 El apartado "N partidas completas" de la suite pulsaba `[data-a="jugar"]` estando en
