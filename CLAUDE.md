@@ -468,8 +468,22 @@ la (i) arriba a la derecha y el TIENDA grande en cursiva.
 - **LAS TABLAS DE REPARTO NO SALEN DEL BOCETO Y HAY QUE CERRARLAS CON ÉL.** Las viejas
   repartían de 7 a 9 oros, y un sobre común de 5 cartas no puede traer 7, así que hubo que
   escribir cinco que escalan de común a ultimate. Hay una comprobación al arrancar que
-  avisa si un sobre puede repartir más oros de los que anuncia. **Los números concretos no
-  se los ha dado nadie: son míos.**
+  avisa si un sobre puede repartir más oros de los que anuncia. **Los números de los cuatro
+  de arriba no se los ha dado nadie: son míos.**
+- **EL COMÚN SÍ TIENE ANCLA, Y LA PUSO ÉL:** *"asegúrate de poner al sobre común los
+  porcentajes que tenía antes el básico, o incluso más estrictos"*. El básico de antes eran
+  9 cartas, de 3 a 6 oros, `nivel` 0,01 / 0,09 / 3,9 / 96 y platas 40/60. Medido con
+  400.000 sobres de cada uno, el común es **más estricto en todo**: 2,00 oros por sobre
+  frente a 4,50; 40% de cartas de oro frente al 50%; 0,080 rankeados por sobre frente a
+  0,180; 7,8% de sobres con algún rankeado frente al 16,8%; y 0,021% con campeón o top 5
+  frente al 0,046%. **La tabla de `nivel` es la MISMA del básico, cifra por cifra** —lo que
+  decide si un oro es campeón o top 12-15 no se ha tocado—; lo que baja es cuántos oros
+  caen. Las platas pasaron de 35/65 a **33/67** por lo mismo: el común tiene más huecos de
+  plata (60% frente al 50%), así que con 35 la plata alta salía al 20,9% de las cartas, una
+  décima por encima del básico, y con 33 se queda en el 19,8%.
+- **`fichaSobre()` es código muerto y trae un "de 9" caducado** —de cuando todos los sobres
+  traían nueve cartas—. No lo llama nadie: lo que ve el jugador lo pinta
+  `ovProbabilidades()`, que sí usa `T.cartas`. No se ha tocado; queda dicho.
 - **El sobre gratis salió de la tienda**: en el boceto son cinco de pago, así que se
   reclama en la ACTIVIDAD DIARIA de Inicio. Sigue siendo el común y sigue sin límite —es lo
   que permite empezar sin dinero, y ponerle un reloj sería inventarse una regla de juego—.

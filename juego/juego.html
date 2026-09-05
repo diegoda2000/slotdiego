@@ -1402,11 +1402,30 @@ function corto(n){
    acaban de eliminar y que no vuelven hasta la MIGRACIÓN DE RAREZAS. Cuando se migre se
    podrá volver a prometer un suelo, y ahí se reescriben estas tablas. */
 const TIPOS_SOBRE={
+  /* EL COMÚN NO PUEDE SER MÁS BLANDO QUE EL BÁSICO DE ANTES, y lo mandó él:
+     "asegúrate de poner al sobre común los porcentajes que tenía antes el básico, o
+     incluso más estrictos". El básico eran 9 cartas, de 3 a 6 oros y platas 40/60.
+     Medido con 400.000 sobres de cada uno, el común es más estricto en todo:
+
+                                      básico de antes   común
+       oros por sobre                        4,50        2,00
+       % de cartas que son oro               50,0        40,0
+       rankeados por sobre                  0,180       0,080
+       % de sobres con algún rankeado       16,77        7,80
+       % de sobres con campeón o top 5      0,046       0,021
+       % de cartas que son plata alta        20,0        19,8
+
+     La tabla de `nivel` es LA MISMA del básico, cifra por cifra: lo que decide si un oro
+     es campeón, top 6-11 o top 12-15 no se ha tocado. Lo que baja es cuántos oros caen.
+
+     Y las platas van 33/67 y no 35/65 por esa última línea: el común tiene más huecos de
+     plata (60% frente al 50%), así que con 35 la plata alta salía al 20,9% de las cartas
+     —una décima por encima del básico— y con 33 se queda en el 19,8%. */
   comun     :{n:'Sobre común', coste:1000, cartas:5,
     desc:'5 cartas',
     oros  :{1:30, 2:40, 3:30},
     nivel :{corona:0.01, top611:0.09, top1215:3.9, oro:96},
-    platas:{plataAlta:35, plataBaja:65}},
+    platas:{plataAlta:33, plataBaja:67}},
   raro      :{n:'Sobre raro', coste:2000, cartas:6,
     desc:'6 cartas',
     oros  :{2:30, 3:40, 4:30},
