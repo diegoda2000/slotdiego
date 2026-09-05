@@ -1452,6 +1452,137 @@ comprobar(cuenta.sinColaSinCuenta,
 comprobar(cuenta.caducada.cuenta === '' && cuenta.caducada.token === '' && cuenta.caducada.dice,
   'un 401 del servidor cierra la sesión y lo dice, en vez de fingir que se está guardando');
 
+/* ── 2m. La salida de la apertura, "Abrir otro" y el sobre de sugerencias ────────────
+   Las tres cosas que faltaban y que cazó él: "no has metido el botón del feedback ni la
+   flecha para ir para atrás al acabar la apertura de sobre, además, tampoco el botón de
+   Abrir otro abajo cuando has abierto uno si es que se tienen más en el inventario". */
+console.log('\n2m. Salir de la apertura, abrir otro y el sobre de sugerencias');
+
+const salida = await page.evaluate(async () => {
+  const $$ = q => document.querySelector(q);
+  const r = {};
+  S.sobres = [{ tipo: 'epico' }, { tipo: 'epico' }]; S.divisa = 9000; S.gratis = {};
+  ir('tienda'); tmp.sub = 'mios'; render();
+  $$('[data-a="versobre"][data-t="epico"]').click();
+  $$('[data-a="abrirsobre"]').click();
+  await new Promise(x => setTimeout(x, 2200));
+
+  /* LA FLECHA SE VE. Estaba puesta desde el principio y no se veía NUNCA: #app es una capa
+     propia (`z-index:1`), así que el `z-index:90` del botón quedaba atrapado debajo de la
+     cabecera (`z-index:50`), justo detrás del logo. De la apertura sólo se salía por las
+     pestañas de abajo. Se comprueba que se ve Y que es ella la que está en ese punto. */
+  const f = $$('.ap-volver');
+  const caja = f.getBoundingClientRect();
+  const centro = document.elementFromPoint(caja.x + caja.width / 2, caja.y + caja.height / 2);
+  r.flecha = { hay: !!f, ancho: Math.round(caja.width),
+    arriba: Math.round(caja.y), izquierda: Math.round(caja.x),
+    laTocasTu: !!(centro && centro.closest('.ap-volver')) };
+  // Y con la escena a pantalla completa no hay cromo flotando por encima.
+  r.cromo = { cabecera: getComputedStyle($$('#top')).display,
+              barra: getComputedStyle($$('#nav')).display };
+
+  // "ABRIR OTRO" NO SALE HASTA HABERLAS VISTO TODAS: antes es un botón que te invita a
+  // saltarte lo que estás mirando.
+  const b = $$('#ap-otro');
+  r.antes = b.classList.contains('on');
+  tmp.ap.vistas = tmp.ap.items.length - 1; avisaApertura();
+  r.aFalta1 = b.classList.contains('on');
+  tmp.ap.vistas = tmp.ap.items.length; avisaApertura();
+  r.alFinal = b.classList.contains('on');
+  r.cuantas = tmp.ap.items.length;
+
+  // Y gasta un sobre del inventario, sin volver a la tienda ni cobrar monedas.
+  const oroAntes = S.divisa, sobresAntes = S.sobres.length;
+  b.click();
+  await new Promise(x => setTimeout(x, 2200));
+  r.tras = { vista, sobres: S.sobres.length, sobresAntes, oro: S.divisa === oroAntes,
+    vistas: tmp.ap.vistas, tapada: tmp.ap.fase !== 'cerrado' };
+  // Sin más en el inventario, el botón ya no se ofrece.
+  tmp.ap.vistas = tmp.ap.items.length; avisaApertura();
+  r.sinMas = $$('#ap-otro').classList.contains('on');
+
+  /* EL COMÚN ES GRATIS Y SIN LÍMITE, así que de ése siempre queda otro aunque el
+     inventario esté vacío. */
+  r.comunSiempre = quedaOtro('comun');
+  r.epicoSinNinguno = quedaOtro('epico');
+  // Y de los que llevan PRÓXIMAMENTE no se ofrece, que no se pueden abrir.
+  S.sobres = [{ tipo: 'legendario' }];
+  r.prontoNo = quedaOtro('legendario');
+  S.sobres = [];
+
+  // La flecha saca de la apertura y devuelve el cromo.
+  $$('.ap-volver').click();
+  r.salir = { vista, cabecera: getComputedStyle($$('#top')).display };
+  return r;
+});
+
+comprobar(salida.flecha.hay && salida.flecha.laTocasTu,
+  `la flecha de la apertura se ve y es la que recibe el toque (${salida.flecha.izquierda},${salida.flecha.arriba})`);
+comprobar(salida.cromo.cabecera === 'none' && salida.cromo.barra === 'none',
+  'la apertura se queda la pantalla entera: ni cabecera ni barra de pestañas por encima');
+comprobar(!salida.antes && !salida.aFalta1 && salida.alFinal,
+  `"Abrir otro" sale al haberlas visto TODAS, no antes (a falta de una: ${salida.aFalta1 ? 'sale' : 'no sale'})`);
+comprobar(salida.tras.vista === 'apertura' && salida.tras.sobres === salida.tras.sobresAntes - 1,
+  `abre otro sin volver a la tienda, gastando uno del inventario (${salida.tras.sobresAntes} → ${salida.tras.sobres})`);
+comprobar(salida.tras.oro && salida.tras.vistas === 0,
+  'y no cobra monedas: lo que se gasta es el sobre, y la tanda empieza de cero');
+comprobar(!salida.sinMas, 'sin más en el inventario el botón ya no se ofrece');
+comprobar(salida.comunSiempre && !salida.epicoSinNinguno,
+  'del común siempre queda otro —es gratis y sin límite— y del épico sólo si lo tienes');
+comprobar(!salida.prontoNo, 'y de los que llevan PRÓXIMAMENTE no se ofrece, que no se pueden abrir');
+comprobar(salida.salir.vista === 'tienda' && salida.salir.cabecera === 'flex',
+  'la flecha saca a la tienda y devuelve la cabecera');
+
+/* EL SOBRE DE SUGERENCIAS, al lado del engranaje: "un nuevo icono que sea un sobre, arriba
+   al lado de la rueda de ajustes, y que sea para dar feedback". */
+const sug = await page.evaluate(async () => {
+  const $$ = q => document.querySelector(q);
+  const r = {};
+  ir('club');
+  const b = $$('#b-sugerir');
+  r.enLaCabecera = !!b && !!$$('#top #b-sugerir') && !!b.querySelector('svg');
+  // al lado del engranaje, y a su izquierda
+  r.antesDelEngranaje = !!(b.compareDocumentPosition($$('#b-ajustes')) & Node.DOCUMENT_POSITION_FOLLOWING);
+  b.click();
+  r.abre = vista;
+  // vuelve a donde estabas, que se llega desde las cinco pestañas
+  $$('.pcab .volver').click();
+  r.vuelve = vista;
+
+  // Sin cuenta firma con el identificador del móvil; con cuenta, con la cuenta.
+  S.cuenta = ''; ir('sugerencias');
+  r.firmaAnonima = $$('#app').textContent.includes(miId());
+  S.cuenta = { usuario: 'ElDiego', correo: 'diego@ejemplo.com' }; render();
+  const t = $$('#app').textContent;
+  r.firmaCuenta = t.includes('ElDiego') && t.includes('diego@ejemplo.com');
+  r.yaNoElAnonimo = !t.includes(miId());
+
+  // Un texto de tres letras no se manda: se dice, y no se pierde lo escrito.
+  $$('#s-texto').value = 'abc';
+  $$('[data-a="enviarsugerencia"]').click();
+  r.corta = { dice: /escribe algo más/i.test($$('#app').textContent),
+              conserva: $$('#s-texto').value === 'abc', sigue: vista };
+  // Y sin servidor lo dice en vez de reventar.
+  const fabrica = window.SERVIDOR_POR_DEFECTO;
+  window.SERVIDOR_POR_DEFECTO = ''; S.servidor = '';
+  const res = await apiSugerencia('una sugerencia de las de verdad');
+  r.sinServidor = res.error || '';
+  window.SERVIDOR_POR_DEFECTO = fabrica; S.cuenta = ''; guardar();
+  return r;
+});
+
+comprobar(sug.enLaCabecera && sug.antesDelEngranaje,
+  'el sobre está en la cabecera, al lado del engranaje y a su izquierda');
+comprobar(sug.abre === 'sugerencias' && sug.vuelve === 'club',
+  'abre las sugerencias y la flecha vuelve a donde estabas, que se llega desde las cinco pestañas');
+comprobar(sug.firmaAnonima, 'sin cuenta se firma con el identificador anónimo del móvil');
+comprobar(sug.firmaCuenta && sug.yaNoElAnonimo,
+  'y con cuenta, con el usuario y el correo — y se enseña antes de mandar nada');
+comprobar(sug.corta.dice && sug.corta.conserva && sug.corta.sigue === 'sugerencias',
+  'un texto de tres letras no se manda, se dice, y no se borra lo escrito');
+comprobar(/servidor/i.test(sug.sinServidor),
+  `sin servidor se explica en vez de reventar ("${sug.sinServidor}")`);
+
 /* ── 3. Partidas completas ────────────────────────────────────────────── */
 console.log(`\n3. ${N_PARTIDAS} partidas completas`);
 const stats = { partidas: 0, victorias: 0, empates33: 0, duelos: 0,

@@ -7,7 +7,14 @@ const ctx = { storage: {
   async get(k){ return almacen.has(k) ? structuredClone(almacen.get(k)) : undefined },
   async put(a,b){ if(typeof a==='object'){ for(const [k,v] of Object.entries(a)) almacen.set(k,v); }
                   else almacen.set(a,b); },
+  // list() como el de un Durable Object: por prefijo, ordenado por clave.
+  async list({ prefix = '', reverse = false, limit = 1000 } = {}){
+    let cl = [...almacen.keys()].filter(k => k.startsWith(prefix)).sort();
+    if (reverse) cl.reverse();
+    return new Map(cl.slice(0, limit).map(k => [k, structuredClone(almacen.get(k))]));
+  },
 }};
+// Sin clave de correo ni de lectura: es como está hoy en producción.
 const C = new Cuentas(ctx, {});
 
 const pide = (ruta, {metodo='POST', cuerpo, token} = {}) => C.fetch(new Request(
@@ -91,6 +98,43 @@ ok(s===200, 'sube un estado de 5.000 cartas ('+(JSON.stringify(gordo).length/102
    devolvía 500 al registrarse. Lo que el entorno de pruebas no reproduce, se sujeta aquí. */
 ok(VUELTAS <= 100000, `las vueltas de PBKDF2 caben en el techo de Cloudflare (${VUELTAS} de 100.000)`);
 ok(VUELTAS >= 50000, `y siguen siendo bastantes como para que probar a lo bruto duela (${VUELTAS})`);
+
+/* ── EL SOBRE DE SUGERENCIAS ─────────────────────────────────────────────────────── */
+[s, j] = await leer(await pide('/sugerencia', {cuerpo:{texto:'el sobre tarda mucho en abrirse', anonimo:'jabc123'}}));
+ok(s===200 && j.ok, 'una sugerencia sin cuenta se acepta');
+[s, j] = await leer(await pide('/sugerencia', {cuerpo:{texto:'me encanta la carta nueva'}, token:tokenD}));
+ok(s===200 && j.ok, 'y con cuenta también');
+
+for (const [caso, t] of [['tres letras','abc'], ['vacía',''], ['larguísima','x'.repeat(2001)]])
+  { [s] = await leer(await pide('/sugerencia',{cuerpo:{texto:t}})); ok(s===400, 'una sugerencia '+caso+' → 400'); }
+
+/* SE GUARDAN SIEMPRE, aunque no haya clave de correo. Perder lo que ha escrito alguien
+   porque falta una configuración es peor que no tener el botón. */
+const guardadas = [...almacen.entries()].filter(([k]) => k.startsWith('sugerencia:')).map(([,v]) => v);
+ok(guardadas.length === 2, `se guardan aunque no haya clave de correo (${guardadas.length} de 2)`);
+const conCuenta = guardadas.find(x => x.quien.usuario);
+const sinCuenta = guardadas.find(x => x.quien.anonimo);
+ok(conCuenta && conCuenta.quien.correo === 'Diego@Ejemplo.com',
+  'la de quien tiene sesión se firma con SU cuenta, no con lo que diga el móvil');
+ok(sinCuenta && sinCuenta.quien.anonimo === 'jabc123' && !sinCuenta.quien.usuario,
+  'y la de quien no la tiene, con el identificador anónimo del aparato');
+
+// Leerlas está detrás de un secreto, y sin ese secreto la ruta no existe.
+[s] = await leer(await pide('/sugerencia/lista',{metodo:'GET'}));
+ok(s===404, 'sin CLAVE_SUGERENCIAS puesta, la ruta de leerlas no existe');
+const C2 = new Cuentas(ctx, { CLAVE_SUGERENCIAS: 'la-clave-buena' });
+const pide2 = (r,{metodo='GET',token}={}) => C2.fetch(new Request('https://x'+r,
+  { method: metodo, headers: token?{Authorization:'Bearer '+token}:{} }));
+[s] = await leer(await pide2('/sugerencia/lista'));
+ok(s===401, 'con la clave puesta pero sin mandarla → 401');
+[s] = await leer(await pide2('/sugerencia/lista',{token:'la-mala'}));
+ok(s===401, 'y con una clave equivocada → 401');
+[s, j] = await leer(await pide2('/sugerencia/lista',{token:'la-clave-buena'}));
+ok(s===200 && j.sugerencias.length===2, `con la clave buena salen las dos (${j.sugerencias.length})`);
+
+// Y sin clave de correo, mandarlo no revienta: la sugerencia ya está guardada.
+[s, j] = await leer(await pide('/sugerencia',{cuerpo:{texto:'sin clave de correo tampoco peta'}}));
+ok(s===200 && j.ok, 'sin RESEND_API_KEY no se intenta mandar nada y no se rompe');
 
 console.log(fallos ? `\n${fallos} FALLOS` : '\nTodo bien');
 process.exit(fallos?1:0);

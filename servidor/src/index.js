@@ -49,6 +49,11 @@ export default {
     if (ruta.startsWith('/cuenta/'))
       return env.CUENTAS.get(env.CUENTAS.idFromName('global')).fetch(req);
 
+    /* Las sugerencias van al MISMO objeto que las cuentas, y no es pereza: para firmar
+       "quién lo manda" hay que resolver el token de sesión, y ese mapa vive ahí. */
+    if (ruta === '/sugerencia' || ruta.startsWith('/sugerencia/'))
+      return env.CUENTAS.get(env.CUENTAS.idFromName('global')).fetch(req);
+
     const m = ruta.match(/^\/sala\/([A-Za-z0-9]{4,12})$/);
     if (m) {
       const codigo = m[1].toUpperCase();
@@ -125,7 +130,7 @@ function revisarAlta({ usuario, correo, clave }) {
 }
 
 export class Cuentas {
-  constructor(ctx, env) { this.ctx = ctx; }
+  constructor(ctx, env) { this.ctx = ctx; this.env = env || {}; }
 
   async fetch(req) {
     const url = new URL(req.url);
@@ -135,6 +140,8 @@ export class Cuentas {
       if (ruta === '/cuenta/entrar'   && req.method === 'POST') return await this.entrar(req);
       if (ruta === '/cuenta/subir'    && req.method === 'POST') return await this.subir(req);
       if (ruta === '/cuenta/bajar'    && req.method === 'GET')  return await this.bajar(req);
+      if (ruta === '/sugerencia'       && req.method === 'POST') return await this.sugerencia(req);
+      if (ruta === '/sugerencia/lista' && req.method === 'GET')  return await this.sugerencias(req);
       return json({ error: 'ruta desconocida' }, 404);
     } catch (e) {
       return json({ error: String(e && e.message || e) }, 500);
@@ -219,6 +226,76 @@ export class Cuentas {
     const cuenta = await this.ctx.storage.get('usuario:' + uid);
     return json({ estado: (await this.ctx.storage.get('estado:' + uid)) || null,
       cuenta: cuenta ? { usuario: cuenta.usuario, correo: cuenta.correo } : null });
+  }
+
+  /* ── EL SOBRE DE SUGERENCIAS ──────────────────────────────────────────────────
+     "un nuevo icono que sea un sobre, arriba al lado de la rueda de ajustes, y que sea
+     para dar feedback". La gente escribe y llega, sin poner sus datos.
+
+     SE GUARDA SIEMPRE Y SE MANDA SI SE PUEDE, en ese orden. Un Worker de Cloudflare no
+     manda correo solo: hace falta un servicio, y su clave de API. Mientras esa clave no
+     esté, guardar es lo único honesto: perder lo que ha escrito alguien porque falta una
+     configuración es peor que no tener el botón.
+
+     QUIÉN FIRMA sale del token, no de lo que diga el móvil: con sesión, el usuario y el
+     correo de la cuenta; sin ella, el identificador anónimo del aparato. Ese identificador
+     lo manda el cliente y NO es de fiar —cualquiera puede escribir el que quiera—, así que
+     va marcado como tal y nunca se mezcla con el usuario de verdad. */
+  async sugerencia(req) {
+    const d = await req.json().catch(() => ({}));
+    const texto = String(d.texto || '').trim();
+    if (texto.length < 4) return json({ error: 'Escribe algo más, aunque sea una línea.' }, 400);
+    if (texto.length > 2000) return json({ error: 'Demasiado largo: 2.000 caracteres como mucho.' }, 400);
+
+    const uid = await this.quienEs(req);
+    const cuenta = uid ? await this.ctx.storage.get('usuario:' + uid) : null;
+    const nota = {
+      texto,
+      cuando: Date.now(),
+      // Con cuenta manda la cuenta; sin ella, lo que diga el móvil, avisando de que es suyo.
+      quien: cuenta ? { usuario: cuenta.usuario, correo: cuenta.correo }
+                    : { anonimo: String(d.anonimo || '').slice(0, 40) },
+    };
+    // La clave lleva la hora delante para que listarlas salga en orden.
+    await this.ctx.storage.put('sugerencia:' + nota.cuando + ':' + azarHex(4), nota);
+    await this.mandarCorreo(nota);
+    return json({ ok: true });
+  }
+
+  /* El correo, por Resend. Si no hay clave o no hay destino, no pasa nada: la sugerencia ya
+     está guardada. Y si el servicio falla, TAMPOCO se le dice al que escribe que ha fallado:
+     lo suyo está a salvo, y un error que no puede arreglar sólo le hace repetir el mensaje. */
+  async mandarCorreo(nota) {
+    const clave = this.env.RESEND_API_KEY, destino = this.env.CORREO_SUGERENCIAS;
+    if (!clave || !destino) return;
+    const firma = nota.quien.usuario
+      ? `${nota.quien.usuario} <${nota.quien.correo}>`
+      : `sin cuenta (${nota.quien.anonimo})`;
+    try {
+      await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: { Authorization: 'Bearer ' + clave, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          from: this.env.CORREO_REMITENTE || 'P4P.CG <onboarding@resend.dev>',
+          to: [destino],
+          subject: 'Sugerencia de ' + firma,
+          text: `${nota.texto}\n\n—\nDe: ${firma}\nCuándo: ${new Date(nota.cuando).toISOString()}`,
+        }),
+      });
+    } catch (e) { /* guardada queda; el correo es un extra */ }
+  }
+
+  /* Leerlas. Mientras no haya clave de correo esto es lo ÚNICO que las saca de aquí, así
+     que sin ello guardarlas sería guardarlas en un pozo. Va detrás de un secreto propio:
+     sin `CLAVE_SUGERENCIAS` puesta, la ruta no existe. */
+  async sugerencias(req) {
+    const clave = this.env.CLAVE_SUGERENCIAS;
+    if (!clave) return json({ error: 'ruta desconocida' }, 404);
+    const cab = req.headers.get('Authorization') || '';
+    if (!igualExacto(cab.startsWith('Bearer ') ? cab.slice(7) : '', clave))
+      return json({ error: 'no' }, 401);
+    const mapa = await this.ctx.storage.list({ prefix: 'sugerencia:', reverse: true, limit: 200 });
+    return json({ sugerencias: [...mapa.values()] });
   }
 }
 

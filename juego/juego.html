@@ -916,6 +916,23 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 .sobre-abre .parte{position:absolute;inset:0;background-size:100% 100%;
   background-position:center;background-repeat:no-repeat;
   filter:drop-shadow(0 26px 60px rgba(0,0,0,.85))}
+/* LA FLECHA DE LA APERTURA. Es la misma de todas las pantallas, no un botón con texto:
+   "la flecha para ir para atrás al acabar la apertura de sobre". Va suelta sobre la
+   escena, que aquí ocupa la pantalla entera porque la cabecera se esconde. */
+.ap-volver{position:fixed;left:10px;top:calc(10px + env(safe-area-inset-top));z-index:90;
+  background:none;border:0;padding:6px;cursor:pointer;color:var(--acc);display:flex}
+.ap-volver .ico{width:27px;height:27px;stroke-width:2.4}
+.ap-volver:active{transform:scale(.9)}
+/* Y EL "ABRIR OTRO", abajo. Sólo sale cuando ya se han visto todas: antes es un botón
+   pidiendo que te saltes lo que estás mirando. Nace apagado y lo enciende avisaApertura().
+   Va FUERA de .ap-escena a propósito: la escena entera es `data-a="pasarcarta"`, y desde
+   dentro un toque en el botón pasaría además la carta. */
+.ap-otro{position:fixed;left:50%;transform:translateX(-50%) translateY(8px);
+  bottom:calc(16px + env(safe-area-inset-bottom));z-index:90;width:auto;min-width:180px;
+  opacity:0;pointer-events:none;transition:opacity .28s,transform .28s}
+.ap-otro.on{opacity:1;pointer-events:auto;transform:translateX(-50%) translateY(0)}
+.ap-otro:active{transform:translateX(-50%) scale(.975)}
+
 /* Cuando la rasgadura llega al final, la solapa ya suelta se va y el cuerpo cae. */
 .sobre-abre.suelta .alto{animation:vuela .46s cubic-bezier(.35,.05,.6,1) forwards}
 @keyframes vuela{to{transform:translate3d(26%,-56%,0) rotate(34deg);opacity:0}}
@@ -1099,6 +1116,7 @@ th{color:var(--dim2);font-size:11px;text-transform:uppercase;letter-spacing:.04e
 .campo{width:100%;padding:11px 12px;border-radius:9px;background:var(--bg3);
   border:1px solid var(--line);color:var(--txt);font:inherit;font-size:16px;margin-bottom:9px}
 .campo:focus{outline:none;border-color:var(--acc)}
+textarea.campo{resize:vertical;line-height:1.35;font-family:var(--texto)}
 .campo::placeholder{color:var(--dim2)}
 .pcab .sub{font-size:11px}
 /* El TIENDA del boceto: grande y en cursiva, no el titulillo de una pantalla interior.
@@ -1144,7 +1162,8 @@ th{color:var(--dim2);font-size:11px;text-transform:uppercase;letter-spacing:.04e
   <div class="logo"><img src="arte/logo-v2.webp" alt="P4P.CG"></div>
   <div class="res" id="r-div"></div>
   <div class="res" id="r-fic"></div>
-  <button class="engranaje" data-nav="ajustes" aria-label="Ajustes"></button>
+  <button class="engranaje" id="b-sugerir" data-nav="sugerencias" aria-label="Enviar una sugerencia"></button>
+  <button class="engranaje" id="b-ajustes" data-nav="ajustes" aria-label="Ajustes"></button>
 </div>
 <div id="escena" class="escena"></div>
 <div id="app"></div>
@@ -1355,6 +1374,8 @@ const ICONOS={
   reloj:'<circle cx="12" cy="12" r="10" /> <polyline points="12 6 12 12 16 14" />',
   galon:'<path d="m9 18 6-6-6-6" />',
   atras:'<path d="m15 18-6-6 6-6" />',
+  // El sobre de las sugerencias, el de la cabecera. Un sobre de carta, no uno de cromos.
+  carta:'<rect x="2" y="4.5" width="20" height="15" rx="2" /> <path d="m2.4 6 8.5 6.1a2 2 0 0 0 2.2 0L21.6 6" />',
 };
 const icono=(n,cls='')=>`<svg class="ico ${cls}" viewBox="0 0 24 24" fill="none"
   stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
@@ -1804,6 +1825,25 @@ const resumenEstado=e=>`${(e&&e.coleccion||[]).length} cartas · ${(e&&e.partida
 // Nada más instalar no hay nada que perder: no se pregunta, se baja lo de la cuenta.
 const partidaVirgen=()=>S.partidas===0&&!S.tutorialHecho;
 
+/* La sugerencia va por el mismo camino que la cuenta: si hay sesión, el token la firma con
+   el usuario y el correo; si no, viaja el identificador anónimo de este móvil y ya está.
+   El correo lo manda el servidor, no el juego: una clave de API no puede vivir aquí. */
+async function apiSugerencia(texto){
+  const base=servidorURL();
+  if(!base) return {error:'No hay servidor, así que no hay a dónde mandarla.'};
+  const cab={'Content-Type':'application/json'}, tk=leerToken();
+  if(tk) cab['Authorization']='Bearer '+tk;
+  let r;
+  try{
+    r=await fetch(base+'/sugerencia',{method:'POST',headers:cab,
+      body:JSON.stringify({texto, anonimo:miId()})});
+  }catch(e){ return {error:'No hay conexión. Prueba en un rato.'}; }
+  const j=await r.json().catch(()=>null);
+  if(!j) return {error:`El servidor ha contestado ${r.status} y no se entiende.`};
+  if(!r.ok) return {error:j.error||`Error ${r.status} del servidor.`};
+  return j;
+}
+
 /* La colección sube sola cuando cambia, pero NO en cada guardado: abrir un sobre guarda
    varias veces seguidas. Se espera a que pare cuatro segundos y se sube una vez. */
 let subidaEnCola=null;
@@ -2033,8 +2073,19 @@ function navHTML(){
 function render(){
   $('#r-div').innerHTML=MONEDA+'<span>'+corto(S.divisa)+'</span>';
   $('#r-fic').innerHTML=GEMA+'<span>'+corto(S.fichas)+'</span>';
-  $('#top .engranaje').innerHTML=icono('engranaje');
-  const sinNav = vista==='partida'||vista==='online';
+  $('#b-ajustes').innerHTML=icono('engranaje');
+  $('#b-sugerir').innerHTML=icono('carta');
+  /* LA APERTURA SE QUEDA LA PANTALLA ENTERA, y no es un capricho: `.ap-escena` es
+     `position:fixed;inset:0`, o sea que ya tapaba la página. Lo que pasaba es que la
+     cabecera y la barra de abajo FLOTABAN por encima, y la flecha de salir —que vive
+     dentro de #app, que es una capa propia (`z-index:1`)— quedaba atrapada DEBAJO de la
+     cabecera (`z-index:50`), justo detrás del logo. Estaba ahí desde el principio y no se
+     veía nunca, así que de la apertura sólo se salía por las pestañas de abajo. Lo cazó
+     él. Fuera el cromo: la escena es de pantalla completa y ahí caben la flecha arriba y
+     el "Abrir otro" abajo. */
+  const sinCromo = vista==='apertura';
+  const sinNav = sinCromo||vista==='partida'||vista==='online';
+  $('#top').style.display = sinCromo?'none':'flex';
   $('#nav').innerHTML = sinNav?'':navHTML();
   $('#nav').style.display = sinNav?'none':'flex';
   document.body.style.paddingBottom = sinNav
@@ -2043,7 +2094,7 @@ function render(){
   const f={inicio:vInicio,tienda:vTienda,club:vClub,desafios:vDesafios,perfil:vPerfil,
     sobre:vSobre,apertura:vApertura,
     jugar:vJugar,aprende:vAprende,logros:vLogros,reglas:vReglas,draft:vDraft,
-    ajustes:vAjustes,redes:vRedes,notas:vNotas,cuenta:vCuenta,
+    ajustes:vAjustes,redes:vRedes,notas:vNotas,cuenta:vCuenta,sugerencias:vSugerencias,
     coleccion:vColeccion,plantilla:vPlantilla,intercambio:vIntercambio,sets:vSets,
     reciclaje:vReciclaje,retosdetalle:vRetos,
     partida:vPartida,online:vOnline,directo:vDirecto}[vista]||vInicio;
@@ -2678,6 +2729,46 @@ function leerCampos(){
   return tmp.f;
 }
 
+
+/* ── SUGERENCIAS ── el sobre de la cabecera, al lado del engranaje.
+
+   Lo pidió él: "un nuevo icono que sea un sobre, arriba al lado de la rueda de ajustes, y
+   que sea para dar feedback". La gente escribe y le llega, SIN tener que poner sus datos:
+   quién eres ya lo sabe el juego.
+
+   QUIÉN FIRMA: si has iniciado sesión, tu nombre de usuario y tu correo; si no, el
+   identificador anónimo de este móvil (`miId()`), que es el mismo que ya se usa para las
+   partidas en directo. Se enseña en la pantalla antes de mandar, porque mandar algo con tu
+   correo dentro sin decírtelo no se hace.
+
+   Está en el engranaje de las cinco pestañas, o sea que se abre desde cualquier sitio, así
+   que la flecha usa `atras` igual que Ajustes, Mis redes y Cuenta. */
+function vSugerencias(){
+  const enviado=!!tmp.enviado;
+  const firma=hayCuenta()
+    ? `${esc(S.cuenta.usuario)} · ${esc(S.cuenta.correo||'')}`
+    : `Sin cuenta — se manda como ${esc(miId())}`;
+  if(enviado) return `${cabecera('Sugerencias','data-a="atras"')}
+    <div class="card-panel center">
+      <div style="font-size:34px">✅</div>
+      <b>Enviada</b>
+      <div class="sub mb">Gracias. Se lee todo, aunque no siempre haya respuesta.</div>
+      <button class="btn gho" data-a="otrasugerencia" style="width:100%">Escribir otra</button>
+    </div>`;
+  const ocupado=!!tmp.cargando, txt=tmp.txt||'';
+  return `${cabecera('Sugerencias','data-a="atras"')}
+    <div class="card-panel">
+      <div class="sub mb">Cuenta qué te gusta, qué no y qué le falta. Va derecho al que hace
+      el juego. No hace falta que pongas tus datos.</div>
+      <textarea class="campo" id="s-texto" rows="7" maxlength="2000"
+        placeholder="Lo que quieras contar…">${esc(txt)}</textarea>
+      <div class="tiny" style="color:var(--dim2);margin-bottom:9px">Firma: ${firma}</div>
+      ${tmp.err?`<div class="tiny" style="color:var(--warn);margin-bottom:9px">${esc(tmp.err)}</div>`:''}
+      <button class="btn" data-a="enviarsugerencia" style="width:100%"
+        ${ocupado?'disabled':''}>${ocupado?'Enviando…':'Enviar'}</button>
+    </div>`;
+}
+
 function vRedes(){
   return `${cabecera('Mis redes','data-a="atras"')}
     <div class="card-panel sub">Aún no hay nada publicado. Cuando lo haya, los enlaces van aquí.</div>`;
@@ -3000,6 +3091,10 @@ const NIVEL_APERTURA={
    clases y variables. Repintar a mitad de una transición la corta en seco. */
 function abrirTanda(items,tipo){
   if(!items.length){ ir('tienda'); return; }
+  /* Se entra aquí también desde "Abrir otro", o sea SIN salir de la apertura, y entonces
+     pueden quedar corriendo los temporizadores de la tanda anterior —la carta que se
+     estaba yendo al fondo—. Sin cortarlos tocarían el DOM de la escena nueva. */
+  pararAviso();
   vista='apertura';
   tmp={ap:{items,tipo}};
   window.scrollTo(0,0); render();
@@ -3090,6 +3185,11 @@ function avisaApertura(){
   c.classList.add('on');
   p.textContent=a.fase==='tapada'?'Toca para darle la vuelta':'Toca para pasarla';
   p.classList.add('on');
+  /* "ABRIR OTRO" APARECE AL ACABAR, no antes: la apertura no termina sola —las cartas dan
+     vueltas en círculo—, así que el final es haberlas visto todas. Ponerlo desde el primer
+     fotograma sería un botón invitándote a saltarte lo que estás mirando. */
+  const otro=$('#ap-otro');
+  if(otro) otro.classList.toggle('on', a.vistas>=a.items.length && quedaOtro(a.tipo));
 }
 
 /* Rasga de verdad: la abertura AVANZA con el tiempo, no aparece de golpe. */
@@ -3225,9 +3325,20 @@ function vApertura(){
     </div>
     <div id="ap-cuenta" class="ap-cuenta"></div>
     <div id="ap-pista" class="ap-pista">Toca el sobre</div>
-    <button class="btn gho sm" data-a="salirapertura"
-      style="position:fixed;left:12px;top:calc(12px + env(safe-area-inset-top));z-index:90;
-             width:auto">← Salir</button>`;
+    <button class="ap-volver" data-a="salirapertura" aria-label="Atrás">${icono('atras')}</button>
+    <button id="ap-otro" class="btn ap-otro" data-a="abrirotro" data-t="${a.tipo}"
+      >Abrir otro</button>`;
+}
+
+/* ¿QUEDA OTRO IGUAL QUE ABRIR? El común es gratis y no pasa por el inventario, así que de
+   ése siempre queda; de los demás, sólo si hay uno guardado. Se mira por TIPO y no "algún
+   sobre": el botón dice "Abrir otro", y que te abra un raro cuando acabas de abrir un
+   épico es abrirte una cosa distinta de la que has pedido. */
+function quedaOtro(tipo){
+  const T=TIPOS_SOBRE[tipo];
+  if(!T||T.pronto) return false;
+  if(T.coste===0) return true;
+  return S.sobres.some(x=>x.tipo===tipo);
 }
 
 
@@ -4521,6 +4632,20 @@ document.addEventListener('click',e=>{
   switch(d.a){
     case 'atras': ir(vistaPrevia); break;   // la flecha de Ajustes y de Mis redes
     case 'cuentamodo': tmp.modo=d.modo; tmp.err=null; tmp.bien=null; render(); break;
+    /* MANDAR UNA SUGERENCIA. El texto se guarda en tmp antes de repintar, que si no un
+       error se lleva por delante lo escrito. Quién firma lo pone el servidor a partir del
+       token; desde aquí sólo viaja el identificador anónimo, para quien no tiene cuenta. */
+    case 'enviarsugerencia':{
+      tmp.txt=(($('#s-texto')||{}).value||'').trim();
+      if(tmp.txt.length<4){ tmp.err='Escribe algo más, aunque sea una línea.'; render(); break; }
+      tmp.err=null; tmp.cargando=true; render();
+      apiSugerencia(tmp.txt).then(r=>{
+        tmp.cargando=false;
+        if(r.error){ tmp.err=r.error; return render(); }
+        tmp.enviado=true; tmp.txt=''; render();
+      });
+      break; }
+    case 'otrasugerencia': tmp.enviado=false; tmp.txt=''; tmp.err=null; render(); break;
     case 'cuentacrear':{
       const f=leerCampos();
       tmp.err=null; tmp.bien=null; tmp.cargando=true; render();
@@ -4788,6 +4913,19 @@ document.addEventListener('click',e=>{
 
     case 'pasarcarta':                   // el montón: voltear y pasar al fondo
       toqueApertura(); break;
+    /* ABRIR OTRO SIN VOLVER A LA TIENDA. Lo pidió él: "tampoco el botón de Abrir otro
+       abajo cuando has abierto uno si es que se tienen más en el inventario". Gasta un
+       sobre igual que `abrirsobre` —primero el guardado, que ya está pagado, y si no hay
+       sólo se abre si es gratis—, y NO cobra monedas: aquí no se compra nada. */
+    case 'abrirotro':{
+      const t=d.t, T=TIPOS_SOBRE[t]; if(!T||!quedaOtro(t)) break;
+      const desde=(tmp.ap&&tmp.ap.desde)||'mios';
+      const i=S.sobres.findIndex(x=>x.tipo===t);
+      if(i>=0) S.sobres.splice(i,1);
+      else if(T.coste!==0) break;
+      guardar();
+      abrirTanda(abrirSobre(t),t); if(tmp.ap) tmp.ap.desde=desde;
+      break; }
 
     case 'mudo':
       S.mudo=!S.mudo; guardar();
