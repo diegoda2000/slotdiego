@@ -2515,7 +2515,7 @@ function vAprende(){
       <span class="ic">🎓</span><span class="cu"><b>Partida tutorial</b>
       <span class="sub" style="display:block">${S.tutorialHecho
         ? 'Ya la hiciste. Se puede repetir; no cuenta en tu registro.'
-        : 'Guiada, con plantilla prestada. Al acabar: 🪙 250 y un sobre de oro.'}</span></span>
+        : 'Guiada, con plantilla prestada. Al acabar: 🪙 250 y un sobre épico.'}</span></span>
       <span class="der">›</span></button>`;
   const reglas=`<button class="fila" data-nav="reglas">
       <span class="ic">📖</span><span class="cu"><b>Reglas del juego</b>
@@ -3610,8 +3610,8 @@ function vReciclaje(){
   }).join('');
   return `${cabecera('Reciclaje','data-nav="club"')}
     <div class="sub mb"><b>Solo se reciclan repetidos.</b> La primera copia de un peleador no se
-    puede destruir nunca, por floja que sea. Y cada ficha sale de <b>un solo tramo</b>: no se juntan
-    platas con oros para completarla.</div>
+    puede destruir nunca, por floja que sea. Y cada ficha sale de <b>un solo tramo</b>: no se
+    mezclan cartas de tramos distintos para completarla.</div>
     <div class="card-panel">
       <table style="width:100%"><tr><th>Tramo</th><th style="text-align:right">Por ficha</th><th style="text-align:right">Tienes</th></tr>${filas}</table>
       <div class="divider"></div>
@@ -3696,9 +3696,9 @@ function vIntercambio(){
   if(!tmp.sala) return `${cabecera('Sala de intercambio','data-nav="club"')}
     <div class="sub mb">Entrar cuesta <b>1 ficha</b>. Emparejamiento a ciegas. Solo cartas por cartas:
     ni divisa ni fichas para compensar. Hasta 3 por lado.</div>
-    <div class="card-panel"><div class="sub mb">Límite: no se pueden mezclar rarezas separadas por más de
-    una banda dentro del mismo trueque. Es lo que impide vaciar una cuenta secundaria de bronces
-    a cambio de oros.</div>
+    <div class="card-panel"><div class="sub mb">Límite: no se pueden mezclar cartas separadas por más
+    de un tramo dentro del mismo trueque. Es lo que impide vaciar una cuenta secundaria de cartas
+    flojas a cambio de campeones.</div>
     <button class="btn" data-a="entrarsala" ${S.fichas<1?'disabled':''}>
       ${S.fichas<1?'Necesitas 1 ficha':'Entrar (1 🎟️)'}</button></div>`;
   const s=tmp.sala, mias=tmp.ofrezco||[], suyas=tmp.pido||[];
@@ -4515,7 +4515,7 @@ function pFin(){
       <div style="font-size:44px">🎓</div><h2>Tutorial terminado</h2>
       <div class="mark" style="margin:10px 0"><span style="color:var(--ok)">${P.marcador.j}</span>
         <span class="vs">—</span><span style="color:var(--acc)">${P.marcador.r}</span></div>
-      <div class="sub">Ganes o pierdas, ya sabes jugar. Te llevas 🪙 250 y un sobre de oro.</div></div>
+      <div class="sub">Ganes o pierdas, ya sabes jugar. Te llevas 🪙 250 y un sobre épico.</div></div>
       ${logHTML()}
       <button class="btn" data-nav="reglas" style="margin-top:10px">📖 Ver las reglas completas</button>
       <button class="btn sec" data-a="tutorial" style="margin-top:8px">Repetir el tutorial</button>

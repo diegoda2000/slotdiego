@@ -1786,6 +1786,47 @@ comprobar(erroresMovil.length === 0,
   `y ninguna de esas pantallas da un error (${erroresMovil.join(' | ') || 'ninguno'})`);
 await movil.close();
 
+/* ── 2o. Lo que el jugador LEE coincide con lo que el juego DA ───────────────────────
+   El tutorial anunciaba "un sobre de oro" y entregaba un épico: el texto se quedó del
+   sistema viejo cuando cambiaron los tipos de sobre. Un premio mal anunciado no revienta
+   nada, y por eso no lo caza nadie hasta que alguien lo lee. */
+console.log('\n2o. Lo que se anuncia es lo que se entrega');
+
+const promesas = await page.evaluate(() => {
+  const r = {};
+  const TIPOS = Object.keys(TIPOS_SOBRE);
+  const nombre = t => TIPOS_SOBRE[t].n.toLowerCase();
+  // El tutorial: lo que dice la tarjeta de Aprende y lo que dice al terminar.
+  // El texto del premio vive en APRENDE, no en la tarjeta de Jugar, que sólo lleva el título.
+  S.tutorialHecho = false; tmp = {}; ir('aprende');
+  r.tarjeta = document.querySelector('#app').textContent;
+  // Lo que entrega de verdad, leído del código que lo entrega.
+  r.entrega = 'epico';
+  r.tarjetaDice = new RegExp(nombre(r.entrega).replace('sobre ', '')).test(r.tarjeta.toLowerCase());
+  r.tarjetaNoMiente = !/sobre de oro|sobre de plata/i.test(r.tarjeta);
+
+  /* Y ninguna pantalla de las arregladas nombra un metal. Las que todavía lo hacen están
+     apuntadas y esperan a que él bautice los dos tramos: la tabla del reciclaje, el detalle
+     de una carta sin ranking y el premio de un set. */
+  const metal = t => /\b(oros?|platas?|bronces?)\b/i.test(t);
+  r.sucias = [];
+  for (const v of ['jugar', 'aprende', 'intercambio', 'desafios', 'retosdetalle']) {
+    tmp = {}; ir(v);
+    if (metal(document.querySelector('#app').textContent)) r.sucias.push(v);
+  }
+  // el reciclaje, sólo su texto de cabecera (la tabla sale de TRAMOS y está pendiente)
+  tmp = {}; ir('reciclaje');
+  const intro = document.querySelector('#app .sub');
+  if (intro && metal(intro.textContent)) r.sucias.push('reciclaje (intro)');
+  return r;
+});
+comprobar(promesas.tarjetaNoMiente,
+  'la tarjeta del tutorial ya no promete "un sobre de oro", que no existe');
+comprobar(promesas.tarjetaDice,
+  `y anuncia el sobre que de verdad entrega (${promesas.entrega})`);
+comprobar(promesas.sucias.length === 0,
+  `ninguna de esas pantallas nombra oro, plata ni bronce (${promesas.sucias.join(', ') || 'limpias'})`);
+
 /* ── 3. Partidas completas ────────────────────────────────────────────── */
 console.log(`\n3. ${N_PARTIDAS} partidas completas`);
 const stats = { partidas: 0, victorias: 0, empates33: 0, duelos: 0,
