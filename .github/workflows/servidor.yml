@@ -307,6 +307,52 @@ jobs:
             --notes-file notas.md \
             --prerelease
 
+      # ── Y LA PUBLICACIÓN VERSIONADA ──────────────────────────────────────────
+      # `apk-latest` se borra y se rehace en cada empujón: sirve para "dame lo último",
+      # pero no para volver a una versión concreta, porque su APK cambia debajo. Así que
+      # cada `versionName` deja además su propia publicación, que NO se toca nunca más.
+      #
+      # SÓLO SE CREA SI NO EXISTE. Si ya está, se deja como está: rehacerla cambiaría el
+      # archivo que alguien ya se ha bajado con ese número, y entonces el número no
+      # significaría nada. Para sacar otra hay que SUBIR LA VERSIÓN.
+      - name: Publicar la versión
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          URL: ${{ needs.desplegar.outputs.url }}
+          SHA: ${{ needs.desplegar.outputs.commit }}
+        run: |
+          VER=$(grep -oP 'versionName\s+"\K[^"]+' android/app/build.gradle)
+          CODIGO=$(grep -oP 'versionCode\s+\K\d+' android/app/build.gradle)
+          echo "Versión $VER (código $CODIGO)"
+          if gh release view "v$VER" >/dev/null 2>&1; then
+            echo "La publicación v$VER ya existe. No se toca."
+            echo "- La versión \`v$VER\` ya estaba publicada; no se ha tocado." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          {
+            echo "Primera versión instalable de P4P.CG. Es una **alfa temprana**: falta"
+            echo "mucho por hacer y hay bloques marcados PENDIENTE dentro del juego."
+            echo ""
+            echo "**Android** — descarga \`p4p-cg.apk\` y ábrelo. Nada que configurar:"
+            echo "la dirección del servidor viene dentro."
+            echo ""
+            echo "Va **firmado con la clave de release**, así que a partir de aquí cada"
+            echo "versión nueva se instala encima como actualización y **el progreso se"
+            echo "queda**. Si tenías instalada una de las de antes —que iban con la firma"
+            echo "de depuración— hay que desinstalarla primero, y eso sí borra la colección."
+            echo ""
+            echo "**iPhone** — \`p4p-cg.ipa\` va **sin firmar**: se instala desde un"
+            echo "ordenador con Sideloadly o AltStore, firmándolo con tu propio Apple ID."
+            echo "Con cuenta gratuita caduca a los 7 días. Está en \`ios/COMO-FUNCIONA.md\`."
+            echo ""
+            echo "Servidor de partidas en directo: $URL"
+          } > version.md
+          gh release create "v$VER" salida/* \
+            --title "P4P.CG $VER" \
+            --notes-file version.md \
+            --target "$SHA"
+          echo "- Publicada la versión **v$VER** (versionCode $CODIGO)." >> "$GITHUB_STEP_SUMMARY"
+
       - name: Resumen
         env:
           URL: ${{ needs.desplegar.outputs.url }}
