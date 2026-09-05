@@ -1216,7 +1216,6 @@ textarea.campo{resize:vertical;line-height:1.35;font-family:var(--texto)}
 <div id="top">
   <div class="logo"><img src="arte/logo-v2.webp" alt="P4P.CG"></div>
   <div class="res" id="r-div"></div>
-  <div class="res" id="r-fic"></div>
   <button class="engranaje" id="b-sugerir" data-nav="sugerencias" aria-label="Enviar una sugerencia"></button>
   <button class="engranaje" id="b-ajustes" data-nav="ajustes" aria-label="Ajustes"></button>
 </div>
@@ -1244,7 +1243,7 @@ const ponerToken=v=>{ try{ v?localStorage.setItem(KEY_TOKEN,v):localStorage.remo
 let S=null;
 
 function estadoNuevo(){
-  const s={divisa:250,fichas:0,coleccion:[],plantilla:{},sobres:[],
+  const s={divisa:250,coleccion:[],plantilla:{},sobres:[],
     partidas:0,victorias:0,gratis:{},sets:[],retos:[],nombre:'',amigos:[],
     /* LA FOTO DE PERFIL ARRANCA VACÍA y la elige el jugador tocándola. Antes salía sola
        la mejor carta de su plantilla, y eso es ponerle una cara que él no ha escogido.
@@ -1451,14 +1450,14 @@ const cabecera=(titulo,volver,extra='')=>`<div class="pcab">
 /* LAS DOS MONEDAS DE LA CABECERA. Van dibujadas y RELLENAS, no con el trazo de los demás
    iconos: a 15 px un contorno hueco no se distingue de otro, y lo que tiene que leerse de
    un vistazo es cuál es el oro y cuál la gema. Por eso no pasan por icono(). */
+// La moneda escrita, para los sitios donde no cabe el dibujo (tablas, avisos).
+const MONEDA_TXT='🪙';
 const MONEDA=`<svg class="mon" viewBox="0 0 24 24" aria-hidden="true">
   <circle cx="12" cy="12" r="9.4" fill="#f0c54e" stroke="#7a5410" stroke-width="1.4"/>
   <circle cx="12" cy="12" r="5.5" fill="none" stroke="#7a5410" stroke-width="1.5"/></svg>`;
-const GEMA=`<svg class="mon" viewBox="0 0 24 24" aria-hidden="true">
-  <path d="M12 2.4 21.2 9 12 21.6 2.8 9z" fill="#8f7bd6" stroke="#4b3c8e" stroke-width="1.4"
-    stroke-linejoin="round"/>
-  <path d="M2.8 9h18.4M12 2.4 8.1 9l3.9 12.6M12 2.4 15.9 9 12 21.6" fill="none"
-    stroke="#4b3c8e" stroke-width="1.1" opacity=".75"/></svg>`;
+/* El dibujo de la GEMA se fue con las fichas. Si algún día vuelven las gemas de
+   verdad —las del boceto, que nunca han existido—, hay que volver a dibujarlo. */
+
 
 /* 1.000, no 1000. toLocaleString('es-ES') NO agrupa los de cuatro cifras —es lo correcto
    en español para años y códigos—, pero esto son precios y el boceto los agrupa. */
@@ -1610,10 +1609,21 @@ function cartaDeNivel(nivelId,yaEnElSobre){
 
 function abrirSobre(tipo){
   const salida=[], dentro=new Set();
+  /* LAS CARTAS DE UN SOBRE GRATIS SE MARCAN, y de eso depende toda la economía de la
+     venta. El común es gratis y SIN LÍMITE, y sus cartas entran en la colección al abrir
+     el sobre, sin verlas —medido—: abrir, salir por la flecha y volver a abrir cuesta unos
+     cuatro segundos a mano y nada con un guion. Si esas cartas se pudieran vender, el
+     bucle daría 2,5 veces más oro por segundo que jugar, y ningún precio positivo lo
+     arregla: basta con las rankeadas que caen de vez en cuando.
+     Las dos únicas salidas eran quitarle el "sin límite" al común o que sus cartas no se
+     vendan. Se toma la segunda, que es la que respeta las dos cosas que él pidió.
+     Está todo calculado en herramientas/estudio-economia.mjs. */
+  const gratis=TIPOS_SOBRE[tipo].coste===0;
   for(const nivel of repartoSobre(tipo)){
     const c=cartaDeNivel(nivel,dentro);
     dentro.add(c.id);
     const it={iid:'i'+Math.random().toString(36).slice(2,9),cid:c.id};
+    if(gratis) it.gratis=true;
     S.coleccion.push(it); salida.push(it);
   }
   // Siempre de mejor a peor: el orden deportivo manda también aquí.
@@ -1654,44 +1664,101 @@ function reciclable(iid){
   return repesDe(it.cid)>0;
 }
 
-// Cuántas fichas dan estos repetidos, tramo por tramo, y qué sobra en cada uno.
-function cuentaReciclaje(iids){
-  const porTramo={};
-  for(const iid of iids){
-    const it=inst(iid); if(!it) continue;
-    const t=tramoDe(PORID[it.cid]);
-    (porTramo[t]=porTramo[t]||[]).push(iid);
-  }
-  let fichas=0; const detalle={};
-  for(const [t,lista] of Object.entries(porTramo)){
-    const n=TRAMOS[t].repes;
-    detalle[t]={tengo:lista.length, porFicha:n, fichas:Math.floor(lista.length/n),
-      faltan:(lista.length%n)?n-(lista.length%n):0};
-    fichas+=detalle[t].fichas;
-  }
-  return {fichas, detalle};
+/* ── LA VENTA DE CARTAS ────────────────────────────────────────────────────────────
+   Antes esto era el reciclaje y pagaba en FICHAS. Las fichas se van: sólo salían de aquí
+   y sólo servían para una cosa —entrar en la sala de intercambio—, así que eran una
+   moneda con un único grifo y un único desagüe. Ahora los repetidos se venden por oro.
+
+   LOS PRECIOS NO SE ELIGEN, SE CALCULAN, y salen de herramientas/estudio-economia.mjs.
+   Se parte del mismo juicio con el que ya se pusieron los precios de los sobres —un 12-15
+   vale 1 punto de calidad, un 6-11 vale 2,5 y un campeón o top 5 vale 8— y se vende al
+   25% de lo que cuesta comprar ese mismo punto por su vía más barata (513 oro el punto,
+   el ultimate). De ahí 128 oro el punto, redondeado a veinticinco.
+
+   UN PELEADOR SIN RANKING VALE 0, y no es un castigo aparte: es que no aporta nada a lo
+   que hace bueno a un sobre, con el mismo baremo que fija los precios. Y es justo lo que
+   se pidió: que vender jugadores malos no dé para farmear.
+
+   Con esto, comprar un sobre para revenderlo pierde SIEMPRE: el raro devuelve el 20% de
+   lo que cuesta y el ultimate el 25%. La tienda se queda tres cuartas partes pase lo que
+   pase. */
+/* EL PRECIO SALE DEL RANKING, con los mismos cuatro tramos que reparten los sobres y que
+   piden los SBC. NO se usa `tramoDe()`: sus tramos son otros —'oro' y 'plata' son los DOS
+   sin ranking, y 'rankeado' junta el 6-11 con el 12-15—, y mezclarlos ponía al mejor de
+   los no rankeados por encima de un top 15. Lo cazó la suite. */
+const VENTA={corona:1025, top611:325, top1215:125};
+
+/* Y LOS SIN RANKING NO VALEN TODOS LO MISMO, que lo pidió él. El baremo de los sobres les
+   da 0 puntos a todos por igual, pero entre ellos hay diferencia de verdad: la suma de sus
+   seis stats va de 453 a 509. Esa horquilla se reparte en un tramo pequeño, y el tope (60)
+   queda POR DEBAJO del peor rankeado (125): el orden deportivo manda también en el precio. */
+const NR_SUMA=[453,509], NR_PRECIO=[5,60];
+const precioSinRanking=c=>Math.round(NR_PRECIO[0]+(NR_PRECIO[1]-NR_PRECIO[0])*
+  Math.min(1,Math.max(0,(c.suma-NR_SUMA[0])/(NR_SUMA[1]-NR_SUMA[0]))));
+
+/* LAS DEL SOBRE GRATIS SE VENDEN, PERO A PESETA, y lo pidió así: "haz que las de los
+   sobres gratis sí se vendan, pero por poco dinero".
+
+   Cuánto es "poco" NO es una opinión. El común es gratis y sin límite, sus cartas entran
+   en la colección al abrir el sobre sin verlas —medido— y abrir, salir por la flecha y
+   volver a abrir cuesta unos cuatro segundos a mano: 4.500 cartas la hora. A 1 oro las sin
+   ranking y 10 las rankeadas, ese bucle paga 1,26 veces lo que paga jugar, o sea lo mismo
+   y muchísimo más aburrido. Con cualquier cifra por encima, vender morralla se convierte
+   en el camino rápido a los sobres buenos, que es justo lo que él no quiere.
+   Está calculado en herramientas/estudio-economia.mjs. */
+const VENTA_GRATIS={sinrank:1, rankeado:10};
+
+// Lo que vale una carta suelta, según de dónde salió y quién es.
+function precioVenta(c, gratis){
+  const n=NIVELES.find(x=>x.cumple(c));
+  const sinRank=!n||n.id==='sinrank';
+  if(gratis) return sinRank?VENTA_GRATIS.sinrank:VENTA_GRATIS.rankeado;
+  return sinRank?precioSinRanking(c):VENTA[n.id];
 }
 
-/* Recicla solo lo que completa fichas enteras, y por tramos. Lo que sobra se devuelve
-   a la colección en vez de desaparecer: destruir cartas que no han pagado nada sería
-   cobrar dos veces. */
-function reciclar(iids){
-  const validos=iids.filter(reciclable);
-  const porTramo={};
-  for(const iid of validos){
-    const t=tramoDe(PORID[inst(iid).cid]);
-    (porTramo[t]=porTramo[t]||[]).push(iid);
+/* Qué se puede vender: un REPETIDO que no esté alineado. Ya está: las de sobre gratis
+   también, sólo que a su precio. */
+function vendible(iid){
+  const it=inst(iid); if(!it) return false;
+  return reciclable(iid) && precioVenta(PORID[it.cid], it.gratis)>0;
+}
+
+// Lo que se llevaría por lo seleccionado, y el desglose por tramos para enseñarlo.
+function cuentaVenta(iids){
+  let oro=0; const detalle={};
+  for(const iid of iids){
+    if(!vendible(iid)) continue;
+    const it=inst(iid), c=PORID[it.cid], p=precioVenta(c,it.gratis);
+    const t=(NIVELES.find(x=>x.cumple(c))||{id:'sinrank'}).id;
+    detalle[t]=detalle[t]||{n:0, oro:0};
+    detalle[t].n++; detalle[t].oro+=p; oro+=p;
   }
-  let g=0;
-  for(const [t,lista] of Object.entries(porTramo)){
-    const n=TRAMOS[t].repes;
-    const gasta=Math.floor(lista.length/n)*n;
-    if(!gasta) continue;
-    g+=gasta/n;
-    const fuera=new Set(lista.slice(0,gasta));
-    S.coleccion=S.coleccion.filter(x=>!fuera.has(x.iid));
+  return {oro, detalle};
+}
+
+/* Vender de verdad. Sólo se van las que se pagan: una carta que no vale nada no se
+   destruye ni por error, que sería cobrarle al jugador por nada. */
+function vender(iids){
+  /* SE GUARDA SIEMPRE UNA COPIA DE CADA PELEADOR. `vendible()` mira si HAY repetidos, pero
+     eso es verdad para las DOS copias a la vez: seleccionando las dos se vendían las dos y
+     el peleador desaparecía de la colección. Lo cazó la suite antes de que llegara a nadie.
+     Aquí se cuenta cuántas quedan de cada carta y se para en una. */
+  const quedan={};
+  for(const x of S.coleccion) quedan[x.cid]=(quedan[x.cid]||0)+1;
+  const validos=[];
+  for(const iid of iids){
+    if(!vendible(iid)) continue;
+    const cid=inst(iid).cid;
+    if(quedan[cid]<=1) continue;          // ésta es la última: no se toca
+    quedan[cid]--; validos.push(iid);
   }
-  S.fichas+=g; guardar(); return g;
+  const {oro}=cuentaVenta(validos);
+  const fuera=new Set(validos);
+  S.coleccion=S.coleccion.filter(x=>!fuera.has(x.iid));
+  S.divisa+=oro;
+  S.vendidas=(S.vendidas||0)+validos.length;   // lo mide el logro del Chatarrero
+  guardar();
+  return {oro, cuantas:validos.length};
 }
 function copias(cid){ return S.coleccion.filter(x=>x.cid===cid).length; }
 
@@ -2146,7 +2213,6 @@ function navHTML(){
 
 function render(){
   $('#r-div').innerHTML=MONEDA+'<span>'+corto(S.divisa)+'</span>';
-  $('#r-fic').innerHTML=GEMA+'<span>'+corto(S.fichas)+'</span>';
   $('#b-ajustes').innerHTML=icono('engranaje');
   $('#b-sugerir').innerHTML=icono('carta');
   /* LA APERTURA SE QUEDA LA PANTALLA ENTERA, y no es un capricho: `.ap-escena` es
@@ -2545,7 +2611,10 @@ function logros(){
     L('Élite','Consigue 10 cartas del top 5',tiene(c=>c.estatus==='top5'),10),
     L('Vuelta al mundo','Cartas de 20 países',new Set(S.coleccion.map(x=>PORID[x.cid].pais).filter(Boolean)).size,20),
     L('Escuela','Haz la partida tutorial',S.tutorialHecho?1:0,1),
-    L('Reciclador','Acumula 500 fichas',S.fichas,500),
+    /* Era "Acumula 500 fichas", o sea 15.000 repetidos: imposible ya antes de que las
+       fichas desaparecieran. Se cambia por algo que el juego mide de verdad y que se puede
+       alcanzar jugando. */
+    L('Chatarrero','Vende 25 cartas repetidas',S.vendidas||0,25),
   ];
 }
 function vLogros(){
@@ -3593,9 +3662,9 @@ function vReciclaje(){
   const sel=tmp.sel||[];
   // Solo repetidos: la primera copia de una carta no se recicla jamás.
   const lista=[];
-  for(const x of S.coleccion) if(reciclable(x.iid)) lista.push({x,c:PORID[x.cid]});
+  for(const x of S.coleccion) if(vendible(x.iid)) lista.push({x,c:PORID[x.cid]});
   lista.sort((a,b)=>comparar(a.c,b.c));
-  const {fichas,detalle}=cuentaReciclaje(sel);
+  const {oro,detalle}=cuentaVenta(sel);
   // Por páginas, igual que la colección: los repetidos se cuentan por decenas y una
   // lista que hay que recorrer con el dedo no deja ver lo que estás triturando.
   const POR_PAG=16;                 // 4x4, igual que la colección
@@ -3603,22 +3672,27 @@ function vReciclaje(){
   if(tmp.pag===undefined) tmp.pag=0;
   tmp.pag=Math.max(0, Math.min(tmp.pag, pags-1));
   const hoja=lista.slice(tmp.pag*POR_PAG,(tmp.pag+1)*POR_PAG);
-  const filas=Object.entries(TRAMOS).map(([id,t])=>{
-    const d=detalle[id];
-    return `<tr><td>${t.n}</td><td style="text-align:right">${t.repes} repes</td>
-      <td style="text-align:right">${d?`${d.tengo} → <b>${d.fichas}</b>${d.faltan?` <span style="color:var(--dim2)">(faltan ${d.faltan})</span>`:''}`:'—'}</td></tr>`;
+  /* La tabla dice CUÁNTO VALE CADA COSA, que es la pregunta que trae a quien entra aquí.
+     Va por tramos de ranking, en el mismo orden que todo lo demás del juego. */
+  /* La tabla dice CUÁNTO VALE CADA COSA, que es la pregunta que trae a quien entra aquí.
+     Los sin ranking van con horquilla, porque no valen todos lo mismo. */
+  const filas=NIVELES.map(n=>{
+    const d=detalle[n.id];
+    const pre=n.id==='sinrank' ? MONEDA_TXT+' '+NR_PRECIO[0]+'–'+NR_PRECIO[1]
+                               : MONEDA_TXT+' '+VENTA[n.id].toLocaleString('es-ES');
+    return `<tr><td>${n.n}</td><td style="text-align:right">${pre}</td>
+      <td style="text-align:right">${d?`${d.n} → <b>${d.oro.toLocaleString('es-ES')}</b>`:'—'}</td></tr>`;
   }).join('');
-  return `${cabecera('Reciclaje','data-nav="club"')}
-    <div class="sub mb"><b>Solo se reciclan repetidos.</b> La primera copia de un peleador no se
-    puede destruir nunca, por floja que sea. Y cada ficha sale de <b>un solo tramo</b>: no se
-    mezclan cartas de tramos distintos para completarla.</div>
+  return `${cabecera('Vender','data-nav="club"')}
+    <div class="sub mb"><b>Solo repetidos</b>, y nunca la última copia. El precio sale de
+    dónde está en su división. Lo de un <b>sobre gratis</b> vale ${MONEDA_TXT} ${VENTA_GRATIS.sinrank}.</div>
     <div class="card-panel">
-      <table style="width:100%"><tr><th>Tramo</th><th style="text-align:right">Por ficha</th><th style="text-align:right">Tienes</th></tr>${filas}</table>
+      <table style="width:100%"><tr><th>Tramo</th><th style="text-align:right">Por carta</th><th style="text-align:right">Elegidas</th></tr>${filas}</table>
       <div class="divider"></div>
       <div class="row" style="align-items:center">
         <div style="flex:2"><b>${sel.length} seleccionadas</b>
-          <div class="sub">${fichas} ficha${fichas===1?'':'s'} enteras</div></div>
-        <button class="btn sm" data-a="reciclar" ${fichas<1?'disabled':''}>Reciclar</button>
+          <div class="sub">${oro?MONEDA_TXT+' '+oro.toLocaleString('es-ES'):'sin valor de venta'}</div></div>
+        <button class="btn sm" data-a="vender" ${oro<1?'disabled':''}>Vender</button>
       </div>
     </div>
     ${hoja.length?`
@@ -3694,13 +3768,12 @@ function vRetos(){
 /* ── INTERCAMBIO ── */
 function vIntercambio(){
   if(!tmp.sala) return `${cabecera('Sala de intercambio','data-nav="club"')}
-    <div class="sub mb">Entrar cuesta <b>1 ficha</b>. Emparejamiento a ciegas. Solo cartas por cartas:
-    ni divisa ni fichas para compensar. Hasta 3 por lado.</div>
+    <div class="sub mb">Emparejamiento a ciegas. Solo cartas por cartas: nada de monedas
+    para compensar. Hasta 3 por lado.</div>
     <div class="card-panel"><div class="sub mb">Límite: no se pueden mezclar cartas separadas por más
     de un tramo dentro del mismo trueque. Es lo que impide vaciar una cuenta secundaria de cartas
     flojas a cambio de campeones.</div>
-    <button class="btn" data-a="entrarsala" ${S.fichas<1?'disabled':''}>
-      ${S.fichas<1?'Necesitas 1 ficha':'Entrar (1 🎟️)'}</button></div>`;
+    <button class="btn" data-a="entrarsala">Entrar</button></div>`;
   const s=tmp.sala, mias=tmp.ofrezco||[], suyas=tmp.pido||[];
   const val=l=>l.reduce((a,c)=>a+({plata:1,oro:6,top15:14,top10:22,top5:45,campeon:90})[c.estatus],0);
   const bandas=l=>l.map(c=>ORDEN_ESTATUS.indexOf(c.estatus));
@@ -5124,9 +5197,11 @@ document.addEventListener('click',e=>{
       vista='tienda'; tmp={sub:(tmp.ap&&tmp.ap.desde)||'comprar'};
       window.scrollTo(0,0); render(); break;
     case 'autoplantilla': autoPlantilla(S,true); guardar(); render(); break;
-    case 'reciclar':{
-      const g=reciclar(tmp.sel||[]); tmp.sel=[]; tmp.pag=0;
-      ov(`<div class="center"><div style="font-size:38px">🎟️</div><h3>+${g} ficha(s)</h3>
+    case 'vender':{
+      const v=vender(tmp.sel||[]); tmp.sel=[]; tmp.pag=0;
+      ov(`<div class="center"><div style="font-size:38px">${MONEDA_TXT}</div>
+        <h3>+${v.oro.toLocaleString('es-ES')}</h3>
+        <div class="sub mb">${v.cuantas} carta${v.cuantas===1?'':'s'} vendida${v.cuantas===1?'':'s'}.</div>
         <button class="btn" data-a="cerrarov">Vale</button></div>`); render(); break; }
     case 'canjearset':{
       const s=SETS.find(x=>x.id===d.id); if(!s||!setListo(s)) break;
@@ -5151,8 +5226,8 @@ document.addEventListener('click',e=>{
       ov(`<div class="center"><h3>Reto superado</h3><div class="sub mb">Has ganado ${TIPOS_SOBRE[r.premio.sobre].n}${r.premio.divisa?' y 🪙 '+r.premio.divisa:''}.</div>
         <button class="btn" data-a="cerrarov">Vale</button></div>`); render(); break; }
     case 'entrarsala':{
-      if(S.fichas<1) break;
-      S.fichas--; guardar();
+      /* Ya no cuesta nada: cobraba una ficha, y las fichas eran una moneda que sólo salía
+         del reciclaje y sólo servía para esto. Sin ellas, la puerta no guarda nada. */
       const pool=shuffle(ROSTER).slice(0,6);
       tmp.sala={oferta:pool,deseos:shuffle(ROSTER.filter(c=>c.rareza==='oro')).slice(0,3).map(c=>c.nombre)};
       tmp.ofrezco=[]; tmp.pido=[]; render(); break; }
@@ -5225,6 +5300,12 @@ if(!S.gratis) S.gratis={};        // partidas guardadas antes de los sobres grat
 if(!S.amigos) S.amigos=[];        // ni antes de los amigos
 if(S.nombre===undefined) S.nombre='';
 if(S.cuenta===undefined) S.cuenta='';   // partidas guardadas de antes de que hubiera cuentas
+/* LAS FICHAS SE FUERON. A quien tenga una partida guardada con fichas se le quitan del
+   estado: no valían para nada más que entrar en la sala de intercambio, que ahora es
+   gratis, así que no se le debe nada. Y `vendidas` empieza a contar desde cero, que es
+   lo honesto: lo reciclado antes no fue una venta. */
+if(S.fichas!==undefined) delete S.fichas;
+if(S.vendidas===undefined) S.vendidas=0;
 if(S.servidor===undefined) S.servidor='';
 guardar();
 render();

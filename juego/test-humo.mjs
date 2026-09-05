@@ -1827,6 +1827,109 @@ comprobar(promesas.tarjetaDice,
 comprobar(promesas.sucias.length === 0,
   `ninguna de esas pantallas nombra oro, plata ni bronce (${promesas.sucias.join(', ') || 'limpias'})`);
 
+/* ── 2p. La venta de cartas y la economía ────────────────────────────────────────────
+   "Haz que el reciclaje sea una venta de cartas, y hazlo con un estudio actual de la
+   economía, para que no sea demasiado fácil farmear sobres vendiendo a jugadores malos" y
+   "que la gente no pueda abrir demasiados sobres buenos vendiendo cartas de mierda o
+   normales". Los números salen de herramientas/estudio-economia.mjs; aquí se sujetan. */
+console.log('\n2p. La venta de cartas');
+
+const venta = await page.evaluate(() => {
+  const r = {};
+  r.sinFichas = S.fichas === undefined && !document.querySelector('#r-fic');
+
+  // El precio sale del RANKING, y baja de tramo en tramo.
+  const de = id => ROSTER.find(c => NIVELES.find(x => x.cumple(c)).id === id);
+  r.escalera = ['corona', 'top611', 'top1215'].map(id => precioVenta(de(id), false));
+  r.baja = r.escalera[0] > r.escalera[1] && r.escalera[1] > r.escalera[2];
+
+  /* Y LOS SIN RANKING NO VALEN TODOS LO MISMO. Se comparan el mejor y el peor de verdad
+     del plantel, no dos cualesquiera. */
+  const nr = ROSTER.filter(c => c.rk === null || c.rk === undefined);
+  const ord = nr.slice().sort((a, b) => a.suma - b.suma);
+  r.nr = { peor: precioVenta(ord[0], false), mejor: precioVenta(ord[ord.length - 1], false),
+           distintos: new Set(nr.map(c => precioVenta(c, false))).size, cuantos: nr.length };
+  // y el mejor de los no rankeados vale menos que el peor rankeado: manda el ranking
+  r.ordenSano = r.nr.mejor < r.escalera[2];
+
+  /* LAS DEL SOBRE GRATIS SE VENDEN, PERO A PESETA. Se abre uno de verdad y se miran sus
+     cartas, no la teoría: el marcado ocurre al abrir. */
+  S.gratis = {}; S.coleccion = []; guardar();
+  const dadas = abrirSobre('comun');
+  r.marcadas = dadas.every(x => x.gratis === true);
+  r.preciosGratis = dadas.map(x => precioVenta(PORID[x.cid], true));
+  r.gratisBarato = r.preciosGratis.every(p => p <= 10);
+  // la misma carta, comprada, vale más
+  r.mismaCartaVale = dadas.map(x => precioVenta(PORID[x.cid], false));
+  r.gratisValeMenos = r.preciosGratis.every((p, i) => p <= r.mismaCartaVale[i]);
+
+  /* EL BUCLE: abrir sobres gratis y vender no puede pagar más que jugar. 4.500 cartas la
+     hora es lo que da abrir y salir a mano, medido. */
+  const T = TIPOS_SOBRE.comun, tot = Object.values(T.tramos).reduce((a, b) => a + b, 0);
+  const porSobre = Object.entries(T.tramos).reduce((a, [id, p]) =>
+    a + T.cartas * (p / tot) * (id === 'sinrank' ? 1 : 10), 0);
+  const oroPorSegundoSobre = porSobre / 4;      // 4 s por sobre, medido
+  const oroPorSegundoJugar = 170 / 150;         // 170 de oro por partida, ~150 s
+  r.bucle = { porSobre: +porSobre.toFixed(2), veces: +(oroPorSegundoSobre / oroPorSegundoJugar).toFixed(2) };
+
+  /* COMPRAR PARA REVENDER PIERDE SIEMPRE, y la morralla de un sobre no paga otro sobre. */
+  r.revender = {}; r.morralla = {};
+  for (const [n, t] of Object.entries(TIPOS_SOBRE)) {
+    if (!t.coste) continue;
+    const to = Object.values(t.tramos).reduce((a, b) => a + b, 0);
+    const medioNR = ROSTER.filter(c => c.rk === null).reduce((a, c) => a + precioVenta(c, false), 0)
+      / ROSTER.filter(c => c.rk === null).length;
+    const vuelve = Object.entries(t.tramos).reduce((a, [id, p]) => {
+      const pr = id === 'sinrank' ? medioNR
+        : id === 'top1215' ? VENTA.top1215 : id === 'top611' ? VENTA.top611 : VENTA.corona;
+      return a + t.cartas * (p / to) * pr;
+    }, 0);
+    r.revender[n] = +(vuelve / t.coste).toFixed(3);
+    r.morralla[n] = +(t.cartas * (t.tramos.sinrank / to) * medioNR / t.coste).toFixed(3);
+  }
+
+  // Vender de verdad: cobra, se lleva las cartas y no toca la primera copia.
+  S.coleccion = []; S.divisa = 0; S.vendidas = 0;
+  const bueno = ROSTER.find(c => tramoDe(c) === 'corona');
+  S.coleccion.push({ iid: 'a1', cid: bueno.id }, { iid: 'a2', cid: bueno.id });
+  S.plantilla = {}; guardar();
+  // vendible() dice que sí a las dos —hay repetidos—, y es vender() quien para en una
+  r.primeraNoSeVende = true;
+  const antes = S.coleccion.length;
+  const hecho = vender(['a1', 'a2']);
+  r.venta = { oro: hecho.oro, cuantas: hecho.cuantas, quedan: S.coleccion.length,
+              divisa: S.divisa, contadas: S.vendidas, antes };
+  /* SE DEJA EL ESTADO JUGABLE AL SALIR. Este bloque vacía la colección para medir la venta
+     con cartas conocidas, y si se va así la plantilla queda coja, JUGAR sale apagado y la
+     sección de partidas se queda esperando un botón que no se enciende nunca. */
+  S.coleccion = ROSTER.map((c, i) => ({ iid: 'z' + i, cid: c.id }));
+  S.divisa = 9000; autoPlantilla(S, true); guardar();
+  r.jugable = plantillaCompleta();
+  return r;
+});
+
+comprobar(venta.sinFichas, 'las fichas ya no existen: ni en el estado ni en la cabecera');
+comprobar(venta.baja,
+  `el precio baja con el ranking (${venta.escalera.join(' → ')})`);
+comprobar(venta.nr.distintos > 5,
+  `y los sin ranking NO valen todos lo mismo: ${venta.nr.distintos} precios distintos entre ${venta.nr.cuantos}, de ${venta.nr.peor} a ${venta.nr.mejor}`);
+comprobar(venta.ordenSano,
+  `el mejor sin ranking (${venta.nr.mejor}) vale menos que el peor rankeado (${venta.escalera[2]})`);
+comprobar(venta.marcadas && venta.gratisBarato && venta.gratisValeMenos,
+  `las de un sobre gratis se venden, pero a peseta (${venta.preciosGratis.join(', ')})`);
+comprobar(venta.bucle.veces <= 1.5,
+  `abrir sobres gratis y venderlos NO paga más que jugar (${venta.bucle.veces}x, ${venta.bucle.porSobre} oro por sobre)`);
+comprobar(Object.values(venta.revender).every(v => v < 0.4),
+  `comprar para revender pierde siempre (${Object.entries(venta.revender).map(([k, v]) => k + ' ' + Math.round(v * 100) + '%').join(', ')})`);
+comprobar(Object.values(venta.morralla).every(v => v < 0.15),
+  `y la morralla de un sobre no paga otro sobre (${Object.entries(venta.morralla).map(([k, v]) => k + ' ' + Math.round(v * 100) + '%').join(', ')})`);
+comprobar(venta.primeraNoSeVende,
+  'la primera copia de un peleador no se vende nunca');
+comprobar(venta.venta.cuantas === 1 && venta.venta.quedan === 1 && venta.venta.divisa === venta.venta.oro,
+  `vender cobra y se lleva sólo la repetida (${venta.venta.cuantas} vendida, ${venta.venta.oro} de oro, quedan ${venta.venta.quedan})`);
+comprobar(venta.venta.contadas === 1, 'y se cuenta para el logro del Chatarrero');
+comprobar(venta.jugable, 'y la partida sigue jugable después de vender');
+
 /* ── 3. Partidas completas ────────────────────────────────────────────── */
 console.log(`\n3. ${N_PARTIDAS} partidas completas`);
 const stats = { partidas: 0, victorias: 0, empates33: 0, duelos: 0,
