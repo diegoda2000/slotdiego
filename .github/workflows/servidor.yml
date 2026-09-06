@@ -330,8 +330,14 @@ jobs:
             exit 0
           fi
           {
-            echo "Primera versión instalable de P4P.CG. Es una **alfa temprana**: falta"
-            echo "mucho por hacer y hay bloques marcados PENDIENTE dentro del juego."
+            # LAS NOVEDADES DE CADA VERSIÓN, si están escritas. Antes aquí iba a pelo
+            # "Primera versión instalable", que a partir de la segunda es mentira.
+            if [ -s docs/novedades.md ]; then
+              cat docs/novedades.md
+            else
+              echo "Versión $VER de P4P.CG. Es una **alfa temprana**: falta mucho por"
+              echo "hacer y hay bloques marcados PENDIENTE dentro del juego."
+            fi
             echo ""
             echo "**Android** — descarga \`p4p-cg.apk\` y ábrelo. Nada que configurar:"
             echo "la dirección del servidor viene dentro."

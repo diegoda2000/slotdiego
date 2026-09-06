@@ -1248,6 +1248,20 @@ th{color:var(--dim2);font-size:11px;text-transform:uppercase;letter-spacing:.04e
 .pcab .volver{background:none;border:0;padding:0;margin:0 -1px 0 0;cursor:pointer;
   color:var(--acc);display:flex;align-items:center;align-self:center}
 .pcab .volver .ico{width:25px;height:25px;stroke-width:2.4}
+/* EL SBC METE SU CUENTA Y SU BOTÓN EN LA LÍNEA DEL TÍTULO. El botón se empuja al final con
+   `margin-left:auto` para que quede pegado a la derecha pase lo que pase el título, y la
+   cuenta se queda justo antes. Con esto se ahorra el panel de 62 px que había debajo, que
+   en una pantalla de cartas es media fila.
+
+   El botón lleva `align-self:center` por lo mismo que la flecha: .pcab alinea por línea
+   base y un botón alineado así se monta por encima del texto. */
+/* La cuenta dice también SI YA CUMPLE, poniéndose verde. Estaba en una línea aparte
+   —"Aún no cumple" / "Requisitos cumplidos"— y esa línea partía la descripción del reto en
+   dos, o sea que se comía justo lo que se acababa de ahorrar quitando el panel. */
+.pcab .sbc-cuenta{margin-left:auto;white-space:nowrap;font-family:var(--titulo);
+  font-weight:700;font-size:15px;letter-spacing:.04em}
+.pcab .sbc-cuenta.listo{color:var(--ok)}
+.pcab .sbc-entregar{flex:none;align-self:center;padding:6px 12px;width:auto}
 /* Los campos de una cuenta. El alto y el tamaño de letra no son a ojo: por debajo de
    16 px, Safari y el WebView de iPhone HACEN ZOOM al enfocar un campo, y la pantalla se
    queda descolocada al escribir. 16 px es el suelo. */
@@ -2126,24 +2140,36 @@ const divsDistintas = (l,n) => new Set(l.map(c=>c.division)).size===n;
 
    NO se ha tocado `RAREZAS` ni `ESTATUS` de motor.js: eso es la migración de rarezas, que
    espera a la interfaz por orden suya. Esto sólo cambia lo que piden los cinco retos. */
+/* `piden` es CUÁNTAS CARTAS pide el reto, y va escrito aparte aunque el `check` ya lo
+   compruebe. Lo necesita el contador de la cabecera —"0/3", que él pidió así— y sacarlo
+   del `check` no se puede: es una función. Escrito al lado, si un día cambia el reto se
+   cambian los dos a la vez y se ven juntos. */
 const RETOS=[
   {id:'r1',n:'Cantera',   d:'Entrega 3 peleadores sin ranking, de divisiones distintas',
-   check:l=>l.length===3&&l.every(sinRanking)&&divsDistintas(l,3),
+   piden:3, check:l=>l.length===3&&l.every(sinRanking)&&divsDistintas(l,3),
    premio:{sobre:'raro',divisa:120}},
   {id:'r2',n:'Base sólida',d:'Entrega 2 rankeados, de divisiones distintas',
-   check:l=>l.length===2&&l.every(rankeado)&&divsDistintas(l,2),
+   piden:2, check:l=>l.length===2&&l.every(rankeado)&&divsDistintas(l,2),
    premio:{sobre:'epico',divisa:0}},
   {id:'r3',n:'Cartel completo',d:'Entrega 4 rankeados de 4 divisiones distintas',
-   check:l=>l.length===4&&l.every(rankeado)&&divsDistintas(l,4),
+   piden:4, check:l=>l.length===4&&l.every(rankeado)&&divsDistintas(l,4),
    premio:{sobre:'epico',divisa:400}},
   {id:'r4',n:'Caja de herramientas',d:'Entrega 3 cartas con atributo, los tres distintos',
-   check:l=>l.length===3&&l.every(c=>c.rasgos.length)&&
+   piden:3, check:l=>l.length===3&&l.every(c=>c.rasgos.length)&&
      new Set(l.map(c=>c.rasgos[0].tipo)).size===3,
    premio:{sobre:'epico',divisa:0}},
   {id:'r5',n:'Mundial',d:'Entrega 4 cartas de 4 países distintos',
-   check:l=>l.length===4&&new Set(l.map(c=>c.pais)).size===4,
+   piden:4, check:l=>l.length===4&&new Set(l.map(c=>c.pais)).size===4,
    premio:{sobre:'raro',divisa:250}},
 ];
+/* Una red de seguridad: si `piden` y el `check` no dicen lo mismo, el contador de la
+   cabecera miente. Se comprueba al arrancar entregando N cartas de mentira y viendo que el
+   check no las rechaza POR EL NÚMERO. */
+for(const r of RETOS){
+  if(typeof r.piden!=='number') console.error(`El reto ${r.id} no dice cuántas cartas pide`);
+  else if(r.check(new Array(r.piden+1).fill({rasgos:[],pais:'',division:'m0',rk:null})))
+    console.error(`El reto ${r.id} dice que pide ${r.piden} y acepta ${r.piden+1}`);
+}
 
 /* ══════════════════════════════════════════════════════════════════════════
    5b. AMIGOS Y CÓDIGOS DE SALA
@@ -4240,11 +4266,27 @@ function vRetos(){
   if(tmp.pag===undefined) tmp.pag=0;
   tmp.pag=Math.max(0, Math.min(tmp.pag, pags-1));
   const hoja=disp.slice(tmp.pag*POR_PAG, (tmp.pag+1)*POR_PAG);
-  return `${cabecera(r.n,'data-nav="retosdetalle" data-a="salirreto"')}
+  /* LA CUENTA Y EL BOTÓN VAN EN LA LÍNEA DEL TÍTULO, y lo pidió él: "haz que la cuenta de
+     entregadas y el botón de entregar salga en la misma línea y sección que el título
+     donde pone Cantera, para ahorrar espacio y poder redimensionar el tamaño de las
+     cartas".
+
+     Y es lo correcto: el panel que había debajo ocupaba 62 px de alto para decir dos
+     palabras y poner un botón, y en una pantalla de cartas esos 62 px son medio centímetro
+     de carta. Van dentro del `extra` de cabecera(), que es el hueco que ya existe para eso.
+
+     El "Aún no cumple" SE FUE, y también lo pidió él: "quita de la descripción el Aún no
+     cumple". No hacía falta y costaba una línea entera —partía la descripción del reto en
+     dos— o sea que se comía justo lo que se acababa de ahorrar quitando el panel. Lo que
+     dice si cumples o no es el contador, que se pone verde, y el botón, que se enciende. */
+  return `${cabecera(r.n,'data-nav="retosdetalle" data-a="salirreto"',
+      /* "0/3" y va contando, que lo pidió él así. Dice de un vistazo cuántas llevas y
+         cuántas hacen falta; "0 entregadas" sólo decía la mitad. Y se pone verde cuando el
+         reto se cumple de verdad, que llevar 3 de 3 no basta si además pide tres
+         divisiones distintas. */
+      `<span class="sub sbc-cuenta${ok?' listo':''}">${sel.length}/${r.piden}</span>
+       <button class="btn sm sbc-entregar" data-a="entregarreto" ${ok?'':'disabled'}>Entregar</button>`)}
     <div class="sub mb">${r.d}</div>
-    <div class="card-panel"><div class="row" style="align-items:center">
-      <div style="flex:2"><b>${sel.length} entregadas</b><div class="sub">${ok?'Requisitos cumplidos':'Aún no cumple'}</div></div>
-      <button class="btn sm" data-a="entregarreto" ${ok?'':'disabled'}>Entregar</button></div></div>
     ${filtrosHTML(todas,x=>PORID[x.cid],{atributo:true})}
     ${disp.length?`
     <div class="grid" style="--cols:4" data-fit="4,4">${hoja.map(x=>

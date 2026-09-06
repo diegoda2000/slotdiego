@@ -269,6 +269,46 @@ for (const [t, r] of Object.entries(reparto)) {
     `${t}: y las rarezas también (la que más baila, ${peorRz.toFixed(2)} puntos)`);
 }
 
+/* Y LO QUE DE VERDAD IMPORTA: QUE LA CARTA QUE SALE PUEDA SER DE ESA RAREZA.
+
+   Esto no es lo mismo que lo de arriba. Arriba se mira EL SORTEO —qué rareza sale y con
+   qué tramo—, y aquí LA CARTA que se entrega. Es exactamente el fallo que ya pasó una vez
+   con los tramos: "el sorteo daba bien y las cartas no". Un sorteo impecable con una bolsa
+   mal filtrada reparte épicas a quien no puede tenerlas.
+
+   Y hay 68 cartas con épica y 216 con rara, de 402: si la bolsa se calculara sobre el
+   ROSTER entero en vez de sobre `base`, un peleador sin ranking saldría con marco violeta.
+   Se abren sobres de verdad de los cinco tipos y se miran las cartas una a una. */
+const rarezaReal = await page.evaluate(() => {
+  const mal = { epica: [], rara: [] };
+  let n = 0, epicas = 0, raras = 0;
+  const guardada = S.coleccion;
+  for (const t of Object.keys(TIPOS_SOBRE)) for (let i = 0; i < 1500; i++) {
+    S.coleccion = [];
+    for (const it of abrirSobre(t)) {
+      const c = PORID[it.cid], rz = it.rz || 'comun'; n++;
+      const corona = c.rk === 0 || (c.rk >= 1 && c.rk <= 5);
+      if (rz === 'epica') { epicas++;
+        if (!corona || !(c.base || []).includes('epica')) mal.epica.push(c.nombre + ' #' + c.rk); }
+      if (rz === 'rara') { raras++;
+        if (!(c.base || []).includes('rara')) mal.rara.push(c.nombre + ' #' + c.rk); }
+    }
+  }
+  S.coleccion = guardada; guardar();
+  return { n, epicas, raras, epicaMal: [...new Set(mal.epica)].slice(0, 4),
+    raraMal: [...new Set(mal.rara)].slice(0, 4),
+    puedenEpica: ROSTER.filter(c => (c.base || []).includes('epica')).length,
+    puedenRara: ROSTER.filter(c => (c.base || []).includes('rara')).length };
+});
+comprobar(rarezaReal.epicaMal.length === 0,
+  `una ÉPICA es siempre campeón o top 5: ${rarezaReal.epicas.toLocaleString('es-ES')} épicas de `
+  + `${rarezaReal.n.toLocaleString('es-ES')} cartas, ninguna fuera de las ${rarezaReal.puedenEpica} que existen`
+  + (rarezaReal.epicaMal.length ? ' — ' + rarezaReal.epicaMal.join(', ') : ''));
+comprobar(rarezaReal.raraMal.length === 0,
+  `y una RARA sólo va a un rankeado o a un destacado: ${rarezaReal.raras.toLocaleString('es-ES')} raras, `
+  + `ninguna fuera de las ${rarezaReal.puedenRara} que existen`
+  + (rarezaReal.raraMal.length ? ' — ' + rarezaReal.raraMal.join(', ') : ''));
+
 /* NI UNA SOLA VEZ TODAS RARAS EN EL RARO NI EN EL ÉPICO, y lo pidió él con esas palabras:
    "que haya probabilidad de que te toque una o dos raras, pero que es muy difícil o
    imposible prácticamente que todas sean raras". Los dos de PRÓXIMAMENTE quedan fuera a
@@ -2194,6 +2234,70 @@ comprobar(pantVenta.noSeMueve && pantVenta.seDesplaza,
 comprobar(pantVenta.cobro.prometido === pantVenta.cobro.cobrado
   && pantVenta.cobro.quitadas === pantVenta.cobro.vendidas,
   `lo que promete el pie es lo que cobra (${pantVenta.cobro.prometido} prometidos, ${pantVenta.cobro.cobrado} cobrados, ${pantVenta.cobro.quitadas} cartas)`);
+
+/* EL CASO QUE DE VERDAD ROMPÍA LA CIFRA: copias MEZCLADAS del mismo peleador. El pie
+   contaba "n × el precio de la PRIMERA copia", y las copias no valen todas lo mismo —una
+   de sobre gratis vale 10 y la comprada 1.025, y una rara la mitad más—. Lo cazó él: "que
+   no cambie la cifra y te dé menos o más".
+
+   Se monta a mano el caso peor: cuatro copias del mismo campeón, una gratis, una comprada,
+   una rara y una épica, y se venden las tres repetidas. Se comprueba que lo que dice el
+   PIE EN PANTALLA, lo que promete la cuenta y lo que entra en la cartera son el mismo
+   número, y que la que se queda es la mejor. */
+const mezcla = await page.evaluate(() => {
+  const c = ROSTER.find(x => x.rk === 0);
+  const guardada = S.coleccion, divisa = S.divisa, plant = S.plantilla;
+  S.coleccion = [{ iid: 'k0', cid: c.id }, { iid: 'k1', cid: c.id, gratis: true },
+                 { iid: 'k2', cid: c.id, rz: 'rara' }, { iid: 'k3', cid: c.id, rz: 'epica' }];
+  S.plantilla = {}; S.divisa = 0; guardar(); tmp = {}; ir('reciclaje');
+  tmp.venta = { [c.id]: 3 };
+  const iids = copiasAVender();
+  const prometido = cuentaVenta(iids).oro;
+  render();
+  const pie = +document.querySelector('#pie .tot').textContent.replace(/[^\d]/g, '');
+  const v = vender(copiasAVender());
+  const out = { precios: S.coleccion.map(x => precioCopia(x)), prometido, pie,
+    cobrado: v.oro, divisa: S.divisa, quedaEpica: S.coleccion.every(x => x.rz === 'epica'),
+    quedan: S.coleccion.length };
+  S.coleccion = guardada; S.divisa = divisa; S.plantilla = plant; tmp = {}; guardar();
+  return out;
+});
+comprobar(mezcla.prometido === mezcla.pie && mezcla.pie === mezcla.cobrado
+  && mezcla.cobrado === mezcla.divisa,
+  `con copias mezcladas la cifra no baila: pie ${mezcla.pie}, cobrado ${mezcla.cobrado}, cartera +${mezcla.divisa}`);
+comprobar(mezcla.quedan === 1 && mezcla.quedaEpica,
+  'y la que se queda es la MEJOR copia: se venden las peores primero');
+
+/* Y QUE LA PANTALLA NO PARPADEE AL ELEGIR, que también lo pidió él. Parpadeaba porque cada
+   toque llamaba a render(), y render() rehace el HTML entero: dieciséis cartas con marco,
+   capa de luz y foto, descartadas y vueltas a crear.
+
+   No se puede medir "un parpadeo", pero sí su causa: se marcan los nodos de las cartas, se
+   toca una casilla y se mira si SIGUEN SIENDO LOS MISMOS NODOS. Si se rehacen, la marca
+   desaparece. */
+const parpadeo = await page.evaluate(() => {
+  const guardada = S.coleccion, plant = S.plantilla;
+  const cs = ROSTER.filter(x => x.rk === null).slice(0, 6);
+  /* DOS copias de cada uno, o sea UNA repetida: con una sola, tocar la casilla la elige
+     directamente en vez de abrir el deslizador, que es el camino que parpadeaba. */
+  S.coleccion = [];
+  for (const x of cs) for (let k = 0; k < 2; k++) S.coleccion.push({ iid: x.id + k, cid: x.id });
+  S.plantilla = {}; tmp = {}; guardar(); ir('reciclaje'); render();
+  const antes = [...document.querySelectorAll('.venta-cel .carta')];
+  antes.forEach(e => { e.dataset.marca = '1'; });
+  document.querySelector('.venta-cel').click();     // elegir una
+  const despues = [...document.querySelectorAll('.venta-cel .carta')];
+  const out = { n: antes.length, mismos: despues.every((e, i) => e === antes[i]),
+    marcados: despues.filter(e => e.dataset.marca === '1').length,
+    seEligio: !!document.querySelector('.venta-cel.on'),
+    pieCambio: +document.querySelector('#pie .tot').textContent.replace(/[^\d]/g, '') > 0 };
+  S.coleccion = guardada; S.plantilla = plant; tmp = {}; guardar();
+  return out;
+});
+comprobar(parpadeo.n > 0 && parpadeo.mismos && parpadeo.marcados === parpadeo.n,
+  `elegir una carta NO rehace la pantalla: las ${parpadeo.n} cartas siguen siendo los mismos nodos`);
+comprobar(parpadeo.seEligio && parpadeo.pieCambio,
+  'y aun así la casilla se marca y el total de abajo se actualiza');
 comprobar(pantVenta.cobro.selVacia, 'y la selección se vacía al vender');
 comprobar(pantVenta.sinTablaEnPantalla && pantVenta.laIAbre,
   'los precios van escondidos detrás de la (i), como los de los sobres');
