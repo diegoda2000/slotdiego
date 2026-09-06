@@ -2388,6 +2388,7 @@ const tv = await movil.evaluate(async () => {
     clase: document.documentElement.classList.contains('tv'),
     marcados: document.querySelectorAll('[tabindex]').length,
     marcar: typeof window.marcarFocos,
+    atras: typeof window.atrasTV,
     escribiendo: document.body.classList.contains('escribiendo'),
     margen: getComputedStyle(document.querySelector('button')).scrollMarginTop,
     cartas: document.querySelectorAll('.carta').length,
@@ -2396,6 +2397,8 @@ const tv = await movil.evaluate(async () => {
 comprobar(!tv.clase, 'no hay clase .tv en el documento');
 comprobar(tv.marcados === 0, `y ni un elemento con tabindex, con ${tv.cartas} cartas en pantalla`);
 comprobar(tv.marcar === 'undefined', 'marcarFocos ni siquiera existe');
+comprobar(tv.atras === 'undefined',
+  'ni atrasTV: el botón atrás del móvil sigue llevando a Inicio, como siempre');
 comprobar(tv.margen === '0px' || tv.margen === 'auto', `ni scroll-margin de tele (${tv.margen})`);
 
 await movil.evaluate(() => ir('inicio'));

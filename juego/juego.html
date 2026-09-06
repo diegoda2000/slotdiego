@@ -6177,6 +6177,33 @@ if(ESTV){
     setTimeout(()=>e.scrollIntoView({block:'nearest',inline:'nearest'}),60);
   });
 
+  /* EL ATRÁS DEL MANDO, QUE EN UNA TELE ES *LA* FORMA DE VOLVER. Hasta ahora hacía lo
+     del móvil —saltar a Inicio—, así que desde Colección te sacaba a Inicio en vez de a
+     Club, y eso con un mando en la mano se siente roto.
+
+     Ahora hace, por orden, lo que espera quien maneja una tele:
+
+       1. si hay un cartel abierto encima, cerrarlo y nada más
+       2. si está la apertura de un sobre en marcha, su "Salir"
+       3. si la pantalla tiene FLECHA, PULSARLA. Es lo importante: así el botón del mando
+          y la flecha de la pantalla van SIEMPRE al mismo sitio, y no hay dos "atrás" que
+          hagan cosas distintas
+       4. sin flecha y fuera de Inicio, a Inicio
+       5. y en Inicio, salir de la aplicación
+
+     Devuelve 'salir' o 'nada', que es lo que mira el envoltorio de Android. En partida no
+     llega a llamarse: eso lo corta el envoltorio antes, para no perder un combate por un
+     botón. */
+  window.atrasTV=function(){
+    if(document.getElementById('ov')){ cerrarOv(); return 'nada'; }
+    const salir=document.querySelector('.ap-volver');
+    if(salir){ salir.click(); return 'nada'; }
+    const flecha=document.querySelector('#app .pcab button.volver');
+    if(flecha){ flecha.click(); return 'nada'; }
+    if(vista!=='inicio'){ ir('inicio'); return 'nada'; }
+    return 'salir';
+  };
+
   document.addEventListener('keydown',ev=>{
     if(ev.altKey||ev.ctrlKey||ev.metaKey) return;
     const act=document.activeElement, etq=act?act.tagName:'';

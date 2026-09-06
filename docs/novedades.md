@@ -1,28 +1,18 @@
-Versión **0.1.3.2** de P4P.CG. Compatibilidad con **Android TV y Nvidia Shield**. En un
-móvil no cambia absolutamente nada: está comprobado en la suite.
+Versión **0.1.3.3** de P4P.CG. El **botón ATRÁS del mando** en Android TV. En un móvil no
+cambia nada: el atrás sigue llevando a Inicio, como siempre.
 
-### El teclado ya no se come la pantalla
+### El atrás del mando ya vuelve a donde toca
 
-En una tele, tocar cualquier campo dejaba el juego arriba, una plancha gris debajo y las
-teclas de canto contra el borde. No era un fallo del juego: en horizontal, el teclado de
-Android se pone a pantalla completa con su propio cuadro de texto encima de todo. Un móvil
-casi no lo ve porque se escribe en vertical; **una tele está siempre en horizontal**.
+En una tele el atrás del mando es *la* forma de volver, y hasta ahora hacía lo del móvil:
+saltar a Inicio. Desde Colección te sacaba a Inicio en vez de devolverte a Club.
 
-Ahora se queda abajo, como en un móvil, el campo **se sube a la vista** al entrar en él y
-la barra de pestañas se aparta mientras escribes, para que el cuadro quepa entero.
+Ahora **hace lo mismo que la flecha de la pantalla**, así que las dos formas de volver
+—la flecha con la cruceta y el botón del mando— van siempre al mismo sitio:
 
-### Se maneja con el mando
+- si hay un cartel abierto encima, lo cierra y no se mueve de la pantalla
+- si estás abriendo un sobre, sale de la apertura
+- si la pantalla tiene flecha, la pulsa
+- si no la tiene, va a Inicio
+- y en Inicio, cierra la aplicación
 
-Cruceta para moverse y OK para pulsar, con el foco marcado en dorado para que se vea
-siempre dónde estás. Las cartas, los menús, las pestañas y los campos: todo se alcanza sin
-tocar la pantalla.
-
-### Y se ve bien en cualquier televisor
-
-Da igual 720p, 1080p o 4K: estos aparatos no abren la aplicación a pantalla completa, sino
-en una ventana con forma de móvil, y ahí Colección y Plantilla se salían por abajo. Ya no.
-
-### Sale en la pantalla de inicio de la tele
-
-Con su banner, como cualquier otra aplicación, en vez de tener que buscarla con un lanzador
-de los de sideload.
+Durante una partida sigue sin hacer nada, para no perder un combate por un botón.

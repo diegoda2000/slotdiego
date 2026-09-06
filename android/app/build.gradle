@@ -78,8 +78,8 @@ android {
            CUARTO número —0.1.3.1, 0.1.3.2…— y el tercero se guarda para lo que cambia el
            juego. El `versionCode` sube en uno igual: ése no entiende de decimales, y es
            el único que mira Android. */
-        versionCode 6
-        versionName "0.1.3.2"
+        versionCode 7
+        versionName "0.1.3.3"
     }
 
     signingConfigs {

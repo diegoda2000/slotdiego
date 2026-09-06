@@ -158,6 +158,42 @@ console.log('\n══ 4. LA CRUCETA DEL MANDO');
   await pag.close();
 }
 
+/* ── 4 bis. EL ATRÁS DEL MANDO ───────────────────────────────────────────── */
+console.log('\n══ 4 bis. EL ATRÁS DEL MANDO');
+{
+  const [pag, fallos] = await abrir(304, 540, true);
+  const r = await pag.evaluate(async () => {
+    const esperar = () => new Promise(r => setTimeout(r, 220));
+    const out = {};
+    /* Lo que importa: desde una pantalla CON flecha, el mando va a donde va la flecha
+       —Club— y no a Inicio, que es lo que hacía antes. */
+    ir('club'); await esperar(); ir('coleccion'); await esperar();
+    out.deColeccion = [window.atrasTV(), vista];
+    /* Un cartel abierto se cierra y no se navega. */
+    ir('coleccion'); await esperar();
+    const c = document.querySelector('.carta[data-carta]'); if (c) c.click();
+    await esperar();
+    out.conCartel = [!!document.getElementById('ov'), window.atrasTV(),
+                     !!document.getElementById('ov'), vista];
+    /* Una pestaña no tiene flecha: ahí sí, a Inicio. */
+    ir('perfil'); await esperar();
+    out.dePerfil = [!!document.querySelector('#app .pcab button.volver'), window.atrasTV(), vista];
+    /* Y en Inicio se sale de la aplicación. */
+    ir('inicio'); await esperar();
+    out.deInicio = window.atrasTV();
+    return out;
+  });
+  ok(r.deColeccion[0] === 'nada' && r.deColeccion[1] === 'club',
+    `desde Colección el mando vuelve a CLUB, como la flecha, y no a Inicio (${r.deColeccion[1]})`);
+  ok(r.conCartel[0] && r.conCartel[1] === 'nada' && !r.conCartel[2] && r.conCartel[3] === 'coleccion',
+    'con un cartel abierto lo cierra y no se mueve de la pantalla');
+  ok(!r.dePerfil[0] && r.dePerfil[2] === 'inicio',
+    'desde una pestaña, que no tiene flecha, va a Inicio');
+  ok(r.deInicio === 'salir', 'y en Inicio le dice a Android que cierre la aplicación');
+  ok(!fallos.length, 'sin errores');
+  await pag.close();
+}
+
 /* ── 5. EN MÓVIL, NI RASTRO ──────────────────────────────────────────────── */
 console.log('\n══ 5. EN UN MÓVIL NO EXISTE NADA DE ESTO');
 {
@@ -167,11 +203,13 @@ console.log('\n══ 5. EN UN MÓVIL NO EXISTE NADA DE ESTO');
     return { clase: document.documentElement.classList.contains('tv'),
              tabindex: document.querySelectorAll('[tabindex]').length,
              marcar: typeof window.marcarFocos,
+             atras: typeof window.atrasTV,
              suelo: getComputedStyle(document.querySelector('button')).scrollMarginTop };
   });
   ok(!m.clase, 'no hay clase .tv');
   ok(m.tabindex === 0, `no hay ni un elemento con tabindex (${m.tabindex})`);
   ok(m.marcar === 'undefined', 'marcarFocos ni existe');
+  ok(m.atras === 'undefined', 'ni atrasTV: el atrás del móvil sigue siendo el de siempre');
   ok(m.suelo === '0px' || m.suelo === 'auto', `ni scroll-margin de tele (${m.suelo})`);
   await pag.evaluate(() => ir('inicio'));
   await pag.waitForTimeout(250);

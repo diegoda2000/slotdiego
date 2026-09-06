@@ -1057,6 +1057,21 @@ que se vea por qué está descartado— y que **con el teclado abierto** los cam
 únicas pantallas que escriben —cuenta y sugerencias— sigan viéndose enteros y sin que los
 tape la barra de pestañas. Medido con la ventana encogida al 55%: bien en tele y en móvil.
 
+**EL ATRÁS DEL MANDO TAMBIÉN, Y VAN LAS DOS FORMAS A LA VEZ** —*"haz que en la tele estén
+las dos opciones, tanto la del botón atrás del mando, como la otra"*—. La flecha de la
+pantalla es un `<button>` normal, así que se enfoca subiendo con la cruceta y se pulsa con
+OK; y el **botón ATRÁS del mando hace exactamente lo mismo que esa flecha**, que es lo que
+evita tener dos "atrás" que lleven a sitios distintos.
+
+Antes hacía lo del móvil —saltar a Inicio—, y desde Colección te sacaba a Inicio en vez de
+devolverte a Club. Ahora `window.atrasTV()` va por orden: **cartel abierto → cerrarlo** ·
+**apertura en marcha → su Salir** · **hay flecha → pulsarla** · **no hay → Inicio** · **en
+Inicio → salir de la aplicación**. En partida no llega a llamarse: eso lo corta el
+envoltorio antes, para no perder un combate por un botón.
+
+**`atrasTV` sólo existe en la tele**, así que el `onBackPressed` de un móvil sigue línea
+por línea como estaba, y hay comprobación de ello en la suite y en `ver-tv.mjs`.
+
 **Y LA CRUCETA DEL MANDO YA FUNCIONA**, que lo mandó después: *"hazlo jugable con la
 cruceta del mando tanto shield como de TV, pero **solo en la versión para TV y shield**"*.
 

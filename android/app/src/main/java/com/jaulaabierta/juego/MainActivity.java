@@ -170,6 +170,15 @@ public class MainActivity extends Activity {
      * El atrás vuelve a la pantalla de inicio en vez de cerrar la aplicación.
      * Durante una partida no hace nada: para rendirse está el botón de abandonar,
      * y cerrar la partida sin querer con el atrás sería una derrota accidental.
+     *
+     * EN UNA TELE HACE OTRA COSA, y con motivo: allí el atrás del mando es LA forma de
+     * volver, y saltar a Inicio desde una pantalla interior en vez de volver a la de
+     * antes se siente roto. Si el juego trae `atrasTV` —que sólo existe con la marca de
+     * televisión puesta— manda ella: cierra el cartel abierto, o sale de la apertura, o
+     * PULSA LA FLECHA de la pantalla, que es lo que hace que el botón del mando y la
+     * flecha vayan siempre al mismo sitio.
+     *
+     * En un móvil `atrasTV` no existe y esto sigue línea por línea como estaba.
      */
     @Override
     public void onBackPressed() {
@@ -177,6 +186,7 @@ public class MainActivity extends Activity {
                 "(function(){"
                         + " if (typeof vista === 'undefined') return 'salir';"
                         + " if (vista === 'partida') return 'nada';"
+                        + " if (typeof window.atrasTV === 'function') return window.atrasTV();"
                         + " if (vista !== 'inicio') { ir('inicio'); return 'nada'; }"
                         + " return 'salir';"
                         + "})()",
