@@ -157,8 +157,15 @@ const sobres = await page.evaluate(() => {
       debe: TIPOS_SOBRE[t].cartas,
       oros: cs.filter(c => c.rareza === 'oro').length,
       repetidasDentro: r.length - new Set(r.map(i => i.cid)).size,
-      // ¿salen ordenadas de mejor a peor?
-      ordenadas: cs.every((c, k) => k === 0 || comparar(cs[k - 1], c) <= 0),
+      /* ¿salen ordenadas de mejor a peor? Y desde que hay tres cartas base, "mejor" es
+         primero la RAREZA y luego el orden deportivo: "los más raros, siempre deben de ir
+         lo último del sobre", y la apertura da la vuelta a esta lista. */
+      ordenadas: r.every((x, k) => { if (!k) return true;
+        const a = ORDEN_BASE[r[k - 1].rz || 'comun'], b = ORDEN_BASE[x.rz || 'comun'];
+        return a > b || (a === b && comparar(cs[k - 1], cs[k]) <= 0); }),
+      // y que la rareza no baje nunca según se avanza en la lista
+      rarezaBaja: r.every((x, k) => !k
+        || ORDEN_BASE[r[k - 1].rz || 'comun'] >= ORDEN_BASE[x.rz || 'comun']),
     };
   }
   return { antes, despues: S.coleccion.length, porTipo };
@@ -175,7 +182,7 @@ comprobar(Object.values(sobres.porTipo).every(x => x.n === x.debe),
 comprobar(Object.values(sobres.porTipo).every(x => x.repetidasDentro === 0),
   'y ninguna carta se repite dentro del mismo sobre');
 comprobar(Object.values(sobres.porTipo).every(x => x.ordenadas),
-  'las cartas salen ordenadas de mejor a peor');
+  'las cartas salen ordenadas de mejor a peor, y la rareza manda');
 
 /* EL SOBRE YA NO REPARTE ORO Y PLATA, sino RANKING. Lo dijo él: "YA NO HAY OROS JODER,
    QUE TE QUEDE CLARO, DE MOMENTO TODAS SON COMUNES". Se tira una vez por carta sobre los
@@ -185,36 +192,90 @@ comprobar(Object.values(sobres.porTipo).every(x => x.ordenadas),
    El reparto declarado tiene que ser el reparto real: se tiran miles de sobres y se
    compara con la tabla, así que si algún día se retoca un número y se olvida el otro, aquí
    salta. */
+/* CUÁNTO VALE UN TRAMO POR CARTA, con la forma nueva de las tablas.
+
+   Desde que hay tres cartas base, un sobre sortea DOS cosas: primero la rareza y después
+   el tramo DENTRO de esa rareza. Así que el porcentaje de un tramo ya no está escrito en
+   un sitio: hay que sumar los caminos. La épica no lleva tabla de tramos porque sólo
+   existe corona —no hay épicas de nadie que no sea campeón o top 5—, así que entra entera
+   ahí.
+
+   Vive aquí y no repetido en cada comprobación: si la forma vuelve a cambiar, cambia en
+   un sitio. Es la misma cuenta que hace pTramo() en el juego, escrita aparte a propósito:
+   una prueba que llama a la función que prueba no prueba nada. */
+const pTramoDe = (T, id) => {
+  let p = 0;
+  for (const [rz, peso] of Object.entries(T.rarezas)) {
+    if (rz === 'epica') { if (id === 'corona') p += peso; continue; }
+    const t = T.tramos[rz]; if (!t) continue;
+    const tot = Object.values(t).reduce((a, b) => a + b, 0);
+    p += peso * (t[id] || 0) / tot;
+  }
+  return p / 100;
+};
+const pRarezaDe = (T, rz) => (T.rarezas[rz] || 0) / 100;
+
+/* Las tablas de los cinco sobres, sacadas de la página tal cual, para poder hacer las
+   cuentas aquí en vez de dentro del navegador. */
+const SOBRES_JS = await page.evaluate(() => JSON.parse(JSON.stringify(TIPOS_SOBRE)));
+
 const TRAMOS = ['sinrank', 'top1215', 'top611', 'corona'];
-const reparto = await page.evaluate((TRAMOS) => {
+const BASES = ['comun', 'rara', 'epica'];
+const reparto = await page.evaluate(([TRAMOS, BASES]) => {
   const out = {};
   for (const t of Object.keys(TIPOS_SOBRE)) {
     const T = TIPOS_SOBRE[t], N = 20000;
-    const c = {}; let huecos = 0, conRank = 0, conCorona = 0;
+    const c = {}, cr = {};
+    let huecos = 0, conRank = 0, conCorona = 0;
+    const cuentaRaras = new Array(T.cartas + 1).fill(0);
     for (let i = 0; i < N; i++) {
       const r = repartoSobre(t);
       huecos += r.length;
-      for (const x of r) c[x] = (c[x] || 0) + 1;
-      if (r.some(x => x !== 'sinrank')) conRank++;
-      if (r.includes('corona')) conCorona++;
+      for (const x of r) { c[x.nivel] = (c[x.nivel] || 0) + 1; cr[x.rz] = (cr[x.rz] || 0) + 1; }
+      if (r.some(x => x.nivel !== 'sinrank')) conRank++;
+      if (r.some(x => x.nivel === 'corona')) conCorona++;
+      cuentaRaras[r.filter(x => x.rz !== 'comun').length]++;
+      // UNA ÉPICA ES SIEMPRE UN CAMPEÓN O TOP 5: no existen épicas de nadie más, así que
+      // el sorteo no puede emparejarla con otro tramo.
+      if (r.some(x => x.rz === 'epica' && x.nivel !== 'corona')) out._epicaMal = true;
     }
-    const tot = Object.values(T.tramos).reduce((a, b) => a + b, 0);
-    out[t] = { debe: T.cartas, huecos: huecos / N,
-      suma: tot,
+    const sumaRz = Object.values(T.rarezas).reduce((a, b) => a + b, 0);
+    out[t] = { debe: T.cartas, huecos: huecos / N, suma: sumaRz,
+      sumaTramos: Object.values(T.tramos).map(x =>
+        Object.values(x).reduce((a, b) => a + b, 0)),
       medido: Object.fromEntries(TRAMOS.map(k => [k, (c[k] || 0) / (N * T.cartas) * 100])),
-      declarado: Object.fromEntries(TRAMOS.map(k => [k, T.tramos[k] / tot * 100])),
+      medidoRz: Object.fromEntries(BASES.map(k => [k, (cr[k] || 0) / (N * T.cartas) * 100])),
+      declaradoRz: Object.fromEntries(BASES.map(k => [k, T.rarezas[k] || 0])),
+      todasRaras: cuentaRaras[T.cartas] / N * 100,
       pctRank: conRank / N * 100, pctCorona: conCorona / N * 100,
       rankPorSobre: TRAMOS.slice(1).reduce((a, k) => a + (c[k] || 0), 0) / N };
   }
   return out;
-}, TRAMOS);
+}, [TRAMOS, BASES]);
+comprobar(!reparto._epicaMal,
+  'una épica sale SIEMPRE de corona: no existen épicas de nadie que no sea campeón o top 5');
+delete reparto._epicaMal;
 for (const [t, r] of Object.entries(reparto)) {
+  const T = SOBRES_JS[t];
   comprobar(Math.abs(r.huecos - r.debe) < 0.001, `${t}: siempre ${r.debe} huecos`);
-  comprobar(Math.abs(r.suma - 100) < 0.001, `${t}: los cuatro tramos suman 100 (${r.suma})`);
-  const peor = Math.max(...TRAMOS.map(k => Math.abs(r.medido[k] - r.declarado[k])));
+  comprobar(Math.abs(r.suma - 100) < 0.001, `${t}: las tres rarezas suman 100 (${r.suma})`);
+  comprobar(r.sumaTramos.every(x => Math.abs(x - 100) < 0.001),
+    `${t}: los tramos de cada rareza suman 100 (${r.sumaTramos.map(x => x.toFixed(3)).join(' · ')})`);
+  const peor = Math.max(...TRAMOS.map(k => Math.abs(r.medido[k] - pTramoDe(T, k) * 100)));
   comprobar(peor < 0.6,
     `${t}: lo que sale es lo que dice la tabla (la que más baila, ${peor.toFixed(2)} puntos)`);
+  const peorRz = Math.max(...BASES.map(k => Math.abs(r.medidoRz[k] - r.declaradoRz[k])));
+  comprobar(peorRz < 0.6,
+    `${t}: y las rarezas también (la que más baila, ${peorRz.toFixed(2)} puntos)`);
 }
+
+/* NI UNA SOLA VEZ TODAS RARAS EN EL RARO NI EN EL ÉPICO, y lo pidió él con esas palabras:
+   "que haya probabilidad de que te toque una o dos raras, pero que es muy difícil o
+   imposible prácticamente que todas sean raras". Los dos de PRÓXIMAMENTE quedan fuera a
+   propósito —"esos dos que están en próximamente déjalos así de momento"—. */
+for (const t of ['raro', 'epico'])
+  comprobar(reparto[t].todasRaras < 0.01,
+    `${t}: no salen todas raras ni una vez de 20.000 (${reparto[t].todasRaras.toFixed(3)}%)`);
 
 /* Y LO QUE DE VERDAD IMPORTA: que la carta que sale sea del tramo que se sorteó.
    Aquí se coló un fallo que el sorteo no podía ver. El tramo "sin ranking" preguntaba
@@ -257,11 +318,11 @@ comprobar(reparto.comun.pctCorona < 0.1,
 /* El límite del GDD para el sobre de entrada: una carta alta —corona o top 6-11— en el 1%
    de los sobres o menos. Se calcula de la tabla, no a base de tiradas, porque con muestreo
    baila una décima y el límite es justo el 1%. */
-const altaComun = await page.evaluate(() => {
-  const T = TIPOS_SOBRE.comun, tot = Object.values(T.tramos).reduce((a, b) => a + b, 0);
-  const p = (T.tramos.corona + T.tramos.top611) / tot;
+const altaComun = (() => {
+  const T = SOBRES_JS.comun;
+  const p = pTramoDe(T, 'corona') + pTramoDe(T, 'top611');
   return (1 - Math.pow(1 - p, T.cartas)) * 100;
-});
+})();
 comprobar(altaComun <= 1,
   `una carta alta en el común es casi imposible, el 1% o menos que manda el GDD (${altaComun.toFixed(2)}%)`);
 
@@ -290,17 +351,22 @@ sube(r => r.pctCorona, 'y el campeón sube en cada escalón');
 
    Antes estaba al revés: el raro salía a 1.033 el punto y el épico a 595, o sea que el
    sobre de entrada de pago era el peor negocio de la tienda. */
-const dinero = await page.evaluate(() => {
+/* Y AL VALOR SE LE SUMA LA RAREZA, que ahora también es parte de lo que compras: un marco
+   azul y uno violeta valen algo por sí mismos. Los pesos son un juicio, pero es un juicio
+   escrito, igual que los de los tramos. */
+const dinero = (() => {
   const PESO = { top1215: 1, top611: 2.5, corona: 8 };
+  const PESO_RZ = { comun: 0, rara: 0.5, epica: 2 };
   const out = {};
-  for (const k of Object.keys(TIPOS_SOBRE)) {
-    const T = TIPOS_SOBRE[k], tot = Object.values(T.tramos).reduce((a, b) => a + b, 0);
-    const valor = T.cartas * Object.entries(PESO)
-      .reduce((a, [id, w]) => a + T.tramos[id] / tot * w, 0);
+  for (const k of Object.keys(SOBRES_JS)) {
+    const T = SOBRES_JS[k];
+    const valor = T.cartas * (
+      Object.entries(PESO).reduce((a, [id, w]) => a + pTramoDe(T, id) * w, 0)
+      + Object.entries(PESO_RZ).reduce((a, [rz, w]) => a + pRarezaDe(T, rz) * w, 0));
     out[k] = { coste: T.coste, valor, punto: T.coste / valor };
   }
   return out;
-});
+})();
 const DEPAGO = ['raro', 'epico', 'legendario', 'ultimate'];
 comprobar(DEPAGO.every((k, i) => i === 0 || dinero[k].punto < dinero[DEPAGO[i - 1]].punto),
   `el precio por punto de calidad baja en cada escalón: ${
@@ -817,10 +883,11 @@ const dist = await page.evaluate(() => {
     }
     S.coleccion = guardada.slice();   // sin acumular 10.000 cartas de prueba
   }
-  const T = TIPOS_SOBRE.comun, tot = Object.values(T.tramos).reduce((a, b) => a + b, 0);
-  return { n, cuenta,
-    declarado: Object.fromEntries(Object.keys(cuenta).map(k => [k, T.tramos[k] / tot])) };
+  return { n, cuenta };
 });
+// Lo declarado se calcula AQUÍ, con la cuenta escrita aparte, no con la del juego.
+dist.declarado = Object.fromEntries(
+  Object.keys(dist.cuenta).map(k => [k, pTramoDe(SOBRES_JS.comun, k)]));
 for (const k of ['sinrank', 'top1215', 'top611', 'corona'])
   console.log(`     ${k.padEnd(9)} ${(dist.cuenta[k] / dist.n * 100).toFixed(3)}%  ` +
               `(declarado ${(dist.declarado[k] * 100).toFixed(3)}%)`);
@@ -1868,9 +1935,20 @@ const venta = await page.evaluate(() => {
 
   /* EL BUCLE: abrir sobres gratis y vender no puede pagar más que jugar. 4.500 cartas la
      hora es lo que da abrir y salir a mano, medido. */
-  const T = TIPOS_SOBRE.comun, tot = Object.values(T.tramos).reduce((a, b) => a + b, 0);
-  const porSobre = Object.entries(T.tramos).reduce((a, [id, p]) =>
-    a + T.cartas * (p / tot) * (id === 'sinrank' ? 1 : 10), 0);
+  const T = TIPOS_SOBRE.comun;
+  /* Con la rareza dentro: el precio del gratis lo multiplica el marco igual que el de
+     cualquier otra, así que la cuenta tiene que pasar por precioVenta y no por la tabla
+     a pelo. Se recorre rareza x tramo, que es como se sortea de verdad. */
+  let porSobre = 0;
+  for (const [rz, peso] of Object.entries(T.rarezas)) {
+    if (rz === 'epica') { porSobre += T.cartas * (peso / 100) * 10 * (VENTA_RAREZA.epica || 1); continue; }
+    const tr = T.tramos[rz]; if (!tr) continue;
+    const to = Object.values(tr).reduce((a, b) => a + b, 0);
+    for (const [id, p] of Object.entries(tr))
+      porSobre += T.cartas * (peso / 100) * (p / to)
+        * (id === 'sinrank' ? VENTA_GRATIS.sinrank : VENTA_GRATIS.rankeado)
+        * (VENTA_RAREZA[rz === 'rara' ? 'rara' : 'comun'] || 1);
+  }
   const oroPorSegundoSobre = porSobre / 4;      // 4 s por sobre, medido
   const oroPorSegundoJugar = 170 / 150;         // 170 de oro por partida, ~150 s
   r.bucle = { porSobre: +porSobre.toFixed(2), veces: +(oroPorSegundoSobre / oroPorSegundoJugar).toFixed(2) };
@@ -1879,16 +1957,24 @@ const venta = await page.evaluate(() => {
   r.revender = {}; r.morralla = {};
   for (const [n, t] of Object.entries(TIPOS_SOBRE)) {
     if (!t.coste) continue;
-    const to = Object.values(t.tramos).reduce((a, b) => a + b, 0);
     const medioNR = ROSTER.filter(c => c.rk === null).reduce((a, c) => a + precioVenta(c, false), 0)
       / ROSTER.filter(c => c.rk === null).length;
-    const vuelve = Object.entries(t.tramos).reduce((a, [id, p]) => {
-      const pr = id === 'sinrank' ? medioNR
-        : id === 'top1215' ? VENTA.top1215 : id === 'top611' ? VENTA.top611 : VENTA.corona;
-      return a + t.cartas * (p / to) * pr;
-    }, 0);
+    const base = id => id === 'sinrank' ? medioNR
+      : id === 'top1215' ? VENTA.top1215 : id === 'top611' ? VENTA.top611 : VENTA.corona;
+    let vuelve = 0, morralla = 0;
+    for (const [rz, peso] of Object.entries(t.rarezas)) {
+      const mult = VENTA_RAREZA[rz === 'rara' ? 'rara' : rz === 'epica' ? 'epica' : 'comun'] || 1;
+      if (rz === 'epica') { vuelve += t.cartas * (peso / 100) * VENTA.corona * mult; continue; }
+      const tr = t.tramos[rz]; if (!tr) continue;
+      const to = Object.values(tr).reduce((a, b) => a + b, 0);
+      for (const [id, p] of Object.entries(tr)) {
+        const g = t.cartas * (peso / 100) * (p / to) * base(id) * mult;
+        vuelve += g;
+        if (id === 'sinrank') morralla += g;
+      }
+    }
     r.revender[n] = +(vuelve / t.coste).toFixed(3);
-    r.morralla[n] = +(t.cartas * (t.tramos.sinrank / to) * medioNR / t.coste).toFixed(3);
+    r.morralla[n] = +(morralla / t.coste).toFixed(3);
   }
 
   // Vender de verdad: cobra, se lleva las cartas y no toca la primera copia.
@@ -1922,8 +2008,26 @@ comprobar(venta.marcadas && venta.gratisBarato && venta.gratisValeMenos,
   `las de un sobre gratis se venden, pero a peseta (${venta.preciosGratis.join(', ')})`);
 comprobar(venta.bucle.veces <= 1.5,
   `abrir sobres gratis y venderlos NO paga más que jugar (${venta.bucle.veces}x, ${venta.bucle.porSobre} oro por sobre)`);
-comprobar(Object.values(venta.revender).every(v => v < 0.4),
+/* COMPRAR PARA REVENDER TIENE QUE PERDER SIEMPRE. El listón sube de 0,40 a 0,75 y no es
+   aflojar por aflojar: son dos cambios que él aprobó y que suben esta cifra sin que nada
+   esté mal.
+
+     · Las tablas de los sobres subieron —un ultimate pasó de 10% a 28,6% de coronas—, y
+       con las mismas cifras de venta eso solo ya lleva el ultimate del 26% al 44%.
+     · Y la rareza multiplica el precio (x1,5 y x2), que suma otro tanto.
+
+   Lo que NO puede pasar es que llegue a 1: ahí comprar y revender sería una máquina de
+   hacer dinero. Con x2 y x6 —los multiplicadores por escasez pura— el ultimate se iba a
+   130%, y por eso no son esos. Hoy queda en 40 / 41 / 59 / 69.
+
+   Los dos altos son los de PRÓXIMAMENTE, que no se pueden comprar: su precio se calculó
+   con las tablas viejas y sus tablas son las nuevas. Antes de ponerlos a la venta hay que
+   subirles el precio o bajarles la tabla; está dicho y apuntado en VENTA_RAREZA. */
+comprobar(Object.values(venta.revender).every(v => v < 0.75),
   `comprar para revender pierde siempre (${Object.entries(venta.revender).map(([k, v]) => k + ' ' + Math.round(v * 100) + '%').join(', ')})`);
+// Y los dos que SÍ se pueden comprar hoy siguen en la banda de siempre.
+comprobar(['raro', 'epico'].every(k => venta.revender[k] < 0.5),
+  `y los dos que se pueden comprar pierden de largo (raro ${Math.round(venta.revender.raro * 100)}%, epico ${Math.round(venta.revender.epico * 100)}%)`);
 comprobar(Object.values(venta.morralla).every(v => v < 0.15),
   `y la morralla de un sobre no paga otro sobre (${Object.entries(venta.morralla).map(([k, v]) => k + ' ' + Math.round(v * 100) + '%').join(', ')})`);
 comprobar(venta.primeraNoSeVende,

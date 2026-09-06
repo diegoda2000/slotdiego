@@ -216,6 +216,12 @@ function generarRoster(){
     // Todas las cartas del catálogo son de la liga grande, así que todas se alinean.
     // El bronce de otras promotoras está reservado y todavía vacío.
     alineable:true, dobleDiv:!!d.dobleDiv,
+    /* QUÉ CARTAS BASE EXISTEN DE ESTE PELEADOR. Lo calcula importar-roster.mjs y sale de
+       dónde está en su división de verdad: la común la tiene todo el mundo, la rara el
+       rankeado y el destacado, y la épica sólo el campeón y el top 5. De las 402 cartas
+       salen 402 comunes, 216 raras y 68 épicas.
+       No es lo mismo que `rareza`, que es la banda vieja de oro y plata del documento. */
+    base:(d.base&&d.base.length?d.base.slice():['comun']),
     rasgos:(d.rasgos||[]).map(r=>({...r})),
     esVeterano:(d.rasgos||[]).some(r=>r.tipo==='veterano'),
     notraspasable:false,

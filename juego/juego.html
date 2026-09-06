@@ -1525,6 +1525,19 @@ const NIVELES=[
 ];
 const NIVEL_IDS=NIVELES.map(n=>n.id);
 
+/* LAS TRES CARTAS BASE, en un solo sitio. La escalera entera es de cinco —común, rara,
+   épica, legendaria y ultimate—, pero legendaria y ultimate NO son carta base y llegan
+   después; de momento existen estas tres y son las que reparten los sobres.
+
+   ORDEN_BASE ordena de peor a mejor, y es lo que hace que en la apertura las mejores se
+   destapen las últimas. */
+const BASES=['comun','rara','epica'];
+const ORDEN_BASE={comun:0, rara:1, epica:2};
+const BASE_ET={comun:'Común', rara:'Rara', epica:'Épica'};
+/* La clase que pinta la carta con su marco. La común no lleva clase: es la de por defecto,
+   y así lo guardado de antes —que no tiene `rz`— se pinta exactamente como se pintaba. */
+const claseBase=rz=>rz&&rz!=='comun'?rz==='rara'?'raro':'epico':'';
+
 /* Los tres sobres NO son el mismo sobre a distintos precios: cada uno hace una cosa.
 
    El BÁSICO es gratis e ilimitado, y está para que cualquiera pueda montarse un equipo
@@ -1642,20 +1655,74 @@ function corto(n){
    escalando entre el raro y algo claramente mejor. Hay que cerrarlos con él.
 
    EL TEXTO DE CADA SOBRE ES SÓLO CUÁNTAS CARTAS TRAE, y lo pidió él así. */
+/* LOS SOBRES SORTEAN DOS COSAS: LA RAREZA Y EL TRAMO DE RANKING, en ese orden.
+
+   Antes sólo sorteaban el tramo, porque todas las cartas eran comunes. Ahora hay tres
+   cartas base por peleador —la común la tiene todo el mundo, la rara el rankeado y el
+   destacado, la épica sólo el campeón y el top 5— y él pidió que los sobres las repartan.
+
+   Y NO SE PUEDE SORTEAR CADA COSA POR SU LADO. Contando lo que de verdad existe:
+
+                sinrank  12-15   6-11  corona   TOTAL
+     común        224     44     66     68      402
+     rara          38     44     66     68      216
+     épica          0      0      0     68       68
+
+   Una ÉPICA ES SIEMPRE UN CAMPEÓN O TOP 5 —no hay épicas de nadie más— y una rara sólo
+   existe para los rankeados y para los 38 destacados. La mitad de las casillas no existen,
+   así que se sortea PRIMERO la rareza y DESPUÉS el tramo dentro de esa rareza. Con eso los
+   dos porcentajes que se le enseñan al jugador son verdad exacta, sin reintentos.
+
+   Está todo medido en herramientas/estudio-sobres.mjs, que es donde se ajustaron. */
 const TIPOS_SOBRE={
   /* GRATIS Y SIN LÍMITE, y lo mandó él: "PON EL SOBRE COMÚN GRATIS EN LA TIENDA". Es lo
      que permite empezar y seguir sin gastar una moneda, así que es el que tiene que ser
-     más duro de todos. */
+     más duro de todos.
+
+     SU REPARTO DE RANKING NO SE MUEVE NI UN DECIMAL: sigue siendo el que él aprobó
+     —98,400 / 1,500 / 0,092 / 0,008—, y las dos columnas están resueltas a mano para que
+     salga clavado sumando los dos caminos. Lo único nuevo es que casi el 4% de sus cartas
+     viene con marco azul, y casi siempre es un DESTACADO: un ex campeón o un nombre grande
+     sin ranking. Sube la emoción sin tocar la economía, que es lo que importa porque es
+     gratis, ilimitado y la venta paga por RANKING, no por rareza. */
   comun     :{n:'Sobre común', coste:0, cartas:5, desc:'5 cartas',
-    tramos:{sinrank:98.400, top1215:1.500, top611:0.092, corona:0.008}},
+    rarezas:{comun:96.000, rara:3.995, epica:0.005},
+    tramos:{comun:{sinrank:98.526, top1215:1.396, top611:0.075, corona:0.003},
+            rara :{sinrank:95.495, top1215:4.000, top611:0.500, corona:0.005}}},
+  /* DE AQUÍ PARA ARRIBA EL RANKING SUBE POR OBLIGACIÓN: meter épicas es meter campeones.
+
+     Y LA RARA VA BAJA A PROPÓSITO, que lo pidió él mirando cuántas trae un sobre: "que
+     haya probabilidad de que te toque una o dos raras, pero que es muy difícil o imposible
+     prácticamente que todas sean raras". Medido en 300.000 sobres:
+
+       sobre    ninguna    1      2      3      4     5+   │ todas  media
+       raro      47,4%  37,6%  12,5%   2,2%   0,2%   0,0%  │ nunca   0,70
+       épico     15,5%  32,4%  30,1%  15,7%   5,1%   1,2%  │ nunca   1,66
+
+     Y AL BAJARLA SE COMPENSA EN LA COLUMNA COMÚN. La rara es la que trae rankeados, así
+     que quitando raras bajaría también el ranking del sobre; los números de esa columna
+     están resueltos para que el reparto de ranking salga IGUAL. Cambia cuántos marcos
+     azules ves, no lo bueno que es el sobre. */
   raro      :{n:'Sobre raro', coste:1200, cartas:6, desc:'6 cartas',
-    tramos:{sinrank:78, top1215:17, top611:4.5, corona:0.5}},
+    rarezas:{comun:88.30, rara:11.40, epica:0.30},
+    tramos:{comun:{sinrank:79.728, top1215:16.173, top611:3.757, corona:0.342},
+            rara :{sinrank:55.000, top1215:30.000, top611:13.000, corona:2.000}}},
   epico     :{n:'Sobre épico', coste:3800, cartas:8, desc:'8 cartas',
-    tramos:{sinrank:55, top1215:30, top611:12, corona:3}},
+    rarezas:{comun:79.20, rara:19.30, epica:1.50},
+    tramos:{comun:{sinrank:53.386, top1215:29.629, top611:14.407, corona:2.578},
+            rara :{sinrank:26.000, top1215:38.000, top611:30.000, corona:6.000}}},
+  /* LOS DOS DE PRÓXIMAMENTE SE QUEDAN COMO ESTÁN, y lo decidió él: "esos dos que están en
+     próximamente déjalos así de momento, total aún no los vamos a sacar". Quedan fuera de
+     la regla de arriba —el legendario trae 5,3 raras de 10 de media y el ultimate 7,0, y
+     en el ultimate las diez salen raras el 2,8% de las veces—, y está dicho. */
   legendario:{n:'Sobre legendario', coste:7000, cartas:10, pronto:true, desc:'10 cartas',
-    tramos:{sinrank:35, top1215:38, top611:22, corona:5}},
+    rarezas:{comun:47.0, rara:47.0, epica:6.0},
+    tramos:{comun:{sinrank:38.000, top1215:36.000, top611:23.000, corona:3.000},
+            rara :{sinrank:12.000, top1215:36.000, top611:40.000, corona:12.000}}},
   ultimate  :{n:'Sobre ultimate', coste:10000, cartas:10, pronto:true, desc:'10 cartas',
-    tramos:{sinrank:20, top1215:40, top611:30, corona:10}},
+    rarezas:{comun:30.0, rara:58.0, epica:12.0},
+    tramos:{comun:{sinrank:20.000, top1215:36.000, top611:33.000, corona:11.000},
+            rara :{sinrank:4.000, top1215:30.000, top611:43.000, corona:23.000}}},
 };
 
 /* LOS PRECIOS SALEN DEL VALOR DE LO QUE TRAE EL SOBRE, no de una escalera bonita. Lo
@@ -1684,10 +1751,18 @@ const TIPOS_SOBRE={
    pero deja de querer decir lo que dice, y entonces los porcentajes que se le enseñan al
    jugador serían mentira. Salta al arrancar. */
 for(const [k,T] of Object.entries(TIPOS_SOBRE)){
-  const suma=Object.values(T.tramos).reduce((a,b)=>a+b,0);
-  if(Math.abs(suma-100)>0.001) console.error(`Los tramos del sobre ${k} suman ${suma}, no 100`);
-  for(const id of Object.keys(T.tramos))
-    if(!NIVEL_IDS.includes(id)) console.error(`El sobre ${k} nombra un tramo que no existe: ${id}`);
+  const sr=Object.values(T.rarezas).reduce((a,b)=>a+b,0);
+  if(Math.abs(sr-100)>0.001) console.error(`Las rarezas del sobre ${k} suman ${sr}, no 100`);
+  for(const [rz,t] of Object.entries(T.tramos)){
+    const suma=Object.values(t).reduce((a,b)=>a+b,0);
+    if(Math.abs(suma-100)>0.001) console.error(`Los tramos ${rz} del sobre ${k} suman ${suma}, no 100`);
+    for(const id of Object.keys(t))
+      if(!NIVEL_IDS.includes(id)) console.error(`El sobre ${k} nombra un tramo que no existe: ${id}`);
+  }
+  // Y que no pida una rareza que no puede repartir: la épica sale sola, sin tabla de
+  // tramos, porque sólo existe para campeón y top 5.
+  for(const rz of Object.keys(T.rarezas))
+    if(rz!=='epica' && !T.tramos[rz]) console.error(`El sobre ${k} sortea ${rz} y no dice de qué tramos`);
 }
 
 /* CÓMO SE LLAMABAN ANTES. Lo guardado apunta a basico/plata/oro, y esos tipos ya no
@@ -1725,28 +1800,42 @@ const sortearClave=tabla=>{
 
 /* Reparto del sobre: UNA TIRADA POR CARTA sobre los cuatro tramos. Se saca aparte de la
    apertura para poder comprobarlo con miles de tiradas sin tocar la colección. */
+/* DOS SORTEOS POR CARTA: primero la rareza y después el tramo DENTRO de esa rareza. En
+   ese orden y no al revés, porque la rareza es la que limita qué tramos existen: de la
+   épica sólo hay campeones y top 5, así que sale con su tramo puesto y sin sortear nada. */
 function repartoSobre(tipo){
   const T=TIPOS_SOBRE[tipo], salida=[];
-  for(let i=0;i<T.cartas;i++) salida.push(sortearClave(T.tramos));
+  for(let i=0;i<T.cartas;i++){
+    const rz=sortearClave(T.rarezas);
+    salida.push({rz, nivel: rz==='epica' ? 'corona' : sortearClave(T.tramos[rz])});
+  }
   return salida;
 }
 
-const poolNivel=nivelId=>ROSTER.filter(NIVELES.find(n=>n.id===nivelId).cumple);
+/* La bolsa de cada casilla: las cartas de ese tramo que además EXISTEN en esa rareza. */
+const poolNivel=(nivelId,rz)=>ROSTER.filter(c=>
+  NIVELES.find(n=>n.id===nivelId).cumple(c) && (c.base||['comun']).includes(rz||'comun'));
 
 /* Un sobre no repite carta dentro de sí mismo. Si el tramo sorteado se queda sin
    candidatos nuevos —pasa en corona, que es un pool corto— se baja al tramo de al
-   lado en vez de saltar a cualquier cosa: una sorpresa así parece un fallo. */
-function cartaDeNivel(nivelId,yaEnElSobre){
+   lado en vez de saltar a cualquier cosa: una sorpresa así parece un fallo.
+
+   LA RAREZA NO SE DEGRADA AL BUSCAR, sólo el tramo. Prometer una épica y entregar una
+   común porque el pool andaba justo sería mentirle a quien mira las probabilidades; y no
+   hace falta, porque cada rareza tiene su propia bolsa en TODOS los tramos que anuncia. */
+function cartaDeNivel(nivelId,yaEnElSobre,rz){
+  rz=rz||'comun';
   const orden=NIVEL_IDS;
   const i=orden.indexOf(nivelId);
   for(let d=0;d<orden.length;d++){
     for(const j of (d===0?[i]:[i+d,i-d])){
       if(j<0||j>=orden.length) continue;
-      const pool=poolNivel(orden[j]).filter(c=>!yaEnElSobre.has(c.id));
+      const pool=poolNivel(orden[j],rz).filter(c=>!yaEnElSobre.has(c.id));
       if(pool.length) return pick(pool);
     }
   }
-  return pick(ROSTER.filter(c=>!yaEnElSobre.has(c.id))) || pick(ROSTER);
+  const resto=ROSTER.filter(c=>(c.base||['comun']).includes(rz)&&!yaEnElSobre.has(c.id));
+  return pick(resto.length?resto:ROSTER.filter(c=>(c.base||['comun']).includes(rz)));
 }
 
 function abrirSobre(tipo){
@@ -1761,15 +1850,25 @@ function abrirSobre(tipo){
      vendan. Se toma la segunda, que es la que respeta las dos cosas que él pidió.
      Está todo calculado en herramientas/estudio-economia.mjs. */
   const gratis=TIPOS_SOBRE[tipo].coste===0;
-  for(const nivel of repartoSobre(tipo)){
-    const c=cartaDeNivel(nivel,dentro);
+  for(const {rz,nivel} of repartoSobre(tipo)){
+    const c=cartaDeNivel(nivel,dentro,rz);
     dentro.add(c.id);
+    /* LA RAREZA VA EN LA COPIA, NO EN EL CATÁLOGO, y eso es lo que permite hacer esto
+       ahora sin romper nada. La colección guarda copias —{iid,cid}— y no identificadores
+       de carta, así que una Topuria rara y una Topuria común son dos copias del mismo
+       `cid` con distinto `rz`, exactamente como ya convivía `gratis`. No cambia ningún
+       identificador y no hay nada que migrar: lo guardado sigue valiendo, y lo que no
+       lleve `rz` es común, que es lo que era. */
     const it={iid:'i'+Math.random().toString(36).slice(2,9),cid:c.id};
+    if(rz&&rz!=='comun') it.rz=rz;
     if(gratis) it.gratis=true;
     S.coleccion.push(it); salida.push(it);
   }
-  // Siempre de mejor a peor: el orden deportivo manda también aquí.
-  salida.sort((a,b)=>comparar(PORID[a.cid],PORID[b.cid]));
+  /* LOS MÁS RAROS, LOS ÚLTIMOS, y lo pidió él. Primero por rareza y después, dentro de
+     cada rareza, por el orden deportivo de siempre. El montón de la apertura da la vuelta
+     a esta lista, así que la última que destapas es la mejor de las mejores. */
+  salida.sort((a,b)=> (ORDEN_BASE[b.rz||'comun']-ORDEN_BASE[a.rz||'comun'])
+    || comparar(PORID[a.cid],PORID[b.cid]));
   guardar(); return salida;
 }
 
@@ -1780,12 +1879,25 @@ function pctCorona(tipo){
   const T=TIPOS_SOBRE[tipo];
   return pTramoSobre(T,'corona')*100;
 }
-/* La probabilidad de que en un sobre entero salga AL MENOS UNA carta de un tramo. Con una
-   tirada por carta es una binomial: 1 menos la de que ninguna lo sea. */
-function pTramoSobre(T,id){
-  const tot=Object.values(T.tramos).reduce((a,b)=>a+b,0);
-  return 1-Math.pow(1-(T.tramos[id]||0)/tot,T.cartas);
+/* CUÁNTO VALE UN TRAMO POR CARTA, sumando los dos caminos por los que se puede llegar a
+   él: la rareza que se sortea primero y el tramo que se sortea dentro de ella. La épica
+   no lleva tabla de tramos porque sólo existe corona, así que entra entera ahí. */
+function pTramo(T,id){
+  let p=0;
+  for(const [rz,peso] of Object.entries(T.rarezas)){
+    if(rz==='epica'){ if(id==='corona') p+=peso; continue; }
+    const t=T.tramos[rz]; if(!t) continue;
+    const tot=Object.values(t).reduce((a,b)=>a+b,0);
+    p+=peso*(t[id]||0)/tot;
+  }
+  return p/100;
 }
+/* Y cuánto vale una RAREZA por carta, que es el otro eje. */
+const pRareza=(T,rz)=>(T.rarezas[rz]||0)/100;
+/* La probabilidad de que en un sobre entero salga AL MENOS UNA. Con una tirada por carta
+   es una binomial: 1 menos la de que ninguna lo sea. */
+const enElSobre=(p,cartas)=>1-Math.pow(1-p,cartas);
+function pTramoSobre(T,id){ return enElSobre(pTramo(T,id),T.cartas); }
 
 /* ── RECICLAJE ────────────────────────────────────────────────────────────
    Dos reglas duras:
@@ -1850,19 +1962,51 @@ const precioSinRanking=c=>Math.round(NR_PRECIO[0]+(NR_PRECIO[1]-NR_PRECIO[0])*
    Está calculado en herramientas/estudio-economia.mjs. */
 const VENTA_GRATIS={sinrank:1, rankeado:10};
 
-// Lo que vale una carta suelta, según de dónde salió y quién es.
-function precioVenta(c, gratis){
+/* Y LA RAREZA MULTIPLICA, que lo pidió él al meter las cartas nuevas: "el precio
+   rebalanceado, teniendo en cuenta lo que se tenía antes y la rareza, sin romper la
+   economía".
+
+   EL MULTIPLICADOR NO SALE DE LO ESCASA QUE ES LA CARTA, SALE DE LO QUE AGUANTA LA
+   ECONOMÍA, y eso hay que medirlo. Lo primero parecía lo lógico —402 comunes, 216 raras y
+   68 épicas, o sea x2 y x6— y ROMPE EL JUEGO. Medido, cuánto de lo que cuesta un sobre te
+   devuelve venderlo entero:
+
+     multiplicadores           raro  épico  legend  ultimate
+     x1  ·  x1  ·  x1           35%    33%    40%     44%
+     x1  · x1,5 ·  x2           40%    41%    59%     69%   <- elegido
+     x1  ·  x2  ·  x3           45%    48%    78%     93%
+     x1  ·  x2  ·  x6           50%    58%   104%    130%   <- la escasez pura
+
+   Con x6 en la épica, comprar un ultimate y revenderlo entero devuelve MÁS de lo que
+   cuesta: una máquina de hacer dinero. Con x1,5 y x2 todos siguen perdiendo, que es la
+   regla. El sobre gratis pasa por aquí igual y no mueve nada: su rara vale 2 en vez de 1.
+
+   OJO, Y ESTÁ DICHO: los dos de PRÓXIMAMENTE se quedan en 59% y 69%, mucho más justos que
+   el 33% de antes. No es por el multiplicador: es que sus tablas de probabilidad subieron
+   —y él las dejó así a propósito— mientras su precio sigue siendo el que se calculó con
+   las viejas. Hoy no se pueden comprar, así que no hay nada explotable; ANTES DE PONERLOS
+   A LA VENTA hay que subirles el precio o bajarles la tabla. */
+const VENTA_RAREZA={comun:1, rara:1.5, epica:2};
+
+/* Lo que vale una carta suelta: quién es, de dónde salió y con qué marco.
+
+   `rz` es la rareza de LA COPIA —no del catálogo—, así que hay que pasarla desde la
+   instancia. Sin ella se cobra como común, que es lo que era antes de que existieran. */
+function precioVenta(c, gratis, rz){
   const n=NIVELES.find(x=>x.cumple(c));
   const sinRank=!n||n.id==='sinrank';
-  if(gratis) return sinRank?VENTA_GRATIS.sinrank:VENTA_GRATIS.rankeado;
-  return sinRank?precioSinRanking(c):VENTA[n.id];
+  const base=gratis?(sinRank?VENTA_GRATIS.sinrank:VENTA_GRATIS.rankeado)
+                   :(sinRank?precioSinRanking(c):VENTA[n.id]);
+  return Math.round(base*(VENTA_RAREZA[rz||'comun']||1));
 }
+// Lo que vale una COPIA concreta, que es lo que casi siempre se quiere.
+const precioCopia=it=>it?precioVenta(PORID[it.cid], it.gratis, it.rz):0;
 
 /* Qué se puede vender: un REPETIDO que no esté alineado. Ya está: las de sobre gratis
    también, sólo que a su precio. */
 function vendible(iid){
   const it=inst(iid); if(!it) return false;
-  return reciclable(iid) && precioVenta(PORID[it.cid], it.gratis)>0;
+  return reciclable(iid) && precioCopia(it)>0;
 }
 
 /* CUÁNTAS REPETIDAS TIENES DE UN PELEADOR. Y ésa es la palabra exacta, que aquí estuvo el
@@ -1889,7 +2033,7 @@ function cuentaVenta(iids){
   let oro=0; const detalle={};
   for(const iid of iids){
     if(!vendible(iid)) continue;
-    const it=inst(iid), c=PORID[it.cid], p=precioVenta(c,it.gratis);
+    const it=inst(iid), c=PORID[it.cid], p=precioCopia(it);
     const t=(NIVELES.find(x=>x.cumple(c))||{id:'sinrank'}).id;
     detalle[t]=detalle[t]||{n:0, oro:0};
     detalle[t].n++; detalle[t].oro+=p; oro+=p;
@@ -2309,12 +2453,14 @@ const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',
      dibujadas; éste no. */
 function cartaHTML(c,o={}){
   if(!c) return `<div class="carta oculta">?</div>`;
-  /* LA RAREZA DE LA CARTA. Hoy son todas comunes —la migración a tres cartas por
-     peleador espera al rediseño de la interfaz, y es la que cambia el identificador—, así
-     que `rarezaCarta` no existe todavía en ninguna carta guardada y el `||'comun'` es el
-     que manda. Los marcos de rara y épica ya están puestos: cuando la migración escriba
-     ese campo, la carta se pinta sola con el suyo. `o.rareza` es para verlas ahora. */
-  const rz=o.rareza||c.rarezaCarta||'comun', crz=rz!=='comun'?rz:'';
+  /* LA RAREZA LA TRAE QUIEN PINTA, y sale de la COPIA que se está enseñando —{iid,cid,rz}—
+     y no del catálogo. Por eso no hizo falta migrar nada: la colección guarda copias, no
+     identificadores de carta, así que una Topuria rara y una Topuria común son dos copias
+     del mismo `cid`, igual que ya convivía `gratis`. Lo guardado antes no lleva `rz` y se
+     pinta común, que es lo que era.
+     `claseBase` traduce la clave del sobre —comun/rara/epica— a la clase del CSS
+     —raro/epico—, en un solo sitio. */
+  const rz=o.rareza||'comun', crz=claseBase(rz);
   // Boca abajo lleva el reverso de SU rareza, que él pasó las dos caras de cada una.
   if(o.oculta) return `<div class="carta tapada ${crz}"></div>`;
   const aj=o.ajuste||{};
@@ -3105,8 +3251,8 @@ function vRedes(){
 /* ── SOBRES ── */
 
 const desgloseSobre=t=>{
-  const T=TIPOS_SOBRE[t], tot=Object.values(T.tramos).reduce((a,b)=>a+b,0);
-  return NIVELES.map(n=>`${n.n} ${(T.tramos[n.id]/tot*100).toFixed(2)}%`).join(' · ');
+  const T=TIPOS_SOBRE[t];
+  return NIVELES.map(n=>`${n.n} ${(pTramo(T,n.id)*100).toFixed(2)}%`).join(' · ');
 };
 
 /* ── TIENDA ──
@@ -3256,17 +3402,27 @@ function vSobre(){
    primera, un 0,008% no dice nada. */
 function ovProbabilidades(t){
   const T=TIPOS_SOBRE[t]; if(!T) return;
-  const tot=Object.values(T.tramos).reduce((a,b)=>a+b,0);
   const pinta=x=>x>=1?x.toFixed(1)+'%':x>=0.01?x.toFixed(2)+'%':x.toFixed(3)+'%';
+  /* DOS TABLAS PORQUE HAY DOS SORTEOS, y las dos cosas se preguntan por separado: de qué
+     tipo de carta es el marco y a quién te toca. Con una sola tabla habría que elegir cuál
+     de las dos esconder. */
+  const fila=(et,p)=>`<tr><td>${et}</td>
+    <td style="text-align:right">${pinta(p*100)}</td>
+    <td style="text-align:right">${pinta(enElSobre(p,T.cartas)*100)}</td></tr>`;
   ov(`<div style="text-align:left">
     <h3>${T.n}</h3>
     <div class="sub mb">${T.cartas} cartas, y ninguna se repite dentro del mismo sobre.</div>
+    <table><tr><th>Carta</th><th style="text-align:right">Por carta</th>
+      <th style="text-align:right">En el sobre</th></tr>
+    ${BASES.map(rz=>fila(BASE_ET[rz],pRareza(T,rz))).join('')}
+    </table>
+    <div class="sub" style="margin:12px 0 4px">A quién te toca</div>
     <table><tr><th>Tramo</th><th style="text-align:right">Por carta</th>
       <th style="text-align:right">En el sobre</th></tr>
-    ${NIVELES.map(n=>`<tr><td>${n.n}</td>
-      <td style="text-align:right">${pinta(T.tramos[n.id]/tot*100)}</td>
-      <td style="text-align:right">${pinta(pTramoSobre(T,n.id)*100)}</td></tr>`).join('')}
+    ${NIVELES.map(n=>fila(n.n,pTramo(T,n.id))).join('')}
     </table>
+    <div class="sub" style="margin-top:10px">Una épica es siempre un campeón o top 5:
+      no existen épicas de nadie más.</div>
     <button class="btn" data-a="cerrarov" style="width:100%;margin-top:12px">Vale</button></div>`);
 }
 
@@ -3630,17 +3786,21 @@ function vApertura(){
      clases y variables: repintar a mitad de una transición la corta en seco.
 
      Las cartas van de PEOR A MEJOR de arriba abajo del montón —items viene ordenada al
-     revés—, así que la última en verse es la mejor, que es lo que se pidió. */
+     revés—, así que la última en verse es la mejor, que es lo que se pidió. Y desde que
+     hay tres rarezas, "mejor" es primero la RAREZA y luego el orden deportivo: "los más
+     raros, siempre deben de ir lo último del sobre". Lo ordena abrirSobre(). */
   const orden=a.items.slice().reverse();
   const naipes=orden.map((it,i)=>{
     const c=PORID[it.cid];
     const k=a.items.indexOf(it);
-    // La rareza va también en el naipe: su dorso es HERMANO de la carta, no la
-    // contiene, así que no puede heredar de ella el reverso que le toca.
-    const rz=c&&c.rarezaCarta&&c.rarezaCarta!=='comun'?c.rarezaCarta:'';
+    /* La rareza va también en el NAIPE, no sólo en la carta: su dorso es HERMANO de la
+       carta —no la contiene—, así que no puede heredar de ella el reverso que le toca. Y
+       el reverso importa aquí más que en ninguna parte: en la apertura las cartas nacen
+       BOCA ABAJO, así que lo primero que ves de una épica es su dorso violeta. */
+    const rz=claseBase(it.rz);
     return `<div class="naipe dentro bocabajo ${rz}" data-k="${k}" style="--r:${i*55}ms">
       <div class="gira">
-        <div class="cara frente"><div class="recorte">${cartaHTML(c)}</div>
+        <div class="cara frente"><div class="recorte">${cartaHTML(c,{rareza:it.rz})}</div>
           <span class="lustre"></span></div>
         <div class="cara dorso"><div class="recorte"></div>
           <span class="lustre"></span></div>
@@ -3740,7 +3900,10 @@ function filtrosHTML(){
    lo quedan las cartas. Se pasa de hoja con las flechas de abajo. */
 function vColeccion(){
   let l=S.coleccion.map(x=>({x,c:PORID[x.cid]}));
-  l.sort((a,b)=>comparar(a.c,b.c));      // siempre de mejor a peor
+  /* De mejor a peor, y la RAREZA MANDA sobre el orden deportivo: una Topuria épica va
+     antes que una Topuria común, aunque sean el mismo peleador. Cada copia se lista
+     aparte, así que las tres del mismo caen seguidas y se ven las tres. */
+  l.sort((a,b)=>(ORDEN_BASE[b.x.rz||'comun']-ORDEN_BASE[a.x.rz||'comun'])||comparar(a.c,b.c));
   const total=ROSTER.length, distintas=new Set(S.coleccion.map(x=>x.cid)).size;
   const todas=l.length;
   l=filtrarCartas(l,o=>o.c);
@@ -3766,7 +3929,7 @@ function vColeccion(){
     ${filtrosHTML()}
     ${l.length?`
       <div class="grid fit" style="--cols:4" data-fit="4,4">${hoja.map(o=>
-        cartaHTML(o.c,{attr:`data-carta="${o.x.iid}"`})).join('')}</div>
+        cartaHTML(o.c,{attr:`data-carta="${o.x.iid}"`,rareza:o.x.rz})).join('')}</div>
       <div class="album-nav">
         <button class="btn gho sm" data-a="pag" data-v="-1" ${tmp.pag?'':'disabled'}>‹</button>
         <span class="pag">HOJA ${tmp.pag+1} DE ${pags}</span>
@@ -3815,7 +3978,8 @@ function vPlantilla(){
     '<span class="sub">Una por división, sin repetir peleador</span>')}
     <div class="pgrid" data-fit="3,4" data-pie="11">${DIVISIONES.map(d=>{
       const iid=S.plantilla[d.id], c=iid?cartaDe(iid):null;
-      return `<div class="pslot" data-slot="${d.id}">${c?cartaHTML(c,{attr:`data-slot="${d.id}"`,compacta:true})
+      const rz=iid&&inst(iid)?inst(iid).rz:null;
+      return `<div class="pslot" data-slot="${d.id}">${c?cartaHTML(c,{attr:`data-slot="${d.id}"`,compacta:true,rareza:rz})
         :`<div class="carta oculta compacta" data-slot="${d.id}">
           <div style="font-size:10px;text-align:center;line-height:1.2">${d.n}<br><span style="font-size:20px">＋</span></div></div>`}
         <div class="tiny center pnom">${d.n}</div></div>`;
@@ -3826,12 +3990,13 @@ function vPlantilla(){
 }
 function elegirParaSlot(divId){
   const cands=S.coleccion.map(x=>({x,c:PORID[x.cid]}))
-    .filter(o=>o.c.alineable&&o.c.division===divId).sort((a,b)=>comparar(a.c,b.c));
+    .filter(o=>o.c.alineable&&o.c.division===divId)
+    .sort((a,b)=>(ORDEN_BASE[b.x.rz||'comun']-ORDEN_BASE[a.x.rz||'comun'])||comparar(a.c,b.c));
   ov(`<h3>${DIV[divId].n}</h3><div class="sub mb">Elige quién ocupa el slot.</div>
     ${cands.length?`<div class="grid">${cands.map(o=>{
       const rep=personaRepetida(S,o.x,divId);
       return `<div ${rep?'style="opacity:.35"':''}>${cartaHTML(o.c,{attr:rep?'':`data-poner="${o.x.iid}" data-div="${divId}"`,
-        sel:S.plantilla[divId]===o.x.iid})}${rep?'<div class="tiny center">ya alineado</div>':''}</div>`;
+        sel:S.plantilla[divId]===o.x.iid,rareza:o.x.rz})}${rep?'<div class="tiny center">ya alineado</div>':''}</div>`;
     }).join('')}</div>`:'<div class="sub">No tienes ninguna carta alineable de esta división.</div>'}
     <div class="divider"></div><button class="btn sec" data-a="cerrarov">Cerrar</button>`);
 }
@@ -3848,6 +4013,12 @@ function vReciclaje(){
     (grupos[x.cid]=grupos[x.cid]||[]).push(x); }
   const lista=Object.keys(grupos).map(cid=>({c:PORID[cid], iids:grupos[cid],
       max:repetidasDe(cid),
+      /* LA CASILLA ENSEÑA LA PEOR COPIA QUE TIENES REPETIDA, no una cualquiera. Aquí hay
+         una casilla por PELEADOR y las copias pueden ser de rarezas distintas; como al
+         vender se van las peores primero, enseñar la peor es enseñar exactamente la que se
+         va. Con una al azar podrías vender tu épica creyendo que soltabas una común. */
+      rz:grupos[cid].map(x=>x.rz||'comun')
+        .sort((a,b)=>ORDEN_BASE[a]-ORDEN_BASE[b])[0],
       total:S.coleccion.filter(y=>y.cid===cid).length}))
     .filter(g=>g.max>0)
     .sort((a,b)=>comparar(a.c,b.c));
@@ -3861,7 +4032,7 @@ function vReciclaje(){
       <div class="grid" style="--cols:4;padding-bottom:104px">${lista.map(g=>{
         const n=Math.min(eleg[g.c.id]||0, g.max);
         return `<div class="venta-cel ${n?'on':''}" data-vsel="${g.c.id}">
-          ${cartaHTML(g.c,{attr:`data-vsel="${g.c.id}"`})}
+          ${cartaHTML(g.c,{attr:`data-vsel="${g.c.id}"`,rareza:g.rz})}
           <span class="copias">${g.max} rep.</span>
           ${n?`<span class="elegidas">${n}</span>`:''}
         </div>`;}).join('')}</div>`
@@ -3874,16 +4045,65 @@ function vReciclaje(){
    #app —lo pidió la física del CSS, no el gusto: ver el comentario del hueco #pie—. Y se
    pinta SIEMPRE, aunque no haya nada elegido, para que no aparezca y desaparezca: "que
    nunca se mueva el botón de vender y demás, todo abajo". */
-function pieVenta(){
-  const eleg=tmp.venta||{};
-  let cartas=0, oro=0, peleadores=0;
+/* QUÉ COPIAS SE VAN A VENDER, EXACTAMENTE, y en un solo sitio.
+
+   Esto lo cazó él: "asegúrate de que el valor que pone abajo para vender es lo que da
+   finalmente, que no cambie la cifra y te dé menos o más". Y pasaba de verdad. El pie
+   contaba `n × precio de la PRIMERA copia`, pero las copias de un mismo peleador no valen
+   todas lo mismo: una que salió de un sobre gratis vale 1 y la comprada 60, y desde que hay
+   rarezas una rara vale el doble que su común. Vender cinco copias mezcladas prometía cinco
+   veces el precio de una y pagaba la suma de verdad.
+
+   Se arregla de raíz: esta función devuelve LA LISTA DE COPIAS, ordenada como se van a
+   vender, y de ella salen las dos cosas —lo que dice el pie y lo que cobra el botón—. Ya no
+   son dos cuentas que puedan separarse: es la misma.
+
+   Y las peores primero, que el precio de una repetida no depende de cuál elijas pero la que
+   se QUEDA sí: si tienes una épica y dos comunes del mismo, se van las comunes. */
+function copiasAVender(){
+  const eleg=tmp.venta||{}, iids=[];
   for(const [cid,n0] of Object.entries(eleg)){
     const n=Math.min(n0, repetidasDe(cid));
     if(n<1) continue;
-    const suyas=S.coleccion.filter(x=>x.cid===cid&&vendible(x.iid));
-    cartas+=n; peleadores++;
-    oro+=n*precioVenta(PORID[cid], suyas.length?suyas[0].gratis:false);
+    const suyas=S.coleccion.filter(x=>x.cid===cid&&vendible(x.iid))
+      .sort((a,b)=>(ORDEN_BASE[a.rz||'comun']-ORDEN_BASE[b.rz||'comun'])
+        || (precioCopia(a)-precioCopia(b)));
+    for(let k=0;k<Math.min(n,suyas.length);k++) iids.push(suyas[k].iid);
   }
+  return iids;
+}
+
+/* SIN PARPADEO AL ELEGIR, y lo pidió él: "que la pantalla no parpadee al seleccionar las
+   cartas a vender".
+
+   Parpadeaba porque cada toque llamaba a render(), y render() rehace el HTML de la
+   pantalla entera: dieciséis cartas con su marco, su capa de luz y su foto, todas
+   descartadas y vueltas a crear. El navegador tiene que volver a decodificar y componer
+   esas imágenes, y eso se ve.
+
+   Aquí no hace falta repintar nada de eso: lo único que cambia al tocar una casilla es esa
+   casilla y el total de abajo. Así que se tocan esos dos y ya está. Si la casilla no está
+   en pantalla —se ha cambiado de hoja, o de vista— se cae al render() de siempre. */
+function refrescarVenta(cid){
+  const pie=document.getElementById('pie');
+  if(vista!=='reciclaje'||!pie){ render(); return; }
+  const cel=document.querySelector(`.venta-cel[data-vsel="${cid}"]`);
+  if(!cel){ render(); return; }
+  const n=Math.min((tmp.venta||{})[cid]||0, repetidasDe(cid));
+  cel.classList.toggle('on', n>0);
+  let et=cel.querySelector('.elegidas');
+  if(n>0){
+    if(!et){ et=document.createElement('span'); et.className='elegidas'; cel.appendChild(et); }
+    et.textContent=n;
+  }else if(et) et.remove();
+  pie.innerHTML=pieVenta();
+}
+
+function pieVenta(){
+  const iids=copiasAVender();
+  const {oro}=cuentaVenta(iids);
+  const cartas=iids.length;
+  const peleadores=new Set(iids.map(i=>inst(i).cid)).size;
   return `<div class="venta-pie">
       <div class="arriba">
         <div style="min-width:0"><b style="font-size:14px">${cartas} carta${cartas===1?'':'s'}</b>
@@ -3907,8 +4127,15 @@ function ovVenta(cid){
   const total=S.coleccion.filter(x=>x.cid===cid).length;
   const eleg=tmp.venta||(tmp.venta={});
   const puesto=Math.min(eleg[cid]||0, max);
-  if(max===1){ eleg[cid]=puesto?0:1; render(); return; }
-  const precio=precioVenta(c, iids[0].gratis);
+  if(max===1){ eleg[cid]=puesto?0:1; refrescarVenta(cid); return; }
+  /* EL PRECIO DE CADA COPIA, UNA A UNA. Las copias de un mismo peleador no valen todas lo
+     mismo —una de sobre gratis vale 1 y la comprada 60, y una rara el doble que su común—,
+     así que "n × el precio de la primera" era mentira. Se ordenan como se van a vender —las
+     peores primero— y se suman las n primeras de verdad. */
+  const orden=iids.slice().sort((a,b)=>(ORDEN_BASE[a.rz||'comun']-ORDEN_BASE[b.rz||'comun'])
+    || (precioCopia(a)-precioCopia(b)));
+  const sumas=[0];
+  for(const it of orden) sumas.push(sumas[sumas.length-1]+precioCopia(it));
   const n=puesto||max;      // se abre con todas puestas: es lo que se suele querer
   ov(`<div class="center">
       <div style="max-width:140px;margin:0 auto 10px">${cartaHTML(c)}</div>
@@ -3918,13 +4145,13 @@ function ovVenta(cid){
         color:var(--acc2);line-height:1">${n}</div>
       <div class="sub mb">de ${max} repetida${max===1?'':'s'}</div>
       <input type="range" class="desliz" id="v-desliz" min="0" max="${max}" value="${n}"
-        data-cid="${cid}" data-precio="${precio}">
+        data-cid="${cid}" data-sumas="${sumas.slice(0,max+1).join(',')}">
       <div style="display:flex;justify-content:space-between;margin-bottom:14px" class="tiny">
         <span style="color:var(--dim2)">0</span><span style="color:var(--dim2)">${max}</span></div>
       <div class="card-panel" style="margin-bottom:12px">
         <div class="row" style="align-items:center">
-          <div style="flex:2;text-align:left"><span class="sub" id="v-cuenta">${n} × ${MONEDA_TXT} ${precio}</span></div>
-          <b style="font-size:20px;color:var(--acc2)" id="v-oro">${MONEDA_TXT} ${(n*precio).toLocaleString('es-ES')}</b></div>
+          <div style="flex:2;text-align:left"><span class="sub" id="v-cuenta">${n} de ${max} repetida${max===1?'':'s'}</span></div>
+          <b style="font-size:20px;color:var(--acc2)" id="v-oro">${MONEDA_TXT} ${(sumas[n]||0).toLocaleString('es-ES')}</b></div>
       </div>
       <button class="btn" data-a="ponercopias" data-cid="${cid}" style="width:100%">Añadir a la venta</button>
       <button class="btn gho" data-a="cerrarov" style="width:100%;margin-top:8px">Cancelar</button>
@@ -3980,7 +4207,7 @@ function vRetos(){
       <div style="flex:2"><b>${sel.length} entregadas</b><div class="sub">${ok?'Requisitos cumplidos':'Aún no cumple'}</div></div>
       <button class="btn sm" data-a="entregarreto" ${ok?'':'disabled'}>Entregar</button></div></div>
     <div class="grid" style="--cols:4" data-fit="4,4">${hoja.map(x=>
-      cartaHTML(PORID[x.cid],{attr:`data-rec="${x.iid}"`,sel:sel.includes(x.iid)})).join('')}</div>
+      cartaHTML(PORID[x.cid],{attr:`data-rec="${x.iid}"`,sel:sel.includes(x.iid),rareza:x.rz})).join('')}</div>
     ${pags>1?`<div class="album-nav">
       <button class="btn gho sm" data-a="pag" data-v="-1" ${tmp.pag?'':'disabled'}>‹</button>
       <span class="pag">HOJA ${tmp.pag+1} DE ${pags}</span>
@@ -4010,7 +4237,7 @@ function vIntercambio(){
     <div class="card-panel"><h3>Lo que ofrece (elige hasta 3)</h3>
       <div class="grid" style="--cols:3">${s.oferta.map((c,i)=>cartaHTML(c,{attr:`data-pido="${i}"`,sel:suyas.includes(c)})).join('')}</div></div>
     <div class="card-panel"><h3>Lo que das (hasta 3)</h3>
-      <div class="grid" style="--cols:4" data-fit="4,2">${disp.slice(0,8).map(x=>cartaHTML(PORID[x.cid],{attr:`data-ofrezco="${x.iid}"`,sel:mias.includes(x.iid)})).join('')}</div></div>
+      <div class="grid" style="--cols:4" data-fit="4,2">${disp.slice(0,8).map(x=>cartaHTML(PORID[x.cid],{attr:`data-ofrezco="${x.iid}"`,sel:mias.includes(x.iid),rareza:x.rz})).join('')}</div></div>
     ${!legal?'<div class="card-panel" style="border-color:var(--warn)"><b>Trueque no permitido.</b><div class="sub">Hay más de una banda de rareza de diferencia entre las cartas del intercambio.</div></div>':''}
     <button class="btn" data-a="proponer" ${(legal&&mias.length&&suyas.length)?'':'disabled'}>Proponer trueque</button>
     <div class="tiny center" style="margin-top:6px">${legal&&mias.length&&suyas.length?(acepta?'Parece que le puede interesar.':'Probablemente lo rechace.'):''}</div>
@@ -5065,11 +5292,15 @@ document.addEventListener('change',e=>{
    suelta a la primera. Se tocan sólo los tres números. */
 document.addEventListener('input',e=>{
   const t=e.target.closest('#v-desliz'); if(!t) return;
-  const n=+t.value, precio=+t.dataset.precio;
+  /* Las sumas van precalculadas en el atributo —cuánto se lleva con 0, con 1, con 2…—
+     porque las copias no valen todas lo mismo y "n × precio" no es la cuenta. Es la misma
+     lista que suma el pie y la que cobra el botón. */
+  const sumas=(t.dataset.sumas||'0').split(',').map(Number);
+  const n=+t.value, max=+t.max;
   const num=$('#v-num'), cuenta=$('#v-cuenta'), oro=$('#v-oro');
   if(num) num.textContent=n;
-  if(cuenta) cuenta.textContent=`${n} × ${MONEDA_TXT} ${precio}`;
-  if(oro) oro.textContent=`${MONEDA_TXT} ${(n*precio).toLocaleString('es-ES')}`;
+  if(cuenta) cuenta.textContent=`${n} de ${max} repetida${max===1?'':'s'}`;
+  if(oro) oro.textContent=`${MONEDA_TXT} ${(sumas[n]||0).toLocaleString('es-ES')}`;
 });
 
 document.addEventListener('click',e=>{
@@ -5410,7 +5641,7 @@ document.addEventListener('click',e=>{
       const cid=d.cid, sl=$('#v-desliz'); if(!cid) break;
       tmp.venta=tmp.venta||{};
       tmp.venta[cid]=sl?+sl.value:0;
-      cerrarOv(); render(); break; }
+      cerrarOv(); refrescarVenta(cid); break; }
     /* Los precios, detrás de una (i) como la de los sobres: es una tabla que se consulta
        una vez y luego estorba en la pantalla todos los días. */
     case 'preciosventa':
@@ -5422,9 +5653,17 @@ document.addEventListener('click',e=>{
             n.id==='sinrank' ? MONEDA_TXT+' '+NR_PRECIO[0]+'–'+NR_PRECIO[1]
                              : MONEDA_TXT+' '+VENTA[n.id].toLocaleString('es-ES')}</td></tr>`).join('')}
         </table>
+        <div class="sub" style="margin:12px 0 4px">Y el marco multiplica</div>
+        <table style="width:100%">
+          <tr><th>Carta</th><th style="text-align:right">Vale</th></tr>
+          ${BASES.map(rz=>`<tr><td>${BASE_ET[rz]}</td>
+            <td style="text-align:right">×${String(VENTA_RAREZA[rz]).replace('.',',')}</td></tr>`).join('')}
+        </table>
         <div class="divider"></div>
         <div class="sub mb">Entre los que no están rankeados manda lo bueno que sea: no valen
         todos lo mismo.</div>
+        <div class="sub mb">Al vender se van siempre las <b>peores copias</b>: si tienes una
+        épica y dos comunes del mismo peleador, la épica se queda.</div>
         <div class="sub mb">Lo que salga de un <b>sobre gratis</b> vale ${MONEDA_TXT} ${VENTA_GRATIS.sinrank}.
         Si valiera más, abrir sobres gratis pagaría mejor que jugar.</div>
         <button class="btn" data-a="cerrarov" style="width:100%">Vale</button>`);
@@ -5459,12 +5698,8 @@ document.addEventListener('click',e=>{
     case 'vender':{
       /* De {peleador: cuántas} a los identificadores concretos. Se cogen las primeras
          vendibles de cada uno; da igual cuáles, son la misma carta. */
-      const pedir=tmp.venta||{}, iids=[];
-      for(const [cid,n] of Object.entries(pedir)){
-        const suyas=S.coleccion.filter(x=>x.cid===cid&&vendible(x.iid));
-        for(let k=0;k<Math.min(n,suyas.length);k++) iids.push(suyas[k].iid);
-      }
-      const v=vender(iids); tmp.venta={}; tmp.pag=0;
+      // La MISMA lista que ha contado el pie, para que lo prometido sea lo cobrado.
+      const v=vender(copiasAVender()); tmp.venta={}; tmp.pag=0;
       ov(`<div class="center"><div style="font-size:38px">${MONEDA_TXT}</div>
         <h3>+${v.oro.toLocaleString('es-ES')}</h3>
         <div class="sub mb">${v.cuantas} carta${v.cuantas===1?'':'s'} vendida${v.cuantas===1?'':'s'}.</div>
