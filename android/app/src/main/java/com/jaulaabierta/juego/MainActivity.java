@@ -11,6 +11,8 @@ import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputConnection;
 
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
@@ -41,7 +43,31 @@ public class MainActivity extends Activity {
                 .addPathHandler("/assets/", new WebViewAssetLoader.AssetsPathHandler(this))
                 .build();
 
-        web = new WebView(this);
+        /* EL TECLADO A PANTALLA COMPLETA, QUE ES LO QUE ROMPE ANDROID TV.
+         *
+         * En horizontal, el teclado de Android se pone en "modo extracción": tapa la
+         * pantalla entera con un fondo claro y su propio campo de texto, y deja la
+         * aplicación detrás sin pintar. En un móvil casi no se ve porque se escribe en
+         * vertical; una TELEVISIÓN está SIEMPRE en horizontal, así que pasa cada vez que
+         * se toca un campo. Es exactamente lo que salía en el Nvidia Shield: el juego
+         * arriba, una plancha gris debajo y las teclas de canto contra el borde.
+         *
+         * Las dos banderas lo apagan: NO_EXTRACT_UI le quita el campo de texto propio y
+         * NO_FULLSCREEN le prohíbe ocupar toda la pantalla. El teclado se queda abajo,
+         * como en un móvil, y el juego se sigue viendo mientras se escribe.
+         *
+         * Van aquí y no en un XML porque quien abre el teclado es el campo de dentro del
+         * WebView, no una vista de Android a la que se le puedan poner atributos. */
+        web = new WebView(this) {
+            @Override
+            public InputConnection onCreateInputConnection(EditorInfo salida) {
+                InputConnection cx = super.onCreateInputConnection(salida);
+                if (salida != null)
+                    salida.imeOptions |= EditorInfo.IME_FLAG_NO_EXTRACT_UI
+                                       | EditorInfo.IME_FLAG_NO_FULLSCREEN;
+                return cx;
+            }
+        };
         WebSettings ajustes = web.getSettings();
         ajustes.setJavaScriptEnabled(true);
         ajustes.setDomStorageEnabled(true);   // sin esto no se guarda la colección
@@ -97,9 +123,17 @@ public class MainActivity extends Activity {
         setContentView(raiz, new ViewGroup.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
+        /* Y EL TECLADO CUENTA COMO UNA BARRA MÁS. Sin `ime()` en esta lista, el sistema
+         * no aparta nada al abrirlo: en un móvil se come el final de la pantalla y en una
+         * tele, donde el teclado es enorme, tapa medio juego. Metiéndolo, el contenido se
+         * encoge hasta justo encima de las teclas y se ve lo que se está escribiendo.
+         * `getInsets` con varias máscaras devuelve la MAYOR de cada lado, así que con el
+         * teclado cerrado esto vale exactamente lo que valía antes. */
         ViewCompat.setOnApplyWindowInsetsListener(raiz, (v, ventana) -> {
             Insets barras = ventana.getInsets(
-                    WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout());
+                    WindowInsetsCompat.Type.systemBars()
+                            | WindowInsetsCompat.Type.displayCutout()
+                            | WindowInsetsCompat.Type.ime());
             v.setPadding(barras.left, barras.top, barras.right, barras.bottom);
             return WindowInsetsCompat.CONSUMED;
         });

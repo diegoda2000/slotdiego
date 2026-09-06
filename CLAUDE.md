@@ -1009,6 +1009,61 @@ la regla fundacional —un archivo, sin compilación, funcionando en cuatro siti
 nadie. El historial público, en cambio, **es la prueba de autoría**: commits fechados a su
 nombre desde 2023.
 
+**ANDROID TV: EL TECLADO SE COMÍA LA PANTALLA, Y YA NO.** Lo pasó él con una foto del
+Nvidia Shield: el juego arriba, una plancha gris debajo y las teclas de canto contra el
+borde derecho. Pidió *"que los usuarios de ese dispositivo disfruten de la misma
+experiencia que el resto"* y **"no toquemos nada del funcionamiento"**: no se tocó ni una
+línea de `juego/`.
+
+**LA CULPA ERA DEL MODO EXTRACCIÓN DEL TECLADO, no del juego.** En horizontal, el teclado
+de Android se pone a pantalla completa con su propio campo de texto encima de todo y deja
+la aplicación detrás sin pintar. En un móvil casi no se ve porque se escribe en vertical;
+**una tele está SIEMPRE en horizontal**, así que pasaba cada vez que se tocaba un campo.
+La plancha gris de la foto era ese teclado, no un fallo de fondo: el tema pinta
+`@color/fondo`, que es negro.
+
+Se apaga con dos banderas en `MainActivity`, sobre el `EditorInfo` del WebView:
+`IME_FLAG_NO_EXTRACT_UI` y `IME_FLAG_NO_FULLSCREEN`. **Van en código y no en un XML**
+porque quien abre el teclado es el campo de dentro del WebView, no una vista de Android a
+la que se le puedan poner atributos.
+
+**Y EL TECLADO CUENTA AHORA COMO UNA BARRA MÁS**: al reparto de huecos se le añadió
+`WindowInsetsCompat.Type.ime()`, con `windowSoftInputMode="adjustResize"` en el manifiesto.
+Sin eso no se apartaba nada al abrirlo. `getInsets` con varias máscaras devuelve la MAYOR
+de cada lado, así que **con el teclado cerrado vale exactamente lo que valía antes**: en un
+móvil sólo cambia a mejor, que es que ya no se esconde el campo detrás de las teclas.
+
+**EL BLOQUEO EN VERTICAL SE QUEDA, Y ESTÁ MEDIDO.** Soltarlo parece la solución obvia y es
+PEOR. Una tele no gira, así que Android encajona la aplicación vertical en el centro:
+sobre 1920x1080 quedan unos **607x1080** de píxeles de CSS, y ahí las siete pantallas salen
+a **0 px de desborde**. En apaisado a 960x540 —1080p a densidad 2— no da el alto y **se
+rompen dos**: Club 62 px y Plantilla 25 px. La columna centrada ES la buena. Si alguien
+vuelve a proponer el apaisado, el número está en la herramienta.
+
+**Tres declaraciones en el manifiesto, y ninguna cambia nada en un móvil** porque van con
+`required="false"`: la pantalla táctil deja de ser obligatoria —una tele no tiene, y sin
+esto el sistema da la aplicación por no apta—, `leanback` declarado, y la categoría
+**`LEANBACK_LAUNCHER`**, que es lo que hace que la aplicación **salga en la pantalla de
+inicio de la tele** en vez de tener que buscarla con un lanzador de sideload.
+
+**Y CON ELLA HACE FALTA UN BANNER**, que es como se enseñan las aplicaciones en una TV:
+apaisado de 320x180 en xhdpi, y **con el nombre dentro del dibujo**, porque el lanzador no
+escribe ninguno. Lo saca `herramientas/preparar-banner-tv.py` del logo ya recortado, sobre
+el negro de la paleta. No se le pone el nombre al lado: el logo YA es el P4P.CG escrito.
+
+**Cómo se mira.** `node herramientas/ver-tv.mjs [carpeta]` fotografía la columna de la tele
+y mide las tres cosas: que no desborde en 607x1080, cuánto desbordaría en apaisado —para
+que se vea por qué está descartado— y que **con el teclado abierto** los campos de las dos
+únicas pantallas que escriben —cuenta y sugerencias— sigan viéndose enteros y sin que los
+tape la barra de pestañas. Medido con la ventana encogida al 55%: bien en tele y en móvil.
+
+**LO QUE SIGUE SIN FUNCIONAR EN UNA TELE, Y HAY QUE DECIDIRLO: EL MANDO.** El juego se
+maneja tocando, y sus botones son `<div class="sobre-fila">`, que **no son enfocables**:
+con la cruceta de un mando de televisión no se puede llegar a ellos. Hoy se juega en el
+Shield con puntero —ratón o el mando en modo cursor—. Darle mando de verdad es hacer
+enfocables los botones de menú y las cartas y pintarles un realce al enfocarlos, y eso SÍ
+toca la interfaz, así que **no se ha hecho: está preguntado y sin contestar.**
+
 **LO QUE ESTÁ EN MARCHA AHORA MISMO.**
 
 1. **Que las sugerencias LLEGUEN A SU CORREO.** El botón, la pantalla y el guardado están
