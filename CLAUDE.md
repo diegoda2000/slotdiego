@@ -1668,7 +1668,19 @@ que alguien ya se bajó con ese número y entonces el número no significaría n
 otra hay que **SUBIR LA VERSIÓN**.
 
 **"SUBE LA VERSIÓN"** es la frase para subir el `versionCode` de `android/app/build.gradle`
-—+1— y ponerle un `versionName` nuevo. Eso es lo que hace que Android trate el APK como una
+—+1— y ponerle un `versionName` nuevo.
+
+**Y CÓMO SE NUMERA LO PEQUEÑO LO DEJÓ DICHO ÉL:** *"siempre que sean actualizaciones
+pequeñas o de arreglar interfaz y visualización en otros dispositivos, hazlo así,
+aumentando en un decimal más de lo normal"*. O sea:
+
+| qué es | qué número sube |
+|---|---|
+| algo que cambia el juego | el tercero: 0.1.3 → 0.1.4 |
+| **un arreglo, o interfaz y visualización en otros aparatos** | **el cuarto: 0.1.3.1 → 0.1.3.2** |
+
+El `versionCode` sube en uno igual en los dos casos: ése no entiende de decimales y es lo
+único que mira Android. Eso es lo que hace que Android trate el APK como una
 actualización y no como otra aplicación. **El progreso no se toca**: la colección vive en el
 `localStorage` del WebView bajo la clave `jaula-abierta-v1`, y eso sobrevive a cualquier
 actualización mientras no cambien ni el `applicationId` (`com.jaulaabierta.juego`) ni la
