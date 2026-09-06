@@ -1,45 +1,19 @@
-Versión **0.1.3** de P4P.CG. Es una **alfa temprana**: falta mucho por hacer y hay
-bloques marcados PENDIENTE dentro del juego.
+Versión **0.1.3.1** de P4P.CG. Un arreglo sobre la 0.1.3, sin cambios de juego.
 
-Trae todo lo de la 0.1.2 —las tres cartas base, los sobres repartiéndolas y la venta
-por rareza— más lo de abajo.
+### La apertura del sobre volvía a salir rota en el móvil
 
-### Las cartas ya no son todas iguales
+Se veían medias cartas una encima de otra, el dorso asomando por delante de la cara y el
+contenido a otra escala. Pasaba con **todos** los sobres, también los que sólo traen
+comunes.
 
-Hay **tres cartas base**: común, rara y épica, cada una con su marco. Una **rara**
-sólo existe para los rankeados y para 38 destacados —ex campeones y nombres grandes
-sin cinturón—, y una **épica** sólo para campeones y top 5. Son 402 comunes, 216
-raras y 68 épicas.
+La culpa era del resplandor de las cartas nuevas: se pintaba una capa animada en **cada
+carta y cada dorso**, incluso en las comunes, que no tienen resplandor. Dentro de la
+apertura eso son doce capas girando en 3D a la vez, y el navegador del móvil las
+desordena.
 
-El resplandor de las dos nuevas **late**, en sus propias zonas y con su color: el
-dorado del marco épico brilla dorado y el violeta brilla violeta.
+Ahora la capa **sólo existe en la rara y la épica**, y **dentro de la apertura la luz se
+queda quieta** —a plena intensidad, exactamente el marco de siempre—. Sigue latiendo en la
+colección, en la venta y en el resto del juego. Una carta común vuelve a ser exactamente lo
+que era antes de que existieran las rarezas.
 
-### Los sobres las reparten
-
-Cada carta de un sobre sortea primero la rareza y después a quién te toca, y las dos
-tablas están a la vista detrás de la (i) de la tienda. Lo más raro sale **lo último**
-al abrir.
-
-El sobre gratis no cambia en nada de lo que reparte por ranking, pero ahora casi el
-4% de sus cartas viene con marco azul, y casi siempre es un destacado.
-
-### Vender
-
-El marco multiplica el precio: una rara vale la mitad más y una épica el doble. Al
-vender se van siempre las **peores copias**, así que tu mejor marco se queda. Y la
-cifra de abajo es exactamente la que cobras. La pantalla ya no parpadea al elegir.
-
-### Filtros
-
-Cinco desplegables al elegir cartas para un SBC —atributo, peso, país, tipo de carta
-y rareza— y cuatro en la colección.
-
-### SBC
-
-La cuenta y el botón de entregar suben a la línea del título, así que las cartas se
-ven más grandes, y la cuenta va como **0/3** y va subiendo según eliges.
-
-### La carta elegida
-
-En vez de un filete alrededor, un **círculo de oro** abajo a la derecha: con un check
-en el SBC y con cuántas has elegido en la venta.
+Comprobado carta a carta en los cinco sobres y con las tres rarezas.

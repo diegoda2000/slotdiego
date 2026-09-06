@@ -813,6 +813,76 @@ const apertura = await page.evaluate(async () => {
   out.sinRejilla = !document.querySelector('.grid');
   return out;
 });
+/* TODAS LAS CARTAS SE REVELAN BIEN, EN LOS CINCO SOBRES Y CON CUALQUIER RAREZA.
+
+   Esto no estaba y costó una versión. En el móvil la apertura salía rota: medias cartas
+   una encima de otra, el dorso asomando por delante de la cara y el contenido a otra
+   escala. Lo cazó él con fotos —"hay bugs graves al enseñar las nuevas cartas"— y pasaba
+   con TODOS los sobres, también los que sólo traen comunes.
+
+   La causa: el naipe es `preserve-3d` con perspectiva y un cambio de cara hecho a mano con
+   opacidad, y dentro se le habían metido capas con `will-change:opacity` y una animación
+   infinita —el resplandor— en CADA cara: doce capas compositadas permanentes dentro de un
+   subárbol 3D que además gira y se desplaza. Chromium de escritorio lo aguanta; el WebView
+   de Android no. Por eso esta comprobación mira cuatro cosas que en escritorio nunca
+   fallaban: que sólo se vea UNA cara, que el contenido no se salga de la carta, que ninguna
+   otra carta del montón se ponga por delante, y que dentro del naipe NO haya nada animado.
+
+   Se recorren los cinco sobres con las tres rarezas mezcladas, volteando y pasando todas. */
+const revelado = await page.evaluate(async () => {
+  const dormir = ms => new Promise(r => setTimeout(r, ms));
+  const malos = []; let total = 0, animadas = 0, conLuz = 0;
+  for (const t of Object.keys(TIPOS_SOBRE)) {
+    const it = abrirSobre(t);
+    it.forEach((x, i) => { x.rz = ['comun', 'rara', 'epica'][i % 3]; });
+    it.sort((a, b) => (ORDEN_BASE[b.rz || 'comun'] - ORDEN_BASE[a.rz || 'comun'])
+      || comparar(PORID[a.cid], PORID[b.cid]));
+    abrirTanda(it, t);
+    await dormir(2400);
+    animadas += [...document.querySelectorAll('.naipe *')].filter(e => {
+      const s = getComputedStyle(e);
+      return s.animationName !== 'none' && s.animationIterationCount === 'infinite';
+    }).length;
+    for (let i = 0; i < tmp.ap.items.length; i++) {
+      toqueApertura(); await dormir(700);
+      const arriba = tmp.ap.pila[0], c = arriba.querySelector('.carta');
+      const R = c.getBoundingClientRect();
+      const caras = [...arriba.querySelectorAll('.cara')].map(e => +getComputedStyle(e).opacity);
+      const rz = (c.className.match(/\braro\b|\bepico\b/) || ['comun'])[0];
+      const marco = c.querySelector('img.marco'), luz = c.querySelector('img.luz');
+      if (luz) conLuz++;
+      const fuera = [];
+      for (const sel of ['.c-nom', '.c-apodo', '.c-datos', '.c-stats']) {
+        const e = c.querySelector(sel); if (!e) continue;
+        const r = e.getBoundingClientRect(); if (r.width < 1) continue;
+        if (r.left < R.left - 0.6 || r.right > R.right + 0.6
+          || r.top < R.top - 0.6 || r.bottom > R.bottom + 0.6) fuera.push(sel);
+      }
+      const zArriba = +getComputedStyle(arriba).zIndex;
+      const delante = tmp.ap.pila.slice(1).filter(n =>
+        +getComputedStyle(n).opacity > 0.02 && +getComputedStyle(n).zIndex >= zArriba).length;
+      const mal = [];
+      if (caras[0] !== 1 || caras[1] !== 0) mal.push('dos caras ' + JSON.stringify(caras));
+      if (fuera.length) mal.push('se sale ' + fuera.join(','));
+      if (delante) mal.push(delante + ' por delante');
+      if (!marco || !marco.complete || !marco.naturalWidth
+        || marco.getAttribute('src') !== `marcos/${rz}.webp`) mal.push('marco ' + rz);
+      if (rz === 'comun' ? !!luz : !(luz && luz.complete && luz.naturalWidth)) mal.push('luz ' + rz);
+      if (mal.length) malos.push(`${t} ${i + 1} ${rz}: ${mal.join(' · ')}`);
+      total++;
+      toqueApertura(); await dormir(650);
+    }
+  }
+  return { total, malos: malos.slice(0, 6), cuantosMal: malos.length, animadas, conLuz };
+});
+comprobar(revelado.cuantosMal === 0,
+  `los ${revelado.total} revelados de los cinco sobres salen bien: una sola cara, nada fuera `
+  + `de la carta y ninguna por delante${revelado.cuantosMal ? ' — ' + revelado.malos.join(' | ') : ''}`);
+comprobar(revelado.animadas === 0,
+  `y dentro del naipe no hay NI UNA capa animándose (${revelado.animadas})`);
+comprobar(revelado.conLuz > 0,
+  `pero la rara y la épica sí llevan su capa de resplandor, quieta (${revelado.conLuz} de ${revelado.total})`);
+
 comprobar(apertura.cartas === apertura.debe,
   `el montón trae las cartas del sobre (${apertura.cartas} de ${apertura.debe})`);
 comprobar(apertura.bocabajo === apertura.debe,

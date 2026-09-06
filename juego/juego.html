@@ -745,18 +745,15 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
    el P4P es plata con el color de su marco por dentro, así que el nombre hace igual. La
    plata de los extremos no se toca —es lo que lo hace metal—; lo que se tiñe es el gris
    del medio, que es donde el reflejo coge el color de alrededor. */
-.carta,.naipe{--c-marco:url(marcos/comun.webp);
-  --c-marco-rev:url(marcos/comun-reverso.webp);
+.carta,.naipe{--c-marco-rev:url(marcos/comun-reverso.webp);
   --c-acc:#eabe4a; --c-acc-suave:#f7e59f; --c-filete:rgba(217,164,65,.55);
   --c-encaje:1; --c-cromo:var(--cromo)}
-.carta.raro,.naipe.raro{--c-marco:url(marcos/raro.webp);
-  --c-marco-rev:url(marcos/raro-reverso.webp);
-  --c-luz:url(marcos/raro-luz.webp); --c-luz-rev:url(marcos/raro-reverso-luz.webp);
+.carta.raro,.naipe.raro{--c-marco-rev:url(marcos/raro-reverso.webp);
+  --c-luz-rev:url(marcos/raro-reverso-luz.webp);
   --c-acc:#2e85e9; --c-acc-suave:#7cc8fb; --c-filete:rgba(61,171,247,.55); --c-encaje:.896;
   --c-cromo:linear-gradient(180deg,#ffffff 0%,#dde9f6 38%,#7fa8cf 55%,#eef5fc 74%,#a9c4de 100%)}
-.carta.epico,.naipe.epico{--c-marco:url(marcos/epico.webp);
-  --c-marco-rev:url(marcos/epico-reverso.webp);
-  --c-luz:url(marcos/epico-luz.webp); --c-luz-rev:url(marcos/epico-reverso-luz.webp);
+.carta.epico,.naipe.epico{--c-marco-rev:url(marcos/epico-reverso.webp);
+  --c-luz-rev:url(marcos/epico-reverso-luz.webp);
   --c-acc:#b669e6; --c-acc-suave:#dd8bf7; --c-filete:rgba(182,105,230,.55); --c-encaje:.873;
   --c-cromo:linear-gradient(180deg,#ffffff 0%,#ece0f6 38%,#a68bc4 55%,#f5eefc 74%,#c9b2de 100%);
   --c-cromo-num:linear-gradient(180deg,#fee0a8 0%,#fccc82 38%,#c68946 55%,#fed492 74%,#d9a45e 100%)}
@@ -869,8 +866,11 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
    EL MARCO VA DEBAJO DE TODO, y no es un capricho: el PNG que pasó es OPACO, 0% de
    transparencia, así que puesto encima taparía la carta entera. Lo que hace de ventana es
    el hueco libre que deja su borde por dentro. */
-.carta .marco{position:absolute;inset:0;z-index:0;
-  background:var(--c-marco) center/100% 100% no-repeat}
+/* EL MARCO ES UN <img> Y NO UN FONDO DE CSS, y volvió a serlo porque cambiarlo rompió la
+   apertura en el móvil. Ver el bloque de LA APERTURA más abajo: dentro de un `preserve-3d`
+   el WebView de Android no pinta igual un fondo que una imagen. Es el mismo construido que
+   funcionaba antes de las rarezas; lo único nuevo es que el `src` depende del marco. */
+.carta .marco{position:absolute;inset:0;width:100%;height:100%;z-index:0;display:block}
 
 /* EL RESPLANDOR RESPIRA, Y NO SE MUEVE DE SITIO. Lo pidió él: la luz "del color de esas
    zonas en la carta", "constante de la misma zona pero animado".
@@ -881,23 +881,48 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
    capa, así que el resplandor no se desplaza ni cambia de tono: son sus propios píxeles,
    más o menos presentes. Al 100% la carta es exacta al archivo que él pasó.
 
-   Sin `--c-luz` no se pinta nada: la común no tiene resplandor que animar.
-
-   Va con `will-change:opacity` porque en una hoja de 16 cartas son 16 capas animándose a
-   la vez, y sin ella el navegador repinta el marco entero en cada fotograma. */
-.carta .luz{position:absolute;inset:0;z-index:0;pointer-events:none;
-  background:var(--c-luz) center/100% 100% no-repeat;
-  will-change:opacity;animation:latido 3.6s ease-in-out infinite}
-.carta.tapada::after,.naipe .cara.dorso > .recorte::after{content:'';position:absolute;
+   LA CAPA SÓLO EXISTE EN LA RARA Y LA ÉPICA, y eso NO es una optimización: la común no
+   tiene resplandor, así que una capa invisible animándose en cada una de las 402 cartas
+   era coste puro. Y en la apertura era algo peor —ver abajo—. `cartaHTML` ni siquiera
+   pinta el elemento cuando la carta es común. */
+.carta .luz{position:absolute;inset:0;width:100%;height:100%;z-index:0;display:block;
+  pointer-events:none;animation:latido 3.6s ease-in-out infinite}
+.carta.tapada.raro::after,.carta.tapada.epico::after{content:'';position:absolute;
   inset:0;pointer-events:none;background:var(--c-luz-rev) center/100% 100% no-repeat;
-  will-change:opacity;animation:latido 3.6s ease-in-out infinite}
+  animation:latido 3.6s ease-in-out infinite}
+.naipe.raro .cara.dorso > .recorte::after,
+.naipe.epico .cara.dorso > .recorte::after{content:'';position:absolute;
+  inset:0;pointer-events:none;background:var(--c-luz-rev) center/100% 100% no-repeat}
+
+/* DENTRO DE LA APERTURA EL RESPLANDOR NO SE ANIMA, Y ESTO COSTÓ UNA VERSIÓN.
+
+   El naipe es `transform-style:preserve-3d` con perspectiva, `will-change:transform` y un
+   cambio de cara hecho a mano con opacidad. Metiéndole dentro una capa con `will-change`
+   y una animación infinita, cada cara pasa a ser su propia capa compositada: en un sobre
+   de seis cartas son DOCE capas animándose sin parar dentro de un subárbol 3D que además
+   se está girando y desplazando.
+
+   En Chromium de escritorio aguanta. En el WebView de Android NO: lo que se veía eran
+   medias cartas de una encima de otra, el dorso asomando por delante de la cara y el
+   contenido a otra escala. Y pasaba con TODOS los sobres, porque la capa se pintaba
+   también en las comunes.
+
+   Así que aquí la luz se queda QUIETA, a plena intensidad —o sea exactamente el archivo
+   que él aprobó—, y respira en el álbum, en la venta y en todas las demás pantallas, que
+   es donde la carta está parada y se mira con calma. NO le devuelvas la animación sin
+   probarlo en un móvil de verdad. */
+.naipe .luz{animation:none}
+
+/* Y NADA DE `will-change` en el resplandor. Una animación de opacidad ya la compone la
+   GPU sin pedirlo; lo que hace `will-change` es promover la capa PARA SIEMPRE, y eso es
+   justo lo que rompió la apertura. */
 /* El recorrido y la velocidad NO se tocan —"no la velocidad, sino la intensidad y brillo
    de la luz"—: lo que sube es cuánta luz tiene la capa, y eso se hace al preparar el
    archivo, en herramientas/preparar-marcos-rareza.py (REFUERZO). */
 @keyframes latido{0%,100%{opacity:1}50%{opacity:.45}}
 /* Quien haya pedido menos movimiento en su móvil se queda con la carta a plena luz. */
 @media (prefers-reduced-motion:reduce){
-  .carta .luz,.carta.tapada::after,.naipe .cara.dorso > .recorte::after{animation:none}
+  .carta .luz,.carta.tapada.raro::after,.carta.tapada.epico::after{animation:none}
 }
 
 /* EL CONTENIDO SE ENCOGE HASTA EL HUECO DE SU MARCO, y no es cosmética: los tres marcos
@@ -925,7 +950,12 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
    contar contra la foto y pasa a contar sólo dentro de `.dentro`. Sin este, `.dentro` se
    pintaba en orden de documento y la foto, con su `z-index:1`, se ponía por delante: el
    nombre desaparecía y el apodo salía a medias. Pasaba en las TRES, común incluida. */
-.carta .dentro{position:absolute;inset:0;z-index:2;
+/* Y LA ESCALA SÓLO SE APLICA DONDE HACE FALTA. La común va a 1, o sea que un
+   `transform:scale(1)` no la movía... pero SÍ le creaba una capa y un contexto de apilado
+   dentro del 3D del naipe, en las 402 cartas. Ahora la común no lleva ni el `transform` ni
+   el envoltorio: `cartaHTML` no lo pinta. */
+.carta .dentro{position:absolute;inset:0;z-index:2}
+.carta.raro .dentro,.carta.epico .dentro{
   transform:scale(var(--c-encaje,1));transform-origin:50% 50%}
 
 /* La ventana de la foto. La foto va a CUERPO ENTERO —él eligió la opción B—, apoyada abajo
@@ -1629,6 +1659,9 @@ const BASE_ET={comun:'Común', rara:'Rara', epica:'Épica'};
 /* La clase que pinta la carta con su marco. La común no lleva clase: es la de por defecto,
    y así lo guardado de antes —que no tiene `rz`— se pinta exactamente como se pintaba. */
 const claseBase=rz=>rz&&rz!=='comun'?rz==='rara'?'raro':'epico':'';
+/* Y el nombre del archivo del marco, que NO es la clave: las claves van en femenino
+   —comun/rara/epica, como la carta— y los archivos en masculino, como el marco. */
+const MARCO_ARCHIVO={comun:'comun', rara:'raro', epica:'epico'};
 
 /* Los tres sobres NO son el mismo sobre a distintos precios: cada uno hace una cosa.
 
@@ -2586,12 +2619,12 @@ function cartaHTML(c,o={}){
   const estilo=cta?` style="--n:${Math.round(o.cuenta)}"`:'';
   return `<div class="carta ${crz} ${foto?'confoto':''} ${marca}"${estilo} ${o.attr||''}>
    <div class="lienzo">
-    <div class="marco"></div>
-    <div class="luz"></div>
+    <img class="marco" src="marcos/${MARCO_ARCHIVO[rz]}.webp" alt="">
+    ${rz==='comun'?'':`<img class="luz" src="marcos/${MARCO_ARCHIVO[rz]}-luz.webp" alt="">`}
     <div class="hueco">
       ${foto?`<img class="c-foto" src="${foto}" alt="" loading="lazy">`:''}
     </div>
-    <div class="dentro">
+    ${rz==='comun'?'':'<div class="dentro">'}
     <div class="capa">
       <div class="c-nom cromo" style="--nom:${tamNombre(c.nombre)}">${esc(c.nombre)}</div>
       ${c.apodo?`<div class="c-apodo"><i></i><b>${esc(c.apodo)}</b><i></i></div>`:''}
@@ -2605,7 +2638,7 @@ function cartaHTML(c,o={}){
       <div class="c-stats">${st}</div>
       ${nCop}
     </div>
-    </div>
+    ${rz==='comun'?'':'</div>'}
    </div>
   </div>`;
 }
