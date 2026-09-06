@@ -1,0 +1,48 @@
+P4P.CG
+Copyright (c) 2023-2026 Diego (diegoda2000). Todos los derechos reservados.
+
+
+QUÉ CUBRE ESTO
+
+Este repositorio y todo lo que contiene son obra de su autor y están protegidos por
+derechos de autor. En particular:
+
+  · el código —juego/juego.html, juego/motor.js, juego/roster.js, el Worker de
+    servidor/, las herramientas de herramientas/ y los envoltorios de android/ e ios/—
+  · el diseño del juego: las reglas, el sistema de duelos, las divisiones, los
+    escalones de rareza, las tablas de probabilidad de los sobres y el equilibrio de
+    la economía, tal y como están descritos en docs/
+  · el arte propio: el logotipo P4P.CG, los marcos de las cartas, el arte de los
+    sobres y el diseño de la interfaz
+  · los documentos de docs/ y los originales de originales/
+
+
+QUÉ NO SE PUEDE HACER
+
+No se concede ninguna licencia de uso. Sin permiso escrito del autor, no está
+permitido copiar, distribuir, publicar, modificar, traducir, integrar en otra obra ni
+explotar comercialmente ninguna parte de lo anterior, ni entera ni troceada.
+
+Que el repositorio sea público, o que el juego viaje en texto plano dentro del APK,
+no es una renuncia a nada de esto. Se puede leer; no se puede usar.
+
+
+QUÉ NO ES DEL AUTOR, Y AQUÍ NO SE RECLAMA
+
+El plantel de peleadores —sus nombres, apodos, récords, rankings, divisiones y
+fotografías— pertenece a sus titulares: los propios deportistas, Zuffa LLC / UFC y
+quien corresponda en cada caso. El autor NO reclama ningún derecho sobre ese material.
+Está aquí para un desarrollo en alfa, sin publicidad ni cobro, y se retirará a
+petición de quien tenga derecho a pedirlo.
+
+Lo mismo con las banderas de los países y con cualquier otro material de terceros que
+haya podido entrar en el proyecto.
+
+Las tipografías de juego/fuentes/ —Antonio, Barlow, Saira Condensed y Teko— son de sus
+autores y se distribuyen bajo la SIL Open Font License 1.1, que es la que las gobierna
+y no ésta.
+
+
+CONTACTO
+
+Para pedir permiso, o para pedir que se retire algo: diegoares84@gmail.com
