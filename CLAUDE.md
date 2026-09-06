@@ -929,6 +929,17 @@ extensión a `.zip` y lo abre. Privado se esconde de los desconocidos de interne
 quien recibe el archivo. Y en tres años el repositorio lleva **0 forks, 0 estrellas y 0
 observadores**, con un nombre —`slotdiego`— que no dice ni MMA ni cartas.
 
+**DE MOMENTO SE QUEDA PÚBLICO, Y ES DECISIÓN SUYA:** *"yo creo que voy a dejarlo público
+un poco más y en estos días pagaré el GitHub pro y entonces lo haré privado"*. **No hay que
+insistirle ni volver a proponérselo**: está decidido y con fecha. Queda dicho que **Pro no
+hace falta** para hacerlo privado —con 6 minutos por empujón sale ~1.000 de los 2.000 del
+plan gratuito—; Pro sube el techo de **333 a 500 empujones al mes**, que es margen para un
+mes muy bruto, no un requisito.
+
+**Todo lo que se hizo vale igual público que privado**, así que no hay nada esperando a
+ese botón: el freno, el tope, la copia, el `LICENSE` y el `OFL.txt` ya están en marcha, y
+los dos arreglos de los flujos son mejores en los dos casos.
+
 Hecho: el **`LICENSE`** de la raíz, el **freno del servidor**, el **tope del estado**, la
 **copia de seguridad**, el **`OFL.txt`** de las tipografías y los **dos arreglos de los
 flujos** (ver abajo). **Lo que no puedo hacer yo**: cambiar la visibilidad del repositorio
