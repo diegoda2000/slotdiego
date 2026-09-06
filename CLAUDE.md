@@ -952,9 +952,11 @@ segunda condición.
 
 El motivo no es sólo la orden: **el runner de macOS se cobra a 10x**, así que sus 32
 segundos de trabajo se facturan como 10 minutos de los 15 que cuesta un empujón. Sacándolo,
-el empujón baja a **5**. Y **las notas de la publicación ya no prometen un `.ipa` que no
+el empujón baja a **6** —medido en la ejecución 125, no estimado: desplegar 3, publicar 1,
+iphone 0 y `apk.yml` 2—. Y **las notas de la publicación ya no prometen un `.ipa` que no
 está**: el párrafo de iPhone sólo se imprime si el archivo existe, comprobado ejecutando el
-guion de las dos maneras.
+guion de las dos maneras y después en la publicación de verdad, donde `apk-latest` salió
+diciendo *"Prototipo jugable para Android"* y con un solo archivo.
 
 **Y LOS ARTEFACTOS VIVEN UN DÍA, NO NOVENTA.** Sólo tienen que durar lo que tarda el
 trabajo `publicar` en recogerlos. A noventa días son 45 MB por empujón acumulándose, y en
@@ -968,7 +970,7 @@ Privado son 2.000 minutos al mes, y el ritmo real son ~165 empujones (100 ejecuc
 | | por empujón | al mes |
 |---|---|---|
 | como estaba | 15 min | ~2.500 — **no cabe** |
-| con iOS a mano | 5 min | ~830 |
+| con iOS a mano | **6 min, medido** | ~990 |
 
 **LO QUE LE TOCA A ÉL, y sin esto lo demás vale la mitad:**
 

@@ -223,8 +223,11 @@ jobs:
     #
     # No es sólo por orden: es que en un repositorio PRIVADO este trabajo es carísimo. El
     # runner de macOS se cobra a 10x, así que sus 32 segundos de trabajo se facturan como
-    # 10 minutos, de los 15 que cuesta un empujón entero. Sacándolo, el empujón baja a 5:
-    # ~830 minutos al mes de los 2.000 del plan gratuito, en vez de ~2.500, que no caben.
+    # 10 minutos, de los 15 que cuesta un empujón entero.
+    #
+    # MEDIDO con esto ya puesto (ejecución 125): desplegar 2m07s → 3, publicar 11s → 1,
+    # iphone SALTADO → 0, y apk.yml 1m22s → 2. SEIS minutos por empujón en vez de quince,
+    # o sea ~990 al mes de los 2.000 del plan gratuito en vez de ~2.500, que no caben.
     #
     # NO SE BORRA NADA: sigue entero y se lanza a mano cuando se quiera, desde
     # Actions → Servidor → Run workflow. Volver a tenerlo en cada empujón es quitar la
