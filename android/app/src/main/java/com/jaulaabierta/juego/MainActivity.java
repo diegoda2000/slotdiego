@@ -50,6 +50,13 @@ public class MainActivity extends Activity {
     protected void onCreate(Bundle estado) {
         super.onCreate(estado);
 
+        /* FEATURE_LEANBACK es lo que declara una Android TV, y es lo que hay que mirar:
+         * no vale por el tamaño de pantalla ni por si hay táctil, que una tablet grande
+         * daría lo mismo y no es una tele. Se resuelve aquí arriba porque de ello dependen
+         * los ajustes del WebView y la dirección que se carga. */
+        final boolean esTele = getPackageManager()
+                .hasSystemFeature(PackageManager.FEATURE_LEANBACK);
+
         final WebViewAssetLoader cargador = new WebViewAssetLoader.Builder()
                 .addPathHandler("/assets/", new WebViewAssetLoader.AssetsPathHandler(this))
                 .build();
@@ -83,6 +90,21 @@ public class MainActivity extends Activity {
         ajustes.setJavaScriptEnabled(true);
         ajustes.setDomStorageEnabled(true);   // sin esto no se guarda la colección
         ajustes.setDatabaseEnabled(true);
+
+        /* SÓLO EN TELE: que el WebView haga caso al ancho que pide la página.
+         *
+         * Sin `setUseWideViewPort`, un WebView ignora el `width=` del meta viewport y usa
+         * siempre el ancho del aparato. El juego pide 495 en una tele para que la maqueta
+         * tenga el sitio de un móvil —si no, no cabe y los textos se amontonan—, y estas
+         * dos líneas son las que dejan que eso ocurra: la primera hace caso al ancho
+         * pedido y la segunda encaja la página para que se vea entera en vez de dejarla a
+         * tamaño natural con desplazamiento a los lados.
+         *
+         * EN UN MÓVIL NO SE TOCAN, así que allí el WebView sigue exactamente igual. */
+        if (esTele) {
+            ajustes.setUseWideViewPort(true);
+            ajustes.setLoadWithOverviewMode(true);
+        }
 
         // Puente para el menú de compartir del sistema. navigator.share no existe en un
         // WebView normal, y pasar el código de sala al amigo es el paso del que depende
@@ -149,12 +171,6 @@ public class MainActivity extends Activity {
             return WindowInsetsCompat.CONSUMED;
         });
         ViewCompat.requestApplyInsets(raiz);
-
-        /* FEATURE_LEANBACK es lo que declara una Android TV, y es lo que hay que mirar:
-         * no vale por el tamaño de pantalla ni por si hay táctil, que una tablet grande
-         * daría lo mismo y no es una tele. */
-        final boolean esTele = getPackageManager()
-                .hasSystemFeature(PackageManager.FEATURE_LEANBACK);
 
         if (estado == null) web.loadUrl(esTele ? INICIO_TV : INICIO);
         else web.restoreState(estado);

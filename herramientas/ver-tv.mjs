@@ -58,17 +58,72 @@ const desborde = async (pag, v) => {
 
 /* ── 1. LA FORMA EN TODA VENTANA DE TELE ─────────────────────────────────── */
 fs.mkdirSync(SALIDA, { recursive: true });
+/* DOS ESCENARIOS, Y HAY QUE MEDIR LOS DOS.
+
+   EL BUENO: el juego le pide al WebView 495 px de ancho de CSS, y entonces el alto sube
+   en proporción hasta unos 879 y la maqueta tiene el sitio de un móvil. Ahí no se
+   desborda NADA.
+
+   EL DE REPUESTO: si un WebView no hace caso a ese ancho, se queda con los ~304x540 de
+   la ventana física. Ahí las pantallas de menú SÍ se desplazan —no cabe, y apretarlas
+   era lo que amontonaba los textos—, pero las de CARTAS siguen sin desplazarse ni un
+   píxel, que ésa es la regla que no se toca. */
 console.log('\n══ 1. LA VENTANA DE UNA TELE (720p, 1080p y 4K dan los mismos dp)');
-for (const [w, h] of [[304, 540], [360, 540], [420, 540]]) {
+const CARTAS = ['coleccion', 'plantilla', 'reciclaje'];
+for (const [etq, w, h, exigir] of [
+  ['el bueno: con el ancho de CSS que pide el juego', 495, 879, 'todas'],
+  ['de repuesto: si el WebView no hace caso al ancho', 304, 540, 'cartas'],
+  ['de repuesto, ventana más ancha', 420, 746, 'cartas'],
+]) {
   const [pag, fallos] = await abrir(w, h, true);
   const partes = [];
   for (const v of PANTALLAS) {
     const d = await desborde(pag, v);
     partes.push(`${v.slice(0, 5)} ${d}`);
-    if (d > 0) mal++;
-    if (w === 304) await pag.screenshot({ path: path.join(SALIDA, v + '.png') });
+    if (d > 0 && (exigir === 'todas' || CARTAS.includes(v))) mal++;
+    if (w === 495) await pag.screenshot({ path: path.join(SALIDA, v + '.png') });
   }
-  ok(!fallos.length, `${w}x${h}  ·  desbordes: ${partes.join(' · ')}`);
+  ok(!fallos.length, `${etq}  —  ${w}x${h}\n         desbordes: ${partes.join(' · ')}`);
+  await pag.close();
+}
+
+/* ── 1 bis. QUE NO SE PISE NADA ───────────────────────────────────────────
+   LA COMPROBACIÓN QUE FALTABA, y la encontró él: "inicio por ejemplo estoy viéndolas
+   unas apiladas en otras, y eso NO ME SIRVE".
+
+   Medir `scrollHeight - innerHeight` sólo caza que se desborde LA PÁGINA. Aquí el
+   contenido se salía DENTRO de su panel: las columnas de menú son flex con
+   `flex-basis:0`, que reparte por el factor de crecimiento y no por lo que ocupa cada
+   uno, y con `min-height:0` encogen por debajo de su propio texto sin quejarse. La
+   página no se desbordaba ni un píxel y las letras se montaban unas encima de otras.
+
+   Así que se mide lo que se ve: se cogen los elementos de texto SIN HIJOS y se miran de
+   dos en dos; si dos se solapan más de un tercio, se están pisando. En un móvil salen
+   cero en las cinco pantallas, así que cero es la vara. */
+console.log('\n══ 1 bis. QUE NO SE PISE NINGÚN TEXTO');
+for (const [etq, w, h, tv] of [['tele 495', 495, 879, true], ['tele 304', 304, 540, true], ['móvil', 390, 844, false]]) {
+  const [pag] = await abrir(w, h, tv);
+  for (const v of ['inicio', 'tienda', 'club', 'desafios', 'perfil']) {
+    await pag.evaluate(p => { ir(p); }, v);
+    await pag.waitForTimeout(240);
+    const pisan = await pag.evaluate(() => {
+      const hojas = [...document.querySelectorAll('#app *')].filter(e => {
+        const cs = getComputedStyle(e);
+        return cs.display !== 'none' && cs.visibility !== 'hidden'
+          && e.children.length === 0 && (e.textContent || '').trim().length > 1;
+      }).map(e => ({ e, r: e.getBoundingClientRect() })).filter(o => o.r.width > 2 && o.r.height > 2);
+      const mal = [];
+      for (let i = 0; i < hojas.length; i++) for (let j = i + 1; j < hojas.length; j++) {
+        const a = hojas[i].r, b = hojas[j].r;
+        const ov = Math.max(0, Math.min(a.right, b.right) - Math.max(a.left, b.left))
+                 * Math.max(0, Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top));
+        if (ov > Math.min(a.width * a.height, b.width * b.height) * 0.35)
+          mal.push(`«${(hojas[i].e.textContent || '').trim().slice(0, 16)}» sobre «${(hojas[j].e.textContent || '').trim().slice(0, 16)}»`);
+      }
+      return [...new Set(mal)];
+    });
+    ok(pisan.length === 0, `${etq} · ${v}: ningún texto encima de otro${pisan.length ? '  → ' + pisan.slice(0, 3).join(' · ') : ''}`);
+  }
   await pag.close();
 }
 

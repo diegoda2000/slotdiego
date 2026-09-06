@@ -5,7 +5,26 @@
      ANTES del primer fotograma o la primera pintada saldría con la maqueta de móvil.
      TODO lo que es de tele cuelga de esta clase. En un móvil, en el navegador y en el
      servidor no se pone nunca, así que allí no cambia absolutamente nada. -->
-<script>if(/[?&]tv=1(&|$)/.test(location.search))document.documentElement.classList.add('tv');</script>
+<script>if(/[?&]tv=1(&|$)/.test(location.search)){
+  document.documentElement.classList.add('tv');
+  /* Y SE LE PIDE AL WEBVIEW UNA PANTALLA MÁS ANCHA DE LA QUE HAY, que es lo que hace que
+     quepa todo. La ventana que deja una tele son unos 304x540 px de CSS, y estas
+     pantallas están medidas para los 598 de alto útil de un móvil: no caben, y apretarlas
+     era lo que amontonaba unos textos sobre otros.
+
+     Pidiendo 495 de ancho, el alto en píxeles de CSS sube en la misma proporción —hasta
+     unos 879— y la maqueta vuelve a tener el sitio de un móvil. Se dibuja al 61%, que en
+     una tele de cincuenta pulgadas se lee de sobra: lo que se pierde en tamaño se gana en
+     verlo entero. Medido: a 495 salen CERO desbordes y CERO textos pisándose en las ocho
+     pantallas; a 475 la Tienda todavía se pasaba 25 px.
+
+     SI EL WEBVIEW NO LO HACE CASO no se rompe nada: se queda en los 304 de siempre, que
+     con los arreglos de flex de más abajo también salen sin nada pisado —sólo con que
+     algunas pantallas se desplacen—. Por eso se puede poner sin haberlo podido probar en
+     el aparato. */
+  var mv=document.querySelector('meta[name=viewport]');
+  if(mv) mv.setAttribute('content','width=495, user-scalable=no, viewport-fit=cover');
+}</script>
 <style>
 /* ═══════════════════════════════════════════════════════════════
    PROTOTIPO JUGABLE — juego de cartas de MMA
@@ -1500,6 +1519,32 @@ textarea.campo{resize:vertical;line-height:1.35;font-family:var(--texto)}
    cualquier hoja. Sin esto la barra no se iba y el cuadro de texto seguía quedándose con
    el último palmo detrás. */
 .tv body.escribiendo #nav{display:none!important}
+
+/* ── EN LA TELE, NINGÚN BLOQUE POR DEBAJO DE SU CONTENIDO ─────────────────────
+   Esto es lo que arregla el "unas apiladas en otras" de Inicio.
+
+   Las columnas de menú son flex con `flex:1 1 0` y `min-height:0`, que es lo que las
+   hace repartirse la pantalla del móvil en la proporción medida del boceto. Pero
+   `flex-basis:0` reparte POR EL FACTOR DE CRECIMIENTO, no por lo que ocupa cada uno: si
+   el hueco es más pequeño que la suma de los contenidos —y en una tele lo es, 540 px
+   contra los 598 para los que está medido—, a un bloque le toca menos de lo que mide su
+   propio texto. Y con `min-height:0` no se queja: encoge, el texto se sale por abajo y
+   se planta encima del bloque siguiente.
+
+   Con `flex-basis:auto` cada uno arranca en lo que ocupa y sólo CRECE si sobra sitio; y
+   `min-height:auto` —que es el valor de fábrica de un elemento flex— le devuelve el
+   derecho a no encoger por debajo de su contenido. Lo que no cabe se desplaza, que con
+   la cruceta es lo natural.
+
+   En un móvil no existe ninguna de estas reglas: la proporción medida del boceto se
+   queda intacta. */
+.tv .pila > *,.tv .pila.v2 > .crece{flex-basis:auto;min-height:auto}
+.tv .blq,.tv .blq > .cuerpo{min-height:auto}
+/* Y lo mismo en los grupos de filas del Perfil, que van por su cuenta: reparten con
+   `flex:var(--n) 1 0` —el peso de cada grupo es cuántas filas tiene— y además llevan
+   `overflow:hidden`, así que apretados no sólo se pisaban: se cortaban. */
+.tv .lista.crece > .grupo,.tv .grupo > .fila{flex-basis:auto;min-height:auto}
+.tv .lista.crece > .fila:not(.emblema){max-height:none}
 </style>
 
 <div id="top">
@@ -2783,7 +2828,24 @@ function ajustarRejillas(){
       const r=e.getBoundingClientRect();
       if(r.height) abajo+=r.height+8;
     }
-    q.style.height=Math.max(180, innerHeight-arriba-abajo-12).toFixed(1)+'px';
+    /* EN LA TELE NO SE APRIETA POR DEBAJO DE LO QUE PIDE EL CONTENIDO, y esto lo cazó
+       él mirando Inicio: "estoy viéndolas unas apiladas en otras, y eso NO ME SIRVE".
+
+       Estas columnas están medidas para el alto útil de un móvil —unos 598 px—, y la
+       ventana que deja una tele son 540 EN TOTAL. Al fijarle a la pila un alto menor
+       que el suyo, sus filas —que llevan `flex:1 1 0`— se reparten lo que hay y cada
+       una se queda más baja que su propio texto: el texto se sale de su caja y acaba
+       encima del de la fila de al lado. Medido a 304x540: dos textos pisándose en
+       Inicio, cinco en Tienda y cuatro en el Perfil.
+
+       Y NO ES UN PROBLEMA QUE SE ARREGLE ENCOGIENDO LETRA: no cabe, y punto. Así que en
+       la tele la pila se queda con lo que pida el contenido y la pantalla se desplaza,
+       que con la cruceta es lo natural —el foco se arrastra solo a la vista—. Cuando el
+       hueco da de sobra, que es casi siempre, esto vale exactamente lo de antes.
+
+       EN UN MÓVIL NO CAMBIA NADA: `ESTV` es false y aquí sigue el `Math.max(180, …)`. */
+    const hueco=innerHeight-arriba-abajo-12;
+    q.style.height=(ESTV ? Math.max(q.scrollHeight, hueco) : Math.max(180, hueco)).toFixed(1)+'px';
   }
   for(const g of document.querySelectorAll('[data-fit]')){
     const [cols,filas]=g.dataset.fit.split(',').map(Number);

@@ -1118,6 +1118,39 @@ nosotros por código y el navegador no siempre lo cuenta como "visible". Y **no 
 el `border-radius`**: el contorno ya sigue la forma del elemento, y poniéndoselo la carta
 cambiaría de forma justo al enfocarla.
 
+**Y EN LA TELE SE LE PIDE UNA PANTALLA MÁS ANCHA DE LA QUE HAY, que es lo que hace que
+quepa todo.** Lo cazó él: *"inicio por ejemplo estoy viéndolas unas apiladas en otras, y
+eso NO ME SIRVE"*. Estas pantallas están medidas para los ~598 px de alto útil de un
+móvil, y la ventana de una tele son **540 en total**: no caben, y apretarlas era lo que
+montaba unos textos sobre otros.
+
+El arreglo es el meta viewport: en la tele el juego pide **`width=495`**, así que el alto
+en píxeles de CSS sube en proporción hasta unos **879** y la maqueta recupera el sitio de
+un móvil. Se dibuja al **61%**, que en cincuenta pulgadas se lee de sobra. Medido: a 495
+salen **cero desbordes y cero textos pisándose** en las ocho pantallas; a 475 la Tienda
+todavía se pasaba 25 px. Del lado de Android hacen falta **`setUseWideViewPort(true)`** y
+**`setLoadWithOverviewMode(true)`**, y sólo se ponen si es tele.
+
+**SI UN WEBVIEW NO HACE CASO A ESE ANCHO NO SE ROMPE NADA**, y por eso se pudo poner sin
+probarlo en el aparato: se queda en los ~304x540 de la ventana física, y ahí **también
+salen cero textos pisándose** —sólo que algunas pantallas de menú se desplazan—. Eso lo
+sujetan dos arreglos de flex que van aparte:
+
+- **`flex-basis:0` reparte por el factor de crecimiento, no por lo que ocupa cada uno.**
+  Con el hueco más pequeño que la suma de los contenidos, a un bloque le toca menos de lo
+  que mide su propio texto; y con `min-height:0` encoge sin quejarse, el texto se sale por
+  abajo y se planta encima del bloque siguiente. En tele van con **`flex-basis:auto` y
+  `min-height:auto`**: cada uno arranca en lo que ocupa y sólo crece si sobra sitio.
+- **Y la `.pila` no se aprieta por debajo de su contenido**: `Math.max(scrollHeight, hueco)`
+  en vez de `Math.max(180, hueco)`.
+
+**LA COMPROBACIÓN QUE FALTABA.** Medir `scrollHeight - innerHeight` sólo caza que se
+desborde LA PÁGINA, y aquí el contenido se salía DENTRO de su panel: la página no se
+desbordaba ni un píxel y las letras se montaban igual. Ahora `ver-tv.mjs` coge los
+elementos de texto **sin hijos** y los mira de dos en dos: si dos se solapan más de un
+tercio, se están pisando. En un móvil salen cero en las cinco pantallas, así que **cero es
+la vara**. Se mide en los dos escenarios —495 y 304— y en el móvil.
+
 **LA VENTANA DE UNA TELE NO ES LA DE UN MÓVIL, Y DA IGUAL LA RESOLUCIÓN.** Lo avisó él:
 *"estos aparatos no la abren a pantalla completa, sino que hacen lo que sería una pantalla
 de móvil en su tamaño"*. Y Android TV **normaliza a 960x540 dp en 720p, 1080p y 4K** —lo
@@ -1148,7 +1181,7 @@ pestañas**. Dos arreglos, los dos de tele:
 Medido con la ventana al **55%** (304x297) y al 67%: el campo se ve **entero** y sin nada
 encima, en las dos pantallas que escriben y también en el móvil.
 
-**La chuleta de los controles está en `docs/controles-tv.png`**, y está en el repositorio
+**Las dos chuletas están en `docs/controles-tv.png` y `docs/teclado-tv.png`**, y está en el repositorio
 a propósito: se la pasé por el chat y desde su aplicación no la podía descargar, así que
 desde ahí tiene una dirección normal de la que bajarla. Si cambian los controles, se
 rehace.
