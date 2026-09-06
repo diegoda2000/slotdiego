@@ -1148,6 +1148,11 @@ pestañas**. Dos arreglos, los dos de tele:
 Medido con la ventana al **55%** (304x297) y al 67%: el campo se ve **entero** y sin nada
 encima, en las dos pantallas que escriben y también en el móvil.
 
+**La chuleta de los controles está en `docs/controles-tv.png`**, y está en el repositorio
+a propósito: se la pasé por el chat y desde su aplicación no la podía descargar, así que
+desde ahí tiene una dirección normal de la que bajarla. Si cambian los controles, se
+rehace.
+
 **Cómo se mira.** `node herramientas/ver-tv.mjs [carpeta]` hace las cinco cosas: la forma
 en todo el rango de ventana de tele, cuánto desbordaría en apaisado —para que se vea por
 qué está descartado—, el teclado con el campo **enfocado de verdad**, la cruceta entera
