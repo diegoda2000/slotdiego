@@ -728,6 +728,37 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 
    overflow:hidden se queda: recorta el lienzo y la foto al rectángulo de la carta, que es
    lo que evita que un texto mal medido se salga. */
+/* ══ LAS TRES RAREZAS DE LA CARTA BASE ════════════════════════════════════
+   Común, rara y épica. Los tres marcos los dibujó él y los prepara
+   herramientas/preparar-marcos-rareza.py; aquí sólo se elige cuál va y de qué color se
+   pinta lo que escribe el juego encima.
+
+   EL COLOR NO SE ELIGE A OJO, SE MIDE. De cada marco se saca el metal de color —lo que
+   tiene luz y saturación, ni el negro del fondo ni el gris del acero—, se agrupa por tono
+   y se coge el dominante con su cuartil alto de luz. Sale esto:
+
+     común  35–45°  #e6d08f · claro #f4e2a1   (el oro que ya llevaba, confirmado)
+     raro  205–215° #2e85e9 · claro #59baf8
+     épico 265–285° #b669e6 · claro #dd8bf7
+
+   Y el CROMADO del nombre y los números se tiñe con lo mismo: en el reverso de cada carta
+   el P4P es plata con el color de su marco por dentro, así que el nombre hace igual. La
+   plata de los extremos no se toca —es lo que lo hace metal—; lo que se tiñe es el gris
+   del medio, que es donde el reflejo coge el color de alrededor. */
+.carta,.naipe{--c-marco:url(marcos/comun.webp);
+  --c-marco-rev:url(marcos/comun-reverso.webp);
+  --c-acc:#eabe4a; --c-acc-suave:#f7e59f; --c-filete:rgba(217,164,65,.55);
+  --c-encaje:1; --c-cromo:var(--cromo)}
+.carta.raro,.naipe.raro{--c-marco:url(marcos/raro.webp);
+  --c-marco-rev:url(marcos/raro-reverso.webp);
+  --c-acc:#2e85e9; --c-acc-suave:#7cc8fb; --c-filete:rgba(61,171,247,.55); --c-encaje:.896;
+  --c-cromo:linear-gradient(180deg,#ffffff 0%,#dde9f6 38%,#7fa8cf 55%,#eef5fc 74%,#a9c4de 100%)}
+.carta.epico,.naipe.epico{--c-marco:url(marcos/epico.webp);
+  --c-marco-rev:url(marcos/epico-reverso.webp);
+  --c-acc:#b669e6; --c-acc-suave:#dd8bf7; --c-filete:rgba(182,105,230,.55); --c-encaje:.873;
+  --c-cromo:linear-gradient(180deg,#ffffff 0%,#ece0f6 38%,#a68bc4 55%,#f5eefc 74%,#c9b2de 100%);
+  --c-cromo-num:linear-gradient(180deg,#fee0a8 0%,#fccc82 38%,#c68946 55%,#fed492 74%,#d9a45e 100%)}
+
 .carta{position:relative;aspect-ratio:620/877;
   font-family:var(--carta);
   overflow:hidden;
@@ -765,7 +796,36 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
    EL MARCO VA DEBAJO DE TODO, y no es un capricho: el PNG que pasó es OPACO, 0% de
    transparencia, así que puesto encima taparía la carta entera. Lo que hace de ventana es
    el hueco libre que deja su borde por dentro. */
-.carta .marco{position:absolute;inset:0;width:100%;height:100%;z-index:0;display:block}
+.carta .marco{position:absolute;inset:0;z-index:0;
+  background:var(--c-marco) center/100% 100% no-repeat}
+
+/* EL CONTENIDO SE ENCOGE HASTA EL HUECO DE SU MARCO, y no es cosmética: los tres marcos
+   NO dejan el mismo hueco. Medido con una rejilla de 5% encima de cada uno, igual que se
+   midió el boceto:
+
+     común  x  6,93–92,87%   y  4,23–95,64%     (85,94 de ancho · 91,41 de alto)
+     raro   x 11,50–88,50%   y  7,50–92,50%     (77,00 · 85,00)
+     épico  x 12,50–87,50%   y  9,00–91,00%     (75,00 · 82,00)
+
+   El del raro y el del épico son bastante más pequeños: su borde es mucho más grueso, y
+   con la maqueta del común tal cual el panel de stats colgaba por debajo del marco.
+
+   Se arregla encogiendo el bloque desde el centro —una sola escala, la misma en los dos
+   ejes, para que las letras no se estiren—: 77,00/85,94 = 0,896 en el raro y
+   75,00/85,94 = 0,873 en el épico. La maqueta NO SE TOCA: el común sigue a 1 y sale
+   exactamente igual que antes.
+
+   LA FOTO SE QUEDA FUERA DE ESTO, y lo pidió él: "haz que la foto tenga el mismo tamaño
+   que en las normales". Por eso `.hueco` es HERMANO de `.dentro` y no va dentro: el
+   peleador mide lo mismo en las tres rarezas y sólo se encoge lo que escribe el juego.
+
+   Y EL `z-index:2` DE AQUÍ NO SE PUEDE QUITAR. Un `transform` —aunque sea `scale(1)`—
+   convierte al elemento en CONTEXTO DE APILADO, así que el `z-index:2` de `.capa` deja de
+   contar contra la foto y pasa a contar sólo dentro de `.dentro`. Sin este, `.dentro` se
+   pintaba en orden de documento y la foto, con su `z-index:1`, se ponía por delante: el
+   nombre desaparecía y el apodo salía a medias. Pasaba en las TRES, común incluida. */
+.carta .dentro{position:absolute;inset:0;z-index:2;
+  transform:scale(var(--c-encaje,1));transform-origin:50% 50%}
 
 /* La ventana de la foto. La foto va a CUERPO ENTERO —él eligió la opción B—, apoyada abajo
    y con el pie fundido en negro para que no se vea el canto del recorte. */
@@ -788,9 +848,20 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
    solo se aplica donde se puede. */
 .carta .cromo{color:#eef0f3}
 @supports (-webkit-background-clip:text) or (background-clip:text){
-  .carta .cromo{background-image:var(--cromo);
+  .carta .cromo{background-image:var(--c-cromo);
     -webkit-background-clip:text;background-clip:text;color:transparent}
 }
+/* EN LA ÉPICA LOS NÚMEROS, EL PESO Y EL RANKING VAN EN ORO, y lo pidió él: "en la epica
+   pon los números de las stats en el dorado de la carta, el peso y el ranking en dorado".
+   El nombre y el apodo no: siguen en plata y en violeta.
+
+   El oro sale de medir el metal dorado del PROPIO marco —el de las esquinas y los filetes,
+   que es el 1,7% de la carta—: #c68946 en el medio, #fccc82 arriba y #fed492 en lo más
+   claro. En las otras dos rarezas la variable no está puesta y cae al cromado de siempre.
+
+   Va DESPUÉS del @supports a propósito: misma especificidad que `.carta .cromo`, así que
+   lo que decide es el orden. Puesta antes, no pintaría nada. */
+.carta .c-num,.carta .c-peso b,.carta .c-rk b{background-image:var(--c-cromo-num,var(--c-cromo))}
 
 /* El nombre. La inclinación del boceto son 9 grados, y se hace con skewX y no con
    `font-style:oblique 9deg` porque la forma con ángulo no existe en los WebView viejos.
@@ -809,7 +880,7 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
   display:flex;align-items:center;justify-content:center;
   gap:calc(var(--cw,620px)*.0247)}
 .carta .c-apodo b{font-weight:700;font-size:calc(var(--cw,620px)*.0455);line-height:1;
-  letter-spacing:.20em;color:var(--oro-suave);transform:skewX(-9deg);text-indent:.20em;
+  letter-spacing:.20em;color:var(--c-acc-suave);transform:skewX(-9deg);text-indent:.20em;
   white-space:nowrap}
 /* LOS DOS FILETES DEL APODO. El alto va en la misma unidad que el ancho —fracción del
    ancho de la carta— y NO en porcentaje: el porcentaje se resolvería contra el alto de
@@ -817,8 +888,8 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
    mismo fallo que tenía la bandera. */
 .carta .c-apodo i{display:block;flex:none;
   width:calc(var(--cw,620px)*.1044);height:calc(var(--cw,620px)*.0019);
-  background:linear-gradient(90deg,transparent,var(--oro));opacity:.85}
-.carta .c-apodo i:last-child{background:linear-gradient(90deg,var(--oro),transparent)}
+  background:linear-gradient(90deg,transparent,var(--c-acc));opacity:.85}
+.carta .c-apodo i:last-child{background:linear-gradient(90deg,var(--c-acc),transparent)}
 
 /* Bandera · división · ranking, con dos separadores verticales. */
 .carta .c-datos{position:absolute;left:0;right:0;top:78.4%;height:5.0%;
@@ -831,7 +902,7 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 .carta .c-datos > *{display:flex;align-items:center;justify-content:center;
   align-self:stretch}
 .carta .c-datos .cel{width:19%}
-.carta .c-datos .sep{width:.19%;height:74%;background:var(--oro);opacity:.75}
+.carta .c-datos .sep{width:.19%;height:74%;background:var(--c-acc);opacity:.75}
 /* La sombra de la bandera va CORTA. Con la del boceto —0 3px 10px— se derramaba 12 px por
    debajo de su fila, y como el panel de stats es translúcido, la mancha se veía a través
    de él. Lo cazó herramientas/medir-carta.mjs. */
@@ -843,16 +914,16 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
    etiquetas las escribe el juego —este marco no las trae dibujadas, al revés que el
    viejo—, así que STATS manda también aquí. */
 .carta .c-stats{position:absolute;left:7.0%;width:86%;top:84.0%;height:10.6%;
-  border:.19% solid rgba(217,164,65,.55);
+  border:.19% solid var(--c-filete);
   background:linear-gradient(180deg,rgba(0,0,0,.55),rgba(0,0,0,.30));
   clip-path:polygon(2.47% 0,97.53% 0,100% 15%,100% 85%,97.53% 100%,2.47% 100%,0 85%,0 15%);
   display:grid;grid-template-columns:repeat(6,1fr)}
 .carta .c-stats .st{position:relative;display:flex;flex-direction:column;
   align-items:center;justify-content:center;gap:5%}
 .carta .c-stats .st + .st::before{content:'';position:absolute;left:0;top:22%;bottom:22%;
-  width:1.4%;background:var(--oro);opacity:.55}
+  width:1.4%;background:var(--c-acc);opacity:.55}
 .carta .c-et{font-weight:700;font-size:calc(var(--cw,620px)*.0370);line-height:1;
-  letter-spacing:.10em;color:var(--oro-suave);transform:skewX(-9deg);text-indent:.10em}
+  letter-spacing:.10em;color:var(--c-acc-suave);transform:skewX(-9deg);text-indent:.10em}
 .carta .c-num{font-weight:800;font-size:calc(var(--cw,620px)*.0588);line-height:1;
   font-variant-numeric:tabular-nums}
 .carta .c-num.pen{color:#ff8a7a;background-image:none;-webkit-text-fill-color:#ff8a7a}
@@ -862,13 +933,13 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
    parte, así que caía suelto en una esquina del lienzo. */
 .carta .c-copias{position:absolute;right:9%;top:6%;z-index:3;
   font-weight:800;font-size:calc(var(--cw,620px)*.038);line-height:1;
-  color:#0b0c0d;background:linear-gradient(180deg,var(--oro-suave),var(--oro));
+  color:#0b0c0d;background:linear-gradient(180deg,var(--c-acc-suave),var(--c-acc));
   border-radius:.6em;padding:.25em .5em}
 
 /* Boca abajo: la del rival mientras no se resuelve el duelo. */
 /* Boca abajo: el REVERSO de verdad, que también lo pasó él. Antes era una trama de rayas
    dibujada con CSS porque no había reverso; ahora sí. */
-.carta.tapada{aspect-ratio:620/877;background:url(marcos/comun-reverso.webp) center/100% 100% no-repeat}
+.carta.tapada{aspect-ratio:620/877;background:var(--c-marco-rev) center/100% 100% no-repeat}
 .carta.oculta{display:grid;place-items:center;background:var(--bg2);
   border:1px dashed var(--line);color:var(--dim2);aspect-ratio:620/877;border-radius:9px}
 
@@ -991,7 +1062,9 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 .naipe.bocabajo .frente{opacity:0}
 .naipe.bocabajo .dorso{opacity:1}
 .naipe .cara > .recorte{position:absolute;inset:0;overflow:hidden}
-.naipe .cara.dorso > .recorte{background:url(marcos/comun-reverso.webp) center/100% 100% no-repeat}
+/* El dorso de la apertura lleva el reverso de SU rareza, no el común siempre: la
+   variable la pone la .carta que va dentro del naipe, y el dorso hereda de ella. */
+.naipe .cara.dorso > .recorte{background:var(--c-marco-rev,url(marcos/comun-reverso.webp)) center/100% 100% no-repeat}
 
 /* El reflejo que cruza la carta mientras gira: es lo que la hace parecer una lámina y no
    una imagen. Va sólo durante el giro, y el destello cae justo cuando pasa de canto. */
@@ -2205,7 +2278,14 @@ const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',
      dibujadas; éste no. */
 function cartaHTML(c,o={}){
   if(!c) return `<div class="carta oculta">?</div>`;
-  if(o.oculta) return `<div class="carta tapada"></div>`;
+  /* LA RAREZA DE LA CARTA. Hoy son todas comunes —la migración a tres cartas por
+     peleador espera al rediseño de la interfaz, y es la que cambia el identificador—, así
+     que `rarezaCarta` no existe todavía en ninguna carta guardada y el `||'comun'` es el
+     que manda. Los marcos de rara y épica ya están puestos: cuando la migración escriba
+     ese campo, la carta se pinta sola con el suyo. `o.rareza` es para verlas ahora. */
+  const rz=o.rareza||c.rarezaCarta||'comun', crz=rz!=='comun'?rz:'';
+  // Boca abajo lleva el reverso de SU rareza, que él pasó las dos caras de cada una.
+  if(o.oculta) return `<div class="carta tapada ${crz}"></div>`;
   const aj=o.ajuste||{};
 
   const st=STATS.map(s=>{
@@ -2217,12 +2297,13 @@ function cartaHTML(c,o={}){
   const bnd=banderaSrc(c.pais);
   const foto=fotoSrc(c.persona, c.division);
   const nCop=o.copias&&o.copias>1?`<div class="c-copias">×${o.copias}</div>`:'';
-  return `<div class="carta ${foto?'confoto':''} ${o.sel?'sel':''}" ${o.attr||''}>
+  return `<div class="carta ${crz} ${foto?'confoto':''} ${o.sel?'sel':''}" ${o.attr||''}>
    <div class="lienzo">
-    <img class="marco" src="marcos/comun.webp" alt="">
+    <div class="marco"></div>
     <div class="hueco">
       ${foto?`<img class="c-foto" src="${foto}" alt="" loading="lazy">`:''}
     </div>
+    <div class="dentro">
     <div class="capa">
       <div class="c-nom cromo" style="--nom:${tamNombre(c.nombre)}">${esc(c.nombre)}</div>
       ${c.apodo?`<div class="c-apodo"><i></i><b>${esc(c.apodo)}</b><i></i></div>`:''}
@@ -2235,6 +2316,7 @@ function cartaHTML(c,o={}){
       </div>
       <div class="c-stats">${st}</div>
       ${nCop}
+    </div>
     </div>
    </div>
   </div>`;
@@ -3521,7 +3603,10 @@ function vApertura(){
   const naipes=orden.map((it,i)=>{
     const c=PORID[it.cid];
     const k=a.items.indexOf(it);
-    return `<div class="naipe dentro bocabajo" data-k="${k}" style="--r:${i*55}ms">
+    // La rareza va también en el naipe: su dorso es HERMANO de la carta, no la
+    // contiene, así que no puede heredar de ella el reverso que le toca.
+    const rz=c&&c.rarezaCarta&&c.rarezaCarta!=='comun'?c.rarezaCarta:'';
+    return `<div class="naipe dentro bocabajo ${rz}" data-k="${k}" style="--r:${i*55}ms">
       <div class="gira">
         <div class="cara frente"><div class="recorte">${cartaHTML(c)}</div>
           <span class="lustre"></span></div>
