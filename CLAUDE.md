@@ -727,9 +727,56 @@ servidor ya desplegado**, sube, sale y vuelve a entrar. Esa última corre en Act
 de desplegar: **si falla, el APK no se publica**. Deja una cuenta de usar y tirar por
 despliegue —lleva la hora en el nombre—; el día que estorben, se les pone caducidad.
 
-**PENDIENTE Y DICHO: no hay freno de intentos ni de registros.** Un endpoint público de
-registro sin límite se puede llenar de cuentas basura, y uno de entrada sin límite se puede
-probar a lo bruto. Para la alfa vale; **antes de abrirlo a gente hay que ponerle un freno.**
+**EL FRENO YA ESTÁ PUESTO.** Era el pendiente de "no hay freno de intentos ni de
+registros" y se cerró al pedir él que se protegiera el proyecto. Los topes, en `FRENO`:
+**10 altas por IP y hora**, **20 intentos de entrar por IP y minuto**, **8 por CUENTA y
+cinco minutos**, **60 guardados en la nube por cuenta y minuto** y **5 sugerencias por IP
+y diez minutos**. Van holgados a propósito: con datos móviles mucha gente sale por la
+misma IP del operador, así que apretar echaría a jugadores de verdad. `/sala` se queda sin
+freno porque no toca almacén ni objeto: sólo devuelve seis letras al azar.
+
+**LOS CONTADORES VIVEN EN MEMORIA, NO EN EL ALMACÉN, y eso es lo importante.** Si cada
+intento fallido escribiera, **el freno SERÍA el ataque**: llamar mil veces a la entrada
+sale gratis al que llama y caro al que lo aguanta. Y no hace falta escribir, porque las
+cuentas viven en **un solo Durable Object global**: un `Map` en memoria ya es un contador
+global y consistente. Se pierde que si Cloudflare recicla el objeto los contadores vuelven
+a cero; para una alfa vale, nadie provoca ese reciclado a voluntad y detrás sigue el coste
+de PBKDF2 por intento.
+
+**POR IP Y POR CUENTA, y hacen falta las dos:** por IP en el registro, porque ahí todavía
+no hay cuenta a la que apuntar; por cuenta en la entrada, porque quien tiene muchas IPs las
+rota pero la cuenta que ataca es siempre la misma. **El contador de la entrada va por lo
+que se ha ESCRITO y no por la cuenta encontrada**: si dependiera de que exista, el 429
+sería otra forma de decir "esa cuenta está registrada". Y **acertar suelta el contador**,
+que equivocarse tres veces y luego entrar bien no debe dejarte la cuenta caliente.
+
+**La IP sale de `CF-Connecting-IP`, que la pone Cloudflare en el borde** y pisa lo que
+mande el cliente, así que no se puede falsear. Fuera de Cloudflare —las pruebas— no viene,
+y entonces el freno por IP no cuenta: no hay a quién contar.
+
+**Y EL ESTADO TIENE TOPE: 120 KB, Y NO ES NUESTRO.** Un valor de Durable Object no puede
+pasar de **128 KiB**. La prueba que decía "sube un estado de 5.000 cartas (194 KB)" pasaba
+**sobre una mentira**: el almacén de mentira no tiene límite, pero en Cloudflare aquello
+reventaba con un 500 y el jugador sólo veía que no se guardaba. Es el mismo cuento que las
+100.000 vueltas de PBKDF2 —lo que el entorno de pruebas no reproduce hay que dejarlo
+escrito—. Ahora se corta por debajo con un **413** que dice cuánto ocupa y que en el móvil
+sigue guardada. **Una copia de carta son 52 bytes, o sea que el techo son unas 2.300
+cartas**; hoy no lo alcanza nadie, y el día que alguien llegue la salida es partir el
+estado en varias claves, no subir el número: arriba no hay sitio.
+
+**HAY COPIA DE SEGURIDAD: `GET /cuenta/copia`.** Todo vive en un solo Durable Object, y si
+se pierde se van las colecciones de todo el mundo. Va detrás de su propio secreto igual que
+`/sugerencia/lista`: **sin `CLAVE_COPIA` puesta la ruta NO EXISTE** —404 y no 401, para no
+anunciarla—. Devuelve cuentas, correos y estados, y dice `completa:false` si alguna lista
+topa, porque una copia incompleta que se calla es lo peor que puede hacer una copia.
+**El archivo que sale lleva el hash y la sal de cada contraseña** —una copia que no puede
+restaurar no es una copia—, así que se guarda como la clave de firma. **Lo que NO lleva son
+las sesiones**: un token no caduca, y meterlos sería meter llaves vivas dentro; restaurar
+echando a todos de la sesión es molesto y no rompe nada.
+
+**El móvil no necesitó ni un cambio**, y está comprobado: `subirLuego()` sólo cierra sesión
+con un **401**, así que un 429 o un 413 los ignora y reintenta al siguiente guardado; y el
+botón manual y la pantalla de entrar ya pintan `r.error`, que es exactamente el texto nuevo.
 
 **LA APERTURA SE QUEDA LA PANTALLA ENTERA, Y TIENE FLECHA Y "ABRIR OTRO".** Lo cazó él:
 "no has metido el botón del feedback ni la flecha para ir para atrás al acabar la apertura
@@ -870,6 +917,84 @@ que se pidió; **está preguntado y sin contestar**.
 texto**, que sigue siendo el `color:var(--bg)` de `.btn` —casi negro—. Son 18 botones con la
 letra oscura sobre fondo oscuro. En las pantallas nuevas se esquiva usando `.btn` y
 `.btn gho`; **el arreglo de fondo es una línea y no se ha tocado porque no se pidió.**
+
+**PROTEGER EL PROYECTO: LO QUE SE HIZO Y LO QUE LE TOCA A ÉL.** Salió de un miedo suyo
+—*"tengo miedo a que me intenten robar el código"*— y de ahí *"todo lo que puedas modificar
+tú para protegerlo sin comprometer la integridad y el funcionamiento de la app hazlo"*.
+
+**El dato que ordena todo esto: el repositorio privado NO esconde el código.** No hay
+compilación, así que `juego.html`, `motor.js` y `roster.js` viajan **en texto plano dentro
+del APK**, con el arte y las 354 fotos. Quien tenga el APK tiene el juego: le cambia la
+extensión a `.zip` y lo abre. Privado se esconde de los desconocidos de internet, no de
+quien recibe el archivo. Y en tres años el repositorio lleva **0 forks, 0 estrellas y 0
+observadores**, con un nombre —`slotdiego`— que no dice ni MMA ni cartas.
+
+Hecho: el **`LICENSE`** de la raíz, el **freno del servidor**, el **tope del estado**, la
+**copia de seguridad**, el **`OFL.txt`** de las tipografías y los **dos arreglos de los
+flujos** (ver abajo). **Lo que no puedo hacer yo**: cambiar la visibilidad del repositorio
+es un ajuste de administración y no hay herramienta para eso —sólo puedo crear
+repositorios, no reconfigurar uno—; **ese botón lo pulsa él**. Igual que la verificación en
+dos pasos, el límite de gasto y la marca.
+
+**EL `LICENSE` DICE TRES COSAS, y la tercera es la que importa.** Lo suyo y reservado (el
+código, el diseño con sus tablas y su economía, el arte propio y los documentos); que
+poder leerlo no es permiso para usarlo; y **lo que NO es suyo, dicho por él mismo**: el
+plantel de la UFC —nombres, apodos, récords, rankings y las fotos— es de sus titulares y
+ahí no se reclama nada. **Reclamar por escrito algo que no puedes defender es peor que no
+decir nada**, porque te pone a defenderlo. Igual con las banderas y las tipografías.
+
+**iOS ESTÁ APARCADO, Y LO DIJO ÉL**: *"si la mayor limitación viene de parte de iOS,
+dejaremos el desarrollo de esa ahora a un lado y seguiremos solo con la versión de
+android"*. El trabajo `iphone` de `servidor.yml` **ya no corre en cada empujón**: lleva
+`github.event_name == 'workflow_dispatch'`, o sea que sigue entero y se lanza a mano desde
+Actions → Servidor → Run workflow. **No se ha borrado nada**; volver atrás es quitar esa
+segunda condición.
+
+El motivo no es sólo la orden: **el runner de macOS se cobra a 10x**, así que sus 32
+segundos de trabajo se facturan como 10 minutos de los 15 que cuesta un empujón. Sacándolo,
+el empujón baja a **5**. Y **las notas de la publicación ya no prometen un `.ipa` que no
+está**: el párrafo de iPhone sólo se imprime si el archivo existe, comprobado ejecutando el
+guion de las dos maneras.
+
+**Y LOS ARTEFACTOS VIVEN UN DÍA, NO NOVENTA.** Sólo tienen que durar lo que tarda el
+trabajo `publicar` en recogerlos. A noventa días son 45 MB por empujón acumulándose, y en
+privado el plan gratuito da 500 MB en total: se llenaría **a los once empujones** y a partir
+de ahí fallaría el propio paso que guarda el APK.
+
+**LAS CUENTAS DE HACERLO PRIVADO, medidas y no estimadas.** Público, Actions es ilimitado.
+Privado son 2.000 minutos al mes, y el ritmo real son ~165 empujones (100 ejecuciones de
+`servidor.yml` en 18 días):
+
+| | por empujón | al mes |
+|---|---|---|
+| como estaba | 15 min | ~2.500 — **no cabe** |
+| con iOS a mano | 5 min | ~830 |
+
+**LO QUE LE TOCA A ÉL, y sin esto lo demás vale la mitad:**
+
+1. **Guardar la clave de firma fuera de aquí.** Es lo primero de todo y no es un robo, es
+   perderla: sin `android/juego-release.keystore` y su contraseña, **ningún móvil aceptará
+   jamás una actualización** y reinstalar borra la colección. Comprobado que el archivo del
+   contenedor es el bueno (`SHA-256 715ea803…`, el mismo que imprime el flujo), y **el
+   contenedor se recicla**.
+2. **Verificación en dos pasos** en GitHub, Cloudflare y el Gmail —con aplicación de
+   códigos, no SMS—, y guardar los códigos de recuperación. Quien entre en su GitHub no
+   puede leer los secretos, pero **sí usarlos**: desplegar en su Cloudflare o firmar un APK
+   con su clave.
+3. **Poner `CLAVE_COPIA`** en los secretos del Worker, o la copia de seguridad no existe.
+4. **El límite de gasto** a cero en GitHub y comprobar que Cloudflare no tiene tarjeta.
+
+**Y EL RIESGO LEGAL DE VERDAD NO ES UN LADRÓN, ES LA UFC.** 354 fotos de ufc.com, nombres y
+rankings reales, y una aplicación que vende sobres. Alfa gratis entre conocidos: a nadie le
+importa. Play Store, dinero de verdad o público: **eso** es lo que se lo lleva por delante.
+Buena noticia estructural: **el motor no sabe quiénes son los peleadores** —lee `roster.js`,
+que genera `importar-roster.mjs`—, así que cambiar a peleadores inventados sería un trabajo
+de datos y fotos, no una reescritura.
+
+**Y lo que NO sirve, para no perder el tiempo:** ofuscar o minificar el JavaScript. Rompería
+la regla fundacional —un archivo, sin compilación, funcionando en cuatro sitios— y no para a
+nadie. El historial público, en cambio, **es la prueba de autoría**: commits fechados a su
+nombre desde 2023.
 
 **LO QUE ESTÁ EN MARCHA AHORA MISMO.**
 
@@ -1157,7 +1282,12 @@ fila y por debajo de cada una. Opaca, la pantalla se leía como una lista de caj
 no como un sitio. **`--arena` ya no se le aplica al `body`** —su segunda capa era un negro
 opaco que tapaba la foto entera—; sigue definida porque la usan otras pantallas.
 Tres tipografías: `--titulo` Saira Condensed, `--texto` Barlow, `--carta` Antonio (solo la
-carta). Van servidas desde `juego/fuentes/`, no desde Google. Oswald se fue con el marco
+carta). Van servidas desde `juego/fuentes/`, no desde Google. **Su licencia está en
+`juego/fuentes/OFL.txt`**: las cuatro familias —con Teko— son SIL Open Font License 1.1, y
+esa licencia **exige que el aviso viaje con los archivos**. Entra sola en el APK y en el
+`.ipa` porque los dos se llevan `fuentes/**` entero. El cuerpo de la licencia es byte a byte
+idéntico en las cuatro —comprobado—, así que va una vez con los cuatro avisos de copyright
+delante. Oswald se fue con el marco
 viejo: sus archivos ya no están.
 
 ### Sonido

@@ -198,12 +198,18 @@ jobs:
           BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
           "$BT/apksigner" verify --print-certs p4p-cg.apk | head -5
 
+      # UN DÍA Y NO NOVENTA, que es lo que vale por defecto. Este artefacto sólo tiene
+      # que vivir lo que tarde el trabajo `publicar` en recogerlo: un par de minutos.
+      # Guardado noventa días son 30 MB por empujón acumulándose, y en un repositorio
+      # privado el plan gratuito da 500 MB en total: se llenaría a los once empujones y
+      # a partir de ahí fallaría este mismo paso.
       - name: Guardar el APK para la publicación
         if: steps.comp.outputs.listo == 'si'
         uses: actions/upload-artifact@v4
         with:
           name: android
           path: p4p-cg.apk
+          retention-days: 1
 
   # ── iPhone ──────────────────────────────────────────────────────────────────
   # En un runner de macOS, que es el único sitio donde existe Xcode. Sale SIN FIRMAR:
@@ -212,7 +218,18 @@ jobs:
   # Los detalles están en ios/COMO-FUNCIONA.md.
   iphone:
     needs: desplegar
-    if: needs.desplegar.outputs.listo == 'si'
+    # iOS ESTÁ APARCADO POR ORDEN SUYA —"dejaremos el desarrollo de esa ahora a un lado y
+    # seguiremos solo con la versión de android"—, y esta condición es la que lo aparca.
+    #
+    # No es sólo por orden: es que en un repositorio PRIVADO este trabajo es carísimo. El
+    # runner de macOS se cobra a 10x, así que sus 32 segundos de trabajo se facturan como
+    # 10 minutos, de los 15 que cuesta un empujón entero. Sacándolo, el empujón baja a 5:
+    # ~830 minutos al mes de los 2.000 del plan gratuito, en vez de ~2.500, que no caben.
+    #
+    # NO SE BORRA NADA: sigue entero y se lanza a mano cuando se quiera, desde
+    # Actions → Servidor → Run workflow. Volver a tenerlo en cada empujón es quitar la
+    # segunda condición de esta línea.
+    if: needs.desplegar.outputs.listo == 'si' && github.event_name == 'workflow_dispatch'
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
@@ -262,6 +279,7 @@ jobs:
         with:
           name: ios
           path: ios/p4p-cg.ipa
+          retention-days: 1
 
   # ── La descarga, con las dos ────────────────────────────────────────────────
   publicar:
@@ -280,25 +298,32 @@ jobs:
         run: |
           mkdir -p salida
           cp descargas/android/p4p-cg.apk salida/p4p-cg.apk
-          # Si la de iPhone ha fallado no se cancela la publicación: el APK sigue
-          # sirviendo, y quedarse sin descarga por eso sería peor.
+          # EL .ipa PUEDE NO ESTAR, y ahora es lo normal: el trabajo de iPhone está
+          # aparcado y sólo corre lanzándolo a mano. Cuando esté, entra solo. Y si un día
+          # falla, tampoco se cancela la publicación: el APK sigue sirviendo, y quedarse
+          # sin descarga por eso sería peor.
+          # Las notas hablan de lo que HAY: prometer una descarga que no está es peor
+          # que no nombrarla.
           if [ -f descargas/ios/p4p-cg.ipa ]; then
             cp descargas/ios/p4p-cg.ipa salida/
-            IPA="listo"
-          else
-            IPA="no ha salido en esta vuelta"
           fi
           {
-            echo "Prototipo jugable, Android e iPhone."
+            if [ -f salida/p4p-cg.ipa ]; then
+              echo "Prototipo jugable, Android e iPhone."
+            else
+              echo "Prototipo jugable para Android."
+            fi
             echo ""
             echo "**Android** — descarga \`p4p-cg.apk\` y ábrelo. Nada que configurar."
+            if [ -f salida/p4p-cg.ipa ]; then
+              echo ""
+              echo "**iPhone** — \`p4p-cg.ipa\` va **sin firmar**: Apple no deja"
+              echo "instalarlo tocándolo. Se instala desde un ordenador con Sideloadly o AltStore,"
+              echo "firmándolo con tu propio Apple ID. Con cuenta gratuita caduca a los 7 días."
+              echo "Está explicado en \`ios/COMO-FUNCIONA.md\`."
+            fi
             echo ""
-            echo "**iPhone** — \`p4p-cg.ipa\` ($IPA) va **sin firmar**: Apple no deja"
-            echo "instalarlo tocándolo. Se instala desde un ordenador con Sideloadly o AltStore,"
-            echo "firmándolo con tu propio Apple ID. Con cuenta gratuita caduca a los 7 días."
-            echo "Está explicado en \`ios/COMO-FUNCIONA.md\`."
-            echo ""
-            echo "Las partidas en directo vienen ya configuradas en las dos."
+            echo "Las partidas en directo vienen ya configuradas."
             echo "Servidor: $URL"
           } > notas.md
           gh release delete apk-latest --yes --cleanup-tag || true
@@ -346,10 +371,12 @@ jobs:
             echo "versión nueva se instala encima como actualización y **el progreso se"
             echo "queda**. Si tenías instalada una de las de antes —que iban con la firma"
             echo "de depuración— hay que desinstalarla primero, y eso sí borra la colección."
-            echo ""
-            echo "**iPhone** — \`p4p-cg.ipa\` va **sin firmar**: se instala desde un"
-            echo "ordenador con Sideloadly o AltStore, firmándolo con tu propio Apple ID."
-            echo "Con cuenta gratuita caduca a los 7 días. Está en \`ios/COMO-FUNCIONA.md\`."
+            if [ -f salida/p4p-cg.ipa ]; then
+              echo ""
+              echo "**iPhone** — \`p4p-cg.ipa\` va **sin firmar**: se instala desde un"
+              echo "ordenador con Sideloadly o AltStore, firmándolo con tu propio Apple ID."
+              echo "Con cuenta gratuita caduca a los 7 días. Está en \`ios/COMO-FUNCIONA.md\`."
+            fi
             echo ""
             echo "Servidor de partidas en directo: $URL"
           } > version.md
@@ -368,6 +395,7 @@ jobs:
             echo ""
             echo "Servidor publicado en \`$URL\` y comprobado con dos clientes jugando una partida entera."
             echo ""
-            echo "Descargas en la publicación **apk-latest**: APK de Android e .ipa de iPhone,"
-            echo "las dos con la dirección del servidor ya dentro."
+            echo "Descarga en la publicación **apk-latest**: el APK de Android, con la"
+            echo "dirección del servidor ya dentro. El .ipa de iPhone está aparcado y sólo"
+            echo "sale lanzando este flujo a mano."
           } >> "$GITHUB_STEP_SUMMARY"

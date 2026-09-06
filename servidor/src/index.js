@@ -32,6 +32,15 @@ const CORS = {
 const json = (o, s = 200) =>
   new Response(JSON.stringify(o), { status: s, headers: { 'Content-Type': 'application/json', ...CORS } });
 
+/* La respuesta del freno. Lleva `Retry-After` porque es lo que dice el estándar y lo que
+   mira cualquier cliente que no sea el nuestro, y el texto va en cristiano porque este
+   error SÍ lo ve el jugador. */
+const espera = seg => seg >= 90 ? Math.round(seg / 60) + ' minutos'
+  : seg >= 60 ? 'un minuto' : seg + ' segundos';
+const demasiado = seg => new Response(
+  JSON.stringify({ error: 'Demasiados intentos seguidos. Vuelve a probar en ' + espera(seg) + '.' }),
+  { status: 429, headers: { 'Content-Type': 'application/json', 'Retry-After': String(seg), ...CORS } });
+
 export default {
   async fetch(req, env) {
     const url = new URL(req.url);
@@ -129,19 +138,99 @@ function revisarAlta({ usuario, correo, clave }) {
   return null;
 }
 
+/* ── EL FRENO ─────────────────────────────────────────────────────────────────
+   Hasta aquí el registro y la entrada eran públicos y SIN LÍMITE NINGUNO: se podían
+   crear cuentas basura sin parar y probar contraseñas a lo bruto todas las veces que se
+   quisiera. PBKDF2 con 100.000 vueltas ya hace que cada intento le cueste al que ataca
+   un cálculo de verdad, pero "lento" no es "imposible": esto es lo que lo cierra.
+
+   LOS CONTADORES VIVEN EN MEMORIA Y NO EN EL ALMACÉN, y no es pereza:
+
+     · Si cada intento fallido escribiera en el almacén, EL FRENO SERÍA EL ATAQUE:
+       llamar mil veces a la entrada le saldría gratis al que llama y caro al que lo
+       aguanta. Un freno que cuesta más que lo que frena no sirve.
+     · Y no hace falta escribir: las cuentas viven en UN SOLO Durable Object global, así
+       que un Map en memoria YA ES un contador global y consistente. Es la ventaja de
+       cómo está montado esto.
+
+   Lo que se pierde: si Cloudflare recicla el objeto por llevar un rato parado, los
+   contadores vuelven a cero. Para una alfa vale —nadie puede provocar ese reciclado a
+   voluntad, y detrás sigue el coste de PBKDF2 por intento—. El día que importe, el
+   contador se guarda de verdad.
+
+   POR IP Y POR CUENTA, Y HACEN FALTA LAS DOS:
+     · por IP en el registro, porque ahí todavía no hay cuenta a la que apuntar
+     · por CUENTA en la entrada, porque quien tiene muchas IPs las va rotando, pero la
+       cuenta que ataca es siempre la misma
+
+   Y LOS TOPES VAN HOLGADOS A PROPÓSITO. Con datos móviles, un montón de gente sale por
+   la misma IP del operador, así que un tope apretado echaría a jugadores de verdad. Esto
+   es un freno contra el abuso a lo bruto, no un portero.
+
+   `/sala` se queda sin freno y es a conciencia: no toca el almacén ni ningún objeto,
+   sólo devuelve seis letras al azar. Ponerle contador costaría montar estado donde hoy
+   no hay ninguno, para proteger lo que no cuesta nada.                              */
+const FRENO = {
+  altas:       [10, 60 * 60 * 1000],  // registros, por IP y hora
+  entradasIp:  [20,      60 * 1000],  // intentos de entrar, por IP y minuto
+  entradasCu:  [ 8,  5 * 60 * 1000],  // intentos de entrar, por CUENTA y cinco minutos
+  subidas:     [60,      60 * 1000],  // guardados en la nube, por cuenta y minuto
+  sugerencias: [ 5, 10 * 60 * 1000],  // sugerencias, por IP y diez minutos
+};
+
+/* EL TOPE DEL ESTADO NO ES NUESTRO, ES DE CLOUDFLARE: un valor de Durable Object no
+   puede pasar de 128 KiB. Sin comprobarlo, una colección enorme fallaba con un 500 sin
+   explicación y el jugador sólo veía que no se guardaba. Cortando por debajo, se entera.
+
+   Para hacerse una idea: una copia de carta ocupa 52 bytes, así que 120 KB son unas
+   2.300 cartas. Hoy no lo alcanza nadie ni de lejos. El día que alguien llegue, la
+   salida es partir el estado en varias claves, no subir este número —arriba no hay
+   sitio—. */
+const TOPE_ESTADO = 120 * 1024;
+
 export class Cuentas {
-  constructor(ctx, env) { this.ctx = ctx; this.env = env || {}; }
+  constructor(ctx, env) {
+    this.ctx = ctx; this.env = env || {};
+    this.frenos = new Map();   // clave -> {n, hasta}. Ver EL FRENO, aquí arriba.
+  }
+
+  /* 0 si pasa; los segundos que le quedan de castigo si se ha pasado de la raya. */
+  frenar(clave, [tope, ventana]) {
+    const ahora = Date.now();
+    // Barrido perezoso: sin esto, quien rote IPs hace crecer el mapa sin fin.
+    if (this.frenos.size > 5000)
+      for (const [k, v] of this.frenos) if (ahora >= v.hasta) this.frenos.delete(k);
+    const v = this.frenos.get(clave);
+    if (!v || ahora >= v.hasta) { this.frenos.set(clave, { n: 1, hasta: ahora + ventana }); return 0; }
+    v.n++;
+    return v.n > tope ? Math.max(1, Math.ceil((v.hasta - ahora) / 1000)) : 0;
+  }
+  soltarFreno(clave) { this.frenos.delete(clave); }
 
   async fetch(req) {
     const url = new URL(req.url);
     const ruta = url.pathname.replace(/\/+$/, '');
+    /* LA IP LA PONE CLOUDFLARE EN EL BORDE y pisa lo que mande el cliente, así que no se
+       puede falsear desde fuera. Fuera de Cloudflare —las pruebas— no viene, y entonces
+       el freno por IP no cuenta: no hay a quién contar. El de por cuenta sigue igual. */
+    const ip = req.headers.get('CF-Connecting-IP') || '';
     try {
-      if (ruta === '/cuenta/registro' && req.method === 'POST') return await this.registro(req);
-      if (ruta === '/cuenta/entrar'   && req.method === 'POST') return await this.entrar(req);
+      if (ruta === '/cuenta/registro' && req.method === 'POST') {
+        const q = ip && this.frenar('alta:' + ip, FRENO.altas);
+        return q ? demasiado(q) : await this.registro(req);
+      }
+      if (ruta === '/cuenta/entrar' && req.method === 'POST') {
+        const q = ip && this.frenar('entrar:' + ip, FRENO.entradasIp);
+        return q ? demasiado(q) : await this.entrar(req);
+      }
       if (ruta === '/cuenta/subir'    && req.method === 'POST') return await this.subir(req);
       if (ruta === '/cuenta/bajar'    && req.method === 'GET')  return await this.bajar(req);
-      if (ruta === '/sugerencia'       && req.method === 'POST') return await this.sugerencia(req);
+      if (ruta === '/sugerencia' && req.method === 'POST') {
+        const q = ip && this.frenar('sug:' + ip, FRENO.sugerencias);
+        return q ? demasiado(q) : await this.sugerencia(req);
+      }
       if (ruta === '/sugerencia/lista' && req.method === 'GET')  return await this.sugerencias(req);
+      if (ruta === '/cuenta/copia'     && req.method === 'GET')  return await this.copia(req);
       return json({ error: 'ruta desconocida' }, 404);
     } catch (e) {
       return json({ error: String(e && e.message || e) }, 500);
@@ -183,6 +272,21 @@ export class Cuentas {
   async entrar(req) {
     const d = await req.json().catch(() => ({}));
     const quien = String(d.quien || '').trim();
+
+    /* EL FRENO POR CUENTA, que es el que de verdad para un ataque de contraseñas: quien
+       tiene muchas IPs las rota, pero la cuenta a la que apunta es siempre la misma.
+
+       VA LO PRIMERO, ANTES DE TOCAR EL ALMACÉN. Un intento frenado tiene que costar CERO;
+       si primero buscara la cuenta, cada llamada bloqueada seguiría pagando dos lecturas
+       y el freno sólo estaría a medias.
+
+       Y va por lo que se ha ESCRITO —en minúsculas—, no por la cuenta encontrada: si
+       contar dependiera de que la cuenta exista, el 429 sería otra forma de decir "esa
+       cuenta está registrada", que es justo lo que evita el error único de más abajo. */
+    const jaula = 'cu:' + quien.toLowerCase();
+    const q = this.frenar(jaula, FRENO.entradasCu);
+    if (q) return demasiado(q);
+
     // Se puede entrar con el nombre o con el correo: quien vuelve al mes no se acuerda
     // de con cuál se registró, y obligarle a acertar no protege nada.
     let clave = this.claveUsuario(quien);
@@ -197,6 +301,9 @@ export class Cuentas {
     if (!cuenta) { await amasar(String(d.clave || ''), azarHex(16)); return malo(); }
     if (!igualExacto(await amasar(String(d.clave || ''), cuenta.sal), cuenta.hash)) return malo();
 
+    // Al acertar se borra el contador: quien se equivoca tres veces y luego entra bien no
+    // tiene por qué quedarse con la cuenta caliente.
+    this.soltarFreno(jaula);
     const token = azarHex(32);
     const uid = String(cuenta.usuario).toLowerCase();
     await this.ctx.storage.put('sesion:' + token, uid);
@@ -214,8 +321,18 @@ export class Cuentas {
   async subir(req) {
     const uid = await this.quienEs(req);
     if (!uid) return json({ error: 'sesión no válida' }, 401);
+    /* Por CUENTA y no por IP: el móvil ya espera cuatro segundos de calma antes de
+       subir, así que sesenta al minuto es muchísimo margen para uno jugando. Por IP
+       habría echado a gente real —varios jugadores del mismo operador comparten IP— sin
+       ganar nada, porque para llegar aquí ya hace falta una sesión válida. */
+    const q = this.frenar('subir:' + uid, FRENO.subidas);
+    if (q) return demasiado(q);
     const d = await req.json().catch(() => ({}));
     if (!d || !d.estado) return json({ error: 'no viene estado' }, 400);
+    const bytes = JSON.stringify(d.estado).length;
+    if (bytes > TOPE_ESTADO)
+      return json({ error: 'La partida ocupa demasiado para guardarla en la nube ('
+        + Math.round(bytes / 1024) + ' KB). Sigue guardada en este móvil.' }, 413);
     await this.ctx.storage.put('estado:' + uid, d.estado);
     return json({ ok: true });
   }
@@ -296,6 +413,44 @@ export class Cuentas {
       return json({ error: 'no' }, 401);
     const mapa = await this.ctx.storage.list({ prefix: 'sugerencia:', reverse: true, limit: 200 });
     return json({ sugerencias: [...mapa.values()] });
+  }
+
+  /* ── LA COPIA DE SEGURIDAD ────────────────────────────────────────────────────
+     Todo esto vive en UN SOLO Durable Object. Si se pierde o se corrompe, se van las
+     colecciones de todo el mundo y no hay de dónde sacarlas. Esta ruta las saca.
+
+     VA DETRÁS DE SU PROPIO SECRETO, igual que /sugerencia/lista: sin `CLAVE_COPIA`
+     puesta la ruta NO EXISTE —404 y no 401—, para no ir anunciando que está ahí. Y la
+     clave se compara en tiempo constante, como todas.
+
+     OJO CON EL ARCHIVO QUE SALE. Lleva el hash y la sal de cada contraseña, porque una
+     copia que no puede restaurar no es una copia: sin ellos, recuperar significaría que
+     todo el mundo pierde su contraseña. Guárdalo como la clave de firma.
+
+     LO QUE NO LLEVA SON LAS SESIONES ABIERTAS, y es a propósito: un token de sesión no
+     caduca, así que meterlos en el archivo sería meter llaves vivas dentro. Restaurar
+     echando a todo el mundo de la sesión es molesto y no rompe nada: se vuelve a entrar.
+  */
+  async copia(req) {
+    const clave = this.env.CLAVE_COPIA;
+    if (!clave) return json({ error: 'ruta desconocida' }, 404);
+    const cab = req.headers.get('Authorization') || '';
+    if (!igualExacto(cab.startsWith('Bearer ') ? cab.slice(7) : '', clave))
+      return json({ error: 'no' }, 401);
+
+    const TOPE = 2000;
+    const cuentas = await this.ctx.storage.list({ prefix: 'usuario:', limit: TOPE });
+    const estados = await this.ctx.storage.list({ prefix: 'estado:',  limit: TOPE });
+    const correos = await this.ctx.storage.list({ prefix: 'correo:',  limit: TOPE });
+    return json({
+      hecha: new Date().toISOString(),
+      /* Si alguna lista topa, la copia estaría INCOMPLETA y callárselo sería lo peor que
+         puede hacer una copia de seguridad. Se dice. */
+      completa: cuentas.size < TOPE && estados.size < TOPE && correos.size < TOPE,
+      cuentas: Object.fromEntries(cuentas),
+      correos: Object.fromEntries(correos),
+      estados: Object.fromEntries(estados),
+    });
   }
 }
 

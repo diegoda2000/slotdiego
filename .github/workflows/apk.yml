@@ -60,3 +60,6 @@ jobs:
           name: p4p-cg-apk
           path: salida/p4p-cg.apk
           if-no-files-found: error
+          # Un día, no noventa: esto es una comprobación de que sigue construyendo, no un
+          # archivo que haya que conservar. Ver el porqué en servidor.yml.
+          retention-days: 1
