@@ -69,16 +69,25 @@ export const SOBRES = {
   /* De aquí para arriba SÍ suben los tramos, y tiene que ser así: una épica es siempre un
      campeón o top 5, así que meter épicas sube el ranking del sobre por definición. Se ha
      dejado subir poco en el raro y más en cada escalón. */
+  /* LA RARA BAJA EN LOS DOS, y lo pidió él mirando cuántas trae un sobre: "que haya
+     probabilidad de que te toque una o dos raras, pero que es muy difícil o imposible
+     prácticamente que todas sean raras". El épico traía TRES O MÁS el 60% de las veces.
+
+     Y AL BAJARLA SE COMPENSA EN LA CARTA COMÚN, porque si no el sobre pierde potencia: la
+     rara es la que trae rankeados, así que quitando raras baja también el ranking. Los
+     números de la columna común están resueltos para que el reparto de RANKING del sobre
+     salga igual que antes de bajar la rara. Lo que cambia es cuántos marcos azules ves,
+     no lo bueno que es el sobre. */
   raro: { n: 'Sobre raro', coste: 1200, cartas: 6,
-    rarezas: { comun: 84.00, rara: 15.65, epica: 0.35 },
+    rarezas: { comun: 88.30, rara: 11.40, epica: 0.30 },
     tramos: {
-      comun: { sinrank: 81.000, top1215: 15.500, top611: 3.300, corona: 0.200 },
+      comun: { sinrank: 79.728, top1215: 16.173, top611: 3.757, corona: 0.342 },
       rara:  { sinrank: 55.000, top1215: 30.000, top611: 13.000, corona: 2.000 },
     } },
   epico: { n: 'Sobre épico', coste: 3800, cartas: 8,
-    rarezas: { comun: 64.0, rara: 34.0, epica: 2.0 },
+    rarezas: { comun: 79.20, rara: 19.30, epica: 1.50 },
     tramos: {
-      comun: { sinrank: 60.000, top1215: 28.000, top611: 11.000, corona: 1.000 },
+      comun: { sinrank: 53.386, top1215: 29.629, top611: 14.407, corona: 2.578 },
       rara:  { sinrank: 26.000, top1215: 38.000, top611: 30.000, corona: 6.000 },
     } },
   legendario: { n: 'Sobre legendario', coste: 7000, cartas: 10, pronto: true,
@@ -146,9 +155,11 @@ const guardado = {};
 for (const [k, T] of Object.entries(SOBRES)) {
   const rz = {}, tr = {}; let n = 0;
   const porSobre = { rara: 0, epica: 0, rank: 0, corona: 0, t1215: 0, t611: 0 };
+  const cuenta = new Array(T.cartas + 1).fill(0);
   for (let i = 0; i < N; i++) {
     const s = abrir(T);
     for (const c of s) { rz[c.rz] = (rz[c.rz] || 0) + 1; tr[c.tr] = (tr[c.tr] || 0) + 1; n++; }
+    cuenta[s.filter(c => c.rz !== 'comun').length]++;
     if (s.some(c => c.rz !== 'comun')) porSobre.rara++;
     if (s.some(c => c.rz === 'epica')) porSobre.epica++;
     if (s.some(c => c.tr !== 'sinrank')) porSobre.rank++;
@@ -156,7 +167,7 @@ for (const [k, T] of Object.entries(SOBRES)) {
     if (s.some(c => c.tr === 'top1215')) porSobre.t1215++;
     if (s.some(c => c.tr === 'top611')) porSobre.t611++;
   }
-  guardado[k] = { porSobre, N, tramos: tr, n };
+  guardado[k] = { porSobre, N, tramos: tr, n, cuenta };
   console.log('  ' + k.padEnd(12)
     + RAREZAS.map(r => pc((rz[r] || 0) / n).padStart(7)).join(' ') + '  │ '
     + TRAMOS.map(t => pc((tr[t] || 0) / n).padStart(7)).join(' '));
@@ -168,6 +179,21 @@ for (const k of Object.keys(SOBRES)) {
   const h = HOY[k], a = guardado[k].tramos, n = guardado[k].n;
   console.log('  ' + k.padEnd(12) + TRAMOS.map(t =>
     (h[t].toFixed(h[t] < 0.1 ? 3 : 1) + ' → ' + (100 * (a[t] || 0) / n).toFixed(h[t] < 0.1 ? 3 : 1)).padStart(16)).join(' '));
+}
+
+console.log('\n══ CUÁNTAS RARAS O MEJORES TRAE UN SOBRE ═══════════════════════════════════════\n');
+console.log('  Es lo que él pidió mirar: "que haya probabilidad de que te toque una o dos');
+console.log('  raras, pero que es muy difícil o imposible prácticamente que todas sean raras".\n');
+console.log('  sobre         ninguna      1      2      3      4     5+   │  TODAS      media');
+for (const k of Object.keys(SOBRES)) {
+  const c = guardado[k].cuenta, T = SOBRES[k];
+  const p = i => (100 * (c[i] || 0) / N).toFixed(1).padStart(6) + '%';
+  const media = c.reduce((a, n, i) => a + n * i, 0) / N;
+  const todas = 100 * (c[T.cartas] || 0) / N;
+  console.log('  ' + k.padEnd(12) + p(0) + p(1) + p(2) + p(3) + p(4)
+    + (100 * c.slice(5).reduce((a, b) => a + b, 0) / N).toFixed(1).padStart(6) + '%'
+    + '  │ ' + (todas < 0.001 ? '   nunca' : todas.toFixed(3) + '%').padStart(9)
+    + '   ' + media.toFixed(2));
 }
 
 console.log('\n══ POR SOBRE ENTERO (al menos una) ═════════════════════════════════════════════\n');
