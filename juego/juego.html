@@ -766,7 +766,78 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
   overflow:hidden;
   cursor:pointer;color:#fff;font-size:calc(var(--cw,110px)*.034);line-height:1.1;
   transition:transform .15s,filter .15s}
-.carta.sel{outline:2px solid var(--acc);outline-offset:1px}
+/* EL TIC DE "ELEGIDA": círculo de oro y check negro, arriba a la derecha de la carta.
+   Sustituye al reborde que había alrededor y lo pidió él, "tanto para SBC como para
+   reciclaje", que es por lo que está escrito UNA vez y las dos pantallas lo usan.
+
+   El reborde tenía un problema de fondo: la carta ya lleva marco propio —y desde que hay
+   tres rarezas, tres marcos distintos con su color—, así que un filete de oro pegado por
+   fuera se confundía con el metal de la carta y en la épica ni se veía. Un tic no se
+   confunde con nada.
+
+   Va en el ::after de `.carta` y NO dentro de `.lienzo`: el lienzo se maqueta a 620 px y se
+   encoge con transform, así que un tic ahí dentro encogería con él. Aquí mide siempre el
+   22% del ancho de la carta, se vea a 82 px o a 340.
+
+   El check va como imagen de fondo —un SVG dentro del propio CSS— y no como otro elemento:
+   `.carta` sólo tiene un ::after libre y con dos capas de fondo cabe todo. */
+/* LA MARCA DE "ELEGIDA": círculo de oro abajo a la derecha, con un check negro dentro o,
+   en el reciclaje, con cuántas has elegido. Lo pidió así: "el círculo de ese tono dorado y
+   el propio check en negro ... en lugar de ese reborde alrededor", "en la esquina derecha
+   inferior, el círculo más pequeño, y ya sea el número o el tic SIEMPRE EN EL CENTRO DEL
+   CÍRCULO", y "tanto para SBC como para reciclaje".
+
+   El reborde tenía un problema de fondo: la carta ya lleva marco propio —y desde que hay
+   tres rarezas, tres marcos distintos con su color—, así que un filete de oro pegado por
+   fuera se confundía con el metal de la carta y en la épica ni se veía. Un tic no se
+   confunde con nada.
+
+   VA EN EL ::after DE `.carta`, no en un hermano, y eso es lo que lo centra bien. La chapa
+   estuvo colgando de `.venta-cel` —hermana de la carta— y desde allí no se ve `--k`, la
+   escala que `medirCartas()` deja en cada carta: había que dar el tamaño de letra en `vw`,
+   y con la letra a 11,7 px en un círculo de 15,7 el dígito se salía de sitio. Desde dentro
+   de la carta el tamaño sale de `--k` y siempre es la misma fracción del círculo, se vea la
+   carta a 87 px en el álbum o a 340 en un cartel.
+
+   El número se pinta con un contador y no con texto, que un pseudo-elemento no puede tener
+   hijos: `counter-reset` lo carga desde `--n` y `content:counter()` lo escribe. */
+.carta{--tic:18%}
+.carta.sel::after{content:'';position:absolute;bottom:4%;right:4%;z-index:5;
+  width:var(--tic);aspect-ratio:1;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--titulo);font-weight:800;line-height:1;
+  font-size:calc(620px * var(--k,.15) * .105);
+  color:var(--bg);
+  background:
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M5 12.6l4.6 4.6L19 7.8' fill='none' stroke='%23060707' stroke-width='3.6' stroke-linecap='round' stroke-linejoin='round'/></svg>")
+      center center/58% 58% no-repeat,
+    linear-gradient(180deg,var(--oro-suave),var(--oro));
+  box-shadow:0 1px 4px rgba(0,0,0,.65)}
+/* Con número: se apaga el check y se escribe la cifra en el mismo círculo.
+
+   EL `padding-top` NO ES UN AJUSTE A OJO, ESTÁ MEDIDO, y es el mismo problema de siempre en
+   este proyecto: **centrar con flex centra la CAJA DE LÍNEA, no la letra**, igual que pasó
+   con los textos de la carta y su desplazamiento de 0,055 em.
+
+   Cómo se midió: los mismos círculos con el mismo CSS pero a 300 px, con la letra a 175
+   —la misma proporción que en el juego, 0,105/0,18—, sobre blanco y aislados, y contando
+   dónde cae la tinta de cada dígito. Sale **15,0 px por encima del centro del círculo, y
+   exactamente el mismo número en el 1, el 2 y el 3**: es de la fuente, no del dígito ni del
+   tamaño. Eso son **0,0856 em**. A lo ancho el desvío es +0,005 em, o sea nada: medio
+   píxel a tamaño de juego.
+
+   Se corrige con relleno arriba y no con `transform`, que movería el círculo entero. Con
+   `box-sizing:border-box` la caja de contenido se encoge por arriba, así que lo centrado
+   baja la MITAD del relleno: **0,171 em de relleno = 0,0856 em de bajada**. El círculo no
+   cambia de tamaño ni deja de ser redondo.
+
+   Y NO SE TOCA SIN VOLVER A MEDIR. La primera vez salió 0,102 em midiendo sobre la carta de
+   verdad a 8x, y era ruido del antialias: el disco se detectaba 15,75 x 15,12 en vez de
+   15,66 cuadrado, y ese medio píxel de error ES del tamaño de lo que se estaba midiendo. */
+.carta.sel.conteo{counter-reset:elegidas var(--n,1)}
+.carta.sel.conteo::after{content:counter(elegidas);background-image:none;
+  background:linear-gradient(180deg,var(--oro-suave),var(--oro));
+  box-sizing:border-box;padding-top:.171em}
 .carta:active{transform:scale(.985)}
 
 /* EL LIENZO. La carta se maqueta SIEMPRE a 620 px de ancho —el del dibujo del marco— y
@@ -1258,8 +1329,12 @@ th{color:var(--dim2);font-size:11px;text-transform:uppercase;letter-spacing:.04e
 /* La cuenta dice también SI YA CUMPLE, poniéndose verde. Estaba en una línea aparte
    —"Aún no cumple" / "Requisitos cumplidos"— y esa línea partía la descripción del reto en
    dos, o sea que se comía justo lo que se acababa de ahorrar quitando el panel. */
-.pcab .sbc-cuenta{margin-left:auto;white-space:nowrap;font-family:var(--titulo);
-  font-weight:700;font-size:15px;letter-spacing:.04em}
+/* EL X/X, DEL TAMAÑO Y COLOR DEL TÍTULO, que lo pidió él. Es el dato que miras mientras
+   eliges cartas, así que tiene el mismo peso que el nombre del reto y no el de un pie de
+   foto. Hereda de h2: 19 px, el color del texto y la misma familia. */
+.pcab .sbc-cuenta{margin-left:auto;white-space:nowrap;
+  font-family:inherit;font-weight:inherit;font-size:19px;color:var(--txt);
+  letter-spacing:.02em}
 .pcab .sbc-cuenta.listo{color:var(--ok)}
 .pcab .sbc-entregar{flex:none;align-self:center;padding:6px 12px;width:auto}
 /* Los campos de una cuenta. El alto y el tamaño de letra no son a ojo: por debajo de
@@ -1302,10 +1377,8 @@ th{color:var(--dim2);font-size:11px;text-transform:uppercase;letter-spacing:.04e
   font-size:10px;font-weight:800;padding:1px 5px;border-radius:99px;
   background:rgba(0,0,0,.72);border:1px solid var(--line);color:var(--dim)}
 /* Cuántas has elegido, abajo a la derecha y en oro: eso sí es una decisión tuya. */
-.venta-cel .elegidas{position:absolute;bottom:3px;right:3px;z-index:3;font-family:var(--titulo);
-  font-size:11px;font-weight:800;padding:1px 6px;border-radius:99px;
-  background:var(--acc);color:var(--bg);border:1px solid var(--acc2)}
-.venta-cel.on .carta{outline:2px solid var(--acc);outline-offset:1px}
+/* El número de elegidas lo pinta la propia carta (`.carta.sel.conteo`), no una chapa
+   colgada de la casilla: ver el comentario de `.carta.sel::after`. */
 /* EL TOTAL VA FIJO Y POR ENCIMA DE LAS PESTAÑAS, con el botón debajo. En `sticky` dentro
    de #app se queda DEBAJO de la barra de pestañas —#app es una capa propia (z-index:1) y
    #nav va por encima—, que es la misma trampa que escondió la flecha de la apertura. */
@@ -2505,7 +2578,13 @@ function cartaHTML(c,o={}){
   const bnd=banderaSrc(c.pais);
   const foto=fotoSrc(c.persona, c.division);
   const nCop=o.copias&&o.copias>1?`<div class="c-copias">×${o.copias}</div>`:'';
-  return `<div class="carta ${crz} ${foto?'confoto':''} ${o.sel?'sel':''}" ${o.attr||''}>
+  /* `sel` marca la carta como elegida. Si además viene `cuenta`, el círculo lleva ese
+     número en vez del check: en el reciclaje puedes vender dos de cinco copias y un tic no
+     diría cuántas. */
+  const cta=o.sel&&o.cuenta>0;
+  const marca=o.sel?(cta?'sel conteo':'sel'):'';
+  const estilo=cta?` style="--n:${Math.round(o.cuenta)}"`:'';
+  return `<div class="carta ${crz} ${foto?'confoto':''} ${marca}"${estilo} ${o.attr||''}>
    <div class="lienzo">
     <div class="marco"></div>
     <div class="luz"></div>
@@ -4091,9 +4170,8 @@ function vReciclaje(){
       <div class="grid" style="--cols:4;padding-bottom:104px">${lista.map(g=>{
         const n=Math.min(eleg[g.c.id]||0, g.max);
         return `<div class="venta-cel ${n?'on':''}" data-vsel="${g.c.id}">
-          ${cartaHTML(g.c,{attr:`data-vsel="${g.c.id}"`,rareza:g.rz})}
+          ${cartaHTML(g.c,{attr:`data-vsel="${g.c.id}"`,rareza:g.rz,sel:n>0,cuenta:n})}
           <span class="copias">${g.max} rep.</span>
-          ${n?`<span class="elegidas">${n}</span>`:''}
         </div>`;}).join('')}</div>`
       :`<div class="card-panel sub">No tienes repetidos que vender. Los que salgan de más
         al abrir sobres aparecen aquí.</div>`}
@@ -4150,11 +4228,15 @@ function refrescarVenta(cid){
   if(!cel){ render(); return; }
   const n=Math.min((tmp.venta||{})[cid]||0, repetidasDe(cid));
   cel.classList.toggle('on', n>0);
-  let et=cel.querySelector('.elegidas');
-  if(n>0){
-    if(!et){ et=document.createElement('span'); et.className='elegidas'; cel.appendChild(et); }
-    et.textContent=n;
-  }else if(et) et.remove();
+  /* La marca vive en la CARTA, no en la casilla: se le encienden las dos clases y se le
+     pone el número en `--n`. Tocar dos clases y una variable no repinta ninguna imagen,
+     que es de lo que se trata. */
+  const carta=cel.querySelector('.carta');
+  if(carta){
+    carta.classList.toggle('sel', n>0);
+    carta.classList.toggle('conteo', n>0);
+    if(n>0) carta.style.setProperty('--n', n); else carta.style.removeProperty('--n');
+  }
   pie.innerHTML=pieVenta();
 }
 
@@ -4284,7 +4366,7 @@ function vRetos(){
          cuántas hacen falta; "0 entregadas" sólo decía la mitad. Y se pone verde cuando el
          reto se cumple de verdad, que llevar 3 de 3 no basta si además pide tres
          divisiones distintas. */
-      `<span class="sub sbc-cuenta${ok?' listo':''}">${sel.length}/${r.piden}</span>
+      `<span class="sbc-cuenta${ok?' listo':''}">${sel.length}/${r.piden}</span>
        <button class="btn sm sbc-entregar" data-a="entregarreto" ${ok?'':'disabled'}>Entregar</button>`)}
     <div class="sub mb">${r.d}</div>
     ${filtrosHTML(todas,x=>PORID[x.cid],{atributo:true})}

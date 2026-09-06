@@ -11,15 +11,17 @@ disculpas. Los nombres de funciones, variables y archivos también van en españ
 
 ## En qué punto está el trabajo
 
-Rama de trabajo: **`claude/diseno-carta-pendiente-vn5tw1`**. Lo último entregado: la
-flecha y el "Abrir otro" de la apertura, el sobre de sugerencias, los SBC sin oros, los
-tres filtros de la colección y **la rejilla de cartas, que no tenía CSS**. Antes: las
-cuentas y **la release 0.1.0 publicada**. (El
-número de commit no se apunta aquí: se quedaba viejo al commit siguiente y despistaba más
-que ayudaba.)
+Rama de trabajo: **`claude/diseno-carta-pendiente-vn5tw1`**. Lo último entregado: **las
+tres cartas base —común, rara y épica— con sus marcos, los sobres repartiéndolas, la venta
+pagando por rareza y los filtros repartidos entre la colección y el SBC**, y con eso la
+**release 0.1.2**. Antes: la venta de cartas y la 0.1.1; antes, las cuentas y la 0.1.0.
+(El número de commit no se apunta aquí: se quedaba viejo al commit siguiente y despistaba
+más que ayudaba.)
 El APK se publica solo en cada push, **firmado con la clave de release**, y se descarga de
-dos sitios: **`apk-latest`**, que es siempre lo último y cambia debajo, y **`v0.1.0`**, que
-es la versión concreta y no se toca nunca más (`p4p-cg.apk`, ~13 MB, y `p4p-cg.ipa`).
+dos sitios: **`apk-latest`**, que es siempre lo último y cambia debajo, y la publicación de
+cada versión —`v0.1.0`, `v0.1.1`, `v0.1.2`—, que no se toca nunca más (`p4p-cg.apk`, ~13 MB,
+y `p4p-cg.ipa`). Las novedades de cada publicación salen de **`docs/novedades.md`**, que hay
+que reescribir al subir la versión.
 
 **Hecho y aprobado por el dueño:**
 
@@ -41,20 +43,17 @@ carta va primera porque es la única pieza que puede bloquear días: las 354 fot
 recortadas para el hueco del marco actual y, si la ventana cambia, hay que volver a bajarlas
 las 354 desde una máquina con internet normal —desde aquí el proxy da 403 en ufc.com—.
 
-**Se acaban el oro y la plata.** La escalera entera es de cinco: **común, raro, épico,
-legendario y ultimate**. De ésos, las **cartas base son los tres primeros**: todo peleador
-tiene la común; los del medio tienen común y rara; los top tienen las tres. O sea que un
-mismo peleador puede existir en tres cartas distintas con la misma cara. **Legendario y
-ultimate NO son carta base** y vienen después. Esto **contradice el
-GDD**, que hay que actualizar cuando esté cerrado, y arrastra: `roster.js` (la rareza de las
-402 cartas), `motor.js` (`RAREZAS`, `ORDEN_RAREZA`, los seis estatus con su rango de media y
-lo que paga el reciclaje), `juego.html` (85 sitios), la suite (41) y los tres sobres de la
-tienda, que se llaman básico, plata y oro.
+**Se acabaron el oro y la plata, y las tres cartas base YA ESTÁN PUESTAS** —ver "LAS TRES
+CARTAS BASE" más abajo—. La escalera entera es de cinco: **común, rara, épica, legendaria y
+ultimate**; las **tres primeras son carta base** y las reparten los sobres. Legendaria y
+ultimate **no son carta base** y vienen después, igual que las **leyendas**, que son otra
+familia.
 
-**Y ojo con el identificador.** Hoy una carta es peleador + división (`ilia-topuria-m3`).
-Con tres variaciones del mismo peleador el identificador tiene que llevar la rareza dentro,
-y eso **rompe la colección guardada**: lo guardado apunta a identificadores que dejarían de
-existir. Hay que migrarlo a propósito al arrancar, no descubrirlo después. Ya se le avisó.
+**El identificador NO cambió, y era el miedo.** La rareza vive en la COPIA (`{iid,cid,rz}`),
+no en el catálogo, así que no hubo migración ninguna y lo guardado sigue valiendo. Lo que
+queda del sistema viejo son `RAREZAS`, `ORDEN_RAREZA` y los seis `ESTATUS` de `motor.js`,
+que **siguen hablando de oro y plata** y no los ve el jugador: son la banda que trae la base
+de datos. Esto **contradice el GDD**, que hay que actualizar.
 
 **La carta nueva, lo que ya está cerrado.** El marco común (frente y reverso) está en
 `originales/marcos-v2/` y la maqueta del reparto en `herramientas/maqueta-carta.html`, con
@@ -182,15 +181,14 @@ Los **destacados** son los que llevan rara aunque hoy estén fuera del ranking, 
 objetivo) y **nombres grandes sin cinturón de la UFC** (15, lista opinable). Son 38 cartas
 que sin la lista serían sólo comunes. Sin eso, Conor McGregor sería una carta común.
 
-`importar-roster.mjs` ya calcula esto y lo guarda en cada carta como `base:["comun",…]`, y
-avisa si una clave de las listas no corresponde a ningún peleador. **Pero todavía NO genera
-las tres cartas**: eso es la migración, y es lo que cambia el identificador y rompe lo
-guardado.
+`importar-roster.mjs` calcula esto y lo guarda en cada carta como `base:["comun",…]`, y
+avisa si una clave de las listas no corresponde a ningún peleador. **`motor.js` se lo lleva
+al `ROSTER`**, y de ahí lo leen los sobres para saber a quién le puede tocar cada marco.
 
-**LA MIGRACIÓN ESPERA A LA INTERFAZ, y lo decidió él.** Se hacen las dos a la vez. El
-motivo: adaptar el álbum, los sets y el reciclaje de AHORA a tres escalones —85 sitios en
-`juego.html` y 41 en la suite— es trabajo que se tira, porque esa interfaz se va a rehacer
-entera. Así que no empieces la migración por tu cuenta: va con el rediseño.
+**LA MIGRACIÓN QUE ESPERABA A LA INTERFAZ YA NO HACE FALTA.** Se resolvió por otro lado: la
+rareza va en la copia y no en el catálogo, así que el álbum, los sets y el reciclaje no
+tuvieron que cambiar de identificador. Lo que quedaba pendiente era un problema que ya no
+existe.
 
 **EL LOGO NUEVO YA ESTÁ.** Es un octógono negro con el P4P.CG en blanco y oro; lo pasó
 en `originales/logo-v2/logo.png`, con fondo blanco, y `herramientas/preparar-logo-v2.mjs`
@@ -479,11 +477,52 @@ sobres y comprar vuelve a ser el camino rápido. Una victoria da 180-320 de oro 
 derrota 60-120: ganando la mitad de las partidas salen **170 de oro por partida**, que es
 la vara con la que se miden los precios.
 
-**LAS FICHAS (las gemas) SIGUEN COJAS, Y NO LAS HE TOCADO.** Sólo salen de reciclar
-repetidas —30 platas o 10 oros por ficha— y sólo sirven para UNA cosa: entrar en la sala
-de intercambio, que cuesta 1. Y hay un logro que pide **acumular 500**, o sea 15.000 platas
-repetidas: imposible. O las fichas ganan usos, o el logro baja, o las fichas salen de
-algún sitio más. **Está dicho y sin decidir.**
+**LAS FICHAS SE FUERON Y EL RECICLAJE ES UNA VENTA.** Lo mandó él: *"quita los tickets, y
+haz que el reciclaje sea una venta de cartas"*. Se venden las REPETIDAS —la copia de tu
+colección se queda siempre— y se cobra en oro.
+
+**El precio sale del ranking, no de la media**: campeón/top5 1.025, top 6-11 325, top 12-15
+125, y los sin ranking de 5 a 60 según la suma de sus stats, porque él pidió que **no valgan
+todos lo mismo**. Lo que sale de un **sobre gratis** vale 1 (o 10 si va rankeado): si valiera
+más, abrir gratis y vender pagaría mejor que jugar, y está medido en
+`herramientas/estudio-economia.mjs`.
+
+**Y LA RAREZA MULTIPLICA: rara ×1,5 y épica ×2.** El multiplicador NO sale de lo escasa que
+es la carta —eso era lo que parecía lógico y ROMPE el juego—, sale de lo que aguanta la
+economía. Cuánto te devuelve comprar un sobre y revenderlo entero:
+
+| multiplicadores | raro | épico | legendario | ultimate |
+|---|---|---|---|---|
+| ×1 · ×1 · ×1 | 35% | 33% | 40% | 44% |
+| ×1 · **×1,5** · **×2** | 40% | 41% | 59% | 69% |
+| ×1 · ×2 · ×3 | 45% | 48% | 78% | 93% |
+| ×1 · ×2 · ×6 | 50% | 58% | 104% | **130%** |
+
+Con ×6 en la épica —la escasez pura: 402/68— comprar un ultimate y revenderlo devuelve MÁS
+de lo que cuesta. Con ×1,5 y ×2 todos pierden.
+
+**OJO, Y ESTÁ DICHO:** legendario y ultimate quedan en 59% y 69%, mucho más justos que el
+33% de antes. No es por el multiplicador: **sus tablas subieron y su precio sigue siendo el
+que se calculó con las viejas.** Hoy no se pueden comprar, así que no hay nada explotable;
+**antes de ponerlos a la venta hay que subirles el precio o bajarles la tabla.**
+
+**Dos fallos de esa pantalla que cazó él y no se pueden repetir:**
+
+- **La cifra de abajo tiene que ser la que cobra.** El pie contaba "n × el precio de la
+  PRIMERA copia", y las copias de un mismo peleador no valen todas lo mismo. Ahora hay UNA
+  función, **`copiasAVender()`**, que devuelve la lista exacta de copias, y de ella salen el
+  total del pie, el del deslizador y lo que cobra el botón. No son tres cuentas que puedan
+  separarse: es la misma.
+- **Elegir una carta no puede repintar la pantalla.** Cada toque llamaba a `render()`, que
+  rehace dieciséis cartas con marco, capa de luz y foto. Ahora `refrescarVenta()` toca la
+  casilla y el pie, y sólo cae al `render()` si la casilla no está en pantalla. Hay una
+  comprobación en la suite que marca los nodos y exige que sigan siendo **los mismos**.
+
+**Y al vender se van las PEORES copias primero**: si tienes una épica y dos comunes del
+mismo peleador, la épica se queda.
+
+**Queda el logro del Chatarrero** (vender 25 repetidas), que sustituyó al de acumular 500
+fichas —15.000 platas repetidas, imposible—.
 
 **Los nombres van en español menos ultimate**, que él dijo que no se puede traducir. Las
 claves también: `comun`, `raro`, `epico`, `legendario`, `ultimate` —en este proyecto los
@@ -532,19 +571,50 @@ la (i) arriba a la derecha y el TIENDA grande en cursiva.
   cartas), top 12-15 (44), top 6-11 (66) y campeón o top 5 (68). Con todas las cartas
   comunes, oro y plata no le dicen nada a quien abre un sobre; lo único que hace bueno a un
   peleador es dónde está en su división.
-- **EL COMÚN Y EL RARO LOS APROBÓ ÉL**, con estos números por carta —se los pasé medidos y
-  dijo *"visto bueno a los sobres dado"*:
+- **AHORA SORTEAN DOS COSAS: LA RAREZA Y EL TRAMO**, en ese orden, y el segundo DENTRO del
+  primero. No se pueden sortear por separado porque la mitad de las casillas no existen: la
+  épica sólo la tienen campeones y top 5, y la rara los rankeados y los 38 destacados. Con
+  dos pasos, los porcentajes que se le enseñan al jugador son verdad exacta y no hay
+  reintentos. Está todo en `herramientas/estudio-sobres.mjs`, que es donde se ajustaron.
 
-  | por carta | común (gratis, 5) | raro (6) |
-  |---|---|---|
-  | sin ranking | 98,400% | 78,0% |
-  | top 12-15 | 1,500% | 17,0% |
-  | top 6-11 | 0,092% | 4,5% |
-  | campeón o top 5 | 0,008% | 0,5% |
+  | por carta | común | rara | épica | | sin rank | 12-15 | 6-11 | campeón/top5 |
+  |---|---|---|---|---|---|---|---|---|
+  | común (gratis, 5) | 96,000% | 3,995% | 0,005% | | 98,4% | 1,50% | 0,092% | 0,008% |
+  | raro (6) | 88,30% | 11,40% | 0,30% | | 76,7% | 17,7% | 4,8% | 0,83% |
+  | épico (8) | 79,20% | 19,30% | 1,50% | | 47,3% | 30,8% | 17,2% | 4,7% |
+  | legendario (10) | 47,0% | 47,0% | 6,0% | | 23,5% | 33,9% | 29,6% | 13,1% |
+  | ultimate (10) | 30,0% | 58,0% | 12,0% | | 8,3% | 28,2% | 34,9% | 28,6% |
 
-  En sobre entero: en el común, un 12-15 cada 14 sobres, un 6-11 cada 218 y un campeón cada
-  2.500; en el raro, algún rankeado el 77% de las veces y un campeón uno de cada 34. El
-  común queda por debajo del básico de antes en todo, que era la condición que había puesto.
+- **EL SOBRE GRATIS NO CAMBIÓ NI UN DECIMAL EN RANKING**: sigue siendo el 98,400 / 1,500 /
+  0,092 / 0,008 que él aprobó, y las dos columnas están resueltas a mano para que salga
+  clavado sumando los dos caminos. Lo único nuevo es que casi el 4% de sus cartas viene con
+  marco azul, y **casi siempre es un destacado**. Sube la emoción sin tocar la economía, que
+  es lo que importa porque es gratis, ilimitado y la venta paga por RANKING.
+
+- **LA RARA VA BAJA A PROPÓSITO EN EL RARO Y EL ÉPICO**, y lo pidió él mirando cuántas trae
+  un sobre: *"que haya probabilidad de que te toque una o dos raras, pero que es muy difícil
+  o imposible prácticamente que todas sean raras"*. Medido en 300.000 sobres:
+
+  | sobre | ninguna | 1 | 2 | 3 | 4 | 5+ | todas | media |
+  |---|---|---|---|---|---|---|---|---|
+  | común (5) | 81,5% | 17,0% | 1,4% | 0,1% | — | — | nunca | 0,20 |
+  | raro (6) | 47,4% | 37,6% | 12,5% | 2,2% | 0,2% | — | **nunca** | 0,70 |
+  | épico (8) | 15,5% | 32,4% | 30,1% | 15,7% | 5,1% | 1,2% | **nunca** | 1,66 |
+
+  Y **al bajarla se compensó en la columna común**: la rara es la que trae rankeados, así
+  que quitando raras bajaría también el ranking del sobre. Los números de esa columna están
+  resueltos para que el reparto de ranking salga IGUAL. Cambia cuántos marcos azules ves, no
+  lo bueno que es el sobre.
+
+- **LOS DOS DE PRÓXIMAMENTE SE QUEDAN COMO ESTÁN**, y lo decidió él: *"esos dos que están en
+  próximamente déjalos así de momento, total aún no los vamos a sacar"*. Quedan fuera de la
+  regla de arriba: el legendario trae 5,3 raras de 10 de media y el ultimate 7,0, y en el
+  ultimate las diez salen raras el 2,8% de las veces.
+
+- **LOS MÁS RAROS, LOS ÚLTIMOS.** `abrirSobre` ordena primero por rareza y luego por el
+  orden deportivo; la apertura da la vuelta a esa lista, así que lo último que destapas es
+  lo mejor de lo mejor. Y el dorso del naipe lleva el reverso de SU rareza: las cartas nacen
+  boca abajo, así que lo primero que ves de una épica es su dorso violeta.
 - **EL ÉPICO LO DEFINIÓ ÉL DESPUÉS**, con palabras y no con números: *"en un sobre épico
   ya mínimo casi garantizado que te toque un top quince-diez, y bastante más probabilidad
   de que te toque un top diez-cinco, un top cinco o campeón"*. Medido con 120.000 sobres,
@@ -556,7 +626,12 @@ la (i) arriba a la derecha y el TIENDA grande en cursiva.
   JavaScript **`null >= 0` es TRUE** —null se convierte en 0—, así que la bolsa salía vacía,
   `cartaDeNivel` se iba al tramo de al lado sin decir nada y un sobre común que sorteaba
   98,4% de mediocres repartía cinco rankeados. **El sorteo daba bien y las cartas no.** Hay
-  una comprobación en la suite que abre sobres de verdad y mira las cartas, no el sorteo.
+  una comprobación en la suite que abre sobres de verdad y mira las cartas, no el sorteo, y
+  desde que hay rarezas también comprueba que **ninguna épica caiga en quien no es campeón o
+  top 5**: 58.500 cartas de sobres reales, cero fuera de sitio.
+- **LA RAREZA NO SE DEGRADA AL BUSCAR CARTA, sólo el tramo.** Si el tramo sorteado se queda
+  sin candidatos nuevos dentro del sobre se baja al de al lado; la rareza NO, porque
+  prometer una épica y entregar una común sería mentirle a quien mira las probabilidades.
 - **EL COMÚN ES GRATIS Y ESTÁ EN LA TIENDA** —*"PON EL SOBRE COMÚN GRATIS EN LA TIENDA"*—,
   sin límite y sin reloj: es lo que permite empezar y seguir sin gastar una moneda. No pasa
   por el inventario: se toca y se abre.
@@ -691,21 +766,74 @@ jugador tiene delante y lo que ya usan los sobres. **No se tocó `RAREZAS` ni `E
 motor.js**: eso es la migración, que sigue esperando a la interfaz. Y `sinRanking`/`rankeado`
 viven en un solo sitio comparando contra `null` **a pelo**, que `null >= 0` es TRUE.
 
-**LOS TRES FILTROS DE LA COLECCIÓN: TIPO, ATRIBUTO Y PESO.** Los pidió con todas las letras:
-"todas mediante un desplegable individual, **nada de muchos botones seleccionables**". Y es
-además la forma correcta: la versión de chips ya estuvo y se quitó porque tres filas se
-comían 250 px; tres `<select>` en una línea ocupan 44.
+**LOS FILTROS, Y QUÉ LLEVA CADA PANTALLA.** Los pidió con todas las letras —"todas mediante
+un desplegable individual, **nada de muchos botones seleccionables**"— y después los
+repartió: *"quita el filtro que pusiste en la parte de colección y ponlo a la hora de elegir
+lo que te piden de SBC ... Atributo, Peso, País, Tipo de Carta y Rareza. Y en colección pon
+lo mismo menos atributo"*.
 
-- **El tipo es el RANKING** y reutiliza los `NIVELES` de los sobres, para no tener dos
-  tablas que se separen con el tiempo. "Sin atributo" es una opción de verdad.
+    SBC:       Atributo · Peso · País · Tipo de carta · Rareza
+    Colección: Peso · País · Tipo de carta · Rareza
+
+El atributo sólo está en el SBC porque ahí es un REQUISITO: un reto te pide un Especialista
+y quieres encontrarlo. En la colección se mira quién tienes, no cómo pelea.
+
+- **El de países sólo ofrece los países de los que TIENES cartas.** Sacarlo del plantel daría
+  una lista de sesenta países vacíos, o sea una lista de imposibles.
+- **"Tipo de carta" NO es la rareza**: es de qué FAMILIA es la carta. Hoy sólo existe la base
+  —los tres marcos que reparten los sobres—; las leyendas son otra familia y llegan después,
+  así que el desplegable ya está y de momento tiene una opción.
+- **El de rareza mira la COPIA, no la carta**, y por eso `filtrarCartas` recibe dos lecturas.
+  Si mirase la carta, una Topuria épica y una común irían siempre juntas. Hay una
+  comprobación en la suite que marca dos copias del MISMO peleador con rarezas distintas y
+  exige que se separen.
 - Van a **16 px** por lo mismo que los campos de la cuenta: por debajo, el WebView de
   iPhone hace zoom al enfocar.
-- Se llaman **"Tipo", "Atributo", "Peso"** y no "Cualquier tipo": a tres por línea tocan
-  120 px y "Cualquier atributo" salía cortado en "Cualquier ...".
+- Se llaman por el campo —"Peso", "País", "Rareza"— y no "Cualquier peso": a tres por línea
+  tocan 120 px y "Cualquier atributo" salía cortado en "Cualquier ...".
+- **`.filtros` se parte en varias líneas**: cinco desplegables en un móvil de 390 px serían
+  70 px cada uno, menos de lo que ocupa la palabra "Atributo". Con `wrap` y un mínimo de
+  88 px caben tres arriba y dos abajo. Medido a 390x844: las dos pantallas a 0 px de
+  desborde.
 - Puesto **se nota** —filete y letra en oro—, y un filtro que no deja pasar nada **lo dice**
   con su botón para quitarlos: con el cartel de "no tienes cartas" parecería que has perdido
   la colección.
-- Viven en `tmp`, o sea que se olvidan al salir. Y cambiar uno **vuelve a la hoja 1**.
+- Viven en `tmp`, o sea que se olvidan al salir —y además no son los mismos en las dos
+  pantallas, así que arrastrarlos dejaría puesto un filtro que en la otra ni se ve—. Y
+  cambiar uno **vuelve a la hoja 1**. `CAMPOS_FILTRO` los lista en un solo sitio: añadir uno
+  no obliga a acordarse de ir a borrarlo al botón de limpiar.
+
+**LA CABECERA DEL SBC LLEVA LA CUENTA Y EL BOTÓN.** Lo pidió él: *"haz que la cuenta de
+entregadas y el botón de entregar salga en la misma línea y sección que el título donde
+pone Cantera, para ahorrar espacio y poder redimensionar el tamaño de las cartas"*. El panel
+que había debajo ocupaba 62 px para decir dos palabras y poner un botón, y en una pantalla
+de cartas eso es media fila. Van dentro del `extra` de `cabecera()`. La cuenta es **"0/3" y
+va subiendo**, del tamaño y el color del título, y se pone verde cuando el reto se cumple de
+verdad. Cuántas pide cada reto va en `piden`, al lado del `check`, con un aviso al arrancar
+si los dos no dicen lo mismo. El "Aún no cumple" **se fue**: costaba una línea entera y se
+comía justo lo que se acababa de ahorrar. Medido: la carta pasa de 79 a 82 px.
+
+**LA CARTA ELEGIDA LLEVA UN CÍRCULO DE ORO, NO UN FILETE ALREDEDOR.** Lo pidió él —*"el
+círculo de ese tono dorado y el propio check en negro ... en lugar de ese reborde alrededor",
+"en la esquina derecha inferior, el círculo más pequeño", "tanto para SBC como para
+reciclaje"*—. Con check en el SBC y con **cuántas has elegido** en la venta, que ahí puedes
+vender dos de cinco. El filete tenía un problema de fondo: la carta ya lleva marco propio, y
+desde que hay tres rarezas un filete de oro pegado por fuera se confundía con el metal y en
+la épica ni se veía.
+
+Va en el **`::after` de `.carta`**, no en un hermano, y eso es lo que lo centra: desde fuera
+de la carta no se ve `--k`, la escala que deja `medirCartas()`, y había que dar el tamaño de
+letra en `vw`. El número se pinta con `counter-reset` desde `--n` y `content:counter()`,
+porque un pseudo-elemento no puede tener hijos.
+
+**Y el `padding-top:.171em` está MEDIDO, no ajustado a ojo.** Es el mismo problema de
+siempre: centrar con flex centra la CAJA DE LÍNEA, no la letra. Pintados los círculos a
+300 px con la letra a 175 —la misma proporción que en el juego— la tinta cae **15,0 px por
+encima del centro, y el mismo número en todos los dígitos**: 0,0856 em. Con
+`box-sizing:border-box` el relleno baja lo centrado la MITAD, así que 0,171 em de relleno lo
+centra. Comprobado después: a tamaño de juego queda a **0,015 px en x y 0,038 px en y**. A lo
+ancho no hace falta corrección. **No lo toques sin volver a medir**: el primer intento salió
+0,102 em midiendo sobre la carta a 8x, y era ruido del antialias.
 
 **4x4 Y SIN SCROLL EN NINGUNA PANTALLA DE CARTAS.** Lo mandó él: "QUITA ESE SCROLL EN TODOS
 LADOS... hacer filas de 4x4 en la colección... y lo de pasar hoja ponlo bien centrado en el
@@ -1276,11 +1404,72 @@ firma. Lo que sí lo borra todo es desinstalar.
 
 ---
 
-## LA CARTA NUEVA YA ESTÁ PUESTA, Y TODAS SON COMUNES
+## LAS TRES CARTAS BASE YA ESTÁN: COMÚN, RARA Y ÉPICA
 
-Lo pidió así: *"haz ya todas las cartas comunes, o sea cambia el diseño"*. El marco de
-raro, épico, legendario y ultimate son variaciones que todavía no ha pasado, y llegan con
-la migración de rarezas.
+Los tres marcos los dibujó él —frente y reverso de cada uno— y están en
+`originales/marcos-v2/`. Los prepara **`herramientas/preparar-marcos-rareza.py`** y se ven
+juntos con **`node herramientas/ver-rarezas.mjs`** (foto) o
+**`node herramientas/maqueta-rarezas.mjs`** (una página suelta con todo dentro, para ver el
+resplandor en marcha). Legendaria y ultimate **no son carta base** y llegan después, igual
+que las **leyendas**, que serán otra familia —"como un icono baby en el FIFA"— y de las que
+todavía no ha dicho quiénes son.
+
+**NO HUBO QUE MIGRAR NADA, y ése era el miedo de todo el proyecto.** La rareza va en **LA
+COPIA**, no en el catálogo: la colección guarda copias —`{iid,cid}`— y no identificadores de
+carta, así que una Topuria rara y una Topuria común son dos copias del mismo `cid` con
+distinto `rz`, exactamente como ya convivía `gratis`. **Ningún identificador cambia y lo
+guardado sigue valiendo**: lo que no lleve `rz` es común, que es lo que era. La migración a
+tres entradas de catálogo por peleador —la que sí rompería lo guardado— ya no hace falta.
+
+**Quién puede tener cada una** sale de `base`, que calcula `importar-roster.mjs` y que ahora
+lleva también el `ROSTER` de `motor.js`:
+
+| | sin ranking | 12-15 | 6-11 | campeón/top5 | total |
+|---|---|---|---|---|---|
+| común | 224 | 44 | 66 | 68 | **402** |
+| rara | 38 | 44 | 66 | 68 | **216** |
+| épica | 0 | 0 | 0 | 68 | **68** |
+
+O sea: **una épica es SIEMPRE un campeón o top 5** y una rara sólo existe para rankeados y
+para los 38 destacados. Hay una comprobación en la suite que abre **58.500 cartas de sobres
+de verdad** y mira las cartas, no el sorteo —la lección de siempre: "el sorteo daba bien y
+las cartas no"—. Lo cazó él sobre una captura mía: *"¿por qué cojones Danny Barlow tiene una
+épica?"*. En el juego no podía pasar; en la captura le había puesto yo la rareza a mano.
+
+**Los colores de la carta salen de MEDIR el marco**, no de elegirlos: se agrupa por tono el
+metal con luz y saturación y se coge el dominante. Común 35–45° `#e6d08f`, raro 205–215°
+`#2e85e9`, épico 265–285° `#b669e6`. Y en la **épica los números, el peso y el ranking van en
+el oro del propio marco** (`#c68946` / `#fccc82`), que lo pidió aparte.
+
+**El hueco de cada marco NO es el mismo.** Medido con rejilla de 5% encima: común
+6,93–92,87% de ancho, raro 11,50–88,50%, épico 12,50–87,50%. El bloque de texto se encoge
+desde el centro (0,896 y 0,873) con `.dentro`; **la foto NO**, que él la quiere del mismo
+tamaño en las tres. Y `.dentro` lleva `z-index:2` **que no se puede quitar**: un `transform`,
+aunque sea `scale(1)`, convierte al elemento en contexto de apilado, y sin él la foto se
+pinta por delante del nombre en las TRES.
+
+**EL RESPLANDOR LATE, Y NO SE MUEVE DE SITIO.** Cada marco sale partido en dos:
+`raro.webp` es el marco con la luz apagada al 42% y `raro-luz.webp` el resplandor solo, con
+los colores del original y transparencia donde no hay luz. Se anima **sólo la opacidad** de
+la capa de arriba (3,6 s, de 1 a 0,45), así que el resplandor no se desplaza ni cambia de
+tono: son sus propios píxeles. Con la mezcla normal basta —`apagado·(1−a) + original·a`, y el
+apagado ES el original multiplicado en esas mismas zonas—, así que **no hace falta
+`mix-blend-mode`** ni nada que un WebView viejo pueda no tener.
+
+**Y el dorado de la épica brilla DORADO.** Lo cazó él. Medido, el **17,43%** de los píxeles
+dorados con luz viraba a violeta, por dos causas: el desenfoque que da "el color de la zona"
+iba a 31 px y se traía las barras violetas de al lado, y había **un solo camino** —a todo lo
+lavado se le ponía el color de su zona—. Ahora el desenfoque va a **0,4% del ancho** y hay
+dos caminos: si el píxel conserva algo de tono se le **sube el suyo** (escalando la distancia
+de cada canal al más alto, que sube la saturación sin tocar el tono), y sólo si es blanco del
+todo se le pone el de la zona. **De 17,43% a 1,01%.** Se probó pesar el desenfoque por
+saturación y es MUCHO peor: el violeta cubre el 12% de la carta y el dorado el 2%, así que
+pesando por color el violeta gana en todas partes.
+
+**La intensidad la subió él después de verlo** —*"un poco más fuerte en ambas, y en épica un
+poco más ... no la velocidad, sino la intensidad y brillo de la luz"*—: `REFUERZO` 1,20 en la
+rara y 1,38 en la épica, con el latido igual. La rara topa en 223 y la épica en 235 sobre
+255, o sea ninguna llega a los 250 donde el color se pierde.
 
 **La referencia es la maqueta que él aprobó**, `herramientas/maqueta-carta.html`, y volvió a
 mandarla al final: *"hazlas como estas que me habías dado de ejemplo, quitando solo la marca

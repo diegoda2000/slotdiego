@@ -1,5 +1,8 @@
-Versión **0.1.2** de P4P.CG. Es una **alfa temprana**: falta mucho por hacer y hay
+Versión **0.1.3** de P4P.CG. Es una **alfa temprana**: falta mucho por hacer y hay
 bloques marcados PENDIENTE dentro del juego.
+
+Trae todo lo de la 0.1.2 —las tres cartas base, los sobres repartiéndolas y la venta
+por rareza— más lo de abajo.
 
 ### Las cartas ya no son todas iguales
 
@@ -24,9 +27,19 @@ El sobre gratis no cambia en nada de lo que reparte por ranking, pero ahora casi
 
 El marco multiplica el precio: una rara vale la mitad más y una épica el doble. Al
 vender se van siempre las **peores copias**, así que tu mejor marco se queda. Y la
-cifra de abajo es exactamente la que cobras.
+cifra de abajo es exactamente la que cobras. La pantalla ya no parpadea al elegir.
 
 ### Filtros
 
 Cinco desplegables al elegir cartas para un SBC —atributo, peso, país, tipo de carta
 y rareza— y cuatro en la colección.
+
+### SBC
+
+La cuenta y el botón de entregar suben a la línea del título, así que las cartas se
+ven más grandes, y la cuenta va como **0/3** y va subiendo según eliges.
+
+### La carta elegida
+
+En vez de un filete alrededor, un **círculo de oro** abajo a la derecha: con un check
+en el SBC y con cuántas has elegido en la venta.
