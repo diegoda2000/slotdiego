@@ -26,11 +26,3 @@ en una ventana con forma de móvil, y ahí Colección y Plantilla se salían por
 
 Con su banner, como cualquier otra aplicación, en vez de tener que buscarla con un lanzador
 de los de sideload.
-
----
-
-**Android** — descarga `p4p-cg.apk` y ábrelo. Nada que configurar:
-la dirección del servidor viene dentro.
-
-Va **firmado con la clave de release**, así que se instala encima de la
-anterior como actualización y **el progreso se queda**.

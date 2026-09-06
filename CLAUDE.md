@@ -21,7 +21,9 @@ El APK se publica solo en cada push, **firmado con la clave de release**, y se d
 dos sitios: **`apk-latest`**, que es siempre lo último y cambia debajo, y la publicación de
 cada versión —`v0.1.0`, `v0.1.1`, `v0.1.2`—, que no se toca nunca más (`p4p-cg.apk`, ~13 MB,
 y `p4p-cg.ipa`). Las novedades de cada publicación salen de **`docs/novedades.md`**, que hay
-que reescribir al subir la versión.
+que reescribir al subir la versión. **En ese archivo van SÓLO las novedades**: cómo se
+instala, lo de la firma y la dirección del servidor los añade el flujo por su cuenta
+detrás. Ponerlos también ahí los saca dos veces, y así salieron las notas de la 0.1.3.2.
 
 **Hecho y aprobado por el dueño:**
 
