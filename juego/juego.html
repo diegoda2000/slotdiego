@@ -1261,8 +1261,13 @@ th{color:var(--dim2);font-size:11px;text-transform:uppercase;letter-spacing:.04e
    `min-width:0` en el label es lo que deja que los tres se encojan por igual — sin él, un
    hijo de un flex no baja de su ancho de contenido y "Cualquier atributo" empuja a los
    otros dos fuera. */
-.filtros{display:flex;gap:6px;margin-bottom:8px}
-.filtros .filtro{flex:1 1 0;min-width:0;display:block;position:relative}
+/* SE PARTE EN VARIAS LÍNEAS, y hace falta: en el SBC son CINCO desplegables y en un móvil
+   de 390 px eso son 70 px cada uno, menos de lo que ocupa la palabra "Atributo". Con
+   `wrap` y un mínimo de 88 px caben tres arriba y dos abajo, y cada uno se lee.
+   El `flex-basis` en 0 con `min-width` es lo que hace que se repartan a partes iguales
+   dentro de cada línea en vez de medir lo que mida su texto. */
+.filtros{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.filtros .filtro{flex:1 1 88px;min-width:88px;display:block;position:relative}
 .filtros select{width:100%;appearance:none;-webkit-appearance:none;
   padding:8px 22px 8px 9px;border-radius:8px;background:var(--bg3);
   border:1px solid var(--line);color:var(--dim);font:inherit;font-size:16px;
@@ -3850,28 +3855,50 @@ function quedaOtro(tipo){
    Viven en `tmp`, o sea que se olvidan al salir de la pantalla. Es lo que se espera de un
    filtro de una vista: volver al álbum y encontrártelo recortado por algo que pusiste hace
    media hora es peor que volver a elegir. */
-const filtrosPuestos=()=>!!(tmp.fTipo||tmp.fAtr||tmp.fPeso);
+/* LOS FILTROS, y qué lleva cada pantalla. Lo repartió él:
 
-function filtrarCartas(l, carta=o=>o){
+     SBC:       Atributo · Peso · País · Tipo de carta · Rareza
+     Colección: lo mismo MENOS Atributo
+
+   El atributo sólo está en el SBC porque ahí es un requisito: un reto te pide un
+   Especialista y quieres encontrarlo. En la colección se mira quién tienes, no cómo pelea.
+
+   Y "Tipo de carta" no es la rareza: es de qué FAMILIA es la carta. Hoy sólo existe la
+   base —los tres marcos que reparten los sobres—; las leyendas son otra familia y llegan
+   después, así que el desplegable ya está y de momento tiene una sola opción. */
+const FAMILIAS=[['base','Base']];
+const filtroDe=c=>c;           // por defecto la lista ya trae cartas
+const CAMPOS_FILTRO=['fAtr','fPeso','fPais','fFam','fRz'];
+const filtrosPuestos=()=>CAMPOS_FILTRO.some(k=>tmp[k]);
+
+/* Los países que de verdad tienes delante, no los 60 del plantel: un desplegable con
+   cincuenta países de los que no tienes ninguna carta es una lista de imposibles. Se saca
+   de la propia lista que se va a filtrar y va ordenado alfabéticamente. */
+const paisesDe=(l,carta)=>[...new Set(l.map(o=>carta(o).pais).filter(Boolean))]
+  .sort((a,b)=>a.localeCompare(b,'es')).map(p=>[p,p]);
+
+/* `rz` es de la COPIA y no de la carta, así que el filtro de rareza necesita la copia. Por
+   eso `filtrarCartas` recibe dos lecturas: cómo sacar la carta y cómo sacar la copia. */
+function filtrarCartas(l, carta=o=>o, copia=null){
   let out=l;
-  if(tmp.fTipo){
-    const n=NIVELES.find(x=>x.id===tmp.fTipo);
-    if(n) out=out.filter(o=>n.cumple(carta(o)));
-  }
   if(tmp.fAtr) out=out.filter(o=>{
     const r=carta(o).rasgos||[];
     // "sin" es una opción de verdad: buscar a los que NO tienen atributo es una búsqueda.
     return tmp.fAtr==='sin' ? !r.length : r.some(x=>x.tipo===tmp.fAtr);
   });
   if(tmp.fPeso) out=out.filter(o=>carta(o).division===tmp.fPeso);
+  if(tmp.fPais) out=out.filter(o=>carta(o).pais===tmp.fPais);
+  // Todo lo que hay hoy es de la familia base. Cuando existan las leyendas, aquí.
+  if(tmp.fFam) out=out.filter(()=>tmp.fFam==='base');
+  if(tmp.fRz && copia) out=out.filter(o=>(copia(o).rz||'comun')===tmp.fRz);
   return out;
 }
 
 /* Un desplegable. La primera opción es siempre "todo", con valor vacío, que es lo que
    apaga el filtro: un filtro sin forma de quitarlo es una trampa.
 
-   Y se llama por el campo —"Tipo", "Atributo", "Peso"— y no "Cualquier tipo": a tres por
-   línea en un móvil de 390 tocan 120 px cada uno, y "Cualquier atributo" salía cortado en
+   Y se llama por el campo —"Peso", "País", "Rareza"— y no "Cualquier peso": en un móvil
+   de 390 y a tres por línea tocan 120 px cada uno, y "Cualquier atributo" salía cortado en
    "Cualquier ...", que no dice nada. Elegido, el rótulo lo sustituye el valor y el filete
    se pone en oro, que es lo que avisa de que el filtro está puesto. */
 const desplegable=(campo,todo,opciones)=>{
@@ -3884,12 +3911,17 @@ const desplegable=(campo,todo,opciones)=>{
     </select></label>`;
 };
 
-function filtrosHTML(){
+/* Los cinco, o los cuatro. Se envuelven en `.filtros` que ya sabe repartirse en varias
+   líneas: cinco no caben en una fila de 390 px sin quedarse en 70 px cada uno, que es
+   menos de lo que ocupa la palabra "Atributo". */
+function filtrosHTML(l, carta=o=>o, {atributo=false}={}){
   return `<div class="filtros">
-    ${desplegable('fTipo','Tipo', NIVELES.map(n=>[n.id,n.n]))}
-    ${desplegable('fAtr','Atributo',
-      [...Object.entries(RASGOS).map(([id,r])=>[id,r.n]), ['sin','Sin atributo']])}
+    ${atributo?desplegable('fAtr','Atributo',
+      [...Object.entries(RASGOS).map(([id,r])=>[id,r.n]), ['sin','Sin atributo']]):''}
     ${desplegable('fPeso','Peso', DIVISIONES.map(d=>[d.id,d.n]))}
+    ${desplegable('fPais','País', paisesDe(l,carta))}
+    ${desplegable('fFam','Tipo', FAMILIAS)}
+    ${desplegable('fRz','Rareza', BASES.map(rz=>[rz,BASE_ET[rz]]))}
   </div>`;
 }
 
@@ -3906,7 +3938,8 @@ function vColeccion(){
   l.sort((a,b)=>(ORDEN_BASE[b.x.rz||'comun']-ORDEN_BASE[a.x.rz||'comun'])||comparar(a.c,b.c));
   const total=ROSTER.length, distintas=new Set(S.coleccion.map(x=>x.cid)).size;
   const todas=l.length;
-  l=filtrarCartas(l,o=>o.c);
+  const antesDeFiltrar=l;
+  l=filtrarCartas(l,o=>o.c,o=>o.x);
 
   /* La colección es un ÁLBUM, no una lista: páginas que se pasan. Una colección que se
      recorre con el dedo hacia abajo no se mira, se escanea, y aquí mirar las cartas es
@@ -3926,7 +3959,7 @@ function vColeccion(){
   return `${cabecera('Colección','data-nav="club"',
       `<span class="sub">${distintas} de ${total} distintas · ${S.coleccion.length} en total</span>`)}
     <div class="bar mb"><div style="width:${distintas/total*100}%"></div></div>
-    ${filtrosHTML()}
+    ${filtrosHTML(antesDeFiltrar,o=>o.c)}
     ${l.length?`
       <div class="grid fit" style="--cols:4" data-fit="4,4">${hoja.map(o=>
         cartaHTML(o.c,{attr:`data-carta="${o.x.iid}"`,rareza:o.x.rz})).join('')}</div>
@@ -4192,7 +4225,13 @@ function vRetos(){
   const cartas=sel.map(iid=>PORID[inst(iid).cid]);
   const ok=r.check(cartas);
   const enPlantilla=new Set(Object.values(S.plantilla));
-  const disp=S.coleccion.filter(x=>!enPlantilla.has(x.iid));
+  const todas=S.coleccion.filter(x=>!enPlantilla.has(x.iid));
+  /* AQUÍ VAN LOS CINCO FILTROS, y lo mandó él: "quita el filtro que pusiste en la parte de
+     colección y ponlo a la hora de elegir lo que te piden de SBC ... Atributo, Peso, País,
+     Tipo de Carta y Rareza". Es donde de verdad hacen falta: un reto te pide tres de una
+     división o un Especialista, y buscarlo a mano pasando hojas es el trabajo que el
+     filtro te quita. */
+  const disp=filtrarCartas(todas,x=>PORID[x.cid],x=>x);
   /* POR HOJAS, COMO EL ÁLBUM. Aquí se listaba la colección ENTERA de una vez: con 130
      cartas eran 7.000 px de scroll y elegir tres se volvía una excursión. Mismo tamaño de
      hoja y mismo pasador que la colección. */
@@ -4206,13 +4245,21 @@ function vRetos(){
     <div class="card-panel"><div class="row" style="align-items:center">
       <div style="flex:2"><b>${sel.length} entregadas</b><div class="sub">${ok?'Requisitos cumplidos':'Aún no cumple'}</div></div>
       <button class="btn sm" data-a="entregarreto" ${ok?'':'disabled'}>Entregar</button></div></div>
+    ${filtrosHTML(todas,x=>PORID[x.cid],{atributo:true})}
+    ${disp.length?`
     <div class="grid" style="--cols:4" data-fit="4,4">${hoja.map(x=>
       cartaHTML(PORID[x.cid],{attr:`data-rec="${x.iid}"`,sel:sel.includes(x.iid),rareza:x.rz})).join('')}</div>
     ${pags>1?`<div class="album-nav">
       <button class="btn gho sm" data-a="pag" data-v="-1" ${tmp.pag?'':'disabled'}>‹</button>
       <span class="pag">HOJA ${tmp.pag+1} DE ${pags}</span>
       <button class="btn gho sm" data-a="pag" data-v="1" ${tmp.pag<pags-1?'':'disabled'}>›</button>
-    </div>`:''}`;
+    </div>`:''}`
+    /* Un filtro que no deja pasar nada LO DICE, con su botón para quitarlo. Con el cartel
+       de "no tienes cartas" parecería que has perdido la colección. */
+    :`<div class="card-panel center"><div class="sub mb">${filtrosPuestos()
+        ?'Ninguna de tus cartas pasa estos filtros.'
+        :'No te queda ninguna carta fuera de la plantilla.'}</div>
+      ${filtrosPuestos()?'<button class="btn gho sm" data-a="limpiarfiltros">Quitar los filtros</button>':''}</div>`}`;
 }
 
 /* ── INTERCAMBIO ── */
@@ -5286,6 +5333,11 @@ document.addEventListener('change',e=>{
   const t=e.target.closest('[data-f]'); if(!t) return;
   tmp[t.dataset.f]=t.value; tmp.pag=0; render();
 });
+/* Los filtros viven en `tmp`, o sea que se olvidan al salir de la pantalla. Es lo que se
+   espera de un filtro de una vista: volver al álbum y encontrártelo recortado por algo que
+   pusiste hace media hora es peor que volver a elegir. Y además la colección y el SBC no
+   llevan los mismos —el SBC tiene Atributo y la colección no—, así que arrastrarlos de una
+   a otra dejaría puesto un filtro que en la otra pantalla ni se ve. */
 
 /* EL DESLIZADOR SE ACTUALIZA A MANO, sin repintar. Un render() en cada movimiento del dedo
    rehace el HTML, y con él se va el propio <input> que estás arrastrando: el deslizador se
@@ -5669,7 +5721,10 @@ document.addEventListener('click',e=>{
         <button class="btn" data-a="cerrarov" style="width:100%">Vale</button>`);
       break;
     case 'limpiarfiltros':
-      tmp.fTipo=tmp.fAtr=tmp.fPeso=''; tmp.pag=0; render(); break;
+      // Los campos están en CAMPOS_FILTRO, en un solo sitio: añadir uno no obliga a
+      // acordarse de venir aquí a borrarlo.
+      for(const k of CAMPOS_FILTRO) tmp[k]='';
+      tmp.pag=0; render(); break;
 
     case 'pasarcarta':                   // el montón: voltear y pasar al fondo
       toqueApertura(); break;

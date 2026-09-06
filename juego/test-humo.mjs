@@ -1710,62 +1710,122 @@ const filtro = await page.evaluate(() => {
   r.sinChips = document.querySelectorAll('#app .chip').length;
   // la primera opción de cada uno apaga el filtro
   r.primeraVacia = sel.every(s => s.options[0].value === '');
-  r.opciones = { tipo: sel[0].options.length, atr: sel[1].options.length, peso: sel[2].options.length };
+  r.opciones = Object.fromEntries(sel.map(s => [s.dataset.f, s.options.length]));
+  // El de países sólo ofrece países que TIENES: una lista de imposibles no es un filtro.
+  const misPaises = new Set(S.coleccion.map(x => PORID[x.cid].pais).filter(Boolean));
+  const selPais = sel.find(s => s.dataset.f === 'fPais');
+  r.paisesReales = [...selPais.options].slice(1).every(o => misPaises.has(o.value))
+    && selPais.options.length - 1 === misPaises.size;
 
   const cuenta = () => document.querySelectorAll('.grid.fit .carta').length;
-  const total = S.coleccion.length;
+  const lista = () => S.coleccion.map(x => ({ x, c: PORID[x.cid] }));
   // por peso
   tmp.fPeso = 'm3'; tmp.pag = 0; render();
-  r.peso = [...document.querySelectorAll('.grid.fit .carta')].length &&
-    filtrarCartas(S.coleccion.map(x => ({ c: PORID[x.cid] })), o => o.c).every(o => o.c.division === 'm3');
-  // por tipo, encima del peso: se acumulan
-  tmp.fTipo = 'corona'; render();
-  r.acumulan = filtrarCartas(S.coleccion.map(x => ({ c: PORID[x.cid] })), o => o.c)
-    .every(o => o.c.division === 'm3' && (o.c.rk === 0 || o.c.rk <= 5));
-  // por atributo: "sin atributo" es una búsqueda de verdad
-  tmp.fTipo = ''; tmp.fPeso = ''; tmp.fAtr = 'sin'; render();
-  const soloSin = filtrarCartas(S.coleccion.map(x => ({ c: PORID[x.cid] })), o => o.c);
-  r.sinAtributo = soloSin.length > 0 && soloSin.every(o => !o.c.rasgos.length);
-  tmp.fAtr = 'camaleon'; render();
-  const conCam = filtrarCartas(S.coleccion.map(x => ({ c: PORID[x.cid] })), o => o.c);
-  r.conAtributo = conCam.every(o => o.c.rasgos.some(x => x.tipo === 'camaleon'));
+  r.peso = cuenta() > 0 &&
+    filtrarCartas(lista(), o => o.c, o => o.x).every(o => o.c.division === 'm3');
+  // por país, encima del peso: se acumulan
+  const paisM3 = PORID[S.coleccion.find(x => PORID[x.cid].division === 'm3').cid].pais;
+  tmp.fPais = paisM3; render();
+  r.acumulan = filtrarCartas(lista(), o => o.c, o => o.x)
+    .every(o => o.c.division === 'm3' && o.c.pais === paisM3);
+
+  /* POR RAREZA, que es el filtro nuevo. Y aquí está la gracia: la rareza es de la COPIA y
+     no de la carta, así que hay que marcar copias y ver que sólo pasan ésas. */
+  /* SE MIDE EL SALTO, no el total: la colección de esta prueba ya trae cartas raras y
+     épicas de verdad, porque unas líneas más arriba se han abierto los cinco sobres y
+     ahora reparten las tres rarezas. Contar "las dos que he marcado" daría igual a falso
+     por las que ya estaban, que no es un fallo del filtro. */
+  tmp.fPeso = ''; tmp.fPais = '';
+  const cuentaRz = rz => { tmp.fRz = rz; render();
+    return filtrarCartas(lista(), o => o.c, o => o.x).length; };
+  const base = { comun: cuentaRz('comun'), rara: cuentaRz('rara'), epica: cuentaRz('epica') };
+  /* Y se marcan dos copias DEL MISMO PELEADOR, que es lo que de verdad hay que probar: si
+     el filtro mirase la carta y no la copia, las dos irían siempre juntas. */
+  const dosIguales = Object.values(S.coleccion.reduce((a, x) => {
+    (a[x.cid] = a[x.cid] || []).push(x); return a; }, {})).find(g => g.length >= 2)
+    || [S.coleccion[0], S.coleccion[1]];
+  const rzPrevias = dosIguales.slice(0, 2).map(x => x.rz);
+  dosIguales[0].rz = 'rara'; dosIguales[1].rz = 'epica';
+  const ahora = { comun: cuentaRz('comun'), rara: cuentaRz('rara'), epica: cuentaRz('epica') };
+  const quita = rz => (rzPrevias.filter(v => (v || 'comun') === rz).length);
+  r.rareza = ahora.epica === base.epica + 1 - quita('epica');
+  r.rarezaRara = ahora.rara === base.rara + 1 - quita('rara');
+  r.rarezaComun = ahora.comun === base.comun - quita('comun');
+  r.detRz = `antes ${JSON.stringify(base)} después ${JSON.stringify(ahora)} `
+    + `(las dos marcadas eran ${rzPrevias.map(v => v || 'comun').join(' y ')}, `
+    + `mismo peleador: ${dosIguales[0].cid === dosIguales[1].cid})`;
+  if (rzPrevias[0] === undefined) delete dosIguales[0].rz; else dosIguales[0].rz = rzPrevias[0];
+  if (rzPrevias[1] === undefined) delete dosIguales[1].rz; else dosIguales[1].rz = rzPrevias[1];
+
+  // El de familia: hoy todo es "base", así que no quita nada. Cuando haya leyendas, sí.
+  tmp.fRz = ''; tmp.fFam = 'base'; render();
+  // (la familia no quita nada hoy: todo lo que existe es base)
+  r.familia = filtrarCartas(lista(), o => o.c, o => o.x).length === S.coleccion.length;
 
   // Filtrar desde la hoja 4 vuelve a la primera, o te quedas en una página que ya no existe.
-  tmp.fAtr = ''; tmp.pag = 3; render();
+  tmp.fFam = ''; tmp.pag = 3; render();
   document.querySelector('[data-f="fPeso"]').value = 'm3';
   document.querySelector('[data-f="fPeso"]').dispatchEvent(new Event('change', { bubbles: true }));
   r.vuelveAHoja1 = tmp.pag === 0;
 
   /* Un filtro que no deja pasar nada NO se dice igual que no tener cartas. El vacío se
      construye a propósito y no a base de combinar filtros raros: con una colección al
-     azar, "peso mosca + campeón + camaleón" unas veces sale vacía y otras no, y una
-     prueba que depende de la suerte no prueba nada. Se deja UNA carta de una división y
-     se filtra por otra. */
+     azar, "peso mosca + campeón" unas veces sale vacía y otras no, y una prueba que
+     depende de la suerte no prueba nada. Se deja UNA carta de una división y se filtra por
+     otra. */
   const guardada = S.coleccion;
   const unaDe = ROSTER.find(c => c.division === 'm3');
   S.coleccion = [{ iid: 'solo1', cid: unaDe.id }];
-  tmp.fPeso = 'f1'; tmp.fTipo = ''; tmp.fAtr = ''; tmp.pag = 0; render();
+  tmp.fPeso = 'f1'; tmp.pag = 0; render();
   const t = document.querySelector('#app').textContent;
   r.vacio = { dice: /cumple ese filtro/i.test(t), noDiceQueNoTienes: !/no tienes ninguna carta/i.test(t),
     hayBoton: !!document.querySelector('[data-a="limpiarfiltros"]') };
   document.querySelector('[data-a="limpiarfiltros"]').click();
   S.coleccion = guardada; render();
   r.limpio = { puestos: filtrosPuestos(), cartas: cuenta() };
+
+  /* Y LOS DEL SBC, que es donde los mandó él. Ahí van los CINCO —con Atributo— y en la
+     colección van cuatro. La diferencia es el requisito: un reto te pide un Especialista.
+     Se entra en el primer SBC que se pueda abrir. */
+  tmp = {}; ir('retosdetalle');
+  const reto = document.querySelector('[data-a="reto"]');
+  if (reto) {
+    reto.click();
+    const s2 = [...document.querySelectorAll('.filtros select')];
+    r.sbc = { campos: s2.map(x => x.dataset.f) };
+    // y filtran de verdad: por peso, sobre las cartas que ofrece
+    const antes = document.querySelectorAll('.grid .carta').length;
+    tmp.fPeso = 'm3'; render();
+    const despues = [...document.querySelectorAll('.grid .carta')];
+    r.sbc.filtra = antes > 0 && despues.length <= antes;
+    tmp.fPeso = ''; render();
+  }
   return r;
 });
-comprobar(filtro.cuantos === 3 && filtro.sonDesplegables && filtro.campos.join(',') === 'fTipo,fAtr,fPeso',
-  `tres desplegables y ni un chip: tipo, atributo y peso (${filtro.campos.join(', ')})`);
+comprobar(filtro.cuantos === 4 && filtro.sonDesplegables
+  && filtro.campos.join(',') === 'fPeso,fPais,fFam,fRz',
+  `la colección lleva cuatro desplegables y ni un chip: peso, país, tipo y rareza (${filtro.campos.join(', ')})`);
 comprobar(filtro.sinChips === 0, 'nada de botones seleccionables en la colección');
 comprobar(filtro.primeraVacia,
-  `cada uno se puede apagar desde su primera opción (${filtro.opciones.tipo}/${filtro.opciones.atr}/${filtro.opciones.peso} opciones)`);
+  `cada uno se puede apagar desde su primera opción (${Object.entries(filtro.opciones).map(([k, v]) => k + ' ' + v).join(', ')})`);
+comprobar(filtro.paisesReales,
+  'el de países sólo ofrece países de los que tienes cartas, no los 60 del plantel');
 comprobar(filtro.peso && filtro.acumulan, 'filtran por separado y se acumulan entre ellos');
-comprobar(filtro.sinAtributo && filtro.conAtributo,
-  '"Sin atributo" es una búsqueda de verdad, no la ausencia de filtro');
+/* LA RAREZA ES DE LA COPIA Y NO DE LA CARTA, y ésa es la comprobación que importa: dos
+   copias del mismo peleador con marcos distintos tienen que filtrarse por separado. */
+comprobar(filtro.rareza && filtro.rarezaRara && filtro.rarezaComun,
+  `el filtro de rareza mira la COPIA: una épica y una común del mismo peleador se separan (épica ${filtro.rareza}, rara ${filtro.rarezaRara}, común ${filtro.rarezaComun}: ${filtro.detRz})`);
+comprobar(filtro.familia,
+  'el de tipo de carta existe y hoy todo es "base": no quita nada hasta que haya leyendas');
 comprobar(filtro.vuelveAHoja1, 'cambiar un filtro vuelve a la primera hoja del álbum');
 comprobar(filtro.vacio.dice && filtro.vacio.noDiceQueNoTienes && filtro.vacio.hayBoton,
   'un filtro que no deja pasar nada lo dice, y no como si no tuvieras cartas');
 comprobar(!filtro.limpio.puestos && filtro.limpio.cartas === 16,
   `y se pueden quitar de un toque (${filtro.limpio.cartas} cartas de vuelta, 4x4)`);
+comprobar(!!filtro.sbc && filtro.sbc.campos.join(',') === 'fAtr,fPeso,fPais,fFam,fRz',
+  `el SBC lleva los cinco, con Atributo (${filtro.sbc ? filtro.sbc.campos.join(', ') : 'no se pudo entrar'})`);
+comprobar(!!filtro.sbc && filtro.sbc.filtra,
+  'y filtran de verdad las cartas que se pueden entregar');
 
 /* LA REJILLA DE CARTAS. Esta comprobación es la que faltaba: `.grid` no tenía NI UNA regla
    de CSS —el álbum salía a una carta por fila y 5.500 px de scroll— y nadie se enteró,
