@@ -56,4 +56,21 @@ const info = await pg.evaluate(async ([quien, ANCHO_CARTA]) => {
 await pg.screenshot({ path: `${CARPETA}/tres-rarezas.png` });
 console.log(`  ${info.nombre} · ${info.division}${info.apodo ? ' · ' + info.apodo : ''}`);
 console.log(`  ${CARPETA}/tres-rarezas.png`);
+
+/* EL LATIDO, FOTOGRAMA A FOTOGRAMA. Una imagen fija no enseña una animación, así que se
+   para la animación y se fija la opacidad a mano en cada paso del ciclo: sale determinista
+   —siempre los mismos fotogramas— en vez de depender de cuándo dispare la captura. */
+const PASOS = 14;
+fs.mkdirSync(`${CARPETA}/latido`, { recursive: true });
+for (let i = 0; i < PASOS; i++) {
+  // el mismo recorrido que @keyframes latido: 1 → .45 → 1, suavizado
+  const t = i / PASOS, o = 0.45 + 0.55 * (0.5 + 0.5 * Math.cos(2 * Math.PI * t));
+  await pg.evaluate(o => {
+    for (const e of document.querySelectorAll('.carta .luz'))
+      { e.style.animation = 'none'; e.style.opacity = o; }
+  }, o);
+  await pg.screenshot({ path: `${CARPETA}/latido/${String(i).padStart(2, '0')}.png`,
+    clip: { x: 0, y: 0, width: 1420, height: 700 } });
+}
+console.log(`  ${PASOS} fotogramas del latido en ${CARPETA}/latido/`);
 await navegador.close();

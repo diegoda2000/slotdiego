@@ -751,10 +751,12 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
   --c-encaje:1; --c-cromo:var(--cromo)}
 .carta.raro,.naipe.raro{--c-marco:url(marcos/raro.webp);
   --c-marco-rev:url(marcos/raro-reverso.webp);
+  --c-luz:url(marcos/raro-luz.webp); --c-luz-rev:url(marcos/raro-reverso-luz.webp);
   --c-acc:#2e85e9; --c-acc-suave:#7cc8fb; --c-filete:rgba(61,171,247,.55); --c-encaje:.896;
   --c-cromo:linear-gradient(180deg,#ffffff 0%,#dde9f6 38%,#7fa8cf 55%,#eef5fc 74%,#a9c4de 100%)}
 .carta.epico,.naipe.epico{--c-marco:url(marcos/epico.webp);
   --c-marco-rev:url(marcos/epico-reverso.webp);
+  --c-luz:url(marcos/epico-luz.webp); --c-luz-rev:url(marcos/epico-reverso-luz.webp);
   --c-acc:#b669e6; --c-acc-suave:#dd8bf7; --c-filete:rgba(182,105,230,.55); --c-encaje:.873;
   --c-cromo:linear-gradient(180deg,#ffffff 0%,#ece0f6 38%,#a68bc4 55%,#f5eefc 74%,#c9b2de 100%);
   --c-cromo-num:linear-gradient(180deg,#fee0a8 0%,#fccc82 38%,#c68946 55%,#fed492 74%,#d9a45e 100%)}
@@ -798,6 +800,31 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
    el hueco libre que deja su borde por dentro. */
 .carta .marco{position:absolute;inset:0;z-index:0;
   background:var(--c-marco) center/100% 100% no-repeat}
+
+/* EL RESPLANDOR RESPIRA, Y NO SE MUEVE DE SITIO. Lo pidió él: la luz "del color de esas
+   zonas en la carta", "constante de la misma zona pero animado".
+
+   Cada marco viene partido en dos por herramientas/preparar-marcos-rareza.py: el archivo
+   de abajo es el marco con la luz APAGADA y éste el resplandor solo, con los colores del
+   original y transparencia donde no hay luz. Lo único que se anima es la OPACIDAD de esta
+   capa, así que el resplandor no se desplaza ni cambia de tono: son sus propios píxeles,
+   más o menos presentes. Al 100% la carta es exacta al archivo que él pasó.
+
+   Sin `--c-luz` no se pinta nada: la común no tiene resplandor que animar.
+
+   Va con `will-change:opacity` porque en una hoja de 16 cartas son 16 capas animándose a
+   la vez, y sin ella el navegador repinta el marco entero en cada fotograma. */
+.carta .luz{position:absolute;inset:0;z-index:0;pointer-events:none;
+  background:var(--c-luz) center/100% 100% no-repeat;
+  will-change:opacity;animation:latido 3.6s ease-in-out infinite}
+.carta.tapada::after,.naipe .cara.dorso > .recorte::after{content:'';position:absolute;
+  inset:0;pointer-events:none;background:var(--c-luz-rev) center/100% 100% no-repeat;
+  will-change:opacity;animation:latido 3.6s ease-in-out infinite}
+@keyframes latido{0%,100%{opacity:1}50%{opacity:.45}}
+/* Quien haya pedido menos movimiento en su móvil se queda con la carta a plena luz. */
+@media (prefers-reduced-motion:reduce){
+  .carta .luz,.carta.tapada::after,.naipe .cara.dorso > .recorte::after{animation:none}
+}
 
 /* EL CONTENIDO SE ENCOGE HASTA EL HUECO DE SU MARCO, y no es cosmética: los tres marcos
    NO dejan el mismo hueco. Medido con una rejilla de 5% encima de cada uno, igual que se
@@ -939,7 +966,8 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 /* Boca abajo: la del rival mientras no se resuelve el duelo. */
 /* Boca abajo: el REVERSO de verdad, que también lo pasó él. Antes era una trama de rayas
    dibujada con CSS porque no había reverso; ahora sí. */
-.carta.tapada{aspect-ratio:620/877;background:var(--c-marco-rev) center/100% 100% no-repeat}
+.carta.tapada{position:relative;aspect-ratio:620/877;
+  background:var(--c-marco-rev) center/100% 100% no-repeat}
 .carta.oculta{display:grid;place-items:center;background:var(--bg2);
   border:1px dashed var(--line);color:var(--dim2);aspect-ratio:620/877;border-radius:9px}
 
@@ -2300,6 +2328,7 @@ function cartaHTML(c,o={}){
   return `<div class="carta ${crz} ${foto?'confoto':''} ${o.sel?'sel':''}" ${o.attr||''}>
    <div class="lienzo">
     <div class="marco"></div>
+    <div class="luz"></div>
     <div class="hueco">
       ${foto?`<img class="c-foto" src="${foto}" alt="" loading="lazy">`:''}
     </div>

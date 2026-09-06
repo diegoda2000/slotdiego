@@ -29,6 +29,24 @@ Se arregla en dos pasos, y los dos hacen falta:
   · SE LE BAJA EL PICO. Por encima del techo la luz se comprime en vez de cortarse: cortar
     aplana el resplandor en una mancha de un solo tono y se le ve el escalón.
 
+Y CADA MARCO SALE PARTIDO EN DOS, que es lo que permite animar la luz sin moverla:
+"raro.webp" es el marco con el resplandor APAGADO y "raro-luz.webp" el resplandor solo, con
+los colores del original y transparencia donde no hay luz. El juego los pone uno encima del
+otro y lo único que anima es la opacidad de la capa de arriba: al 100% la carta es EXACTA
+al archivo que él pasó, y al 45% la misma carta con la luz baja. El resplandor no se
+desplaza ni cambia de tono —sigue siendo el de su zona, píxel por píxel—: sólo respira.
+
+Se hace así y no con `mix-blend-mode` ni sumando capas a propósito. Con la mezcla normal de
+toda la vida, poner la luz encima da `apagado·(1−a) + original·a`, y como el apagado ES el
+original multiplicado en esas mismas zonas, el resultado a opacidad 1 vuelve a ser el
+original clavado. Un modo de mezcla exótico no haría falta y sería una cosa más que puede
+no existir en un WebView viejo.
+
+QUÉ CUENTA COMO RESPLANDOR: la luz, pesada por el color. `a` sube con la luminancia entre
+0,20 y 0,55 y se multiplica por la saturación hasta 0,35. Lo segundo no es un adorno: sin
+ello entrarían el "UFC" y el "P4P" del reverso, que son blancos y plata, y se pondrían a
+parpadear como si fueran neón.
+
 Uso:  python3 herramientas/preparar-marcos-rareza.py [--muestras]
 """
 import os, sys
@@ -46,6 +64,27 @@ TECHO, COMPRESION = 210, 0.34
 # zona. Por encima, se respeta el suyo.
 SAT_MINIMA = 0.45
 DESENFOQUE = 0.03               # el radio del desenfoque, en fracción del ancho
+
+# Los dos extremos de qué es resplandor, y cuánto se apaga la capa de abajo.
+LUZ_0, LUZ_1 = 0.20, 0.55       # por debajo no es luz; por encima es luz del todo
+SAT_LUZ = 0.35                  # el color que hace falta para contar como neón
+APAGADO = 0.42                  # a cuánto se queda el resplandor en la capa de abajo
+
+
+def partirLuz(im):
+    """Devuelve (marco apagado, resplandor suelto). Sumados dan el original exacto."""
+    a = np.asarray(im.convert('RGB'), dtype=np.float32) / 255.0
+    luz = a @ np.array([0.299, 0.587, 0.114], dtype=np.float32)
+    mx, mn = a.max(2), a.min(2)
+    sat = np.where(mx > 1e-6, (mx - mn) / np.maximum(mx, 1e-6), 0.0)
+    fuerza = (np.clip((luz - LUZ_0) / (LUZ_1 - LUZ_0), 0, 1)
+              * np.clip(sat / SAT_LUZ, 0, 1))
+    base = a * (1 - fuerza * (1 - APAGADO))[..., None]
+    apagado = Image.fromarray((np.clip(base, 0, 1) * 255 + 0.5).astype(np.uint8), 'RGB')
+    brillo = Image.fromarray(
+        np.dstack([(a * 255 + 0.5).astype(np.uint8),
+                   (fuerza * 255 + 0.5).astype(np.uint8)]), 'RGBA')
+    return apagado, brillo, float(fuerza.mean())
 
 
 def apagarBrillos(im):
@@ -147,12 +186,35 @@ for orig, nom in PIEZAS:
     antes = im.size
     im, tocado = apagarBrillos(im)
     caja = cajaDelDibujo(np.asarray(im, dtype=np.float32))
-    im = recortar(im, caja).crop(caja).resize((ANCHO, ALTO), Image.LANCZOS)
-    f = f'{SALIDA}/{nom}.webp'
-    im.save(f, 'WEBP', quality=90, method=6)
-    print(f'{orig:14} {antes[0]}x{antes[1]} -> {nom}.webp  dibujo '
+
+    # El marco se parte ANTES de recortar y escalar, para que las dos capas salgan del
+    # mismo original y encajen píxel a píxel al superponerlas.
+    apagado, brillo, medio = partirLuz(im)
+    alfa = recortar(im, caja).crop(caja).resize((ANCHO, ALTO), Image.LANCZOS).getchannel('A')
+
+    capas = []
+    base = apagado.convert('RGBA').crop(caja).resize((ANCHO, ALTO), Image.LANCZOS)
+    base.putalpha(alfa)
+    capas.append((nom, base))
+
+    # El resplandor lleva el alfa de la luz multiplicado por el del recorte: fuera de la
+    # carta no puede pintar nada, o el desgarro del canto se vería doble.
+    luz = brillo.crop(caja).resize((ANCHO, ALTO), Image.LANCZOS)
+    la = np.asarray(luz.getchannel('A'), dtype=np.float32) / 255.0
+    ra = np.asarray(alfa, dtype=np.float32) / 255.0
+    luz.putalpha(Image.fromarray((la * ra * 255 + 0.5).astype(np.uint8), 'L'))
+    capas.append((nom + '-luz', luz))
+
+    tam = 0
+    for n2, im2 in capas:
+        f = f'{SALIDA}/{n2}.webp'
+        # La capa de luz va a menos calidad a propósito: es un resplandor difuso y sin
+        # cantos, así que no se le nota, y a 90 duplicaba el peso del marco en el APK.
+        im2.save(f, 'WEBP', quality=72 if n2.endswith('-luz') else 90, method=6)
+        tam += os.path.getsize(f)
+    print(f'{orig:14} {antes[0]}x{antes[1]} -> {nom}.webp + {nom}-luz.webp  dibujo '
           f'{caja[2]-caja[0]}x{caja[3]-caja[1]} (prop {(caja[2]-caja[0])/(caja[3]-caja[1]):.4f})  '
-          f'luz bajada en el {100*tocado:.2f}% de la carta  {os.path.getsize(f)//1024} kB')
+          f'luz bajada en el {100*tocado:.2f}%, resplandor en el {100*medio:.1f}%  {tam//1024} kB')
 
 if MUESTRAS:
     print('\n  Cómo queda la luz, medida igual que antes:')
