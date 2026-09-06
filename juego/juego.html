@@ -1,5 +1,11 @@
 <title>P4P.CG</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<!-- LA MARCA DE TELEVISIÓN, y va aquí arriba a propósito: la pone el envoltorio de Android
+     con `?tv=1` cuando el aparato declara ser una Android TV, y tiene que estar puesta
+     ANTES del primer fotograma o la primera pintada saldría con la maqueta de móvil.
+     TODO lo que es de tele cuelga de esta clase. En un móvil, en el navegador y en el
+     servidor no se pone nunca, así que allí no cambia absolutamente nada. -->
+<script>if(/[?&]tv=1(&|$)/.test(location.search))document.documentElement.classList.add('tv');</script>
 <style>
 /* ═══════════════════════════════════════════════════════════════
    PROTOTIPO JUGABLE — juego de cartas de MMA
@@ -1469,6 +1475,31 @@ textarea.campo{resize:vertical;line-height:1.35;font-family:var(--texto)}
 .coach .tx{font-size:13.5px;line-height:1.5;color:var(--dim)}
 .coach .tx b{color:var(--txt)}
 .coach .bs{display:flex;gap:8px;margin-top:10px}
+/* ── EL REALCE DEL FOCO, SÓLO EN TELEVISIÓN ────────────────────────────────────
+   Con un mando hay que VER dónde estás: sin esto la cruceta mueve un foco invisible y no
+   hay forma de jugar.
+
+   Va con `:focus` a secas y no con `:focus-visible` a propósito: el foco lo movemos
+   nosotros por código, y el navegador no siempre cuenta eso como "visible".
+
+   Y NO SE LE TOCA EL `border-radius`. El contorno ya sigue por su cuenta la forma que
+   tenga el elemento; poniéndoselo, la carta cambiaría de forma justo al enfocarla.
+
+   El `scroll-margin` reserva el sitio de la cabecera y de la barra de pestañas, que son
+   fijas: sin él, arrastrar a la vista deja el elemento debajo de una de las dos y parece
+   que el foco se ha perdido.
+
+   Todo cuelga de `.tv`, o sea que en un móvil no existe ninguna de estas reglas. */
+.tv button:focus,.tv a:focus,.tv input:focus,.tv select:focus,.tv textarea:focus,
+.tv [tabindex]:focus{outline:3px solid var(--oro-suave);outline-offset:2px;
+  box-shadow:0 0 0 6px rgba(240,197,78,.22)}
+.tv .carta:focus{outline-offset:0}
+.tv button,.tv [tabindex],.tv input,.tv select,.tv textarea{scroll-margin:72px 0 78px}
+/* CON `!important`, Y ES OBLIGADO: render() le escribe a #nav un `display:flex` EN LÍNEA
+   para esconderlo en la partida y en la apertura, y un estilo en línea le gana a
+   cualquier hoja. Sin esto la barra no se iba y el cuadro de texto seguía quedándose con
+   el último palmo detrás. */
+.tv body.escribiendo #nav{display:none!important}
 </style>
 
 <div id="top">
@@ -2708,7 +2739,26 @@ function render(){
   $('#app').classList.remove('flash'); void $('#app').offsetWidth; $('#app').classList.add('flash');
   ajustarRejillas();    // antes de medir: cambia lo anchas que son las cartas
   medirCartas();
+  /* Y en una tele, marcar lo que puede recibir el foco de la cruceta: cada pintada trae
+     elementos nuevos, y las cartas son <div> que por su cuenta no lo reciben. En un móvil
+     `marcarFocos` ni siquiera existe. */
+  if(ESTV) window.marcarFocos();
 }
+
+/* ¿Estamos en una televisión? Lo dice la clase que puso el envoltorio de Android con
+   `?tv=1`. Se lee UNA vez: no cambia a mitad de partida. */
+const ESTV=document.documentElement.classList.contains('tv');
+
+/* EL SUELO DEL ANCHO DE CARTA, Y POR QUÉ EN LA TELE ES OTRO.
+   Los 46 px existen para que en un MÓVIL la carta siga leyéndose: por debajo, el nombre y
+   las stats se vuelven una mancha. Pero una tele reparte sus 540 px de alto sobre
+   cincuenta pulgadas, así que ahí un píxel de CSS es físicamente ENORME y ese suelo deja
+   de proteger nada: lo único que hace es impedir que quepan las cuatro filas y sacar la
+   rejilla de la pantalla. Medido en la ventana que deja una tele —304x540, con forma de
+   móvil, que es como las encajonan estos aparatos—: Colección se pasaba 8 px y Plantilla
+   49. Con 34 caben las dos con sitio de sobra.
+   NO SE TOCA EL DE MÓVIL: fuera de la tele, `ESTV` es false y aquí sigue habiendo un 46. */
+const SUELO_CARTA=ESTV?34:46;
 
 /* Las rejillas de cartas se estiran hasta llenar la pantalla, y ninguna se desplaza.
 
@@ -2764,7 +2814,7 @@ function ajustarRejillas(){
        se multiplican por las filas, así que la rejilla podía pasarse del hueco por un
        píxel. Con el suelo entero nunca se pasa: como mucho sobra. Vetos venía dando ese
        píxel de más. */
-    ancho=Math.floor(Math.max(46, Math.min(ancho, tope)));
+    ancho=Math.floor(Math.max(SUELO_CARTA, Math.min(ancho, tope)));
     g.style.setProperty('--rejilla', (ancho*cols+HUECO*(cols-1)).toFixed(1)+'px');
     /* LA REJILLA OCUPA LO QUE OCUPA, y no el hueco entero. Antes se le fijaba el alto y
        lo que sobraba se repartía entre las filas: con la hoja llena colaba, pero en cuanto
@@ -5512,8 +5562,14 @@ document.addEventListener('input',e=>{
   if(oro) oro.textContent=`${MONEDA_TXT} ${(sumas[n]||0).toLocaleString('es-ES')}`;
 });
 
+/* TODO LO QUE RESPONDE AL TOQUE, EN UNA SOLA LISTA. Antes vivía suelta dentro del
+   `closest` de aquí abajo; ahora la lee también la cruceta del mando, y dos copias de
+   esta lista se separarían el día que se añada un `data-` nuevo: saldría un botón que se
+   puede tocar con el dedo y al que la cruceta no llega. */
+const SEL_TOCABLE='[data-nav],[data-a],[data-carta],[data-slot],[data-poner],[data-rec],[data-vsel],[data-rol],[data-veto],[data-dsel],[data-ssel],[data-cambio],[data-camaleon],[data-incomodo],[data-especialista],[data-eleccion],[data-pido],[data-ofrezco],[data-vetstat]';
+
 document.addEventListener('click',e=>{
-  const t=e.target.closest('[data-nav],[data-a],[data-carta],[data-slot],[data-poner],[data-rec],[data-vsel],[data-rol],[data-veto],[data-dsel],[data-ssel],[data-cambio],[data-camaleon],[data-incomodo],[data-especialista],[data-eleccion],[data-pido],[data-ofrezco],[data-vetstat]');
+  const t=e.target.closest(SEL_TOCABLE);
   if(!t) return;
   const d=t.dataset;
 
@@ -6000,6 +6056,145 @@ document.addEventListener('click',e=>{
     case 'cerrarov': cerrarOv(); break;
   }
 });
+
+/* ══════════════════════════════════════════════════════════════════════════
+   11 bis. LA CRUCETA DEL MANDO — SÓLO EN TELEVISIÓN
+   ══════════════════════════════════════════════════════════════════════════
+   Una tele no tiene dedo: se maneja con la cruceta y el OK del mando. El juego parte con
+   una ventaja, y es que casi todo lo que se toca ya son <button> DE VERDAD —las tarjetas
+   de menú, las pestañas de abajo, los botones—, así que el sistema ya los sabe enfocar.
+   Lo que NO lo es son LAS CARTAS, que son <div>, y por eso hay que marcarlas.
+
+   Y EL FOCO HAY QUE MOVERLO A MANO. El WebView de Chromium no trae navegación por
+   dirección: con las flechas lo único que hace es desplazar la página. Así que se
+   atienden aquí y el siguiente foco se elige POR GEOMETRÍA, que es lo que espera quien
+   mira una tele: el de al lado en esa dirección. Ir "al siguiente del HTML" no vale: en
+   una rejilla de cuatro columnas el siguiente del HTML es el de la derecha, así que
+   bajar saltaría a cualquier parte.
+
+   TODO ESTO VIVE DENTRO DE UN if(ESTV). En un móvil no se registra ni un oyente, no se
+   marca ni un elemento y no se ejecuta ni una línea: es exactamente el juego de antes.
+   ══════════════════════════════════════════════════════════════════════════ */
+if(ESTV){
+  /* Lo enfocable es lo que se toca, más los campos, que no llevan `data-`. */
+  const SEL_FOCO=SEL_TOCABLE+',input:not([type=hidden]):not([disabled]),select:not([disabled]),textarea';
+  const NATIVO=/^(BUTTON|A|INPUT|SELECT|TEXTAREA)$/;
+
+  /* SE QUEDA EL DE MÁS ADENTRO, y no es un detalle: una tarjeta de menú es un <div> que
+     envuelve a un <button>, y los dos casarían con la lista. Enfocar el de fuera dejaría
+     el realce alrededor de la fila entera y el OK sin nada que pulsar. La regla es la
+     misma que ya usa el delegador de clics, que sube con `closest` desde lo tocado: manda
+     el de dentro. */
+  const hoja=e=>!e.querySelector(SEL_FOCO);
+
+  function focos(){
+    const l=[];
+    for(const e of document.querySelectorAll(SEL_FOCO)){
+      if(e.disabled||e.tabIndex<0||!hoja(e)) continue;
+      const r=e.getBoundingClientRect();
+      if(r.width>2&&r.height>2) l.push(e);        // lo escondido mide cero
+    }
+    return l;
+  }
+
+  /* A lo que no es enfocable de serie se le pone tabindex. Se llama al final de cada
+     render(), porque cada pintada trae elementos nuevos. */
+  /* Se cuelga de `window` a propósito y render() la llama por ahí: declarada dentro de
+     este bloque, que sólo se ejecuta en una tele, llamarla a pelo desde fuera funcionaría
+     por una regla vieja de JavaScript que no conviene tener debajo. Así se ve que sólo
+     existe cuando existe. */
+  window.marcarFocos=function(){
+    for(const e of document.querySelectorAll(SEL_FOCO))
+      if(!NATIVO.test(e.tagName)&&hoja(e)&&!e.hasAttribute('tabindex')) e.tabIndex=0;
+  };
+
+  function enfocar(e){
+    e.focus({preventScroll:true});
+    /* `nearest` y no `center`: casi ninguna pantalla se desplaza, y en las que sí —Sets,
+       Logros— centrar daría un salto en cada paso en vez de seguir al foco. */
+    e.scrollIntoView({block:'nearest',inline:'nearest'});
+  }
+
+  /* EL SIGUIENTE EN ESA DIRECCIÓN. Se compara por CENTROS para decidir si algo está hacia
+     donde vamos, y se puntúa lo que avanza más lo que se desvía, pesando el desvío el
+     TRIPLE: sin ese peso, bajar desde una carta se iría a la de abajo-a-la-derecha si
+     está un pelo más cerca, y en una rejilla eso se lee como que el foco da bandazos. */
+  function mover(dir){
+    const lista=focos();
+    if(!lista.length) return false;
+    const act=document.activeElement;
+    /* SIN FOCO SE ENTRA POR EL CONTENIDO, no por el primero del HTML. El primero del HTML
+       es el engranaje de la cabecera, arriba del todo y a la derecha: empezar ahí deja al
+       jugador en una esquina desde la que la cruceta casi no lleva a ningún sitio. Se
+       entra por lo primero de #app, que es la pantalla en la que está. */
+    if(!act||!lista.includes(act)){
+      const app=document.getElementById('app');
+      enfocar(lista.find(e=>app&&app.contains(e))||lista[0]);
+      return true;
+    }
+    const r0=act.getBoundingClientRect();
+    const x0=(r0.left+r0.right)/2, y0=(r0.top+r0.bottom)/2;
+    let mejor=null, tope=Infinity;
+    for(const e of lista){
+      if(e===act) continue;
+      const r=e.getBoundingClientRect();
+      const x=(r.left+r.right)/2, y=(r.top+r.bottom)/2;
+      let avance, desvio;
+      if(dir==='ArrowRight'){ avance=x-x0; desvio=Math.abs(y-y0); }
+      else if(dir==='ArrowLeft'){ avance=x0-x; desvio=Math.abs(y-y0); }
+      else if(dir==='ArrowDown'){ avance=y-y0; desvio=Math.abs(x-x0); }
+      else { avance=y0-y; desvio=Math.abs(x-x0); }
+      if(avance<=1) continue;                       // está detrás o al lado exacto
+      const puntos=avance+desvio*3;
+      if(puntos<tope){ tope=puntos; mejor=e; }
+    }
+    if(!mejor) return false;                        // no hay nada por ahí: no se mueve
+    enfocar(mejor);
+    return true;
+  }
+
+  /* AL ENTRAR EN UN CAMPO, SUBIRLO A LA VISTA. Con el teclado abierto la ventana se
+     queda en un tercio de lo que era, y el campo puede caer por debajo del corte o
+     detrás de la barra de pestañas, que es fija: se escribiría a ciegas. `nearest`
+     respeta el `scroll-margin` de arriba, así que lo deja por encima de la barra y por
+     debajo de la cabecera, no pegado a ninguna de las dos. */
+  /* Y MIENTRAS SE ESCRIBE, LA BARRA DE PESTAÑAS SE QUITA. El teclado de una tele deja la
+     ventana en un tercio, y con la barra puesta —que es fija y se lleva 64 px de abajo—
+     el cuadro de texto no cabe entero por encima de ella: se le quedaba el último palmo
+     detrás. Escribiendo no se va a cambiar de pestaña, así que estorba. Vuelve sola al
+     salir del campo. */
+  const escribiendo=v=>document.body.classList.toggle('escribiendo',v);
+  document.addEventListener('focusout',ev=>{
+    if(/^(INPUT|TEXTAREA|SELECT)$/.test(ev.target.tagName)) escribiendo(false);
+  });
+
+  document.addEventListener('focusin',ev=>{
+    const e=ev.target;
+    if(!/^(INPUT|TEXTAREA|SELECT)$/.test(e.tagName)) return;
+    escribiendo(true);
+    /* Un respiro antes de mirar: el teclado tarda en abrirse y en encoger la ventana, y
+       arrastrando antes de eso se calcula contra el alto viejo. */
+    setTimeout(()=>e.scrollIntoView({block:'nearest',inline:'nearest'}),60);
+  });
+
+  document.addEventListener('keydown',ev=>{
+    if(ev.altKey||ev.ctrlKey||ev.metaKey) return;
+    const act=document.activeElement, etq=act?act.tagName:'';
+
+    /* EL OK DEL MANDO llega como Enter. En un <button> el navegador ya dispara el clic
+       solo, y en un <textarea> Enter es un salto de línea: en esos dos no se toca nada.
+       En lo demás —las cartas— no lo dispara nadie, y hay que hacerlo aquí. */
+    if(ev.key==='Enter'){
+      if(act&&!NATIVO.test(etq)){ ev.preventDefault(); act.click(); }
+      return;
+    }
+    if(!/^Arrow(Up|Down|Left|Right)$/.test(ev.key)) return;
+    /* Escribiendo, izquierda y derecha son el cursor del texto y se dejan pasar. Arriba y
+       abajo sí mueven el foco: es la única forma de SALIR de un campo con un mando. */
+    if(/^(INPUT|TEXTAREA)$/.test(etq)&&/Left|Right/.test(ev.key)) return;
+    if(mover(ev.key)) ev.preventDefault();
+  });
+}
 
 /* ══════════════════════════════════════════════════════════════════════════
    12. ARRANQUE

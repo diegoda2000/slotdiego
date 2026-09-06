@@ -1034,11 +1034,9 @@ de cada lado, así que **con el teclado cerrado vale exactamente lo que valía a
 móvil sólo cambia a mejor, que es que ya no se esconde el campo detrás de las teclas.
 
 **EL BLOQUEO EN VERTICAL SE QUEDA, Y ESTÁ MEDIDO.** Soltarlo parece la solución obvia y es
-PEOR. Una tele no gira, así que Android encajona la aplicación vertical en el centro:
-sobre 1920x1080 quedan unos **607x1080** de píxeles de CSS, y ahí las siete pantallas salen
-a **0 px de desborde**. En apaisado a 960x540 —1080p a densidad 2— no da el alto y **se
-rompen dos**: Club 62 px y Plantilla 25 px. La columna centrada ES la buena. Si alguien
-vuelve a proponer el apaisado, el número está en la herramienta.
+PEOR: en apaisado a 960x540 no da el alto y **se rompe Club por 63 px**. La columna
+centrada ES la buena. Si alguien vuelve a proponer el apaisado, el número lo saca
+`ver-tv.mjs` en cada vuelta.
 
 **Tres declaraciones en el manifiesto, y ninguna cambia nada en un móvil** porque van con
 `required="false"`: la pantalla táctil deja de ser obligatoria —una tele no tiene, y sin
@@ -1057,12 +1055,88 @@ que se vea por qué está descartado— y que **con el teclado abierto** los cam
 únicas pantallas que escriben —cuenta y sugerencias— sigan viéndose enteros y sin que los
 tape la barra de pestañas. Medido con la ventana encogida al 55%: bien en tele y en móvil.
 
-**LO QUE SIGUE SIN FUNCIONAR EN UNA TELE, Y HAY QUE DECIDIRLO: EL MANDO.** El juego se
-maneja tocando, y sus botones son `<div class="sobre-fila">`, que **no son enfocables**:
-con la cruceta de un mando de televisión no se puede llegar a ellos. Hoy se juega en el
-Shield con puntero —ratón o el mando en modo cursor—. Darle mando de verdad es hacer
-enfocables los botones de menú y las cartas y pintarles un realce al enfocarlos, y eso SÍ
-toca la interfaz, así que **no se ha hecho: está preguntado y sin contestar.**
+**Y LA CRUCETA DEL MANDO YA FUNCIONA**, que lo mandó después: *"hazlo jugable con la
+cruceta del mando tanto shield como de TV, pero **solo en la versión para TV y shield**"*.
+
+**TODO LO DE LA TELE CUELGA DE UNA CLASE, Y ÉSA ES LA CLAVE DE TODO.** El envoltorio de
+Android mira `FEATURE_LEANBACK` —que es lo que declara una Android TV, y no el tamaño de
+pantalla, que una tablet grande daría lo mismo— y carga la página con **`?tv=1`**. El
+juego se pone `class="tv"` en el `<html>` **antes del primer fotograma** —un `<script>` de
+una línea arriba del todo, que si se pusiera más tarde la primera pintada saldría con la
+maqueta de móvil—. De esa clase y de la constante `ESTV` cuelga **todo**: la maqueta, la
+cruceta, el realce y la barra que se quita al escribir.
+
+**En un móvil no existe ni una línea de eso**, y hay una comprobación en la suite —**2q**—
+que lo sujeta: sin `?tv=1` no hay clase `.tv`, no hay **ni un** `tabindex` con cartas en
+pantalla, `marcarFocos` **ni existe**, no hay `scroll-margin`, las flechas no mueven ningún
+foco y la barra de pestañas no se va al escribir. Lo pidió así: *"sin tocar la experiencia
+para dispositivos móviles ni alterarla de ninguna forma"*.
+
+**El juego partía con ventaja:** casi todo lo que se toca ya son `<button>` de verdad —las
+tarjetas de menú y las pestañas—, así que ya eran enfocables. **Lo que no lo es son las
+cartas**, que son `<div>`: a ésas se les pone `tabindex` al final de cada `render()`.
+
+**EL FOCO SE MUEVE A MANO Y POR GEOMETRÍA.** Chromium **no trae** navegación por dirección:
+con las flechas sólo desplaza la página. Ir "al siguiente del HTML" tampoco vale —en una
+rejilla de cuatro columnas el siguiente del HTML es el de la derecha, así que bajar
+saltaría a cualquier parte—. Se puntúa **lo que avanza más lo que se desvía, pesando el
+desvío el TRIPLE**: sin ese peso, bajar desde una carta se iba a la de abajo-a-la-derecha
+si quedaba un pelo más cerca, y eso se lee como que el foco da bandazos.
+
+Tres detalles que costaron su vuelta:
+
+- **Se queda el enfocable de MÁS ADENTRO.** Una tarjeta de menú es un `<div>` que envuelve
+  a un `<button>`, y los dos casan con la lista. Enfocar el de fuera dejaba el realce
+  alrededor de la fila entera y el OK sin nada que pulsar. Es la misma regla que ya usaba
+  el delegador de clics con `closest`.
+- **Sin foco se entra por `#app`, no por el primero del HTML**, que es el engranaje de la
+  cabecera: empezar en esa esquina deja al jugador donde la cruceta casi no lleva a nada.
+- **`SEL_TOCABLE` está ahora en un solo sitio.** Esa lista de `data-` vivía suelta dentro
+  del `closest` del delegador de clics; ahora la leen los dos. Con dos copias, el día que
+  se añada un `data-` nuevo saldría un botón que se toca con el dedo y al que la cruceta
+  no llega.
+
+**El realce va con `:focus` a secas y no con `:focus-visible`**, porque el foco lo movemos
+nosotros por código y el navegador no siempre lo cuenta como "visible". Y **no se le toca
+el `border-radius`**: el contorno ya sigue la forma del elemento, y poniéndoselo la carta
+cambiaría de forma justo al enfocarla.
+
+**LA VENTANA DE UNA TELE NO ES LA DE UN MÓVIL, Y DA IGUAL LA RESOLUCIÓN.** Lo avisó él:
+*"estos aparatos no la abren a pantalla completa, sino que hacen lo que sería una pantalla
+de móvil en su tamaño"*. Y Android TV **normaliza a 960x540 dp en 720p, 1080p y 4K** —lo
+que cambia con la resolución es la densidad, no los dp—, así que esa ventana mide **como
+mucho 540 de alto y unos 304 de ancho**. Por eso la resolución del televisor no importa:
+lo que hay que medir es ese rango, y está medido de 304 a 420 de ancho, todo a 0 px.
+
+**Y AHÍ SE ROMPÍAN DOS PANTALLAS.** A 540 de alto, Colección se pasaba **8 px** y Plantilla
+**49**. La causa es el **suelo de 46 px del ancho de carta**, que existe para que en un
+MÓVIL la carta siga leyéndose. Una tele reparte esos 540 px sobre cincuenta pulgadas, así
+que allí un píxel de CSS es físicamente enorme y ese suelo no protege nada: lo único que
+hacía era impedir que cupieran las cuatro filas. En tele baja a **34** y caben las dos con
+sitio de sobra. **En móvil sigue siendo 46**, y está comprobado a 320x568, 390x844 y
+430x932: cero desborde y ningún cambio.
+
+**EL TECLADO, QUE ES LO QUE ÉL PUSO PRIMERO** —*"lo realmente a priorizar que funcione es
+el teclado"*—. Con la ventana ya encogida por él quedan unos 300 px de alto, y ahí pasaban
+dos cosas: el campo se quedaba **por debajo del corte** y **detrás de la barra de
+pestañas**. Dos arreglos, los dos de tele:
+
+- **Al entrar en un campo se sube a la vista**, con un respiro de 60 ms: el teclado tarda
+  en abrirse y en encoger la ventana, y arrastrando antes se calcula contra el alto viejo.
+- **La barra de pestañas se quita mientras se escribe.** Se lleva 64 px de abajo y
+  escribiendo no se va a cambiar de pestaña. Vuelve sola al salir del campo. **Lleva
+  `!important` y es obligado**: `render()` le escribe a `#nav` un `display:flex` EN LÍNEA,
+  y un estilo en línea le gana a cualquier hoja; sin eso la barra no se iba.
+
+Medido con la ventana al **55%** (304x297) y al 67%: el campo se ve **entero** y sin nada
+encima, en las dos pantallas que escriben y también en el móvil.
+
+**Cómo se mira.** `node herramientas/ver-tv.mjs [carpeta]` hace las cinco cosas: la forma
+en todo el rango de ventana de tele, cuánto desbordaría en apaisado —para que se vea por
+qué está descartado—, el teclado con el campo **enfocado de verdad**, la cruceta entera
+(que se entre por el contenido, que la derecha no se salga de la fila, que abajo baje por
+la misma columna, que el OK pulse, que se llegue a las pestañas y que el foco se vea) y,
+lo último y lo más importante, **que en un móvil no quede ni rastro**.
 
 **LO QUE ESTÁ EN MARCHA AHORA MISMO.**
 

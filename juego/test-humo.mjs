@@ -2371,6 +2371,51 @@ comprobar(parpadeo.seEligio && parpadeo.pieCambio,
 comprobar(pantVenta.cobro.selVacia, 'y la selección se vacía al vender');
 comprobar(pantVenta.sinTablaEnPantalla && pantVenta.laIAbre,
   'los precios van escondidos detrás de la (i), como los de los sobres');
+/* ── 2q. LO DE LA TELEVISIÓN NO PUEDE ASOMAR EN UN MÓVIL ─────────────────────────────
+   El juego se maneja con la cruceta en una Android TV, y esa maquinaria —cartas
+   enfocables, flechas que mueven el foco, la barra que se quita al escribir, un suelo de
+   carta distinto— vive ENTERA dentro de un `if(ESTV)`, con `ESTV` puesto sólo cuando el
+   envoltorio de Android carga la página con `?tv=1`.
+
+   Él lo pidió con todas las letras: "sin tocar la experiencia para dispositivos móviles
+   ni alterarla de ninguna forma". Esto es lo que lo sujeta. Esta misma página es la de
+   390x844 de arriba, abierta SIN `?tv=1`, o sea un móvil de verdad. */
+console.log('\n2q. En un móvil no asoma nada de la televisión');
+
+const tv = await movil.evaluate(async () => {
+  ir('coleccion'); await new Promise(r => setTimeout(r, 250));
+  return {
+    clase: document.documentElement.classList.contains('tv'),
+    marcados: document.querySelectorAll('[tabindex]').length,
+    marcar: typeof window.marcarFocos,
+    escribiendo: document.body.classList.contains('escribiendo'),
+    margen: getComputedStyle(document.querySelector('button')).scrollMarginTop,
+    cartas: document.querySelectorAll('.carta').length,
+  };
+});
+comprobar(!tv.clase, 'no hay clase .tv en el documento');
+comprobar(tv.marcados === 0, `y ni un elemento con tabindex, con ${tv.cartas} cartas en pantalla`);
+comprobar(tv.marcar === 'undefined', 'marcarFocos ni siquiera existe');
+comprobar(tv.margen === '0px' || tv.margen === 'auto', `ni scroll-margin de tele (${tv.margen})`);
+
+await movil.evaluate(() => ir('inicio'));
+await movil.waitForTimeout(200);
+await movil.keyboard.press('ArrowDown');
+await movil.keyboard.press('ArrowRight');
+await movil.waitForTimeout(150);
+comprobar(await movil.evaluate(() => document.activeElement === document.body),
+  'y las flechas no mueven ningún foco: el juego es exactamente el de siempre');
+
+/* Y la barra de pestañas no se va al escribir, que eso también es sólo de la tele. */
+await movil.evaluate(() => ir('sugerencias'));
+await movil.waitForTimeout(250);
+await movil.evaluate(() => { const c = document.querySelector('textarea.campo'); if (c) c.focus(); });
+await movil.waitForTimeout(200);
+comprobar(await movil.evaluate(() =>
+  !document.body.classList.contains('escribiendo')
+  && getComputedStyle(document.getElementById('nav')).display !== 'none'),
+  'escribiendo en el móvil, la barra de pestañas sigue donde estaba');
+
 await movil.close();
 
 /* ── 3. Partidas completas ────────────────────────────────────────────── */

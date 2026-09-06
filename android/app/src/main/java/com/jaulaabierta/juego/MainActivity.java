@@ -3,6 +3,7 @@ package com.jaulaabierta.juego;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.view.ViewGroup;
 import android.webkit.JavascriptInterface;
@@ -31,6 +32,16 @@ public class MainActivity extends Activity {
 
     private static final String INICIO =
             "https://appassets.androidplatform.net/assets/juego.html";
+
+    /* LA MARCA DE TELEVISIÓN. Se le dice al juego, por la dirección, que está en una
+     * Android TV, y él se pone la clase `tv` en el <html>. TODO lo que es de tele cuelga
+     * de esa clase —la maqueta de la ventana bajita y el manejo con la cruceta—, así que
+     * en un móvil no existe ni una regla ni un oyente de más: la clase no se pone.
+     *
+     * Se manda por la URL y no por el puente de JavaScript porque hace falta ANTES de que
+     * se pinte nada; el puente sólo se puede preguntar con la página ya cargada, y para
+     * entonces el primer fotograma ya salió con la maqueta de móvil. */
+    private static final String INICIO_TV = INICIO + "?tv=1";
 
     private WebView web;
 
@@ -139,7 +150,13 @@ public class MainActivity extends Activity {
         });
         ViewCompat.requestApplyInsets(raiz);
 
-        if (estado == null) web.loadUrl(INICIO);
+        /* FEATURE_LEANBACK es lo que declara una Android TV, y es lo que hay que mirar:
+         * no vale por el tamaño de pantalla ni por si hay táctil, que una tablet grande
+         * daría lo mismo y no es una tele. */
+        final boolean esTele = getPackageManager()
+                .hasSystemFeature(PackageManager.FEATURE_LEANBACK);
+
+        if (estado == null) web.loadUrl(esTele ? INICIO_TV : INICIO);
         else web.restoreState(estado);
     }
 
