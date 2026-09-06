@@ -63,26 +63,76 @@ TECHO, COMPRESION = 210, 0.34
 # Por debajo de esta saturación el píxel ya no dice de qué color era: se le pone el de su
 # zona. Por encima, se respeta el suyo.
 SAT_MINIMA = 0.45
-DESENFOQUE = 0.03               # el radio del desenfoque, en fracción del ancho
+# EL DESENFOQUE VA EN 0,4% DEL ANCHO, NO EN 3%, y esto costó una vuelta. Con 3% —31 px en
+# un archivo de 1024— el "color de la zona" de un reventón DORADO del marco épico ya incluía
+# las barras violetas de al lado, y el reventón volvía violeta: medido, el 17,43% de los
+# píxeles dorados con luz viraba a violeta o azul. Lo cazó él: "cuando la épica brille en
+# las zonas doradas, el brillo sea dorado, y cuando sea en las zonas del otro color, sean
+# de ese color".
+#
+# Es un cambio con precio y está medido. Cuanto más corto el radio, menos fuga pero menos
+# color recuperan los reventones que salieron blancos del todo:
+#
+#     radio    dorados que viran a violeta    saturación que recuperan los blancos
+#      3,0%          —                                0,352
+#      1,0%        2,96%                              0,312
+#      0,6%        1,83%                              0,272
+#      0,4%        1,01%                              0,233   ← elegido
+#      0,2%        0,26%                              0,171
+#
+# Se elige 0,4%: diecisiete veces menos fuga que al principio y los blancos siguen
+# recuperando color de verdad (0,233 contra el 0,02 que traían).
+#
+# SE PROBÓ TAMBIÉN pesar el desenfoque por saturación, para que mandaran los vecinos con
+# color. Es MUCHO PEOR: el violeta cubre el 12% de la carta y el dorado el 2%, así que
+# pesando por color el violeta gana en todas partes —del 21% de fuga a 4 px al 96% a 31—.
+DESENFOQUE = 0.004
+# Y por debajo de esta saturación se considera que el píxel ha perdido su color del todo y
+# se le puede poner el de su zona. Por encima CONSERVA EL SUYO y sólo se le sube: un dorado
+# desvaído vuelve dorado más fuerte, nunca violeta.
+SAT_PROPIA = 0.10
 
 # Los dos extremos de qué es resplandor, y cuánto se apaga la capa de abajo.
 LUZ_0, LUZ_1 = 0.20, 0.55       # por debajo no es luz; por encima es luz del todo
 SAT_LUZ = 0.35                  # el color que hace falta para contar como neón
 APAGADO = 0.42                  # a cuánto se queda el resplandor en la capa de abajo
 
+# CUÁNTA LUZ LLEVA EL RESPLANDOR, por marco. Lo pidió él viéndolo: "haz que sea un poco
+# más fuerte en ambas, y en épica un poco más, pero sin pasarse ... no la velocidad, sino
+# la intensidad y brillo de la luz". Así que sube el brillo de la capa, no el recorrido ni
+# el ritmo del latido, que se quedan como estaban (3,6 s, de 1 a 0,45).
+#
+# No contradice lo de antes. Aquello era que el resplandor salía REVENTADO EN BLANCO, sin
+# color; esto es más luz CON su color. Medido después de subirlo: la rara topa en 223 y la
+# épica en 235 sobre 255, o sea ninguna llega a los 250 donde el color se pierde, y la
+# saturación de lo que pasa de 170 se queda en 0,74 y 0,46.
+#
+# Y por eso NO recorta canal a canal: multiplicar y recortar vira hacia el blanco, que es
+# justo lo que costó arreglar. Si algún canal se pasa de 1, se escala el píxel ENTERO hasta
+# que el más alto valga 1: sube todo lo que puede sin cambiar de tono.
+REFUERZO = {'rare': 1.20, 'epic': 1.38}
 
-def partirLuz(im):
-    """Devuelve (marco apagado, resplandor suelto). Sumados dan el original exacto."""
+
+def partirLuz(im, refuerzo=1.0):
+    """Devuelve (marco apagado, resplandor suelto). A opacidad 1 el resultado es el
+    original con el resplandor multiplicado por `refuerzo`, sin virar de color."""
     a = np.asarray(im.convert('RGB'), dtype=np.float32) / 255.0
     luz = a @ np.array([0.299, 0.587, 0.114], dtype=np.float32)
     mx, mn = a.max(2), a.min(2)
     sat = np.where(mx > 1e-6, (mx - mn) / np.maximum(mx, 1e-6), 0.0)
     fuerza = (np.clip((luz - LUZ_0) / (LUZ_1 - LUZ_0), 0, 1)
               * np.clip(sat / SAT_LUZ, 0, 1))
+
+    # El resplandor reforzado: se escala el píxel entero y, si algún canal se pasa, se
+    # baja el píxel entero hasta que el más alto valga 1. El tono no se mueve.
+    subido = a * refuerzo
+    tope = np.maximum(subido.max(2, keepdims=True), 1e-6)
+    subido = subido * np.minimum(1.0, 1.0 / tope)
+
     base = a * (1 - fuerza * (1 - APAGADO))[..., None]
     apagado = Image.fromarray((np.clip(base, 0, 1) * 255 + 0.5).astype(np.uint8), 'RGB')
     brillo = Image.fromarray(
-        np.dstack([(a * 255 + 0.5).astype(np.uint8),
+        np.dstack([(np.clip(subido, 0, 1) * 255 + 0.5).astype(np.uint8),
                    (fuerza * 255 + 0.5).astype(np.uint8)]), 'RGBA')
     return apagado, brillo, float(fuerza.mean())
 
@@ -97,21 +147,38 @@ def apagarBrillos(im):
     luz = rgb @ np.array([0.299, 0.587, 0.114], dtype=np.float32)
     techo = TECHO / 255.0
 
-    # 1. EL COLOR DE LA ZONA. La saturación se mide como (max-min)/max, que es la de HSV;
-    #    donde el píxel la ha perdido y su zona sí tiene, se le devuelve el tono de la zona
-    #    conservando SU brillo — el reventón sigue siendo el punto más luminoso, pero con
-    #    color.
+    # 1. EL COLOR. Dos caminos distintos, y la diferencia entre ellos es lo que impide que
+    #    un dorado acabe violeta:
+    #
+    #    a) EL PÍXEL TODAVÍA TIENE TONO PROPIO (saturación por encima de SAT_PROPIA). Se le
+    #       SUBE el suyo y no se le toca el tono: se acerca el canal más bajo al más alto,
+    #       que es subir la saturación conservando el color exacto.
+    #    b) EL PÍXEL ES BLANCO Y NO DICE DE QUÉ COLOR ERA. Sólo entonces se le pone el de su
+    #       zona, sacado del desenfoque corto.
+    #
+    #    Antes había un solo camino —siempre el de la zona, pesado por lo lavado que
+    #    estuviera— y por eso los reventones dorados del épico se volvían violetas.
     def sat(a):
         mx, mn = a.max(2), a.min(2)
         return np.where(mx > 1e-6, (mx - mn) / np.maximum(mx, 1e-6), 0.0)
 
     sp, sz = sat(rgb), sat(zona)
-    tono = zona / np.maximum(zona.max(2, keepdims=True), 1e-6)      # la zona, normalizada
-    # cuánto se le devuelve: nada si ya tiene color, todo si está blanco del todo
-    mezcla = np.clip((SAT_MINIMA - sp) / SAT_MINIMA, 0, 1) * np.clip(sz / SAT_MINIMA, 0, 1)
-    mezcla = (mezcla * np.clip((luz - 0.55) / 0.35, 0, 1))[..., None]   # sólo donde hay luz
-    salida = rgb * (1 - mezcla) + (tono * luz[..., None] / np.maximum(
-        tono @ np.array([0.299, 0.587, 0.114], dtype=np.float32), 1e-6)[..., None]) * mezcla
+    hayLuz = np.clip((luz - 0.55) / 0.35, 0, 1)
+    objetivo = np.minimum(np.maximum(sp, sz), SAT_MINIMA)     # a cuánto se quiere llegar
+
+    # a) subirle SU saturación: se escala la distancia de cada canal al más alto
+    mx = rgb.max(2, keepdims=True)
+    k = np.where(sp[..., None] > 1e-4, objetivo[..., None] / np.maximum(sp[..., None], 1e-4), 1.0)
+    k = 1 + (np.minimum(k, 3.0) - 1) * hayLuz[..., None]       # sólo donde hay luz
+    propio = mx - (mx - rgb) * k
+
+    # b) y sólo para lo que es blanco del todo, el tono de su zona
+    tono = zona / np.maximum(zona.max(2, keepdims=True), 1e-6)
+    deZona = tono * (luz / np.maximum(
+        tono @ np.array([0.299, 0.587, 0.114], dtype=np.float32), 1e-6))[..., None]
+    mezcla = (np.clip((SAT_PROPIA - sp) / SAT_PROPIA, 0, 1)
+              * np.clip(sz / SAT_MINIMA, 0, 1) * hayLuz)[..., None]
+    salida = propio * (1 - mezcla) + deZona * mezcla
 
     # 2. EL PICO. Se comprime por encima del techo, conservando el color: se escala el
     #    píxel entero por el factor que le toque a su luz, no se recorta canal a canal
@@ -189,7 +256,7 @@ for orig, nom in PIEZAS:
 
     # El marco se parte ANTES de recortar y escalar, para que las dos capas salgan del
     # mismo original y encajen píxel a píxel al superponerlas.
-    apagado, brillo, medio = partirLuz(im)
+    apagado, brillo, medio = partirLuz(im, REFUERZO.get(orig.split('-')[0], 1.0))
     alfa = recortar(im, caja).crop(caja).resize((ANCHO, ALTO), Image.LANCZOS).getchannel('A')
 
     capas = []

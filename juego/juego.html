@@ -820,6 +820,9 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 .carta.tapada::after,.naipe .cara.dorso > .recorte::after{content:'';position:absolute;
   inset:0;pointer-events:none;background:var(--c-luz-rev) center/100% 100% no-repeat;
   will-change:opacity;animation:latido 3.6s ease-in-out infinite}
+/* El recorrido y la velocidad NO se tocan —"no la velocidad, sino la intensidad y brillo
+   de la luz"—: lo que sube es cuánta luz tiene la capa, y eso se hace al preparar el
+   archivo, en herramientas/preparar-marcos-rareza.py (REFUERZO). */
 @keyframes latido{0%,100%{opacity:1}50%{opacity:.45}}
 /* Quien haya pedido menos movimiento en su móvil se queda con la carta a plena luz. */
 @media (prefers-reduced-motion:reduce){
